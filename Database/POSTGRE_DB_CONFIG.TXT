@@ -1,0 +1,16 @@
+#user and database creation
+
+CREATE USER tutorly_admin WITH PASSWORD 'tutorly1234?';
+
+CREATE DATABASE tutorly_db;
+
+ALTER DATABASE tutorly_db OWNER TO tutorly_admin;
+
+psql -U tutorly_admin -d tutorly_db -h localhost
+
+#database tables 
+
+
+#test data
+
+
