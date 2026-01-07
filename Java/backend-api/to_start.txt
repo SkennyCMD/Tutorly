@@ -1,0 +1,7 @@
+./mvnw spring-boot:run
+
+
+if it doesn't run use: 
+
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+./mvnw spring-boot:run
