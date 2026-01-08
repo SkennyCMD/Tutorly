@@ -35,7 +35,7 @@ public class ApiKeyInterceptor implements HandlerInterceptor {
         if (requestApiKey == null || !validApiKeys.contains(requestApiKey.trim())) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Invalid or missing API key\"}");
+            response.getWriter().write("{\"error\":\"Invalid or missing API key\"}\n");
             return false;
         }
         
