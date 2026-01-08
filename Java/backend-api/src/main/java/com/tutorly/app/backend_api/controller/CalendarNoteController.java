@@ -12,6 +12,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * REST Controller for Calendar Note entity operations
+ * 
+ * Manages calendar notes/events in the tutoring system.
+ * Calendar notes can be used for scheduling lessons, reminders, and events.
+ * All endpoints require API key authentication.
+ * 
+ * Base URL: /api/calendar-notes
+ */
 @RestController
 @RequestMapping("/api/calendar-notes")
 @CrossOrigin(origins = "*")
@@ -20,11 +29,24 @@ public class CalendarNoteController {
     @Autowired
     private CalendarNoteService calendarNoteService;
     
+    /**
+     * Get all calendar notes
+     * 
+     * @return List of all calendar notes
+     * @apiNote GET /api/calendar-notes
+     */
     @GetMapping
     public ResponseEntity<List<CalendarNote>> getAllCalendarNotes() {
         return ResponseEntity.ok(calendarNoteService.getAllCalendarNotes());
     }
     
+    /**
+     * Get calendar note by ID
+     * 
+     * @param id The calendar note ID
+     * @return Calendar note if found, 404 Not Found otherwise
+     * @apiNote GET /api/calendar-notes/{id}
+     */
     @GetMapping("/{id}")
     public ResponseEntity<CalendarNote> getCalendarNoteById(@PathVariable Long id) {
         Optional<CalendarNote> calendarNote = calendarNoteService.getCalendarNoteById(id);
@@ -32,16 +54,40 @@ public class CalendarNoteController {
                            .orElse(ResponseEntity.notFound().build());
     }
     
+    /**
+     * Get all calendar notes created by a specific admin
+     * 
+     * @param creatorId The admin ID who created the notes
+     * @return List of calendar notes created by the specified admin
+     * @apiNote GET /api/calendar-notes/creator/{creatorId}
+     */
     @GetMapping("/creator/{creatorId}")
     public ResponseEntity<List<CalendarNote>> getCalendarNotesByCreator(@PathVariable Long creatorId) {
         return ResponseEntity.ok(calendarNoteService.getCalendarNotesByCreator(creatorId));
     }
     
+    /**
+     * Get all calendar notes assigned to a specific tutor
+     * 
+     * @param tutorId The tutor ID
+     * @return List of calendar notes for the specified tutor
+     * @apiNote GET /api/calendar-notes/tutor/{tutorId}
+     */
     @GetMapping("/tutor/{tutorId}")
     public ResponseEntity<List<CalendarNote>> getCalendarNotesByTutor(@PathVariable Long tutorId) {
         return ResponseEntity.ok(calendarNoteService.getCalendarNotesByTutor(tutorId));
     }
     
+    /**
+     * Get calendar notes within a date range
+     * 
+     * Useful for fetching events for a specific week, month, or custom period.
+     * 
+     * @param start Start date/time (ISO 8601 format: yyyy-MM-dd'T'HH:mm:ss)
+     * @param end End date/time (ISO 8601 format: yyyy-MM-dd'T'HH:mm:ss)
+     * @return List of calendar notes within the specified date range
+     * @apiNote GET /api/calendar-notes/date-range?start=2026-01-01T00:00:00&end=2026-01-31T23:59:59
+     */
     @GetMapping("/date-range")
     public ResponseEntity<List<CalendarNote>> getCalendarNotesByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
@@ -49,12 +95,27 @@ public class CalendarNoteController {
         return ResponseEntity.ok(calendarNoteService.getCalendarNotesByDateRange(start, end));
     }
     
+    /**
+     * Create a new calendar note
+     * 
+     * @param calendarNote The calendar note data to create
+     * @return Created calendar note with 201 Created status
+     * @apiNote POST /api/calendar-notes
+     */
     @PostMapping
     public ResponseEntity<CalendarNote> createCalendarNote(@RequestBody CalendarNote calendarNote) {
         CalendarNote savedCalendarNote = calendarNoteService.saveCalendarNote(calendarNote);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedCalendarNote);
     }
     
+    /**
+     * Update an existing calendar note
+     * 
+     * @param id The calendar note ID to update
+     * @param calendarNote The updated calendar note data
+     * @return Updated calendar note if found, 404 Not Found otherwise
+     * @apiNote PUT /api/calendar-notes/{id}
+     */
     @PutMapping("/{id}")
     public ResponseEntity<CalendarNote> updateCalendarNote(@PathVariable Long id, @RequestBody CalendarNote calendarNote) {
         if (calendarNoteService.getCalendarNoteById(id).isEmpty()) {
@@ -64,6 +125,13 @@ public class CalendarNoteController {
         return ResponseEntity.ok(calendarNoteService.saveCalendarNote(calendarNote));
     }
     
+    /**
+     * Delete a calendar note
+     * 
+     * @param id The calendar note ID to delete
+     * @return 204 No Content if deleted successfully, 404 Not Found if note doesn't exist
+     * @apiNote DELETE /api/calendar-notes/{id}
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCalendarNote(@PathVariable Long id) {
         if (calendarNoteService.getCalendarNoteById(id).isEmpty()) {

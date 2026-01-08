@@ -12,6 +12,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * REST Controller for Prenotation (Booking/Reservation) entity operations
+ * 
+ * Manages lesson reservations/bookings in the tutoring system.
+ * Prenotations represent scheduled or requested tutoring sessions.
+ * All endpoints require API key authentication.
+ * 
+ * Base URL: /api/prenotations
+ */
 @RestController
 @RequestMapping("/api/prenotations")
 @CrossOrigin(origins = "*")
@@ -20,11 +29,24 @@ public class PrenotationController {
     @Autowired
     private PrenotationService prenotationService;
     
+    /**
+     * Get all prenotations
+     * 
+     * @return List of all prenotations in the system
+     * @apiNote GET /api/prenotations
+     */
     @GetMapping
     public ResponseEntity<List<Prenotation>> getAllPrenotations() {
         return ResponseEntity.ok(prenotationService.getAllPrenotations());
     }
     
+    /**
+     * Get prenotation by ID
+     * 
+     * @param id The prenotation ID
+     * @return Prenotation entity if found, 404 Not Found otherwise
+     * @apiNote GET /api/prenotations/{id}
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Prenotation> getPrenotationById(@PathVariable Long id) {
         Optional<Prenotation> prenotation = prenotationService.getPrenotationById(id);
@@ -32,26 +54,64 @@ public class PrenotationController {
                           .orElse(ResponseEntity.notFound().build());
     }
     
+    /**
+     * Get all prenotations for a specific student
+     * 
+     * @param studentId The student ID
+     * @return List of prenotations for the specified student
+     * @apiNote GET /api/prenotations/student/{studentId}
+     */
     @GetMapping("/student/{studentId}")
     public ResponseEntity<List<Prenotation>> getPrenotationsByStudent(@PathVariable Long studentId) {
         return ResponseEntity.ok(prenotationService.getPrenotationsByStudent(studentId));
     }
     
+    /**
+     * Get all prenotations for a specific tutor
+     * 
+     * @param tutorId The tutor ID
+     * @return List of prenotations assigned to the specified tutor
+     * @apiNote GET /api/prenotations/tutor/{tutorId}
+     */
     @GetMapping("/tutor/{tutorId}")
     public ResponseEntity<List<Prenotation>> getPrenotationsByTutor(@PathVariable Long tutorId) {
         return ResponseEntity.ok(prenotationService.getPrenotationsByTutor(tutorId));
     }
     
+    /**
+     * Get all prenotations created by a specific admin
+     * 
+     * @param creatorId The admin ID who created the prenotations
+     * @return List of prenotations created by the specified admin
+     * @apiNote GET /api/prenotations/creator/{creatorId}
+     */
     @GetMapping("/creator/{creatorId}")
     public ResponseEntity<List<Prenotation>> getPrenotationsByCreator(@PathVariable Long creatorId) {
         return ResponseEntity.ok(prenotationService.getPrenotationsByCreator(creatorId));
     }
     
+    /**
+     * Get prenotations by flag status
+     * 
+     * Flag typically indicates confirmation or completion status.
+     * 
+     * @param flag The flag value (true/false)
+     * @return List of prenotations with the specified flag value
+     * @apiNote GET /api/prenotations/flag/{flag}
+     */
     @GetMapping("/flag/{flag}")
     public ResponseEntity<List<Prenotation>> getPrenotationsByFlag(@PathVariable Boolean flag) {
         return ResponseEntity.ok(prenotationService.getPrenotationsByFlag(flag));
     }
     
+    /**
+     * Get prenotations within a date range
+     * 
+     * @param start Start date/time (ISO 8601 format: yyyy-MM-dd'T'HH:mm:ss)
+     * @param end End date/time (ISO 8601 format: yyyy-MM-dd'T'HH:mm:ss)
+     * @return List of prenotations within the specified date range
+     * @apiNote GET /api/prenotations/date-range?start=2026-01-01T00:00:00&end=2026-01-31T23:59:59
+     */
     @GetMapping("/date-range")
     public ResponseEntity<List<Prenotation>> getPrenotationsByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
@@ -59,12 +119,27 @@ public class PrenotationController {
         return ResponseEntity.ok(prenotationService.getPrenotationsByDateRange(start, end));
     }
     
+    /**
+     * Create a new prenotation
+     * 
+     * @param prenotation The prenotation data to create
+     * @return Created prenotation with 201 Created status
+     * @apiNote POST /api/prenotations
+     */
     @PostMapping
     public ResponseEntity<Prenotation> createPrenotation(@RequestBody Prenotation prenotation) {
         Prenotation savedPrenotation = prenotationService.savePrenotation(prenotation);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedPrenotation);
     }
     
+    /**
+     * Update an existing prenotation
+     * 
+     * @param id The prenotation ID to update
+     * @param prenotation The updated prenotation data
+     * @return Updated prenotation if found, 404 Not Found otherwise
+     * @apiNote PUT /api/prenotations/{id}
+     */
     @PutMapping("/{id}")
     public ResponseEntity<Prenotation> updatePrenotation(@PathVariable Long id, @RequestBody Prenotation prenotation) {
         if (prenotationService.getPrenotationById(id).isEmpty()) {
@@ -74,6 +149,13 @@ public class PrenotationController {
         return ResponseEntity.ok(prenotationService.savePrenotation(prenotation));
     }
     
+    /**
+     * Delete a prenotation
+     * 
+     * @param id The prenotation ID to delete
+     * @return 204 No Content if deleted successfully, 404 Not Found if prenotation doesn't exist
+     * @apiNote DELETE /api/prenotations/{id}
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePrenotation(@PathVariable Long id) {
         if (prenotationService.getPrenotationById(id).isEmpty()) {
