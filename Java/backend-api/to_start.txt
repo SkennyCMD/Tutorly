@@ -1,7 +1,52 @@
-./mvnw spring-boot:run
+EXECUTE SERVER WITHOUT GUI:
+
+    1) WITH MAVEN WRAPPER
+
+        LINUX/MAC:
+
+            cd path/to/Tutorly/Java/backend-api
+            ./mvnw spring-boot:run
+        
+        WINDOWS:
+
+            cd C:\path\to\Tutorly\Java\backend-api
+            mvnw.cmd spring-boot:run
+
+    2) WITH MAVEN WRAPPER
+
+        LINUX/MAC:
+
+            export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+            ./mvnw spring-boot:run
+        
+        WINDOWS:
+
+            set JAVA_HOME=C:\Program Files\Java\jdk-21
+            mvnw.cmd spring-boot:run
+
+    3) WITH MAVEN INSTALLED GLOBALLY
+
+        ON EVERY SYSTEM:
+
+            cd /home/skenny/Documents/GitHub/Tutorly/Java/backend-api
+            mvn spring-boot:run
+    
+    4) BUILD JAR and EXECUTE
+
+        ON EVERY SYSTEM:
+
+            ./mvnw clean package
+            java -jar target/backend-api-0.0.1-SNAPSHOT.jar
 
 
-if it doesn't run use: 
+EXECUTE SERVER WITH GUI:
 
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-./mvnw spring-boot:run
+    LINUX/MAC:
+
+        cd /path/to/Tutorly/Java/backend-api
+        ./run-gui.sh
+
+    WINDOWS:
+
+        cd C:\path\to\Tutorly\Java\backend-api
+        run-gui.bat
