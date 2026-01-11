@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Tutorly</title>
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>Tutorly</h1>
+                <p>Accedi alla tua area personale</p>
+            </div>
+
+            <% if (error) { %>
+                <div class="error-message">
+                    <%= error %>
+                </div>
+            <% } %>
+
+            <form action="/login" method="POST" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username o Email</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        placeholder="Inserisci username o email" 
+                        required
+                        autocomplete="username"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Inserisci password" 
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <div class="form-options">
+                    <label class="checkbox-container">
+                        <input type="checkbox" name="remember">
+                        <span>Ricordami</span>
+                    </label>
+                    <a href="/forgot-password" class="forgot-link">Password dimenticata?</a>
+                </div>
+
+                <button type="submit" class="login-button">
+                    Accedi
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <p>Non hai un account? <a href="/register">Registrati</a></p>
+            </div>
+
+            <div class="demo-credentials">
+                <p><strong>Account Demo:</strong></p>
+                <p>Admin: admin / admin123</p>
+                <p>Student: student / admin123</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

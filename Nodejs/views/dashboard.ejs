@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Tutorly</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h2>Tutorly</h2>
+            </div>
+            <div class="nav-user">
+                <span>Benvenuto, <strong><%= username %></strong> (<%= role %>)</span>
+                <form action="/logout" method="POST" style="display: inline;">
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </nav>
+
+        <div class="dashboard-content">
+            <div class="welcome-card">
+                <h1>Dashboard</h1>
+                <p>Sei autenticato con successo come <strong><%= role %></strong></p>
+                
+                <div class="info-section">
+                    <h3>Informazioni Utente:</h3>
+                    <ul>
+                        <li><strong>Username:</strong> <%= username %></li>
+                        <li><strong>Ruolo:</strong> <%= role %></li>
+                    </ul>
+                </div>
+
+                <div class="actions">
+                    <% if (role === 'admin') { %>
+                        <a href="/admin/users" class="action-btn">Gestisci Utenti</a>
+                        <a href="/admin/tutors" class="action-btn">Gestisci Tutor</a>
+                        <a href="/admin/lessons" class="action-btn">Gestisci Lezioni</a>
+                    <% } else if (role === 'student') { %>
+                        <a href="/student/lessons" class="action-btn">Le Mie Lezioni</a>
+                        <a href="/student/tutors" class="action-btn">Trova Tutor</a>
+                        <a href="/student/calendar" class="action-btn">Calendario</a>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
