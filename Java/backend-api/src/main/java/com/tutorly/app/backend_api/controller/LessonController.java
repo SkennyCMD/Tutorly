@@ -1,7 +1,12 @@
 package com.tutorly.app.backend_api.controller;
 
+import com.tutorly.app.backend_api.dto.LessonCreateDTO;
 import com.tutorly.app.backend_api.entity.Lesson;
+import com.tutorly.app.backend_api.entity.Student;
+import com.tutorly.app.backend_api.entity.Tutor;
 import com.tutorly.app.backend_api.service.LessonService;
+import com.tutorly.app.backend_api.service.StudentService;
+import com.tutorly.app.backend_api.service.TutorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -28,6 +33,12 @@ public class LessonController {
     
     @Autowired
     private LessonService lessonService;
+    
+    @Autowired
+    private TutorService tutorService;
+    
+    @Autowired
+    private StudentService studentService;
     
     /**
      * Get all lessons
@@ -117,9 +128,34 @@ public class LessonController {
      * @apiNote POST /api/lessons
      */
     @PostMapping
-    public ResponseEntity<Lesson> createLesson(@RequestBody Lesson lesson) {
-        Lesson savedLesson = lessonService.saveLesson(lesson);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedLesson);
+    public ResponseEntity<?> createLesson(@RequestBody LessonCreateDTO lessonDTO) {
+        try {
+            // Fetch tutor and student by ID
+            Optional<Tutor> tutorOpt = tutorService.getTutorById(lessonDTO.getTutorId());
+            Optional<Student> studentOpt = studentService.getStudentById(lessonDTO.getStudentId());
+            
+            if (tutorOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("Tutor not found with ID: " + lessonDTO.getTutorId());
+            }
+            if (studentOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("Student not found with ID: " + lessonDTO.getStudentId());
+            }
+            
+            // Create lesson entity
+            Lesson lesson = new Lesson();
+            lesson.setDescription(lessonDTO.getDescription());
+            lesson.setStartTime(lessonDTO.getStartTime());
+            lesson.setEndTime(lessonDTO.getEndTime());
+            lesson.setTutor(tutorOpt.get());
+            lesson.setStudent(studentOpt.get());
+            
+            Lesson savedLesson = lessonService.saveLesson(lesson);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedLesson);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error creating lesson: " + e.getMessage());
+        }
     }
     
     /**

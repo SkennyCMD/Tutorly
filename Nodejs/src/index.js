@@ -264,6 +264,83 @@ app.get('/api/students', isAuthenticated, async (req, res) => {
     }
 });
 
+// API endpoint to create a new lesson
+app.post('/api/lessons', isAuthenticated, async (req, res) => {
+    try {
+        const { studentId, description, startTime, endTime } = req.body;
+        const tutorId = req.session.userId;
+        
+        // Format datetime properly (assuming time inputs are HH:MM format)
+        const today = new Date();
+        const [startHour, startMinute] = startTime.split(':');
+        const [endHour, endMinute] = endTime.split(':');
+        
+        const startDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(startHour), parseInt(startMinute), 0);
+        const endDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(endHour), parseInt(endMinute), 0);
+        
+        const lessonData = {
+            description: description || '',
+            startTime: startDateTime.toISOString().slice(0, 19),
+            endTime: endDateTime.toISOString().slice(0, 19),
+            tutorId: parseInt(tutorId),
+            studentId: parseInt(studentId)
+        };
+        
+        console.log('Creating lesson:', lessonData);
+        
+        const postData = JSON.stringify(lessonData);
+        
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: '/api/lessons',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+        
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    console.log('Lesson created successfully:', data);
+                    try {
+                        const lesson = JSON.parse(data);
+                        res.json(lesson);
+                    } catch (e) {
+                        res.json({ success: true, message: 'Lesson created' });
+                    }
+                } else {
+                    console.error('Error creating lesson, status:', httpsRes.statusCode);
+                    console.error('Response:', data);
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to create lesson' });
+                }
+            });
+        });
+        
+        httpsReq.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            res.status(500).json({ error: 'Failed to create lesson' });
+        });
+        
+        httpsReq.write(postData);
+        httpsReq.end();
+        
+    } catch (error) {
+        console.error('Error creating lesson:', error.message);
+        res.status(500).json({ error: 'Failed to create lesson' });
+    }
+});
+
 // API endpoint to get today's tasks (calendar notes) for the logged-in tutor
 app.get('/api/tasks/today', isAuthenticated, async (req, res) => {
     try {
