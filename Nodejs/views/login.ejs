@@ -1,73 +1,138 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Tutorly</title>
-    <link rel="stylesheet" href="/css/login.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Tutorly</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/login.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: '#0D9488',
+            'primary-hover': '#0F766E',
+            background: '#F8FAFC',
+            foreground: '#0F172A',
+            muted: '#64748B',
+            border: '#E2E8F0',
+            card: '#FFFFFF',
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <h1>Tutorly</h1>
-                <p>Accedi alla tua area personale</p>
-            </div>
-
-            <% if (error) { %>
-                <div class="error-message">
-                    <%= error %>
-                </div>
-            <% } %>
-
-            <form action="/login" method="POST" class="login-form">
-                <div class="form-group">
-                    <label for="username">Username o Email</label>
-                    <input 
-                        type="text" 
-                        id="username" 
-                        name="username" 
-                        placeholder="Inserisci username o email" 
-                        required
-                        autocomplete="username"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        placeholder="Inserisci password" 
-                        required
-                        autocomplete="current-password"
-                    >
-                </div>
-
-                <div class="form-options">
-                    <label class="checkbox-container">
-                        <input type="checkbox" name="remember">
-                        <span>Ricordami</span>
-                    </label>
-                    <a href="/forgot-password" class="forgot-link">Password dimenticata?</a>
-                </div>
-
-                <button type="submit" class="login-button">
-                    Accedi
-                </button>
-            </form>
-
-            <div class="login-footer">
-                <p>Non hai un account? <a href="/register">Registrati</a></p>
-            </div>
-
-            <div class="demo-credentials">
-                <p><strong>Account Demo:</strong></p>
-                <p>Admin: admin / admin123</p>
-                <p>Student: student / admin123</p>
-            </div>
-        </div>
+<body class="font-sans bg-background min-h-screen flex flex-col">
+  
+  <!-- Header -->
+  <header class="w-full py-4 px-6 md:px-12">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2">
+        <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+          <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        </svg>
+        <span class="text-xl font-bold text-foreground">Tutorly</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-6">
+        <a href="#" class="text-muted hover:text-foreground transition-colors">Become a Tutor</a>
+      </nav>
+      <a href="#" class="hidden md:inline-flex px-4 py-2 border border-border rounded-lg text-foreground font-medium hover:bg-card transition-colors">
+        Sign up
+      </a>
     </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex items-center justify-center px-4 py-8 md:py-12">
+    <div class="w-full max-w-md">
+      <!-- Login Card -->
+      <div class="bg-card rounded-2xl shadow-lg shadow-black/5 p-8 md:p-10">
+        <div class="text-center mb-8">
+          <h1 class="text-2xl md:text-3xl font-bold text-foreground mb-2">Welcome back</h1>
+          <p class="text-muted">Sign in to continue your learning journey</p>
+        </div>
+
+        <% if (error) { %>
+          <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            <%= error %>
+          </div>
+        <% } %>
+
+        <form action="/login" method="POST" class="space-y-5">
+          <!-- Email Field -->
+          <div>
+            <label for="email" class="block text-sm font-medium text-foreground mb-2">Email address</label>
+            <input 
+              type="text" 
+              id="username" 
+              name="username" 
+              placeholder="username"
+              class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              required
+            >
+          </div>
+
+          <!-- Password Field -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label for="password" class="block text-sm font-medium text-foreground">Password</label>
+              <a href="#" class="text-sm text-primary hover:text-primary-hover transition-colors">Forgot password?</a>
+            </div>
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              placeholder="••••••••"
+              class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+              required
+            >
+          </div>
+
+          <!-- Remember Me -->
+          <div class="flex items-center gap-2">
+            <input 
+              type="checkbox" 
+              id="remember" 
+              name="remember"
+              class="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+            >
+            <label for="remember" class="text-sm text-muted cursor-pointer">Remember me for 30 days</label>
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            type="submit"
+            class="w-full py-3 px-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all"
+          >
+            Sign in
+          </button>
+        </form>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-6 px-6 border-t border-border">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-muted">© 2026 Tutorly. All rights reserved.</p>
+      <div class="flex items-center gap-6">
+        <a href="#" class="text-sm text-muted hover:text-foreground transition-colors">Privacy</a>
+        <a href="#" class="text-sm text-muted hover:text-foreground transition-colors">Terms</a>
+        <a href="#" class="text-sm text-muted hover:text-foreground transition-colors">Help</a>
+      </div>
+    </div>
+  </footer>
+
 </body>
 </html>

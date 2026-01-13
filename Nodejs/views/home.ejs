@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorly - Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#0a0a0a',
+            foreground: '#fafafa',
+            card: '#141414',
+            'card-foreground': '#fafafa',
+            primary: '#14b8a6',
+            'primary-foreground': '#0a0a0a',
+            secondary: '#262626',
+            'secondary-foreground': '#fafafa',
+            muted: '#262626',
+            'muted-foreground': '#a1a1aa',
+            border: '#2e2e2e',
+            ring: '#14b8a6',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/css/home.css">
+</head>
+<body class="bg-background text-foreground min-h-screen">
+  
+  <!-- Header -->
+  <header class="bg-card border-b border-border sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo -->
+        <a href="home.html" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-foreground">Tutorly</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
+          <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">Calendar</a>
+          <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">My Lessons</a>
+        </nav>
+
+        <!-- User Menu (Desktop) -->
+        <div class="hidden md:flex items-center gap-4">
+          <div class="w-9 h-9 bg-secondary rounded-full flex items-center justify-center">
+            <span class="text-sm font-medium text-foreground">JD</span>
+          </div>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button id="menuToggle" class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu Overlay -->
+  <div id="menuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+  <!-- Mobile Sidebar Menu -->
+  <aside id="mobileMenu" class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
+    <div class="p-4 border-b border-border flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+          </svg>
+        </div>
+        <span class="text-lg font-bold text-foreground">Tutorly</span>
+      </div>
+      <button id="closeMenu" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+        <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="p-4 flex flex-col gap-2">
+      <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Calendar
+      </a>
+      <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+        My Lessons
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    
+    <!-- Page Title -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-foreground">Welcome back</h1>
+        <p class="text-muted-foreground mt-1">Here's your schedule for today</p>
+      </div>
+      <button id="addLessonBtn" class="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Lesson
+      </button>
+    </div>
+
+    <!-- Dashboard Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Calendar Card -->
+      <div class="lg:col-span-1 bg-card border border-border rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-foreground">Today's Tasks</h2>
+          <span class="text-sm text-muted-foreground" id="currentDate"></span>
+        </div>
+        
+        <!-- Mini Calendar -->
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-3">
+            <button id="prevMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+              <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <span id="calendarMonth" class="text-sm font-medium text-foreground"></span>
+            <button id="nextMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+              <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+          <div class="grid grid-cols-7 gap-1 text-center text-xs mb-2">
+            <span class="text-muted-foreground py-1">Mo</span>
+            <span class="text-muted-foreground py-1">Tu</span>
+            <span class="text-muted-foreground py-1">We</span>
+            <span class="text-muted-foreground py-1">Th</span>
+            <span class="text-muted-foreground py-1">Fr</span>
+            <span class="text-muted-foreground py-1">Sa</span>
+            <span class="text-muted-foreground py-1">Su</span>
+          </div>
+          <div id="calendarDays" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
+        </div>
+
+        <!-- Tasks List -->
+        <div class="border-t border-border pt-4">
+          <h3 class="text-sm font-medium text-muted-foreground mb-3">Tasks</h3>
+          <div id="tasksList" class="space-y-2">
+            <!-- Tasks will be rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Lessons Card -->
+      <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-foreground">Today's Lessons</h2>
+          <span id="lessonCount" class="text-sm text-muted-foreground"></span>
+        </div>
+
+        <!-- Lessons Table (Desktop) -->
+        <div class="hidden sm:block overflow-x-auto">
+          <table class="w-full">
+            <thead>
+              <tr class="text-left text-sm text-muted-foreground border-b border-border">
+                <th class="pb-3 font-medium">Student</th>
+                <th class="pb-3 font-medium">Class</th>
+                <th class="pb-3 font-medium">Time</th>
+                <th class="pb-3 font-medium text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody id="lessonsTableBody" class="divide-y divide-border">
+              <!-- Lessons will be rendered here -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Lessons List (Mobile) -->
+        <div id="lessonsMobileList" class="sm:hidden space-y-3">
+          <!-- Mobile lessons will be rendered here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyLessons" class="hidden py-12 text-center">
+          <div class="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            </svg>
+          </div>
+          <p class="text-muted-foreground">No lessons scheduled for today</p>
+          <button onclick="openModal()" class="mt-4 text-primary hover:underline text-sm">Add your first lesson</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Lesson Modal -->
+  <div id="addLessonModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-foreground">Add New Lesson</h2>
+        <button onclick="closeModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      
+      <form id="lessonForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
+          <input type="text" id="studentSearch" placeholder="Search by name..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" autocomplete="off">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Select Student</label>
+          <select id="studentSelect" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">-- Select a student --</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
+          <textarea id="description" placeholder="Lesson description..." rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <input type="time" id="startTime" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <input type="time" id="endTime" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add Lesson</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/homeScript.js"></script>
+</body>
+</html>
