@@ -110,4 +110,28 @@ public class TutorService {
     public boolean existsByUsername(String username) {
         return tutorRepository.existsByUsername(username);
     }
+    
+    /**
+     * Authenticate a tutor by username and password
+     * 
+     * Validates the credentials and returns the tutor ID if successful.
+     * Returns null if authentication fails (invalid username or password).
+     * 
+     * @param username The tutor's username
+     * @param password The tutor's password
+     * @return The tutor's ID if credentials are valid, null otherwise
+     */
+    public Long authenticateTutor(String username, String password) {
+        Optional<Tutor> tutorOptional = tutorRepository.findByUsername(username);
+        
+        if (tutorOptional.isPresent()) {
+            Tutor tutor = tutorOptional.get();
+            // Check if password matches (plain text comparison - should use hashing in production)
+            if (tutor.getPassword().equals(password)) {
+                return tutor.getId();
+            }
+        }
+        
+        return null;
+    }
 }

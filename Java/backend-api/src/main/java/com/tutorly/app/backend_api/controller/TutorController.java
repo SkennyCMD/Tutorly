@@ -144,4 +144,52 @@ public class TutorController {
         tutorService.deleteTutor(id);
         return ResponseEntity.noContent().build();
     }
+    
+    /**
+     * Authenticate a tutor and get their ID
+     * 
+     * Validates the provided username and password.
+     * Returns the tutor's ID if credentials are valid, null otherwise.
+     * 
+     * @param credentials Object containing username and password
+     * @return Tutor ID if authentication successful, null otherwise
+     * @apiNote POST /api/tutors/login
+     */
+    @PostMapping("/login")
+    public ResponseEntity<Long> loginTutor(@RequestBody LoginRequest credentials) {
+        Long tutorId = tutorService.authenticateTutor(
+            credentials.getUsername(), 
+            credentials.getPassword()
+        );
+        
+        if (tutorId != null) {
+            return ResponseEntity.ok(tutorId);
+        } else {
+            return ResponseEntity.ok(null);
+        }
+    }
+    
+    /**
+     * Inner class for login request payload
+     */
+    public static class LoginRequest {
+        private String username;
+        private String password;
+        
+        public String getUsername() {
+            return username;
+        }
+        
+        public void setUsername(String username) {
+            this.username = username;
+        }
+        
+        public String getPassword() {
+            return password;
+        }
+        
+        public void setPassword(String password) {
+            this.password = password;
+        }
+    }
 }

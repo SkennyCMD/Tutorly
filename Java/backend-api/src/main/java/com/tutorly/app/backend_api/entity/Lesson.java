@@ -1,6 +1,7 @@
 package com.tutorly.app.backend_api.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -135,5 +136,23 @@ public class Lesson {
     
     public void setStudent(Student student) {
         this.student = student;
+    }
+    
+    /**
+     * Get the student ID for JSON serialization
+     * @return Student ID
+     */
+    @JsonProperty("studentId")
+    public Long getStudentId() {
+        return student != null ? student.getId() : null;
+    }
+    
+    /**
+     * Get the tutor ID for JSON serialization
+     * @return Tutor ID
+     */
+    @JsonProperty("tutorId")
+    public Long getTutorId() {
+        return tutor != null ? tutor.getId() : null;
     }
 }
