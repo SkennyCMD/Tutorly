@@ -1,7 +1,12 @@
 package com.tutorly.app.backend_api.controller;
 
 import com.tutorly.app.backend_api.entity.Prenotation;
+import com.tutorly.app.backend_api.entity.Student;
+import com.tutorly.app.backend_api.entity.Tutor;
+import com.tutorly.app.backend_api.dto.PrenotationCreateDTO;
 import com.tutorly.app.backend_api.service.PrenotationService;
+import com.tutorly.app.backend_api.service.StudentService;
+import com.tutorly.app.backend_api.service.TutorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -28,6 +33,12 @@ public class PrenotationController {
     
     @Autowired
     private PrenotationService prenotationService;
+    
+    @Autowired
+    private StudentService studentService;
+    
+    @Autowired
+    private TutorService tutorService;
     
     /**
      * Get all prenotations
@@ -117,6 +128,48 @@ public class PrenotationController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
         return ResponseEntity.ok(prenotationService.getPrenotationsByDateRange(start, end));
+    }
+    
+    /**
+     * Create a new prenotation using DTO with IDs
+     * 
+     * @param dto The prenotation data with student, tutor, and creator IDs
+     * @return Created prenotation with 201 Created status
+     * @apiNote POST /api/prenotations/create
+     */
+    @PostMapping("/create")
+    public ResponseEntity<?> createPrenotationFromDTO(@RequestBody PrenotationCreateDTO dto) {
+        try {
+            // Fetch entities by ID
+            Optional<Student> student = studentService.getStudentById(dto.getStudentId());
+            Optional<Tutor> tutor = tutorService.getTutorById(dto.getTutorId());
+            Optional<Tutor> creator = tutorService.getTutorById(dto.getCreatorId());
+            
+            if (student.isEmpty()) {
+                return ResponseEntity.badRequest().body("Student not found with ID: " + dto.getStudentId());
+            }
+            if (tutor.isEmpty()) {
+                return ResponseEntity.badRequest().body("Tutor not found with ID: " + dto.getTutorId());
+            }
+            if (creator.isEmpty()) {
+                return ResponseEntity.badRequest().body("Creator not found with ID: " + dto.getCreatorId());
+            }
+            
+            // Create prenotation with entities
+            Prenotation prenotation = new Prenotation();
+            prenotation.setStartTime(dto.getStartTime());
+            prenotation.setEndTime(dto.getEndTime());
+            prenotation.setStudent(student.get());
+            prenotation.setTutor(tutor.get());
+            prenotation.setCreator(creator.get());
+            prenotation.setFlag(dto.getFlag() != null ? dto.getFlag() : false);
+            
+            Prenotation savedPrenotation = prenotationService.savePrenotation(prenotation);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedPrenotation);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating prenotation: " + e.getMessage());
+        }
     }
     
     /**
