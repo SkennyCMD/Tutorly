@@ -178,7 +178,7 @@
           <td class="py-4">
             <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-secondary text-sm font-medium text-foreground">${lesson.classType}</span>
           </td>
-          <td class="py-4 text-muted-foreground">${new Date(lesson.startTime).toLocaleTimeString()} - ${new Date(lesson.endTime).toLocaleTimeString()}</td>
+          <td class="py-4 text-muted-foreground">${new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</td>
           <td class="py-4 text-right">
             ${lesson.status ? `<span class="text-xs px-2 py-1 rounded ${lesson.status === 'Done' ? 'bg-primary/10 text-primary' : lesson.status === 'Confirmed' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}">${lesson.status}</span>` : ''}
           </td>
@@ -194,7 +194,7 @@
             </div>
             <div>
               <p class="font-medium text-foreground">${lesson.firstName} ${lesson.lastName}</p>
-              <p class="text-sm text-muted-foreground">${new Date(lesson.startTime).toLocaleTimeString()} - ${new Date(lesson.endTime).toLocaleTimeString()}</p>
+              <p class="text-sm text-muted-foreground">${new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</p>
             </div>
           </div>
           <div class="flex items-center gap-2">

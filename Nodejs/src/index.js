@@ -275,13 +275,19 @@ app.post('/api/lessons', isAuthenticated, async (req, res) => {
         const [startHour, startMinute] = startTime.split(':');
         const [endHour, endMinute] = endTime.split(':');
         
-        const startDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(startHour), parseInt(startMinute), 0);
-        const endDateTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), parseInt(endHour), parseInt(endMinute), 0);
+        // Create datetime string in local time without UTC conversion
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const startHourPadded = String(startHour).padStart(2, '0');
+        const startMinutePadded = String(startMinute).padStart(2, '0');
+        const endHourPadded = String(endHour).padStart(2, '0');
+        const endMinutePadded = String(endMinute).padStart(2, '0');
         
         const lessonData = {
             description: description || '',
-            startTime: startDateTime.toISOString().slice(0, 19),
-            endTime: endDateTime.toISOString().slice(0, 19),
+            startTime: `${year}-${month}-${day}T${startHourPadded}:${startMinutePadded}:00`,
+            endTime: `${year}-${month}-${day}T${endHourPadded}:${endMinutePadded}:00`,
             tutorId: parseInt(tutorId),
             studentId: parseInt(studentId)
         };
@@ -438,8 +444,8 @@ app.get('/api/lessons/today', isAuthenticated, async (req, res) => {
                 firstName: student?.name || 'Unknown',
                 lastName: student?.surname || '',
                 classType: student?.studentClass || 'N/A',
-                startTime: new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                startTime: lesson.startTime,
+                endTime: lesson.endTime,
                 type: 'lesson',
                 status: 'Done'
             };
@@ -465,8 +471,8 @@ app.get('/api/lessons/today', isAuthenticated, async (req, res) => {
                 firstName: student?.name || 'Unknown',
                 lastName: student?.surname || '',
                 classType: student?.studentClass || 'N/A',
-                startTime: new Date(prenotation.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                endTime: new Date(prenotation.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                startTime: prenotation.startTime,
+                endTime: prenotation.endTime,
                 type: 'prenotation',
                 confirmed: prenotation.flag,
                 status: prenotation.flag ? 'Confirmed' : 'Pending'
