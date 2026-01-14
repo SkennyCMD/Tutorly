@@ -228,6 +228,26 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
     });
 });
 
+app.get('/calendar', isAuthenticated, async (req, res) => {
+    try {
+        // Fetch tutor data to get the role
+        const tutorData = await fetchTutorData(req.session.userId);
+        
+        res.render('calendar', {
+            username: req.session.username,
+            userId: req.session.userId,
+            role: tutorData ? tutorData.role : 'GENERIC'
+        });
+    } catch (error) {
+        console.error('Error fetching tutor data:', error);
+        res.render('calendar', {
+            username: req.session.username,
+            userId: req.session.userId,
+            role: 'GENERIC'
+        });
+    }
+});
+
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
@@ -270,24 +290,36 @@ app.post('/api/lessons', isAuthenticated, async (req, res) => {
         const { studentId, description, startTime, endTime } = req.body;
         const tutorId = req.session.userId;
         
-        // Format datetime properly (assuming time inputs are HH:MM format)
-        const today = new Date();
-        const [startHour, startMinute] = startTime.split(':');
-        const [endHour, endMinute] = endTime.split(':');
+        let startDateTime, endDateTime;
         
-        // Create datetime string in local time without UTC conversion
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const startHourPadded = String(startHour).padStart(2, '0');
-        const startMinutePadded = String(startMinute).padStart(2, '0');
-        const endHourPadded = String(endHour).padStart(2, '0');
-        const endMinutePadded = String(endMinute).padStart(2, '0');
+        // Check if startTime is already in full datetime format (YYYY-MM-DDTHH:MM:SS)
+        if (startTime.includes('T')) {
+            // Already in full format, use as is
+            startDateTime = startTime;
+            endDateTime = endTime;
+        } else {
+            // Old format (HH:MM), use today's date
+            const today = new Date();
+            const [startHour, startMinute] = startTime.split(':');
+            const [endHour, endMinute] = endTime.split(':');
+            
+            // Create datetime string in local time without UTC conversion
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const startHourPadded = String(startHour).padStart(2, '0');
+            const startMinutePadded = String(startMinute).padStart(2, '0');
+            const endHourPadded = String(endHour).padStart(2, '0');
+            const endMinutePadded = String(endMinute).padStart(2, '0');
+            
+            startDateTime = `${year}-${month}-${day}T${startHourPadded}:${startMinutePadded}:00`;
+            endDateTime = `${year}-${month}-${day}T${endHourPadded}:${endMinutePadded}:00`;
+        }
         
         const lessonData = {
             description: description || '',
-            startTime: `${year}-${month}-${day}T${startHourPadded}:${startMinutePadded}:00`,
-            endTime: `${year}-${month}-${day}T${endHourPadded}:${endMinutePadded}:00`,
+            startTime: startDateTime,
+            endTime: endDateTime,
             tutorId: parseInt(tutorId),
             studentId: parseInt(studentId)
         };
@@ -344,6 +376,103 @@ app.post('/api/lessons', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error creating lesson:', error.message);
         res.status(500).json({ error: 'Failed to create lesson' });
+    }
+});
+
+// API endpoint to create a new prenotation
+app.post('/api/prenotations', isAuthenticated, async (req, res) => {
+    try {
+        const { studentId, startTime, endTime } = req.body;
+        const tutorId = req.session.userId;
+        
+        let startDateTime, endDateTime;
+        
+        // Check if startTime is already in full datetime format (YYYY-MM-DDTHH:MM:SS)
+        if (startTime.includes('T')) {
+            // Already in full format, use as is
+            startDateTime = startTime;
+            endDateTime = endTime;
+        } else {
+            // Old format (HH:MM), use today's date
+            const today = new Date();
+            const [startHour, startMinute] = startTime.split(':');
+            const [endHour, endMinute] = endTime.split(':');
+            
+            // Create datetime string in local time without UTC conversion
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const startHourPadded = String(startHour).padStart(2, '0');
+            const startMinutePadded = String(startMinute).padStart(2, '0');
+            const endHourPadded = String(endHour).padStart(2, '0');
+            const endMinutePadded = String(endMinute).padStart(2, '0');
+            
+            startDateTime = `${year}-${month}-${day}T${startHourPadded}:${startMinutePadded}:00`;
+            endDateTime = `${year}-${month}-${day}T${endHourPadded}:${endMinutePadded}:00`;
+        }
+        
+        // Build prenotation DTO with IDs
+        const prenotationData = {
+            startTime: startDateTime,
+            endTime: endDateTime,
+            flag: false,
+            studentId: parseInt(studentId),
+            tutorId: parseInt(tutorId),
+            creatorId: parseInt(tutorId)
+        };
+        
+        console.log('Creating prenotation:', prenotationData);
+        
+        const postData = JSON.stringify(prenotationData);
+        
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: '/api/prenotations/create',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+        
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    console.log('Prenotation created successfully:', data);
+                    try {
+                        const prenotation = JSON.parse(data);
+                        res.json(prenotation);
+                    } catch (e) {
+                        res.json({ success: true, message: 'Prenotation created' });
+                    }
+                } else {
+                    console.error('Error creating prenotation, status:', httpsRes.statusCode);
+                    console.error('Response:', data);
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to create prenotation' });
+                }
+            });
+        });
+        
+        httpsReq.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            res.status(500).json({ error: 'Failed to create prenotation' });
+        });
+        
+        httpsReq.write(postData);
+        httpsReq.end();
+        
+    } catch (error) {
+        console.error('Error creating prenotation:', error.message);
+        res.status(500).json({ error: 'Failed to create prenotation' });
     }
 });
 
