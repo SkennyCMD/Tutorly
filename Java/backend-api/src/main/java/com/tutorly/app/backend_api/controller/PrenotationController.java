@@ -4,6 +4,7 @@ import com.tutorly.app.backend_api.entity.Prenotation;
 import com.tutorly.app.backend_api.entity.Student;
 import com.tutorly.app.backend_api.entity.Tutor;
 import com.tutorly.app.backend_api.dto.PrenotationCreateDTO;
+import com.tutorly.app.backend_api.dto.PrenotationResponseDTO;
 import com.tutorly.app.backend_api.service.PrenotationService;
 import com.tutorly.app.backend_api.service.StudentService;
 import com.tutorly.app.backend_api.service.TutorService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * REST Controller for Prenotation (Booking/Reservation) entity operations
@@ -81,12 +83,16 @@ public class PrenotationController {
      * Get all prenotations for a specific tutor
      * 
      * @param tutorId The tutor ID
-     * @return List of prenotations assigned to the specified tutor
+     * @return List of prenotations assigned to the specified tutor with student information
      * @apiNote GET /api/prenotations/tutor/{tutorId}
      */
     @GetMapping("/tutor/{tutorId}")
-    public ResponseEntity<List<Prenotation>> getPrenotationsByTutor(@PathVariable Long tutorId) {
-        return ResponseEntity.ok(prenotationService.getPrenotationsByTutor(tutorId));
+    public ResponseEntity<List<PrenotationResponseDTO>> getPrenotationsByTutor(@PathVariable Long tutorId) {
+        List<Prenotation> prenotations = prenotationService.getPrenotationsByTutor(tutorId);
+        List<PrenotationResponseDTO> dtos = prenotations.stream()
+                .map(PrenotationResponseDTO::new)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
     
     /**

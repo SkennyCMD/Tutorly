@@ -23,7 +23,7 @@ public interface PrenotationRepository extends JpaRepository<Prenotation, Long> 
      * @param studentId The ID of the student
      * @return List of prenotations for the specified student
      */
-    List<Prenotation> findByStudentId(Long studentId);
+    List<Prenotation> findByStudent_Id(Long studentId);
     
     /**
      * Find all prenotations assigned to a specific tutor
@@ -31,7 +31,7 @@ public interface PrenotationRepository extends JpaRepository<Prenotation, Long> 
      * @param tutorId The ID of the tutor conducting the sessions
      * @return List of prenotations assigned to the specified tutor
      */
-    List<Prenotation> findByTutorId(Long tutorId);
+    List<Prenotation> findByTutor_Id(Long tutorId);
     
     /**
      * Find all prenotations created by a specific tutor
@@ -42,7 +42,7 @@ public interface PrenotationRepository extends JpaRepository<Prenotation, Long> 
      * @param creatorId The ID of the tutor who created the prenotations
      * @return List of prenotations created by the specified tutor
      */
-    List<Prenotation> findByCreatorId(Long creatorId);
+    List<Prenotation> findByCreator_Id(Long creatorId);
     
     /**
      * Find prenotations by flag status

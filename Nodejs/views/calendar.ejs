@@ -382,6 +382,13 @@
     </div>
   </div>
 
+  <script>
+    // Pass server-side data to JavaScript
+    window.serverData = {
+      prenotations: <%- JSON.stringify(prenotations) %>,
+      calendarNotes: <%- JSON.stringify(calendarNotes) %>
+    };
+  </script>
   <script src="/js/calendarScript.js"></script>
 </body>
 </html>

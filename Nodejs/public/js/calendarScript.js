@@ -1,15 +1,56 @@
-    // Sample data
-    let events = [
-      { id: 1, type: 'lesson', firstName: 'Emma', lastName: 'Wilson', classType: 'M', date: getTodayString(), startTime: '09:00', endTime: '10:00' },
-      { id: 2, type: 'lesson', firstName: 'Lucas', lastName: 'Brown', classType: 'S', date: getTodayString(), startTime: '09:30', endTime: '10:30' },
-      { id: 3, type: 'note', description: 'Prepare exam materials', date: getTodayString(), startTime: '11:00', endTime: '12:00', assignees: ['myself'] },
-      { id: 4, type: 'lesson', firstName: 'Sofia', lastName: 'Garcia', classType: 'U', date: getTodayString(), startTime: '14:00', endTime: '15:00' },
-      { id: 5, type: 'note', description: 'Team meeting', date: getTodayString(), startTime: '14:30', endTime: '15:30', assignees: ['myself', 'emma'] },
-    ];
+    // Initialize events from server data
+    let events = [];
+    
+    // Debug: Log server data
+    console.log('Server Data:', window.serverData);
+    console.log('Prenotations:', window.serverData?.prenotations);
+    console.log('Calendar Notes:', window.serverData?.calendarNotes);
+    
+    // Convert prenotations to event format
+    if (window.serverData && window.serverData.prenotations) {
+      console.log('Converting', window.serverData.prenotations.length, 'prenotations');
+      window.serverData.prenotations.forEach(prenotation => {
+        const startDate = new Date(prenotation.startTime);
+        const endDate = new Date(prenotation.endTime);
+        
+        events.push({
+          id: prenotation.id,
+          type: 'lesson',
+          firstName: prenotation.studentName || 'Unknown',
+          lastName: prenotation.studentSurname || '',
+          classType: prenotation.studentClass || '',
+          date: startDate.toISOString().split('T')[0],
+          startTime: startDate.toTimeString().slice(0, 5),
+          endTime: endDate.toTimeString().slice(0, 5)
+        });
+      });
+    }
+    
+    // Convert calendar notes to event format
+    if (window.serverData && window.serverData.calendarNotes) {
+      console.log('Converting', window.serverData.calendarNotes.length, 'calendar notes');
+      window.serverData.calendarNotes.forEach(note => {
+        const startDate = new Date(note.startTime);
+        const endDate = new Date(note.endTime);
+        
+        events.push({
+          id: note.id,
+          type: 'note',
+          description: note.description,
+          date: startDate.toISOString().split('T')[0],
+          startTime: startDate.toTimeString().slice(0, 5),
+          endTime: endDate.toTimeString().slice(0, 5),
+          assignees: ['myself'] // Default assignees
+        });
+      });
+    }
+
+    console.log('Total events loaded:', events.length);
+    console.log('Events:', events);
 
     let currentWeekStart = getWeekStart(new Date());
     let currentMobileDate = new Date();
-    let eventIdCounter = 6;
+    let eventIdCounter = events.length > 0 ? Math.max(...events.map(e => e.id)) + 1 : 1;
     
     let allStudents = [];
     let filteredStudents = [];
@@ -176,15 +217,32 @@
       // Clear existing events
       document.querySelectorAll('.event').forEach(el => el.remove());
       
-      // Group events by date and time slot for overlap handling
-      const eventsByDateAndTime = {};
+      // Helper function to check if two events overlap
+      function eventsOverlap(event1, event2) {
+        if (event1.date !== event2.date) return false;
+        
+        const start1 = parseInt(event1.startTime.replace(':', ''));
+        const end1 = parseInt(event1.endTime.replace(':', ''));
+        const start2 = parseInt(event2.startTime.replace(':', ''));
+        const end2 = parseInt(event2.endTime.replace(':', ''));
+        
+        return start1 < end2 && start2 < end1;
+      }
       
+      // Group overlapping events
+      const eventGroups = [];
       events.forEach(event => {
-        const key = `${event.date}-${event.startTime.split(':')[0]}`;
-        if (!eventsByDateAndTime[key]) {
-          eventsByDateAndTime[key] = [];
+        let addedToGroup = false;
+        for (let group of eventGroups) {
+          if (group.some(e => eventsOverlap(e, event))) {
+            group.push(event);
+            addedToGroup = true;
+            break;
+          }
         }
-        eventsByDateAndTime[key].push(event);
+        if (!addedToGroup) {
+          eventGroups.push([event]);
+        }
       });
       
       events.forEach(event => {
@@ -197,15 +255,21 @@
         const heightPx = (duration / 60) * 60; // 60px per hour
         const topOffset = (startMinutes / 60) * 60;
         
-        // Find overlapping events
-        const key = `${event.date}-${startHour}`;
-        const overlapping = eventsByDateAndTime[key] || [];
-        const eventIndex = overlapping.indexOf(event);
-        const totalOverlapping = overlapping.length;
+        // Find the group this event belongs to
+        let overlappingGroup = [];
+        for (let group of eventGroups) {
+          if (group.includes(event)) {
+            overlappingGroup = group;
+            break;
+          }
+        }
+        
+        const eventIndex = overlappingGroup.indexOf(event);
+        const totalOverlapping = overlappingGroup.length;
         
         // Calculate width and left position for overlapping events
-        const widthPercent = totalOverlapping > 1 ? (100 / totalOverlapping) - 2 : 100;
-        const leftPercent = eventIndex * (100 / totalOverlapping);
+        const widthPercent = totalOverlapping > 1 ? (100 / totalOverlapping) - 1 : 98;
+        const leftPercent = totalOverlapping > 1 ? eventIndex * (100 / totalOverlapping) : 1;
         
         const cell = document.querySelector(`.day-column[data-date="${event.date}"][data-hour="${startHour}"]`);
         
@@ -215,22 +279,19 @@
           eventEl.style.top = `${topOffset}px`;
           eventEl.style.height = `${heightPx}px`;
           eventEl.style.minHeight = '20px';
-          
-          if (totalOverlapping > 1) {
-            eventEl.style.width = `${widthPercent}%`;
-            eventEl.style.left = `${leftPercent}%`;
-            eventEl.style.right = 'auto';
-          }
+          eventEl.style.width = `${widthPercent}%`;
+          eventEl.style.left = `${leftPercent}%`;
+          eventEl.style.right = 'auto';
           
           if (event.type === 'lesson') {
             eventEl.innerHTML = `
               <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
-              <div class="opacity-75">${event.classType} · ${event.startTime}</div>
+              <div class="opacity-75 truncate">${event.classType} · ${event.startTime}</div>
             `;
           } else {
             eventEl.innerHTML = `
               <div class="font-medium truncate">${event.description}</div>
-              <div class="opacity-75">${event.startTime}</div>
+              <div class="opacity-75 truncate">${event.startTime}</div>
             `;
           }
           
@@ -274,14 +335,30 @@
       const dateStr = formatDate(currentMobileDate);
       const dayEvents = events.filter(e => e.date === dateStr);
       
-      // Group by start hour for overlap handling
-      const eventsByHour = {};
+      // Helper function to check if two events overlap
+      function eventsOverlap(event1, event2) {
+        const start1 = parseInt(event1.startTime.replace(':', ''));
+        const end1 = parseInt(event1.endTime.replace(':', ''));
+        const start2 = parseInt(event2.startTime.replace(':', ''));
+        const end2 = parseInt(event2.endTime.replace(':', ''));
+        
+        return start1 < end2 && start2 < end1;
+      }
+      
+      // Group overlapping events
+      const eventGroups = [];
       dayEvents.forEach(event => {
-        const hour = event.startTime.split(':')[0];
-        if (!eventsByHour[hour]) {
-          eventsByHour[hour] = [];
+        let addedToGroup = false;
+        for (let group of eventGroups) {
+          if (group.some(e => eventsOverlap(e, event))) {
+            group.push(event);
+            addedToGroup = true;
+            break;
+          }
         }
-        eventsByHour[hour].push(event);
+        if (!addedToGroup) {
+          eventGroups.push([event]);
+        }
       });
       
       dayEvents.forEach(event => {
@@ -294,14 +371,20 @@
         const heightPx = (duration / 60) * 60;
         const topOffset = (startMinutes / 60) * 60;
         
-        // Handle overlapping
-        const hour = event.startTime.split(':')[0];
-        const overlapping = eventsByHour[hour] || [];
-        const eventIndex = overlapping.indexOf(event);
-        const totalOverlapping = overlapping.length;
+        // Find the group this event belongs to
+        let overlappingGroup = [];
+        for (let group of eventGroups) {
+          if (group.includes(event)) {
+            overlappingGroup = group;
+            break;
+          }
+        }
         
-        const widthPercent = totalOverlapping > 1 ? (100 / totalOverlapping) - 2 : 100;
-        const leftPercent = eventIndex * (100 / totalOverlapping);
+        const eventIndex = overlappingGroup.indexOf(event);
+        const totalOverlapping = overlappingGroup.length;
+        
+        const widthPercent = totalOverlapping > 1 ? (100 / totalOverlapping) - 1 : 98;
+        const leftPercent = totalOverlapping > 1 ? eventIndex * (100 / totalOverlapping) : 1;
         
         const cell = document.querySelector(`.day-column[data-date="${dateStr}"][data-hour="${startHour}"][data-mobile="true"]`);
         
@@ -311,22 +394,19 @@
           eventEl.style.top = `${topOffset}px`;
           eventEl.style.height = `${heightPx}px`;
           eventEl.style.minHeight = '20px';
-          
-          if (totalOverlapping > 1) {
-            eventEl.style.width = `${widthPercent}%`;
-            eventEl.style.left = `${leftPercent}%`;
-            eventEl.style.right = 'auto';
-          }
+          eventEl.style.width = `${widthPercent}%`;
+          eventEl.style.left = `${leftPercent}%`;
+          eventEl.style.right = 'auto';
           
           if (event.type === 'lesson') {
             eventEl.innerHTML = `
               <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
-              <div class="opacity-75">${event.classType} · ${event.startTime} - ${event.endTime}</div>
+              <div class="opacity-75 truncate">${event.classType} · ${event.startTime} - ${event.endTime}</div>
             `;
           } else {
             eventEl.innerHTML = `
               <div class="font-medium truncate">${event.description}</div>
-              <div class="opacity-75">${event.startTime} - ${event.endTime}</div>
+              <div class="opacity-75 truncate">${event.startTime} - ${event.endTime}</div>
             `;
           }
           

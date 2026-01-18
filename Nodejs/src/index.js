@@ -201,6 +201,55 @@ function fetchTutorData(tutorId) {
     });
 }
 
+/**
+ * Generic function to fetch data from Java backend API
+ * @param {string} path - API path (e.g., '/api/prenotations')
+ * @returns {Promise<any|null>} Parsed JSON data if successful, null otherwise
+ */
+function fetchFromJavaAPI(path) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: path,
+            method: 'GET',
+            headers: {
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    if (res.statusCode === 200) {
+                        resolve(JSON.parse(data));
+                    } else {
+                        console.error(`Error fetching ${path}: ${res.statusCode}`);
+                        resolve(null);
+                    }
+                } catch (error) {
+                    console.error(`Error parsing data from ${path}:`, error);
+                    resolve(null);
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            console.error(`Error fetching from ${path}:`, error);
+            reject(error);
+        });
+
+        req.end();
+    });
+}
+
 app.get('/home', isAuthenticated, async (req, res) => {
     try {
         // Fetch tutor data to get the role
@@ -233,17 +282,28 @@ app.get('/calendar', isAuthenticated, async (req, res) => {
         // Fetch tutor data to get the role
         const tutorData = await fetchTutorData(req.session.userId);
         
+        // Fetch prenotations and calendar notes for the logged-in tutor
+        const tutorId = req.session.userId;
+        const [prenotations, calendarNotes] = await Promise.all([
+            fetchFromJavaAPI(`/api/prenotations/tutor/${tutorId}`),
+            fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`)
+        ]);
+        
         res.render('calendar', {
             username: req.session.username,
             userId: req.session.userId,
-            role: tutorData ? tutorData.role : 'GENERIC'
+            role: tutorData ? tutorData.role : 'GENERIC',
+            prenotations: prenotations || [],
+            calendarNotes: calendarNotes || []
         });
     } catch (error) {
-        console.error('Error fetching tutor data:', error);
+        console.error('Error fetching calendar data:', error);
         res.render('calendar', {
             username: req.session.username,
             userId: req.session.userId,
-            role: 'GENERIC'
+            role: 'GENERIC',
+            prenotations: [],
+            calendarNotes: []
         });
     }
 });

@@ -48,7 +48,7 @@ public class PrenotationService {
      * @return List of prenotations for the specified student
      */
     public List<Prenotation> getPrenotationsByStudent(Long studentId) {
-        return prenotationRepository.findByStudentId(studentId);
+        return prenotationRepository.findByStudent_Id(studentId);
     }
     
     /**
@@ -58,7 +58,7 @@ public class PrenotationService {
      * @return List of prenotations assigned to the specified tutor
      */
     public List<Prenotation> getPrenotationsByTutor(Long tutorId) {
-        return prenotationRepository.findByTutorId(tutorId);
+        return prenotationRepository.findByTutor_Id(tutorId);
     }
     
     /**
@@ -70,7 +70,7 @@ public class PrenotationService {
      * @return List of prenotations created by the specified tutor
      */
     public List<Prenotation> getPrenotationsByCreator(Long creatorId) {
-        return prenotationRepository.findByCreatorId(creatorId);
+        return prenotationRepository.findByCreator_Id(creatorId);
     }
     
     /**
