@@ -115,12 +115,14 @@ function setupEventListeners() {
     // Search
     document.getElementById('searchInput').addEventListener('input', (e) => {
     searchTerm = e.target.value.toLowerCase();
+    renderStatistics();
     renderLessons();
     });
 
     document.getElementById('searchInputMobile').addEventListener('input', (e) => {
     searchTerm = e.target.value.toLowerCase();
     document.getElementById('searchInput').value = e.target.value;
+    renderStatistics();
     renderLessons();
     });
 }
@@ -139,9 +141,18 @@ function renderStatistics() {
     const month = statsDate.getMonth();
     const year = statsDate.getFullYear();
 
+    // Filter lessons by month/year and search term
     const monthLessons = lessons.filter(l => {
     const lessonDate = new Date(l.date);
-    return lessonDate.getMonth() === month && lessonDate.getFullYear() === year && l.status === 'completed';
+    const matchesDate = lessonDate.getMonth() === month && lessonDate.getFullYear() === year && l.status === 'completed';
+    
+    // If search term exists, filter by student name
+    if (searchTerm) {
+        const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
+        return matchesDate && fullName.includes(searchTerm);
+    }
+    
+    return matchesDate;
     });
 
     let totalMinutes = 0;
@@ -185,7 +196,7 @@ function renderLessons() {
     .filter(l => {
         if (!searchTerm) return true;
         const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
-        return fullName.includes(searchTerm) || l.classType.toLowerCase().includes(searchTerm);
+        return fullName.includes(searchTerm);
     })
     .sort((a, b) => {
         const dateA = new Date(`${a.date}T${a.startTime}`);
@@ -295,10 +306,7 @@ function renderBookedLessons() {
 
 function formatTime(time) {
     const [hours, minutes] = time.split(':');
-    const h = parseInt(hours);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const hour12 = h % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+    return `${hours}:${minutes}`;
 }
 
 function calculateDuration(start, end) {
