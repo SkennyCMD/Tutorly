@@ -325,52 +325,8 @@
             <label class="block text-sm font-medium text-foreground">Assign To</label>
             <button type="button" onclick="assignToMyself()" class="text-xs text-primary hover:underline">Assign to myself</button>
           </div>
-          <div class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
-            <label class="checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors">
-              <input type="checkbox" name="assignees" value="myself" class="w-4 h-4 rounded border-border bg-background accent-primary">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 bg-primary/20 rounded-full flex items-center justify-center">
-                  <span class="text-xs font-medium text-primary">JD</span>
-                </div>
-                <span class="text-sm text-foreground">John Doe (You)</span>
-              </div>
-            </label>
-            <label class="checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors">
-              <input type="checkbox" name="assignees" value="emma" class="w-4 h-4 rounded border-border bg-background accent-primary">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 bg-blue-500/20 rounded-full flex items-center justify-center">
-                  <span class="text-xs font-medium text-blue-400">EW</span>
-                </div>
-                <span class="text-sm text-foreground">Emma Wilson</span>
-              </div>
-            </label>
-            <label class="checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors">
-              <input type="checkbox" name="assignees" value="lucas" class="w-4 h-4 rounded border-border bg-background accent-primary">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 bg-green-500/20 rounded-full flex items-center justify-center">
-                  <span class="text-xs font-medium text-green-400">LB</span>
-                </div>
-                <span class="text-sm text-foreground">Lucas Brown</span>
-              </div>
-            </label>
-            <label class="checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors">
-              <input type="checkbox" name="assignees" value="sofia" class="w-4 h-4 rounded border-border bg-background accent-primary">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 bg-pink-500/20 rounded-full flex items-center justify-center">
-                  <span class="text-xs font-medium text-pink-400">SG</span>
-                </div>
-                <span class="text-sm text-foreground">Sofia Garcia</span>
-              </div>
-            </label>
-            <label class="checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors">
-              <input type="checkbox" name="assignees" value="alex" class="w-4 h-4 rounded border-border bg-background accent-primary">
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 bg-purple-500/20 rounded-full flex items-center justify-center">
-                  <span class="text-xs font-medium text-purple-400">AM</span>
-                </div>
-                <span class="text-sm text-foreground">Alex Martinez</span>
-              </div>
-            </label>
+          <div id="assigneesContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
+            <!-- Tutors will be loaded dynamically -->
           </div>
         </div>
 
@@ -386,7 +342,9 @@
     // Pass server-side data to JavaScript
     window.serverData = {
       prenotations: <%- JSON.stringify(prenotations) %>,
-      calendarNotes: <%- JSON.stringify(calendarNotes) %>
+      calendarNotes: <%- JSON.stringify(calendarNotes) %>,
+      currentUserId: <%= userId %>,
+      userRole: '<%= role %>'
     };
   </script>
   <script src="/js/calendarScript.js"></script>

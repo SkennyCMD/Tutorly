@@ -1,5 +1,6 @@
 package com.tutorly.app.backend_api.controller;
 
+import com.tutorly.app.backend_api.dto.CalendarNoteCreateDTO;
 import com.tutorly.app.backend_api.entity.CalendarNote;
 import com.tutorly.app.backend_api.service.CalendarNoteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,14 +99,18 @@ public class CalendarNoteController {
     /**
      * Create a new calendar note
      * 
-     * @param calendarNote The calendar note data to create
+     * @param dto The calendar note data to create (with IDs)
      * @return Created calendar note with 201 Created status
      * @apiNote POST /api/calendar-notes
      */
     @PostMapping
-    public ResponseEntity<CalendarNote> createCalendarNote(@RequestBody CalendarNote calendarNote) {
-        CalendarNote savedCalendarNote = calendarNoteService.saveCalendarNote(calendarNote);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedCalendarNote);
+    public ResponseEntity<CalendarNote> createCalendarNote(@RequestBody CalendarNoteCreateDTO dto) {
+        try {
+            CalendarNote savedCalendarNote = calendarNoteService.createCalendarNoteFromDTO(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedCalendarNote);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
     
     /**

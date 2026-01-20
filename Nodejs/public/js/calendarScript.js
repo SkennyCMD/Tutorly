@@ -88,6 +88,7 @@
       setupEventListeners();
       setDefaultDates();
       loadStudents();
+      loadTutors();
     });
     
     // Load students from API
@@ -104,6 +105,72 @@
       } catch (error) {
         console.error('Error loading students:', error);
       }
+    }
+
+    // Load tutors from API for assignees
+    async function loadTutors() {
+      try {
+        const response = await fetch('/api/tutors');
+        if (response.ok) {
+          const tutors = await response.json();
+          updateAssigneesContainer(tutors);
+        } else {
+          console.error('Failed to load tutors:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error loading tutors:', error);
+      }
+    }
+
+    // Update assignees container with tutor data
+    function updateAssigneesContainer(tutors) {
+      const container = document.getElementById('assigneesContainer');
+      if (!container) return;
+      
+      const currentUserId = window.serverData?.currentUserId;
+      const userRole = window.serverData?.userRole;
+      const isStaff = userRole === 'STAFF';
+      
+      const colors = [
+        'bg-primary/20 text-primary',
+        'bg-blue-500/20 text-blue-400',
+        'bg-green-500/20 text-green-400',
+        'bg-pink-500/20 text-pink-400',
+        'bg-purple-500/20 text-purple-400',
+        'bg-orange-500/20 text-orange-400',
+        'bg-teal-500/20 text-teal-400'
+      ];
+      
+      container.innerHTML = '';
+      
+      // Filter tutors based on role
+      const filteredTutors = isStaff ? tutors : tutors.filter(t => t.id === currentUserId);
+      
+      if (filteredTutors.length === 0) {
+        container.innerHTML = '<p class="text-sm text-muted p-3">No tutors available to assign.</p>';
+        return;
+      }
+      
+      filteredTutors.forEach((tutor, index) => {
+        const colorClass = colors[index % colors.length];
+        const initials = (tutor.name?.substring(0, 1) || '') + (tutor.surname?.substring(0, 1) || '');
+        const displayName = tutor.username + (tutor.id === currentUserId ? ' (You)' : '');
+        
+        const label = document.createElement('label');
+        label.className = 'checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors';
+        
+        label.innerHTML = `
+          <input type="checkbox" name="assignees" value="${tutor.id}" class="w-4 h-4 rounded border-border bg-background accent-primary">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 ${colorClass} rounded-full flex items-center justify-center">
+              <span class="text-xs font-medium">${initials.toUpperCase()}</span>
+            </div>
+            <span class="text-sm text-foreground">${displayName}</span>
+          </div>
+        `;
+        
+        container.appendChild(label);
+      });
     }
 
     // Update student dropdown
@@ -500,7 +567,10 @@
     }
 
     function assignToMyself() {
-      const myselfCheckbox = document.querySelector('input[name="assignees"][value="myself"]');
+      const currentUserId = window.serverData?.currentUserId;
+      if (!currentUserId) return;
+      
+      const myselfCheckbox = document.querySelector(`input[name="assignees"][value="${currentUserId}"]`);
       if (myselfCheckbox) {
         myselfCheckbox.checked = true;
       }
@@ -573,24 +643,70 @@
       }
     }
 
-    function handleNoteSubmit(e) {
+    async function handleNoteSubmit(e) {
       e.preventDefault();
       
+      const description = document.getElementById('noteDescription').value;
+      const noteDate = document.getElementById('noteDate').value;
+      const startTime = document.getElementById('noteStartTime').value;
+      const endTime = document.getElementById('noteEndTime').value;
+      
+      if (!description) {
+        alert('Please enter a description');
+        return;
+      }
+      
+      if (!startTime || !endTime) {
+        alert('Please enter start and end times');
+        return;
+      }
+      
+      // Get selected assignee tutor IDs
       const assigneeCheckboxes = document.querySelectorAll('input[name="assignees"]:checked');
-      const assignees = Array.from(assigneeCheckboxes).map(cb => cb.value);
+      const tutorIds = Array.from(assigneeCheckboxes).map(cb => parseInt(cb.value));
       
-      const newNote = {
-        id: eventIdCounter++,
-        type: 'note',
-        description: document.getElementById('noteDescription').value,
-        date: document.getElementById('noteDate').value,
-        startTime: document.getElementById('noteStartTime').value,
-        endTime: document.getElementById('noteEndTime').value,
-        assignees: assignees
-      };
+      // Prepare datetime with the selected date
+      const [year, month, day] = noteDate.split('-');
+      const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
+      const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
       
-      events.push(newNote);
-      closeNoteModal();
-      renderWeekView();
-      renderMobileDayView();
+      try {
+        const response = await fetch('/api/calendar-notes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            description,
+            startTime: startDateTime,
+            endTime: endDateTime,
+            tutorIds: tutorIds
+          })
+        });
+        
+        if (response.ok) {
+          alert('Calendar note created successfully!');
+          closeNoteModal();
+          
+          // Add to local events for immediate display
+          const newNote = {
+            id: eventIdCounter++,
+            type: 'note',
+            description: description,
+            date: noteDate,
+            startTime: startTime,
+            endTime: endTime,
+            assignees: tutorIds
+          };
+          events.push(newNote);
+          renderWeekView();
+          renderMobileDayView();
+        } else {
+          const error = await response.json();
+          alert('Failed to create calendar note: ' + (error.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error creating calendar note:', error);
+        alert('Failed to create calendar note. Please try again.');
+      }
     }

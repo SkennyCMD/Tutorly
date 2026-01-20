@@ -1,13 +1,18 @@
 package com.tutorly.app.backend_api.service;
 
+import com.tutorly.app.backend_api.dto.CalendarNoteCreateDTO;
 import com.tutorly.app.backend_api.entity.CalendarNote;
+import com.tutorly.app.backend_api.entity.Tutor;
 import com.tutorly.app.backend_api.repository.CalendarNoteRepository;
+import com.tutorly.app.backend_api.repository.TutorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service layer for CalendarNote entity business logic
@@ -21,6 +26,9 @@ public class CalendarNoteService {
     
     @Autowired
     private CalendarNoteRepository calendarNoteRepository;
+    
+    @Autowired
+    private TutorRepository tutorRepository;
     
     /**
      * Retrieve all calendar notes
@@ -75,6 +83,39 @@ public class CalendarNoteService {
      */
     public List<CalendarNote> getCalendarNotesByDateRange(LocalDateTime start, LocalDateTime end) {
         return calendarNoteRepository.findByStartTimeBetween(start, end);
+    }
+    
+    /**
+     * Create a calendar note from a DTO with IDs
+     * 
+     * @param dto The DTO containing description, times, creator ID, and tutor IDs
+     * @return The created calendar note
+     * @throws RuntimeException if creator or any tutor is not found
+     */
+    public CalendarNote createCalendarNoteFromDTO(CalendarNoteCreateDTO dto) {
+        // Find creator
+        Tutor creator = tutorRepository.findById(dto.getCreatorId())
+                .orElseThrow(() -> new RuntimeException("Creator tutor not found with ID: " + dto.getCreatorId()));
+        
+        // Create calendar note
+        CalendarNote note = new CalendarNote();
+        note.setDescription(dto.getDescription());
+        note.setStartTime(dto.getStartTime());
+        note.setEndTime(dto.getEndTime());
+        note.setCreator(creator);
+        
+        // Find and assign tutors if provided
+        if (dto.getTutorIds() != null && !dto.getTutorIds().isEmpty()) {
+            Set<Tutor> tutors = new HashSet<>();
+            for (Long tutorId : dto.getTutorIds()) {
+                Tutor tutor = tutorRepository.findById(tutorId)
+                        .orElseThrow(() -> new RuntimeException("Tutor not found with ID: " + tutorId));
+                tutors.add(tutor);
+            }
+            note.setTutors(tutors);
+        }
+        
+        return calendarNoteRepository.save(note);
     }
     
     /**

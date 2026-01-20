@@ -333,6 +333,17 @@ app.get('/api/auth/status', (req, res) => {
     }
 });
 
+// API endpoint to get all tutors
+app.get('/api/tutors', isAuthenticated, async (req, res) => {
+    try {
+        const tutors = await fetchFromJavaAPI('/api/tutors');
+        res.json(tutors);
+    } catch (error) {
+        console.error('Error fetching tutors:', error);
+        res.status(500).json({ error: 'Failed to fetch tutors' });
+    }
+});
+
 // API endpoint to get all students
 app.get('/api/students', isAuthenticated, async (req, res) => {
     try {
@@ -533,6 +544,80 @@ app.post('/api/prenotations', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error creating prenotation:', error.message);
         res.status(500).json({ error: 'Failed to create prenotation' });
+    }
+});
+
+// API endpoint to create a new calendar note
+app.post('/api/calendar-notes', isAuthenticated, async (req, res) => {
+    try {
+        const { description, startTime, endTime, tutorIds } = req.body;
+        const creatorId = req.session.userId;
+        
+        if (!description || !startTime || !endTime) {
+            return res.status(400).json({ error: 'Description, start time, and end time are required' });
+        }
+        
+        // Build calendar note data with DTO format
+        const calendarNoteData = {
+            description: description,
+            startTime: startTime,
+            endTime: endTime,
+            creatorId: parseInt(creatorId),
+            tutorIds: tutorIds || [] // Empty array if no tutors selected
+        };
+        
+        console.log('Creating calendar note:', calendarNoteData);
+        
+        const postData = JSON.stringify(calendarNoteData);
+        
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: '/api/calendar-notes',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+        
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    console.log('Calendar note created successfully:', data);
+                    try {
+                        const note = JSON.parse(data);
+                        res.json(note);
+                    } catch (e) {
+                        res.json({ success: true, message: 'Calendar note created' });
+                    }
+                } else {
+                    console.error('Error creating calendar note, status:', httpsRes.statusCode);
+                    console.error('Response:', data);
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to create calendar note' });
+                }
+            });
+        });
+        
+        httpsReq.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            res.status(500).json({ error: 'Failed to create calendar note' });
+        });
+        
+        httpsReq.write(postData);
+        httpsReq.end();
+        
+    } catch (error) {
+        console.error('Error creating calendar note:', error.message);
+        res.status(500).json({ error: 'Failed to create calendar note' });
     }
 });
 
