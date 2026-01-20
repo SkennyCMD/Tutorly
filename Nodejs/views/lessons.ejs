@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tutorly - Dashboard</title>
+  <title>Tutorly - My Lessons</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -28,7 +28,7 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/lessons.css">
 </head>
 <body class="bg-background text-foreground min-h-screen">
   
@@ -48,15 +48,25 @@
           <span class="text-xl font-bold text-foreground">Tutorly</span>
         </a>
 
+        <!-- Search Bar (Center - Desktop) -->
+        <div class="hidden md:flex flex-1 max-w-md mx-8">
+          <div class="relative w-full">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search lessons..." class="w-full pl-10 pr-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+        </div>
+
         <!-- Desktop Navigation -->
         <nav class="hidden md:flex items-center gap-6">
           <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
           <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors">Calendar</a>
-          <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors">My Lessons</a>
+          <a href="/lessons" class="text-foreground font-medium">My Lessons</a>
         </nav>
 
         <!-- User Menu (Desktop) -->
-        <div class="hidden md:flex items-center gap-4">
+        <div class="hidden md:flex items-center gap-4 ml-6">
           <div class="w-9 h-9 bg-secondary rounded-full flex items-center justify-center">
             <span class="text-sm font-medium text-foreground">JD</span>
           </div>
@@ -94,7 +104,7 @@
       </button>
     </div>
     <nav class="p-4 flex flex-col gap-2">
-      <a href="/home" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
+      <a href="/home" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
         </svg>
@@ -106,7 +116,7 @@
         </svg>
         Calendar
       </a>
-      <a href="/lessons" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+      <a href="/lessons" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
         </svg>
@@ -118,11 +128,21 @@
   <!-- Main Content -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
     
-    <!-- Page Title -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <!-- Mobile Search Bar -->
+    <div class="md:hidden mb-4">
+      <div class="relative w-full">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="text" id="searchInputMobile" placeholder="Search lessons..." class="w-full pl-10 pr-4 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+      </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-foreground">Welcome back</h1>
-        <p class="text-muted-foreground mt-1">Here's your schedule for today</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-foreground">My Lessons</h1>
+        <p class="text-muted-foreground mt-1">Manage your teaching history</p>
       </div>
       <button id="addLessonBtn" class="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,79 +152,105 @@
       </button>
     </div>
 
-    <!-- Dashboard Grid -->
+    <!-- Main Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
-      <!-- Calendar Card -->
-      <div class="lg:col-span-1 bg-card border border-border rounded-xl p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-foreground">Today's Tasks</h2>
-          <span class="text-sm text-muted-foreground" id="currentDate"></span>
-        </div>
+      <!-- Left Column: Stats & Booked -->
+      <div class="lg:col-span-1 space-y-6">
         
-        <!-- Mini Calendar -->
-        <div class="mb-4">
-          <div class="flex items-center justify-between mb-3">
-            <button id="prevMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-              <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-              </svg>
-            </button>
-            <span id="calendarMonth" class="text-sm font-medium text-foreground"></span>
-            <button id="nextMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-              <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </button>
+        <!-- Statistics Card -->
+        <div class="bg-card border border-border rounded-xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-foreground">Statistics</h2>
+            <div class="flex items-center gap-2">
+              <button id="prevStatsMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+                <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <span id="statsMonth" class="text-sm font-medium text-foreground min-w-24 text-center"></span>
+              <button id="nextStatsMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+                <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
           </div>
-          <div class="grid grid-cols-7 gap-1 text-center text-xs mb-2">
-            <span class="text-muted-foreground py-1">Mo</span>
-            <span class="text-muted-foreground py-1">Tu</span>
-            <span class="text-muted-foreground py-1">We</span>
-            <span class="text-muted-foreground py-1">Th</span>
-            <span class="text-muted-foreground py-1">Fr</span>
-            <span class="text-muted-foreground py-1">Sa</span>
-            <span class="text-muted-foreground py-1">Su</span>
+          
+          <!-- Total Hours -->
+          <div class="bg-secondary rounded-lg p-4 mb-4">
+            <div class="flex items-center justify-between">
+              <span class="text-muted-foreground text-sm">Total Hours</span>
+              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <p id="totalHours" class="text-3xl font-bold text-foreground mt-2">0h</p>
           </div>
-          <div id="calendarDays" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
+          
+          <!-- Hours by Class -->
+          <div class="space-y-3">
+            <h3 class="text-sm font-medium text-muted-foreground">Hours by Class</h3>
+            
+            <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <span class="text-sm font-bold text-blue-400">M</span>
+                </div>
+                <span class="text-foreground">Middle School</span>
+              </div>
+              <span id="hoursM" class="font-semibold text-foreground">0h</span>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <span class="text-sm font-bold text-green-400">S</span>
+                </div>
+                <span class="text-foreground">Senior High</span>
+              </div>
+              <span id="hoursS" class="font-semibold text-foreground">0h</span>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <span class="text-sm font-bold text-purple-400">U</span>
+                </div>
+                <span class="text-foreground">University</span>
+              </div>
+              <span id="hoursU" class="font-semibold text-foreground">0h</span>
+            </div>
+          </div>
         </div>
 
-        <!-- Tasks List -->
-        <div class="border-t border-border pt-4">
-          <h3 class="text-sm font-medium text-muted-foreground mb-3">Tasks</h3>
-          <div id="tasksList" class="space-y-2">
-            <!-- Tasks will be rendered here -->
+        <!-- Booked Lessons Card -->
+        <div class="bg-card border border-border rounded-xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-foreground">Booked Lessons</h2>
+            <span id="bookedCount" class="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">0</span>
+          </div>
+          
+          <div id="bookedList" class="space-y-3 max-h-80 overflow-y-auto scrollbar-thin">
+            <!-- Booked lessons will be rendered here -->
+          </div>
+          
+          <div id="emptyBooked" class="hidden py-8 text-center">
+            <p class="text-muted-foreground text-sm">No booked lessons</p>
           </div>
         </div>
       </div>
 
-      <!-- Lessons Card -->
+      <!-- Right Column: Lessons History -->
       <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-foreground">Today's Lessons</h2>
-          <span id="lessonCount" class="text-sm text-muted-foreground"></span>
+          <h2 class="text-lg font-semibold text-foreground">Lessons History</h2>
+          <span id="lessonsCount" class="text-sm text-muted-foreground">0 lessons</span>
         </div>
 
-        <!-- Lessons Table (Desktop) -->
-        <div class="hidden sm:block overflow-x-auto">
-          <table class="w-full">
-            <thead>
-              <tr class="text-left text-sm text-muted-foreground border-b border-border">
-                <th class="pb-3 font-medium">Student</th>
-                <th class="pb-3 font-medium">Class</th>
-                <th class="pb-3 font-medium">Time</th>
-                <th class="pb-3 font-medium text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody id="lessonsTableBody" class="divide-y divide-border">
-              <!-- Lessons will be rendered here -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Lessons List (Mobile) -->
-        <div id="lessonsMobileList" class="sm:hidden space-y-3">
-          <!-- Mobile lessons will be rendered here -->
+        <!-- Lessons List -->
+        <div id="lessonsList" class="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-thin">
+          <!-- Lessons will be rendered here -->
         </div>
 
         <!-- Empty State -->
@@ -214,7 +260,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
             </svg>
           </div>
-          <p class="text-muted-foreground">No lessons scheduled for today</p>
+          <p class="text-muted-foreground">No lessons found</p>
           <button onclick="openModal()" class="mt-4 text-primary hover:underline text-sm">Add your first lesson</button>
         </div>
       </div>
@@ -277,6 +323,6 @@
   </div>
 
   <script src="/js/modalShared.js"></script>
-  <script src="/js/homeScript.js"></script>
+  <script src="/js/lessonsScript.js"></script>
 </body>
 </html>

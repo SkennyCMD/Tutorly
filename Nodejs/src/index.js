@@ -308,6 +308,26 @@ app.get('/calendar', isAuthenticated, async (req, res) => {
     }
 });
 
+app.get('/lessons', isAuthenticated, async (req, res) => {
+    try {
+        // Fetch tutor data to get the role
+        const tutorData = await fetchTutorData(req.session.userId);
+        
+        res.render('lessons', {
+            username: req.session.username,
+            userId: req.session.userId,
+            role: tutorData ? tutorData.role : 'GENERIC'
+        });
+    } catch (error) {
+        console.error('Error fetching tutor data:', error);
+        res.render('lessons', {
+            username: req.session.username,
+            userId: req.session.userId,
+            role: 'GENERIC'
+        });
+    }
+});
+
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
@@ -358,13 +378,25 @@ app.get('/api/students', isAuthenticated, async (req, res) => {
 // API endpoint to create a new lesson
 app.post('/api/lessons', isAuthenticated, async (req, res) => {
     try {
-        const { studentId, description, startTime, endTime } = req.body;
+        const { studentId, description, lessonDate, startTime, endTime } = req.body;
         const tutorId = req.session.userId;
         
         let startDateTime, endDateTime;
         
-        // Check if startTime is already in full datetime format (YYYY-MM-DDTHH:MM:SS)
-        if (startTime.includes('T')) {
+        // Check if lessonDate is provided
+        if (lessonDate) {
+            // Use the provided date
+            const [startHour, startMinute] = startTime.split(':');
+            const [endHour, endMinute] = endTime.split(':');
+            
+            const startHourPadded = String(startHour).padStart(2, '0');
+            const startMinutePadded = String(startMinute).padStart(2, '0');
+            const endHourPadded = String(endHour).padStart(2, '0');
+            const endMinutePadded = String(endMinute).padStart(2, '0');
+            
+            startDateTime = `${lessonDate}T${startHourPadded}:${startMinutePadded}:00`;
+            endDateTime = `${lessonDate}T${endHourPadded}:${endMinutePadded}:00`;
+        } else if (startTime.includes('T')) {
             // Already in full format, use as is
             startDateTime = startTime;
             endDateTime = endTime;
@@ -667,6 +699,76 @@ app.get('/api/tasks/today', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error fetching tasks:', error);
         res.status(500).json({ error: 'Failed to fetch tasks' });
+    }
+});
+
+// API endpoint to get all lessons for the logged-in tutor
+app.get('/api/lessons', isAuthenticated, async (req, res) => {
+    try {
+        const tutorId = req.session.userId;
+        
+        // Fetch all lessons for this tutor
+        const allLessons = await fetchAllLessons();
+        
+        // Filter by tutor ID
+        const lessons = allLessons.filter(lesson => lesson.tutorId === tutorId);
+        
+        // Fetch student data for each lesson
+        const lessonsWithStudents = await Promise.all(lessons.map(async lesson => {
+            const studentId = lesson.studentId;
+            const student = studentId ? await fetchStudentData(studentId) : null;
+            
+            return {
+                id: lesson.id,
+                firstName: student?.name || 'Unknown',
+                lastName: student?.surname || '',
+                classType: student?.studentClass || 'M',
+                startTime: lesson.startTime,
+                endTime: lesson.endTime,
+                description: lesson.description || ''
+            };
+        }));
+        
+        res.json(lessonsWithStudents);
+    } catch (error) {
+        console.error('Error fetching lessons:', error);
+        res.status(500).json({ error: 'Failed to fetch lessons' });
+    }
+});
+
+// API endpoint to get all prenotations for the logged-in tutor
+app.get('/api/prenotations', isAuthenticated, async (req, res) => {
+    try {
+        const tutorId = req.session.userId;
+        
+        // Fetch all prenotations for this tutor
+        const allPrenotations = await fetchAllPrenotations();
+        
+        // Filter by tutor ID
+        const prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId);
+        
+        // Fetch student data for each prenotation
+        const prenotationsWithStudents = await Promise.all(prenotations.map(async prenotation => {
+            const studentId = prenotation.studentId;
+            const student = studentId ? await fetchStudentData(studentId) : null;
+            
+            return {
+                id: prenotation.id,
+                firstName: student?.name || 'Unknown',
+                lastName: student?.surname || '',
+                classType: student?.studentClass || 'M',
+                startTime: prenotation.startTime,
+                endTime: prenotation.endTime,
+                createdAt: prenotation.createdAt,
+                flag: prenotation.flag,
+                confirmed: prenotation.flag
+            };
+        }));
+        
+        res.json(prenotationsWithStudents);
+    } catch (error) {
+        console.error('Error fetching prenotations:', error);
+        res.status(500).json({ error: 'Failed to fetch prenotations' });
     }
 });
 

@@ -1,8 +1,6 @@
 // Sample data
     let lessons = [];
     let tasks = [];
-    let allStudents = [];
-    let filteredStudents = [];
 
     let currentDate = new Date();
     let calendarDate = new Date();
@@ -13,48 +11,9 @@
       renderCalendar();
       loadTasks();
       loadLessons();
-      loadStudents();
+      initializeModal(loadLessons); // Use shared modal initialization
       setupEventListeners();
     });
-
-    // Load students from API
-    async function loadStudents() {
-      try {
-        const response = await fetch('/api/students');
-        if (response.ok) {
-          allStudents = await response.json();
-          filteredStudents = allStudents;
-          updateStudentDropdown();
-        } else {
-          console.error('Failed to load students:', response.statusText);
-        }
-      } catch (error) {
-        console.error('Error loading students:', error);
-      }
-    }
-
-    // Update student dropdown
-    function updateStudentDropdown() {
-      const select = document.getElementById('studentSelect');
-      select.innerHTML = '<option value="">-- Select a student --</option>';
-      
-      filteredStudents.forEach(student => {
-        const option = document.createElement('option');
-        option.value = student.id;
-        option.textContent = `${student.name} ${student.surname} (${student.studentClass})`;
-        select.appendChild(option);
-      });
-    }
-
-    // Filter students based on search
-    function filterStudents(searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filteredStudents = allStudents.filter(student => {
-        const fullName = `${student.name} ${student.surname}`.toLowerCase();
-        return fullName.includes(term);
-      });
-      updateStudentDropdown();
-    }
 
     // Load tasks from API
     async function loadTasks() {
@@ -235,75 +194,4 @@
         calendarDate.setMonth(calendarDate.getMonth() + 1);
         renderCalendar();
       });
-      
-      // Add lesson modal
-      document.getElementById('addLessonBtn').addEventListener('click', openModal);
-      
-      // Student search
-      document.getElementById('studentSearch').addEventListener('input', (e) => {
-        filterStudents(e.target.value);
-      });
-      
-      // Form submission
-      document.getElementById('lessonForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const studentId = document.getElementById('studentSelect').value;
-        const description = document.getElementById('description').value;
-        const startTime = document.getElementById('startTime').value;
-        const endTime = document.getElementById('endTime').value;
-        
-        if (!studentId) {
-          alert('Please select a student');
-          return;
-        }
-        
-        if (!startTime || !endTime) {
-          alert('Please enter start and end times');
-          return;
-        }
-        
-        try {
-          const response = await fetch('/api/lessons', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              studentId,
-              description,
-              startTime,
-              endTime
-            })
-          });
-          
-          if (response.ok) {
-            alert('Lesson created successfully!');
-            closeModal();
-            e.target.reset();
-            // Reload lessons to show the new one
-            await loadLessons();
-          } else {
-            const error = await response.json();
-            alert('Failed to create lesson: ' + (error.error || 'Unknown error'));
-          }
-        } catch (error) {
-          console.error('Error creating lesson:', error);
-          alert('Failed to create lesson. Please try again.');
-        }
-      });
-    }
-
-    function openModal() {
-      document.getElementById('addLessonModal').classList.add('open');
-      document.body.style.overflow = 'hidden';
-      // Reset search when opening modal
-      document.getElementById('studentSearch').value = '';
-      filteredStudents = allStudents;
-      updateStudentDropdown();
-    }
-
-    function closeModal() {
-      document.getElementById('addLessonModal').classList.remove('open');
-      document.body.style.overflow = '';
     }
