@@ -3,6 +3,8 @@ let lessons = [];
 let prenotations = [];
 let statsDate = new Date();
 let searchTerm = '';
+let totalLessonsCount = 0;
+let loadedLessonsCount = 0;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,14 +21,17 @@ async function loadLessonsAndPrenotations() {
     await loadPrenotations();
 }
 
-// Load lessons from API
+// Load lessons from API (all lessons for statistics, paginated for display)
 async function loadLessons() {
     try {
-        const response = await fetch('/api/lessons');
+        // Load first 20 lessons for display
+        const response = await fetch('/api/lessons?limit=20&offset=0');
         if (response.ok) {
             const data = await response.json();
+            totalLessonsCount = data.total;
+            
             // Transform API data to match our format
-            lessons = data.map(lesson => ({
+            lessons = data.lessons.map(lesson => ({
                 id: lesson.id,
                 firstName: lesson.firstName || 'Unknown',
                 lastName: lesson.lastName || '',
@@ -36,6 +41,12 @@ async function loadLessons() {
                 endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
                 status: determineStatus(lesson.startTime, lesson.endTime)
             }));
+            
+            loadedLessonsCount = lessons.length;
+            
+            // Load all lessons for statistics (without pagination)
+            await loadAllLessonsForStats();
+            
             renderStatistics();
             renderLessons();
             renderBookedLessons();
@@ -44,6 +55,29 @@ async function loadLessons() {
         }
     } catch (error) {
         console.error('Error loading lessons:', error);
+    }
+}
+
+// Load all lessons for statistics calculation
+let allLessonsForStats = [];
+async function loadAllLessonsForStats() {
+    try {
+        const response = await fetch('/api/lessons'); // No pagination params = all lessons
+        if (response.ok) {
+            const data = await response.json();
+            allLessonsForStats = data.lessons.map(lesson => ({
+                id: lesson.id,
+                firstName: lesson.firstName || 'Unknown',
+                lastName: lesson.lastName || '',
+                classType: lesson.classType || 'M',
+                date: lesson.startTime.split('T')[0],
+                startTime: new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                status: determineStatus(lesson.startTime, lesson.endTime)
+            }));
+        }
+    } catch (error) {
+        console.error('Error loading all lessons for stats:', error);
     }
 }
 
@@ -141,8 +175,8 @@ function renderStatistics() {
     const month = statsDate.getMonth();
     const year = statsDate.getFullYear();
 
-    // Filter lessons by month/year and search term
-    const monthLessons = lessons.filter(l => {
+    // Filter lessons by month/year and search term (use all lessons for accurate stats)
+    const monthLessons = allLessonsForStats.filter(l => {
     const lessonDate = new Date(l.date);
     const matchesDate = lessonDate.getMonth() === month && lessonDate.getFullYear() === year && l.status === 'completed';
     
@@ -190,21 +224,25 @@ function renderLessons() {
     const emptyState = document.getElementById('emptyLessons');
     const countEl = document.getElementById('lessonsCount');
 
-    // Filter and sort lessons (most recent first, completed only for history)
+    // Filter lessons (already sorted by server, completed only for history)
     let filteredLessons = lessons
     .filter(l => l.status === 'completed')
     .filter(l => {
         if (!searchTerm) return true;
         const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
         return fullName.includes(searchTerm);
-    })
-    .sort((a, b) => {
-        const dateA = new Date(`${a.date}T${a.startTime}`);
-        const dateB = new Date(`${b.date}T${b.startTime}`);
-        return dateB - dateA;
     });
 
-    countEl.textContent = `${filteredLessons.length} lesson${filteredLessons.length !== 1 ? 's' : ''}`;
+    // Calculate total from allLessonsForStats for accurate count
+    const totalCompletedWithSearch = allLessonsForStats
+        .filter(l => l.status === 'completed')
+        .filter(l => {
+            if (!searchTerm) return true;
+            const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
+            return fullName.includes(searchTerm);
+        }).length;
+
+    countEl.textContent = `${totalCompletedWithSearch} lesson${totalCompletedWithSearch !== 1 ? 's' : ''}`;
 
     if (filteredLessons.length === 0) {
     container.innerHTML = '';
@@ -214,7 +252,7 @@ function renderLessons() {
 
     emptyState.classList.add('hidden');
 
-    container.innerHTML = filteredLessons.map(lesson => {
+    const lessonsHTML = filteredLessons.map(lesson => {
     const classColors = {
         'M': 'bg-blue-500/20 text-blue-400',
         'S': 'bg-green-500/20 text-green-400',
@@ -242,6 +280,50 @@ function renderLessons() {
         </div>
     `;
     }).join('');
+
+    // Add load more button if there are more lessons to load from server
+    const completedLoaded = lessons.filter(l => l.status === 'completed').length;
+    const completedTotal = allLessonsForStats.filter(l => l.status === 'completed').length;
+    
+    if (loadedLessonsCount < totalLessonsCount) {
+        lessonsHTML += `
+            <div class="text-center py-4">
+                <button onclick="loadMoreLessons()" class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">
+                    Load More (${completedTotal - completedLoaded} more available)
+                </button>
+            </div>
+        `;
+    }
+
+    container.innerHTML = lessonsHTML;
+}
+
+async function loadMoreLessons() {
+    try {
+        const response = await fetch(`/api/lessons?limit=20&offset=${loadedLessonsCount}`);
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Transform and append new lessons
+            const newLessons = data.lessons.map(lesson => ({
+                id: lesson.id,
+                firstName: lesson.firstName || 'Unknown',
+                lastName: lesson.lastName || '',
+                classType: lesson.classType || 'M',
+                date: lesson.startTime.split('T')[0],
+                startTime: new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                status: determineStatus(lesson.startTime, lesson.endTime)
+            }));
+            
+            lessons = lessons.concat(newLessons);
+            loadedLessonsCount += newLessons.length;
+            
+            renderLessons();
+        }
+    } catch (error) {
+        console.error('Error loading more lessons:', error);
+    }
 }
 
 function renderBookedLessons() {

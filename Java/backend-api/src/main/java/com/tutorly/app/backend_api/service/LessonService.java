@@ -48,7 +48,7 @@ public class LessonService {
      * @return List of lessons conducted by the specified tutor
      */
     public List<Lesson> getLessonsByTutor(Long tutorId) {
-        return lessonRepository.findByTutorId(tutorId);
+        return lessonRepository.findByTutor_Id(tutorId);
     }
     
     /**
@@ -58,7 +58,7 @@ public class LessonService {
      * @return List of lessons attended by the specified student
      */
     public List<Lesson> getLessonsByStudent(Long studentId) {
-        return lessonRepository.findByStudentId(studentId);
+        return lessonRepository.findByStudent_Id(studentId);
     }
     
     /**
@@ -72,7 +72,7 @@ public class LessonService {
      * @return List of lessons between the specified tutor and student
      */
     public List<Lesson> getLessonsByTutorAndStudent(Long tutorId, Long studentId) {
-        return lessonRepository.findByTutorIdAndStudentId(tutorId, studentId);
+        return lessonRepository.findByTutor_IdAndStudent_Id(tutorId, studentId);
     }
     
     /**

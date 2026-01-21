@@ -23,7 +23,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
      * @param tutorId The ID of the tutor
      * @return List of lessons conducted by the specified tutor
      */
-    List<Lesson> findByTutorId(Long tutorId);
+    List<Lesson> findByTutor_Id(Long tutorId);
     
     /**
      * Find all lessons attended by a specific student
@@ -31,7 +31,7 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
      * @param studentId The ID of the student
      * @return List of lessons attended by the specified student
      */
-    List<Lesson> findByStudentId(Long studentId);
+    List<Lesson> findByStudent_Id(Long studentId);
     
     /**
      * Find lessons within a specific date/time range
@@ -55,5 +55,5 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
      * @param studentId The ID of the student
      * @return List of lessons between the specified tutor and student
      */
-    List<Lesson> findByTutorIdAndStudentId(Long tutorId, Long studentId);
+    List<Lesson> findByTutor_IdAndStudent_Id(Long tutorId, Long studentId);
 }

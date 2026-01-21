@@ -78,6 +78,59 @@ public class LessonController {
     }
     
     /**
+     * Get paginated lessons for a specific tutor
+     * 
+     * @param tutorId The tutor ID
+     * @param limit Maximum number of lessons to return (optional)
+     * @param offset Number of lessons to skip (optional, default 0)
+     * @return JSON object with lessons array, total count, limit, and offset
+     * @apiNote GET /api/lessons/tutor/{tutorId}/paginated?limit=20&offset=0
+     */
+    @GetMapping("/tutor/{tutorId}/paginated")
+    public ResponseEntity<?> getLessonsByTutorPaginated(
+            @PathVariable Long tutorId,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(defaultValue = "0") Integer offset) {
+        
+        List<Lesson> allLessons = lessonService.getLessonsByTutor(tutorId);
+        int totalCount = allLessons.size();
+        
+        // Sort by startTime descending (most recent first)
+        allLessons.sort((a, b) -> b.getStartTime().compareTo(a.getStartTime()));
+        
+        // Apply pagination if limit is specified
+        List<Lesson> paginatedLessons;
+        if (limit != null && limit > 0) {
+            int fromIndex = Math.min(offset, allLessons.size());
+            int toIndex = Math.min(offset + limit, allLessons.size());
+            paginatedLessons = allLessons.subList(fromIndex, toIndex);
+        } else {
+            paginatedLessons = allLessons;
+        }
+        
+        // Convert to simple DTOs to avoid serialization issues
+        var lessonDTOs = paginatedLessons.stream().map(lesson -> {
+            var dto = new java.util.HashMap<String, Object>();
+            dto.put("id", lesson.getId());
+            dto.put("description", lesson.getDescription());
+            dto.put("startTime", lesson.getStartTime());
+            dto.put("endTime", lesson.getEndTime());
+            dto.put("tutorId", lesson.getTutor() != null ? lesson.getTutor().getId() : null);
+            dto.put("studentId", lesson.getStudent() != null ? lesson.getStudent().getId() : null);
+            return dto;
+        }).toList();
+        
+        // Build response JSON
+        var response = new java.util.HashMap<String, Object>();
+        response.put("lessons", lessonDTOs);
+        response.put("total", totalCount);
+        response.put("limit", limit);
+        response.put("offset", offset);
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
      * Get all lessons for a specific student
      * 
      * @param studentId The student ID

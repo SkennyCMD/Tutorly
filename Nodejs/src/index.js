@@ -706,12 +706,22 @@ app.get('/api/tasks/today', isAuthenticated, async (req, res) => {
 app.get('/api/lessons', isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
+        const limit = parseInt(req.query.limit) || null;
+        const offset = parseInt(req.query.offset) || 0;
         
-        // Fetch all lessons for this tutor
-        const allLessons = await fetchAllLessons();
+        let lessonsData;
         
-        // Filter by tutor ID
-        const lessons = allLessons.filter(lesson => lesson.tutorId === tutorId);
+        // Call Java API with pagination parameters
+        if (limit !== null) {
+            // Paginated request
+            lessonsData = await callJavaAPI(`/api/lessons/tutor/${tutorId}/paginated?limit=${limit}&offset=${offset}`, 'GET');
+        } else {
+            // Request all lessons
+            lessonsData = await callJavaAPI(`/api/lessons/tutor/${tutorId}/paginated`, 'GET');
+        }
+        
+        const lessons = lessonsData.lessons || [];
+        const totalCount = lessonsData.total || 0;
         
         // Fetch student data for each lesson
         const lessonsWithStudents = await Promise.all(lessons.map(async lesson => {
@@ -729,7 +739,12 @@ app.get('/api/lessons', isAuthenticated, async (req, res) => {
             };
         }));
         
-        res.json(lessonsWithStudents);
+        res.json({
+            lessons: lessonsWithStudents,
+            total: totalCount,
+            limit: limit,
+            offset: offset
+        });
     } catch (error) {
         console.error('Error fetching lessons:', error);
         res.status(500).json({ error: 'Failed to fetch lessons' });
@@ -1011,6 +1026,62 @@ function fetchLessonsByTutor(tutorId) {
             console.error('Error fetching lessons:', error);
             reject(error);
         });
+
+        req.end();
+    });
+}
+
+/**
+ * Generic function to call Java backend API
+ * @param {string} path - API path (e.g., '/api/lessons/tutor/1/paginated?limit=20')
+ * @param {string} method - HTTP method (GET, POST, PUT, DELETE)
+ * @param {object} body - Request body for POST/PUT requests (optional)
+ * @returns {Promise<any>} JSON response from Java API
+ */
+function callJavaAPI(path, method = 'GET', body = null) {
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: path,
+            method: method,
+            headers: {
+                'X-API-Key': JAVA_API_KEY,
+                'Content-Type': 'application/json'
+            },
+            rejectUnauthorized: false
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    if (res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve(JSON.parse(data));
+                    } else {
+                        console.error(`Java API error (${res.statusCode}):`, data);
+                        resolve(method === 'GET' ? [] : null);
+                    }
+                } catch (error) {
+                    console.error('Error parsing Java API response:', error);
+                    resolve(method === 'GET' ? [] : null);
+                }
+            });
+        });
+
+        req.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            reject(error);
+        });
+
+        if (body) {
+            req.write(JSON.stringify(body));
+        }
 
         req.end();
     });
