@@ -606,23 +606,8 @@
           alert('Prenotation created successfully!');
           closeLessonModal();
           
-          // Add to local events for immediate display
-          const student = allStudents.find(s => s.id === parseInt(studentId));
-          if (student) {
-            const newLesson = {
-              id: eventIdCounter++,
-              type: 'lesson',
-              firstName: student.name,
-              lastName: student.surname,
-              classType: student.studentClass,
-              date: lessonDate,
-              startTime: startTime,
-              endTime: endTime
-            };
-            events.push(newLesson);
-            renderWeekView();
-            renderMobileDayView();
-          }
+          // Reload page to refresh server-rendered data
+          window.location.reload();
         } else {
           const error = await response.json();
           alert('Failed to create prenotation: ' + (error.error || 'Unknown error'));
@@ -678,19 +663,8 @@
           alert('Calendar note created successfully!');
           closeNoteModal();
           
-          // Add to local events for immediate display
-          const newNote = {
-            id: eventIdCounter++,
-            type: 'note',
-            description: description,
-            date: noteDate,
-            startTime: startTime,
-            endTime: endTime,
-            assignees: tutorIds
-          };
-          events.push(newNote);
-          renderWeekView();
-          renderMobileDayView();
+          // Reload page to refresh server-rendered data
+          window.location.reload();
         } else {
           const error = await response.json();
           alert('Failed to create calendar note: ' + (error.error || 'Unknown error'));

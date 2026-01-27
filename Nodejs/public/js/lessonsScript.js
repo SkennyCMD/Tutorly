@@ -11,8 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStatsMonth();
     loadLessons();
     loadPrenotations();
-    initializeModal(loadLessonsAndPrenotations); // Use shared modal initialization
     setupEventListeners();
+    
+    // Initialize modal with page reload callback
+    initializeModal(() => {
+        window.location.reload();
+    });
 });
 
 // Reload both lessons and prenotations
@@ -21,88 +25,60 @@ async function loadLessonsAndPrenotations() {
     await loadPrenotations();
 }
 
-// Load lessons from API (all lessons for statistics, paginated for display)
+// Load lessons from server-rendered data
 async function loadLessons() {
     try {
-        // Load first 20 lessons for display
-        const response = await fetch('/api/lessons?limit=20&offset=0');
-        if (response.ok) {
-            const data = await response.json();
-            totalLessonsCount = data.total;
-            
-            // Transform API data to match our format
-            lessons = data.lessons.map(lesson => ({
-                id: lesson.id,
-                firstName: lesson.firstName || 'Unknown',
-                lastName: lesson.lastName || '',
-                classType: lesson.classType || 'M',
-                date: lesson.startTime.split('T')[0],
-                startTime: new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                status: determineStatus(lesson.startTime, lesson.endTime)
-            }));
-            
-            loadedLessonsCount = lessons.length;
-            
-            // Load all lessons for statistics (without pagination)
-            await loadAllLessonsForStats();
-            
-            renderStatistics();
-            renderLessons();
-            renderBookedLessons();
-        } else {
-            console.error('Failed to load lessons:', response.statusText);
-        }
+        // Get lessons from window.initialLessons
+        const lessonsData = window.initialLessons || [];
+        totalLessonsCount = window.totalLessonsCount || 0;
+        
+        // Transform data to match display format
+        lessons = lessonsData.map(lesson => ({
+            id: lesson.id,
+            firstName: lesson.firstName || 'Unknown',
+            lastName: lesson.lastName || '',
+            classType: lesson.classType || 'M',
+            date: lesson.startTime.split('T')[0],
+            startTime: new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            status: determineStatus(lesson.startTime, lesson.endTime)
+        }));
+        
+        loadedLessonsCount = lessons.length;
+        
+        // Use same data for statistics
+        allLessonsForStats = [...lessons];
+        
+        renderStatistics();
+        renderLessons();
+        renderBookedLessons();
     } catch (error) {
         console.error('Error loading lessons:', error);
     }
 }
 
-// Load all lessons for statistics calculation
+// All lessons data for statistics (same as lessons now)
 let allLessonsForStats = [];
-async function loadAllLessonsForStats() {
-    try {
-        const response = await fetch('/api/lessons'); // No pagination params = all lessons
-        if (response.ok) {
-            const data = await response.json();
-            allLessonsForStats = data.lessons.map(lesson => ({
-                id: lesson.id,
-                firstName: lesson.firstName || 'Unknown',
-                lastName: lesson.lastName || '',
-                classType: lesson.classType || 'M',
-                date: lesson.startTime.split('T')[0],
-                startTime: new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                status: determineStatus(lesson.startTime, lesson.endTime)
-            }));
-        }
-    } catch (error) {
-        console.error('Error loading all lessons for stats:', error);
-    }
-}
 
-// Load prenotations from API
+// Load prenotations from server-rendered data
 async function loadPrenotations() {
     try {
-        const response = await fetch('/api/prenotations');
-        if (response.ok) {
-            const data = await response.json();
-            // Transform API data to match our format
-            prenotations = data.map(prenotation => ({
-                id: prenotation.id,
-                firstName: prenotation.firstName || 'Unknown',
-                lastName: prenotation.lastName || '',
-                classType: prenotation.classType || 'M',
-                date: prenotation.startTime.split('T')[0],
-                startTime: new Date(prenotation.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                endTime: new Date(prenotation.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                confirmed: prenotation.confirmed || false,
-                status: 'booked'
-            }));
-            renderBookedLessons();
-        } else {
-            console.error('Failed to load prenotations:', response.statusText);
-        }
+        // Get prenotations from window.initialPrenotations
+        const data = window.initialPrenotations || [];
+        
+        // Transform data to match display format
+        prenotations = data.map(prenotation => ({
+            id: prenotation.id,
+            firstName: prenotation.firstName || 'Unknown',
+            lastName: prenotation.lastName || '',
+            classType: prenotation.classType || 'M',
+            date: prenotation.startTime.split('T')[0],
+            startTime: new Date(prenotation.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            endTime: new Date(prenotation.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            confirmed: prenotation.confirmed || false,
+            status: 'booked'
+        }));
+        renderBookedLessons();
     } catch (error) {
         console.error('Error loading prenotations:', error);
     }
@@ -299,31 +275,8 @@ function renderLessons() {
 }
 
 async function loadMoreLessons() {
-    try {
-        const response = await fetch(`/api/lessons?limit=20&offset=${loadedLessonsCount}`);
-        if (response.ok) {
-            const data = await response.json();
-            
-            // Transform and append new lessons
-            const newLessons = data.lessons.map(lesson => ({
-                id: lesson.id,
-                firstName: lesson.firstName || 'Unknown',
-                lastName: lesson.lastName || '',
-                classType: lesson.classType || 'M',
-                date: lesson.startTime.split('T')[0],
-                startTime: new Date(lesson.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                status: determineStatus(lesson.startTime, lesson.endTime)
-            }));
-            
-            lessons = lessons.concat(newLessons);
-            loadedLessonsCount += newLessons.length;
-            
-            renderLessons();
-        }
-    } catch (error) {
-        console.error('Error loading more lessons:', error);
-    }
+    // No longer needed - all lessons are loaded initially from server-rendered data
+    console.log('All lessons already loaded');
 }
 
 function renderBookedLessons() {

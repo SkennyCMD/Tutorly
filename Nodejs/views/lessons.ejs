@@ -325,6 +325,9 @@
   <script>
     // Pass server-rendered data to JavaScript
     window.allStudents = <%- JSON.stringify(students) %>;
+    window.initialLessons = <%- JSON.stringify(lessons) %>;
+    window.totalLessonsCount = <%= totalLessons %>;
+    window.initialPrenotations = <%- JSON.stringify(prenotations) %>;
   </script>
   <script src="/js/modalShared.js"></script>
   <script src="/js/lessonsScript.js"></script>

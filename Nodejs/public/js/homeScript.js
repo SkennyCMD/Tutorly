@@ -11,8 +11,12 @@
       renderCalendar();
       loadTasks();
       loadLessons();
-      initializeModal(loadLessons); // Use shared modal initialization
       setupEventListeners();
+      
+      // Initialize modal with page reload callback to refresh server-rendered data
+      initializeModal(() => {
+        window.location.reload();
+      });
     });
 
     // Load tasks from initial data (server-rendered)

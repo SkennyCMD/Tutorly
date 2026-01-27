@@ -432,25 +432,71 @@ app.get('/lessons', isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
         
-        // Fetch tutor data and students
-        const [tutorData, students] = await Promise.all([
+        // Fetch all required data in parallel
+        const [tutorData, students, allLessonsData, allPrenotations] = await Promise.all([
             fetchTutorData(tutorId),
-            fetchAllStudents()
+            fetchAllStudents(),
+            callJavaAPI(`/api/lessons/tutor/${tutorId}/paginated`, 'GET'),
+            fetchAllPrenotations()
         ]);
+        
+        const allLessons = allLessonsData.lessons || [];
+        const totalCount = allLessonsData.total || 0;
+        
+        // Enrich lessons with student data
+        const lessonsWithStudents = await Promise.all(allLessons.map(async lesson => {
+            const studentId = lesson.studentId;
+            const student = studentId ? await fetchStudentData(studentId) : null;
+            
+            return {
+                id: lesson.id,
+                firstName: student?.name || 'Unknown',
+                lastName: student?.surname || '',
+                classType: student?.studentClass || 'M',
+                startTime: lesson.startTime,
+                endTime: lesson.endTime,
+                description: lesson.description || ''
+            };
+        }));
+        
+        // Filter prenotations by tutor ID and enrich with student data
+        const tutorPrenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId);
+        const prenotationsWithStudents = await Promise.all(tutorPrenotations.map(async prenotation => {
+            const studentId = prenotation.studentId;
+            const student = studentId ? await fetchStudentData(studentId) : null;
+            
+            return {
+                id: prenotation.id,
+                firstName: student?.name || 'Unknown',
+                lastName: student?.surname || '',
+                classType: student?.studentClass || 'M',
+                startTime: prenotation.startTime,
+                endTime: prenotation.endTime,
+                createdAt: prenotation.createdAt,
+                flag: prenotation.flag,
+                confirmed: prenotation.flag
+            };
+        }));
         
         res.render('lessons', {
             username: req.session.username,
             userId: req.session.userId,
             role: tutorData ? tutorData.role : 'GENERIC',
-            students: students || []
+            students: students || [],
+            lessons: lessonsWithStudents,
+            totalLessons: totalCount,
+            prenotations: prenotationsWithStudents
         });
     } catch (error) {
-        console.error('Error fetching tutor data:', error);
+        console.error('Error fetching lessons data:', error);
         res.render('lessons', {
             username: req.session.username,
             userId: req.session.userId,
             role: 'GENERIC',
-            students: []
+            students: [],
+            lessons: [],
+            totalLessons: 0,
+            prenotations: []
         });
     }
 });
@@ -767,89 +813,9 @@ app.post('/api/calendar-notes', isAuthenticated, async (req, res) => {
 // Endpoint removed - tasks are now rendered server-side in /home route
 
 // API endpoint to get all lessons for the logged-in tutor
-app.get('/api/lessons', isAuthenticated, async (req, res) => {
-    try {
-        const tutorId = req.session.userId;
-        const limit = parseInt(req.query.limit) || null;
-        const offset = parseInt(req.query.offset) || 0;
-        
-        let lessonsData;
-        
-        // Call Java API with pagination parameters
-        if (limit !== null) {
-            // Paginated request
-            lessonsData = await callJavaAPI(`/api/lessons/tutor/${tutorId}/paginated?limit=${limit}&offset=${offset}`, 'GET');
-        } else {
-            // Request all lessons
-            lessonsData = await callJavaAPI(`/api/lessons/tutor/${tutorId}/paginated`, 'GET');
-        }
-        
-        const lessons = lessonsData.lessons || [];
-        const totalCount = lessonsData.total || 0;
-        
-        // Fetch student data for each lesson
-        const lessonsWithStudents = await Promise.all(lessons.map(async lesson => {
-            const studentId = lesson.studentId;
-            const student = studentId ? await fetchStudentData(studentId) : null;
-            
-            return {
-                id: lesson.id,
-                firstName: student?.name || 'Unknown',
-                lastName: student?.surname || '',
-                classType: student?.studentClass || 'M',
-                startTime: lesson.startTime,
-                endTime: lesson.endTime,
-                description: lesson.description || ''
-            };
-        }));
-        
-        res.json({
-            lessons: lessonsWithStudents,
-            total: totalCount,
-            limit: limit,
-            offset: offset
-        });
-    } catch (error) {
-        console.error('Error fetching lessons:', error);
-        res.status(500).json({ error: 'Failed to fetch lessons' });
-    }
-});
+// Endpoint removed - lessons are now rendered server-side in /lessons route
 
-// API endpoint to get all prenotations for the logged-in tutor
-app.get('/api/prenotations', isAuthenticated, async (req, res) => {
-    try {
-        const tutorId = req.session.userId;
-        
-        // Fetch all prenotations for this tutor
-        const allPrenotations = await fetchAllPrenotations();
-        
-        // Filter by tutor ID
-        const prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId);
-        
-        // Fetch student data for each prenotation
-        const prenotationsWithStudents = await Promise.all(prenotations.map(async prenotation => {
-            const studentId = prenotation.studentId;
-            const student = studentId ? await fetchStudentData(studentId) : null;
-            
-            return {
-                id: prenotation.id,
-                firstName: student?.name || 'Unknown',
-                lastName: student?.surname || '',
-                classType: student?.studentClass || 'M',
-                startTime: prenotation.startTime,
-                endTime: prenotation.endTime,
-                createdAt: prenotation.createdAt,
-                flag: prenotation.flag,
-                confirmed: prenotation.flag
-            };
-        }));
-        
-        res.json(prenotationsWithStudents);
-    } catch (error) {
-        console.error('Error fetching prenotations:', error);
-        res.status(500).json({ error: 'Failed to fetch prenotations' });
-    }
-});
+// Endpoint removed - prenotations are now rendered server-side in /calendar and /lessons routes
 
 // API endpoint to get today's lessons (lessons + prenotations) for the logged-in tutor
 // Endpoint removed - lessons are now rendered server-side in /home route
