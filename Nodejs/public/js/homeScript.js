@@ -15,34 +15,22 @@
       setupEventListeners();
     });
 
-    // Load tasks from API
+    // Load tasks from initial data (server-rendered)
     async function loadTasks() {
       try {
-        const response = await fetch('/api/tasks/today');
-        if (response.ok) {
-          tasks = await response.json();
-          renderTasks();
-        } else {
-          console.error('Failed to load tasks:', response.statusText);
-          renderTasks(); // Render empty state
-        }
+        tasks = window.initialTasks || [];
+        renderTasks();
       } catch (error) {
         console.error('Error loading tasks:', error);
         renderTasks(); // Render empty state
       }
     }
 
-    // Load lessons from API
+    // Load lessons from initial data (server-rendered)
     async function loadLessons() {
       try {
-        const response = await fetch('/api/lessons/today');
-        if (response.ok) {
-          lessons = await response.json();
-          renderLessons();
-        } else {
-          console.error('Failed to load lessons:', response.statusText);
-          renderLessons(); // Render empty state
-        }
+        lessons = window.initialLessons || [];
+        renderLessons();
       } catch (error) {
         console.error('Error loading lessons:', error);
         renderLessons(); // Render empty state

@@ -252,20 +252,110 @@ function fetchFromJavaAPI(path) {
 
 app.get('/home', isAuthenticated, async (req, res) => {
     try {
+        const tutorId = req.session.userId;
+        
         // Fetch tutor data to get the role
-        const tutorData = await fetchTutorData(req.session.userId);
+        const tutorData = await fetchTutorData(tutorId);
+        const isStaff = tutorData && tutorData.role === 'STAFF';
+        
+        // Get today's date range
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        const startTime = startOfDay.toISOString().slice(0, 19);
+        const endTime = endOfDay.toISOString().slice(0, 19);
+        
+        // Fetch tasks (calendar notes)
+        let calendarNotes = [];
+        if (isStaff) {
+            calendarNotes = await fetchCalendarNotesByDateRange(startTime, endTime);
+        } else {
+            const allNotes = await fetchCalendarNotesByTutor(tutorId);
+            calendarNotes = allNotes.filter(note => {
+                const noteStart = new Date(note.startTime);
+                return noteStart >= startOfDay && noteStart <= endOfDay;
+            });
+        }
+        
+        const tasks = calendarNotes.map(note => ({
+            id: note.id,
+            text: note.description || 'No description',
+            completed: false,
+            startTime: note.startTime,
+            endTime: note.endTime
+        }));
+        
+        // Fetch lessons and prenotations
+        const allLessons = await fetchAllLessons();
+        const allPrenotations = await fetchAllPrenotations();
+        
+        const lessons = allLessons.filter(lesson => lesson.tutorId === tutorId);
+        const prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId);
+        
+        // Filter to only today's lessons and fetch student data
+        const todayLessonsPromises = lessons.filter(lesson => {
+            const lessonStart = new Date(lesson.startTime);
+            return lessonStart >= startOfDay && lessonStart <= endOfDay;
+        }).map(async lesson => {
+            const studentId = lesson.studentId;
+            const student = studentId ? await fetchStudentData(studentId) : null;
+            
+            return {
+                id: `lesson-${lesson.id}`,
+                firstName: student?.name || 'Unknown',
+                lastName: student?.surname || '',
+                classType: student?.studentClass || 'N/A',
+                startTime: lesson.startTime,
+                endTime: lesson.endTime,
+                type: 'lesson',
+                status: 'Done'
+            };
+        });
+        
+        // Filter to only today's prenotations and fetch student data
+        const todayPrenotationsPromises = prenotations.filter(prenotation => {
+            const prenotationStart = new Date(prenotation.startTime);
+            return prenotationStart >= startOfDay && prenotationStart <= endOfDay;
+        }).map(async prenotation => {
+            const studentId = prenotation.studentId;
+            const student = studentId ? await fetchStudentData(studentId) : null;
+            
+            return {
+                id: `prenotation-${prenotation.id}`,
+                firstName: student?.name || 'Unknown',
+                lastName: student?.surname || '',
+                classType: student?.studentClass || 'N/A',
+                startTime: prenotation.startTime,
+                endTime: prenotation.endTime,
+                type: 'prenotation',
+                confirmed: prenotation.flag,
+                status: prenotation.flag ? 'Confirmed' : 'Pending'
+            };
+        });
+        
+        const todayLessons = await Promise.all(todayLessonsPromises);
+        const todayPrenotations = await Promise.all(todayPrenotationsPromises);
+        
+        // Combine and sort by start time
+        const combinedLessons = [...todayLessons, ...todayPrenotations].sort((a, b) => {
+            return a.startTime.localeCompare(b.startTime);
+        });
         
         res.render('home', {
             username: req.session.username,
             userId: req.session.userId,
-            role: tutorData ? tutorData.role : 'GENERIC'
+            role: tutorData ? tutorData.role : 'GENERIC',
+            tasks: tasks,
+            lessons: combinedLessons
         });
     } catch (error) {
-        console.error('Error fetching tutor data:', error);
+        console.error('Error fetching home data:', error);
         res.render('home', {
             username: req.session.username,
             userId: req.session.userId,
-            role: 'GENERIC'
+            role: 'GENERIC',
+            tasks: [],
+            lessons: []
         });
     }
 });
@@ -654,53 +744,7 @@ app.post('/api/calendar-notes', isAuthenticated, async (req, res) => {
 });
 
 // API endpoint to get today's tasks (calendar notes) for the logged-in tutor
-app.get('/api/tasks/today', isAuthenticated, async (req, res) => {
-    try {
-        const tutorId = req.session.userId;
-        
-        // Fetch tutor data to check role
-        const tutorData = await fetchTutorData(tutorId);
-        const isStaff = tutorData && tutorData.role === 'STAFF';
-        
-        // Get today's date range (start and end of day)
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        
-        // Format dates as ISO strings
-        const startTime = startOfDay.toISOString().slice(0, 19);
-        const endTime = endOfDay.toISOString().slice(0, 19);
-        
-        let calendarNotes = [];
-        
-        if (isStaff) {
-            // If STAFF, get all calendar notes for today
-            calendarNotes = await fetchCalendarNotesByDateRange(startTime, endTime);
-        } else {
-            // Otherwise, get only calendar notes for this tutor
-            const allNotes = await fetchCalendarNotesByTutor(tutorId);
-            // Filter to only today's notes
-            calendarNotes = allNotes.filter(note => {
-                const noteStart = new Date(note.startTime);
-                return noteStart >= startOfDay && noteStart <= endOfDay;
-            });
-        }
-        
-        // Convert calendar notes to tasks format
-        const tasks = calendarNotes.map(note => ({
-            id: note.id,
-            text: note.description || 'No description',
-            completed: false, // You can add logic for completed status if needed
-            startTime: note.startTime,
-            endTime: note.endTime
-        }));
-        
-        res.json(tasks);
-    } catch (error) {
-        console.error('Error fetching tasks:', error);
-        res.status(500).json({ error: 'Failed to fetch tasks' });
-    }
-});
+// Endpoint removed - tasks are now rendered server-side in /home route
 
 // API endpoint to get all lessons for the logged-in tutor
 app.get('/api/lessons', isAuthenticated, async (req, res) => {
@@ -788,103 +832,7 @@ app.get('/api/prenotations', isAuthenticated, async (req, res) => {
 });
 
 // API endpoint to get today's lessons (lessons + prenotations) for the logged-in tutor
-app.get('/api/lessons/today', isAuthenticated, async (req, res) => {
-    try {
-        const tutorId = req.session.userId;
-        
-        // Get today's date range (start and end of day)
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        
-        // Fetch lessons and prenotations for this tutor
-        const allLessons = await fetchAllLessons();
-        const allPrenotations = await fetchAllPrenotations();
-        
-        // Filter by tutor ID
-        const lessons = allLessons.filter(lesson => lesson.tutorId === tutorId);
-        const prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId);
-        
-        console.log('Lessons fetched for tutor', tutorId, ':', lessons.length);
-        if (lessons.length > 0) {
-            console.log('Sample lesson:', JSON.stringify(lessons[0], null, 2));
-        }
-        
-        console.log('Prenotations fetched:', prenotations.length);
-        if (prenotations.length > 0) {
-            console.log('Sample prenotation:', JSON.stringify(prenotations[0], null, 2));
-        }
-        
-        // Filter to only today's lessons and fetch student data
-        const todayLessonsPromises = lessons.filter(lesson => {
-            const lessonStart = new Date(lesson.startTime);
-            return lessonStart >= startOfDay && lessonStart <= endOfDay;
-        }).map(async lesson => {
-            console.log('Processing lesson:', lesson);
-            
-            // Use the new studentId field from the Java entity
-            const studentId = lesson.studentId;
-            
-            console.log('Extracted student ID:', studentId);
-            
-            const student = studentId ? await fetchStudentData(studentId) : null;
-            console.log('Fetched student data:', student);
-            
-            return {
-                id: `lesson-${lesson.id}`,
-                firstName: student?.name || 'Unknown',
-                lastName: student?.surname || '',
-                classType: student?.studentClass || 'N/A',
-                startTime: lesson.startTime,
-                endTime: lesson.endTime,
-                type: 'lesson',
-                status: 'Done'
-            };
-        });
-        
-        // Filter to only today's prenotations and fetch student data
-        const todayPrenotationsPromises = prenotations.filter(prenotation => {
-            const prenotationStart = new Date(prenotation.startTime);
-            return prenotationStart >= startOfDay && prenotationStart <= endOfDay;
-        }).map(async prenotation => {
-            console.log('Processing prenotation:', prenotation);
-            
-            // Use the new studentId field from the Java entity
-            const studentId = prenotation.studentId;
-            
-            console.log('Extracted student ID:', studentId);
-            
-            const student = studentId ? await fetchStudentData(studentId) : null;
-            console.log('Fetched student data:', student);
-            
-            return {
-                id: `prenotation-${prenotation.id}`,
-                firstName: student?.name || 'Unknown',
-                lastName: student?.surname || '',
-                classType: student?.studentClass || 'N/A',
-                startTime: prenotation.startTime,
-                endTime: prenotation.endTime,
-                type: 'prenotation',
-                confirmed: prenotation.flag,
-                status: prenotation.flag ? 'Confirmed' : 'Pending'
-            };
-        });
-        
-        // Wait for all student data to be fetched
-        const todayLessons = await Promise.all(todayLessonsPromises);
-        const todayPrenotations = await Promise.all(todayPrenotationsPromises);
-        
-        // Combine and sort by start time
-        const combinedLessons = [...todayLessons, ...todayPrenotations].sort((a, b) => {
-            return a.startTime.localeCompare(b.startTime);
-        });
-        
-        res.json(combinedLessons);
-    } catch (error) {
-        console.error('Error fetching lessons:', error);
-        res.status(500).json({ error: 'Failed to fetch lessons' });
-    }
-});
+// Endpoint removed - lessons are now rendered server-side in /home route
 
 /**
  * Fetch calendar notes by tutor ID from Java backend API
