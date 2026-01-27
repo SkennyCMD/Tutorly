@@ -91,32 +91,22 @@
       loadTutors();
     });
     
-    // Load students from API
+    // Load students from server data
     async function loadStudents() {
       try {
-        const response = await fetch('/api/students');
-        if (response.ok) {
-          allStudents = await response.json();
-          filteredStudents = allStudents;
-          updateStudentDropdown();
-        } else {
-          console.error('Failed to load students:', response.statusText);
-        }
+        allStudents = window.serverData?.students || [];
+        filteredStudents = allStudents;
+        updateStudentDropdown();
       } catch (error) {
         console.error('Error loading students:', error);
       }
     }
 
-    // Load tutors from API for assignees
+    // Load tutors from server data
     async function loadTutors() {
       try {
-        const response = await fetch('/api/tutors');
-        if (response.ok) {
-          const tutors = await response.json();
-          updateAssigneesContainer(tutors);
-        } else {
-          console.error('Failed to load tutors:', response.statusText);
-        }
+        const tutors = window.serverData?.tutors || [];
+        updateAssigneesContainer(tutors);
       } catch (error) {
         console.error('Error loading tutors:', error);
       }

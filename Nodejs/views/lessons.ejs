@@ -322,6 +322,10 @@
     </div>
   </div>
 
+  <script>
+    // Pass server-rendered data to JavaScript
+    window.allStudents = <%- JSON.stringify(students) %>;
+  </script>
   <script src="/js/modalShared.js"></script>
   <script src="/js/lessonsScript.js"></script>
 </body>

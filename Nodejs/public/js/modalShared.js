@@ -4,18 +4,14 @@ let allStudents = [];
 let filteredStudents = [];
 
 /**
- * Load students from API
+ * Load students from server-rendered data
  */
 async function loadStudents() {
   try {
-    const response = await fetch('/api/students');
-    if (response.ok) {
-      allStudents = await response.json();
-      filteredStudents = allStudents;
-      updateStudentDropdown();
-    } else {
-      console.error('Failed to load students:', response.statusText);
-    }
+    // Try to get students from window.allStudents (home.ejs) or window.serverData.students (calendar.ejs)
+    allStudents = window.allStudents || window.serverData?.students || [];
+    filteredStudents = allStudents;
+    updateStudentDropdown();
   } catch (error) {
     console.error('Error loading students:', error);
   }

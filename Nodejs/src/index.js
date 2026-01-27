@@ -285,9 +285,12 @@ app.get('/home', isAuthenticated, async (req, res) => {
             endTime: note.endTime
         }));
         
-        // Fetch lessons and prenotations
-        const allLessons = await fetchAllLessons();
-        const allPrenotations = await fetchAllPrenotations();
+        // Fetch lessons, prenotations and students
+        const [allLessons, allPrenotations, students] = await Promise.all([
+            fetchAllLessons(),
+            fetchAllPrenotations(),
+            fetchAllStudents()
+        ]);
         
         const lessons = allLessons.filter(lesson => lesson.tutorId === tutorId);
         const prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId);
@@ -346,7 +349,8 @@ app.get('/home', isAuthenticated, async (req, res) => {
             userId: req.session.userId,
             role: tutorData ? tutorData.role : 'GENERIC',
             tasks: tasks,
-            lessons: combinedLessons
+            lessons: combinedLessons,
+            students: students || []
         });
     } catch (error) {
         console.error('Error fetching home data:', error);
@@ -355,7 +359,8 @@ app.get('/home', isAuthenticated, async (req, res) => {
             userId: req.session.userId,
             role: 'GENERIC',
             tasks: [],
-            lessons: []
+            lessons: [],
+            students: []
         });
     }
 });
@@ -369,22 +374,45 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
 
 app.get('/calendar', isAuthenticated, async (req, res) => {
     try {
-        // Fetch tutor data to get the role
-        const tutorData = await fetchTutorData(req.session.userId);
-        
-        // Fetch prenotations and calendar notes for the logged-in tutor
         const tutorId = req.session.userId;
-        const [prenotations, calendarNotes] = await Promise.all([
+        
+        // Fetch tutor data to get the role
+        const tutorData = await fetchTutorData(tutorId);
+        
+        // Fetch all required data in parallel
+        const [prenotations, calendarNotes, students, tutors] = await Promise.all([
             fetchFromJavaAPI(`/api/prenotations/tutor/${tutorId}`),
-            fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`)
+            fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`),
+            fetchFromJavaAPI('/api/students'),
+            fetchFromJavaAPI('/api/tutors')
         ]);
+        
+        // Enrich prenotations with student data
+        const enrichedPrenotations = await Promise.all((prenotations || []).map(async prenotation => {
+            const studentId = prenotation.studentId;
+            const student = studentId ? await fetchStudentData(studentId) : null;
+            
+            return {
+                id: prenotation.id,
+                startTime: prenotation.startTime,
+                endTime: prenotation.endTime,
+                createdAt: prenotation.createdAt,
+                flag: prenotation.flag,
+                studentId: studentId,
+                studentName: student?.name || 'Unknown',
+                studentSurname: student?.surname || '',
+                studentClass: student?.studentClass || ''
+            };
+        }));
         
         res.render('calendar', {
             username: req.session.username,
             userId: req.session.userId,
             role: tutorData ? tutorData.role : 'GENERIC',
-            prenotations: prenotations || [],
-            calendarNotes: calendarNotes || []
+            prenotations: enrichedPrenotations,
+            calendarNotes: calendarNotes || [],
+            students: students || [],
+            tutors: tutors || []
         });
     } catch (error) {
         console.error('Error fetching calendar data:', error);
@@ -393,27 +421,36 @@ app.get('/calendar', isAuthenticated, async (req, res) => {
             userId: req.session.userId,
             role: 'GENERIC',
             prenotations: [],
-            calendarNotes: []
+            calendarNotes: [],
+            students: [],
+            tutors: []
         });
     }
 });
 
 app.get('/lessons', isAuthenticated, async (req, res) => {
     try {
-        // Fetch tutor data to get the role
-        const tutorData = await fetchTutorData(req.session.userId);
+        const tutorId = req.session.userId;
+        
+        // Fetch tutor data and students
+        const [tutorData, students] = await Promise.all([
+            fetchTutorData(tutorId),
+            fetchAllStudents()
+        ]);
         
         res.render('lessons', {
             username: req.session.username,
             userId: req.session.userId,
-            role: tutorData ? tutorData.role : 'GENERIC'
+            role: tutorData ? tutorData.role : 'GENERIC',
+            students: students || []
         });
     } catch (error) {
         console.error('Error fetching tutor data:', error);
         res.render('lessons', {
             username: req.session.username,
             userId: req.session.userId,
-            role: 'GENERIC'
+            role: 'GENERIC',
+            students: []
         });
     }
 });
@@ -444,26 +481,9 @@ app.get('/api/auth/status', (req, res) => {
 });
 
 // API endpoint to get all tutors
-app.get('/api/tutors', isAuthenticated, async (req, res) => {
-    try {
-        const tutors = await fetchFromJavaAPI('/api/tutors');
-        res.json(tutors);
-    } catch (error) {
-        console.error('Error fetching tutors:', error);
-        res.status(500).json({ error: 'Failed to fetch tutors' });
-    }
-});
+// Endpoint removed - tutors are now rendered server-side in /calendar route
 
-// API endpoint to get all students
-app.get('/api/students', isAuthenticated, async (req, res) => {
-    try {
-        const students = await fetchAllStudents();
-        res.json(students);
-    } catch (error) {
-        console.error('Error fetching students:', error);
-        res.status(500).json({ error: 'Failed to fetch students' });
-    }
-});
+// Endpoint removed - students are now rendered server-side in /home and /calendar routes
 
 // API endpoint to create a new lesson
 app.post('/api/lessons', isAuthenticated, async (req, res) => {
