@@ -1258,6 +1258,18 @@ function fetchAllStudents() {
     });
 }
 
+// 404 page handler
+app.use((req,res) => {
+    res.status(404).render('404', {
+        user: req.session.userId ? {
+            userId: req.session.userId,
+            username: req.session.username,
+            role: req.session.role
+        } : null,
+        isAuthenticated: !!req.session.userId
+    });
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`Tutorly server running at http://localhost:${PORT}`);
