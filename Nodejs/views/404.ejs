@@ -38,6 +38,18 @@
                         <a href="/calendar" class="text-slate-300 hover:text-white transition-colors">Calendar</a>
                         <a href="/lessons" class="text-slate-300 hover:text-white transition-colors">My Lessons</a>
                     </nav>
+
+                    <!-- Logout Button (Desktop) -->
+                    <div class="hidden md:flex items-center">
+                        <form action="/logout" method="POST" class="inline">
+                            <button type="submit" class="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                </svg>
+                                <span class="text-sm font-medium">Logout</span>
+                            </button>
+                        </form>
+                    </div>
                 <% } %>
 
                 <!-- Mobile Menu Button -->
@@ -91,6 +103,16 @@
                     </svg>
                     My Lessons
                 </a>
+                <div class="mt-4 pt-4 border-t border-slate-600">
+                    <form action="/logout" method="POST">
+                        <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                            Logout
+                        </button>
+                    </form>
+                </div>
             </nav>
         </div>
     </div>
