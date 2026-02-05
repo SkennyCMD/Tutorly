@@ -253,6 +253,7 @@ function fetchFromJavaAPI(path) {
 app.get('/home', isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
+        const userRole = req.session.role; 
         
         // Fetch tutor data to get the role
         const tutorData = await fetchTutorData(tutorId);
@@ -345,9 +346,8 @@ app.get('/home', isAuthenticated, async (req, res) => {
         });
         
         res.render('home', {
-            username: req.session.username,
             userId: req.session.userId,
-            role: tutorData ? tutorData.role : 'GENERIC',
+            user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             tasks: tasks,
             lessons: combinedLessons,
             students: students || []
@@ -375,6 +375,7 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
 app.get('/calendar', isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
+        const userRole = req.session.role;
         
         // Fetch tutor data to get the role
         const tutorData = await fetchTutorData(tutorId);
@@ -406,9 +407,8 @@ app.get('/calendar', isAuthenticated, async (req, res) => {
         }));
         
         res.render('calendar', {
-            username: req.session.username,
             userId: req.session.userId,
-            role: tutorData ? tutorData.role : 'GENERIC',
+            user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             prenotations: enrichedPrenotations,
             calendarNotes: calendarNotes || [],
             students: students || [],
@@ -431,6 +431,7 @@ app.get('/calendar', isAuthenticated, async (req, res) => {
 app.get('/lessons', isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
+        const userRole = req.session.role; 
         
         // Fetch all required data in parallel
         const [tutorData, students, allLessonsData, allPrenotations] = await Promise.all([
@@ -479,9 +480,8 @@ app.get('/lessons', isAuthenticated, async (req, res) => {
         }));
         
         res.render('lessons', {
-            username: req.session.username,
             userId: req.session.userId,
-            role: tutorData ? tutorData.role : 'GENERIC',
+            user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             students: students || [],
             lessons: lessonsWithStudents,
             totalLessons: totalCount,
