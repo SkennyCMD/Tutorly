@@ -501,6 +501,33 @@ app.get('/lessons', isAuthenticated, async (req, res) => {
     }
 });
 
+app.get('/staffPanel', isAuthenticated, async (req, res) => {
+    try {
+        const tutorId = req.session.userId;
+        const userRole = req.session.role;
+        
+        // Fetch tutor data to verify STAFF role
+        const tutorData = await fetchTutorData(tutorId);
+        
+        // Check if user is STAFF
+        if (!tutorData || tutorData.role !== 'STAFF') {
+            return res.redirect('/home');
+        }
+        
+        // Fetch all tutors from database
+        const allTutors = await fetchFromJavaAPI('/api/tutors');
+        
+        res.render('staffPanel', {
+            userId: req.session.userId,
+            user: { username: req.session.username, role: tutorData.role },
+            tutors: allTutors || []
+        });
+    } catch (error) {
+        console.error('Error accessing staff panel:', error);
+        res.redirect('/home');
+    }
+});
+
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {

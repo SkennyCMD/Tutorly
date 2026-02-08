@@ -1,0 +1,42 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.mobile-menu {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+}
+.mobile-menu.open {
+    transform: translateX(0);
+}
+input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+.dropdown-list {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.2s ease;
+}
+.dropdown-list.open {
+    max-height: 220px;
+    overflow-y: auto;
+}
+.dropdown-list::-webkit-scrollbar {
+    width: 6px;
+}
+.dropdown-list::-webkit-scrollbar-track {
+    background: #262626;
+    border-radius: 3px;
+}
+.dropdown-list::-webkit-scrollbar-thumb {
+    background: #a1a1aa;
+    border-radius: 3px;
+}
+.toast {
+    transform: translateY(100px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorly - Staff Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#0a0a0a',
+            foreground: '#fafafa',
+            card: '#141414',
+            'card-foreground': '#fafafa',
+            primary: '#14b8a6',
+            'primary-foreground': '#0a0a0a',
+            secondary: '#262626',
+            'secondary-foreground': '#fafafa',
+            muted: '#262626',
+            'muted-foreground': '#a1a1aa',
+            border: '#2e2e2e',
+            ring: '#14b8a6',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/css/staffPanel.css">
+</head>
+<body class="bg-background text-foreground min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-card border-b border-border sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+
+        <!-- Logo -->
+        <a href="home.html" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-foreground">Tutorly</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="home.html" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
+          <a href="calendar.html" class="text-muted-foreground hover:text-foreground transition-colors">Calendar</a>
+          <a href="lessons.html" class="text-muted-foreground hover:text-foreground transition-colors">My Lessons</a>
+          <a href="staff.html" class="text-foreground font-medium transition-colors">Staff</a>
+        </nav>
+
+        <!-- User Menu (Desktop) -->
+        <div class="hidden md:flex items-center gap-4">
+          <div class="w-9 h-9 bg-secondary rounded-full flex items-center justify-center">
+            <span class="text-sm font-medium text-foreground">JD</span>
+          </div>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button id="menuToggle" class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu Overlay -->
+  <div id="menuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+  <!-- Mobile Sidebar Menu -->
+  <aside id="mobileMenu" class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
+    <div class="p-4 border-b border-border flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+          </svg>
+        </div>
+        <span class="text-lg font-bold text-foreground">Tutorly</span>
+      </div>
+      <button id="closeMenu" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+        <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="p-4 flex flex-col gap-2">
+      <a href="home.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Dashboard
+      </a>
+      <a href="calendar.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        Calendar
+      </a>
+      <a href="lessons.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+        </svg>
+        My Lessons
+      </a>
+      <a href="staff.html" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Staff
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- Page Title -->
+    <div class="mb-8">
+      <h1 class="text-2xl sm:text-3xl font-bold text-foreground">Staff Management</h1>
+      <p class="text-muted-foreground mt-1">Download monthly reports for tutors and students</p>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Card 1: All Tutors Monthly Hours -->
+      <div class="bg-card border border-border rounded-xl p-5 flex flex-col">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-foreground">All Tutors Hours</h2>
+            <p class="text-sm text-muted-foreground">Monthly hours for every tutor</p>
+          </div>
+        </div>
+
+        <div class="flex-1">
+          <label for="tutorAllMonth" class="block text-sm font-medium text-foreground mb-1.5">Select Month</label>
+          <input type="month" id="tutorAllMonth"
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+
+        <button onclick="downloadAllTutorsHours()"
+          class="mt-6 w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Download Tutors Report
+        </button>
+      </div>
+
+      <!-- Card 2: All Students Monthly Hours -->
+      <div class="bg-card border border-border rounded-xl p-5 flex flex-col">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-foreground">All Students Hours</h2>
+            <p class="text-sm text-muted-foreground">Monthly hours for every student</p>
+          </div>
+        </div>
+
+        <div class="flex-1">
+          <label for="studentAllMonth" class="block text-sm font-medium text-foreground mb-1.5">Select Month</label>
+          <input type="month" id="studentAllMonth"
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+
+        <button onclick="downloadAllStudentsHours()"
+          class="mt-6 w-full inline-flex items-center justify-center gap-2 bg-amber-500 text-background px-4 py-2.5 rounded-lg font-medium hover:bg-amber-500/90 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Download Students Report
+        </button>
+      </div>
+
+      <!-- Card 3: Single Tutor Hours -->
+      <div class="bg-card border border-border rounded-xl p-5 flex flex-col">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 bg-sky-500/20 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-foreground">Single Tutor Hours</h2>
+            <p class="text-sm text-muted-foreground">All hours for a specific tutor</p>
+          </div>
+        </div>
+
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-foreground mb-1.5">Search Tutor</label>
+          <div class="relative" id="tutorSearchWrapper">
+            <svg class="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text" id="tutorSearchInput" autocomplete="off" placeholder="Type to search tutors..."
+              class="w-full pl-10 pr-10 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <!-- Clear button -->
+            <button id="clearTutorBtn" onclick="clearTutorSelection()" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors hidden">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            <!-- Dropdown -->
+            <div id="tutorDropdown" class="dropdown-list absolute top-full left-0 right-0 mt-1 bg-secondary border border-border rounded-lg z-30"></div>
+          </div>
+          <p id="selectedTutorLabel" class="text-sm text-sky-400 mt-2 hidden">
+            <span class="inline-flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              Selected: <span id="selectedTutorName" class="font-medium"></span>
+            </span>
+          </p>
+        </div>
+
+        <button onclick="downloadSingleTutorHours()"
+          class="mt-6 w-full inline-flex items-center justify-center gap-2 bg-sky-500 text-background px-4 py-2.5 rounded-lg font-medium hover:bg-sky-500/90 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Download Tutor Report
+        </button>
+      </div>
+    </div>
+
+    <!-- Recent Downloads -->
+    <div class="mt-6 bg-card border border-border rounded-xl p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="text-lg font-semibold text-foreground">Recent Downloads</h3>
+      </div>
+      <div id="recentDownloads">
+        <p class="text-sm text-muted-foreground text-center py-4">No recent downloads</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast fixed bottom-4 right-4 bg-primary text-primary-foreground px-5 py-3 rounded-lg shadow-lg z-50">
+    <div class="flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      <span id="toastMessage">Download started!</span>
+    </div>
+  </div>
+
+  <script>
+    // Pass tutors data from server to client
+    window.allTutors = <%- JSON.stringify(tutors) %>;
+  </script>
+  <script src="/js/staffPanel.js"></script>
+</body>
+</html>
