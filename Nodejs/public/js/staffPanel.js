@@ -268,15 +268,51 @@ function downloadXLSX(data, filename) {
 // ========================
 // Download actions
 // ========================
-function downloadAllTutorsHours() {
+async function downloadAllTutorsHours() {
     const month = document.getElementById('tutorAllMonth').value;
-    if (!month) { showToast('Please select a month'); return; }
-    const data = generateAllTutorsData(month);
-    const label = monthLabel(month).replace(' ', '_');
-    const filename = `Tutorly_All_Tutors_Hours_${label}.xlsx`;
-    downloadXLSX(data, filename);
-    addRecentDownload(filename, 'tutor');
-    showToast(`Downloaded: ${filename}`);
+    if (!month) { 
+        showToast('Please select a month'); 
+        return; 
+    }
+    
+    try {
+        showToast('Generating report...');
+        
+        // Call the server endpoint to generate Excel
+        const response = await fetch(`/api/reports/lessons-by-month?month=${month}`);
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate report');
+        }
+        
+        // Get the filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'lessons_report.xlsx';
+        if (contentDisposition) {
+            const matches = /filename="([^"]+)"/.exec(contentDisposition);
+            if (matches && matches[1]) {
+                filename = matches[1];
+            }
+        }
+        
+        // Convert response to blob and download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        addRecentDownload(filename, 'tutor');
+        showToast(`Downloaded: ${filename}`);
+    } catch (error) {
+        console.error('Error downloading report:', error);
+        showToast('Error: ' + error.message);
+    }
 }
 
 function downloadAllStudentsHours() {
