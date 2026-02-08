@@ -3,7 +3,7 @@ const session = require('express-session');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const https = require('https');
-const { generateLessonsExcel } = require('../server_utilities/excel');
+const { generateLessonsExcel, generateStudentsLessonsExcel } = require('../server_utilities/excel');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -590,6 +590,53 @@ app.get('/api/reports/lessons-by-month', isAuthenticated, isStaff, async (req, r
 
     } catch (error) {
         console.error('Error generating Excel report:', error);
+        res.status(500).json({ error: 'Failed to generate report' });
+    }
+});
+
+// Endpoint to generate Excel report for lessons by student in a specific month
+app.get('/api/reports/lessons-by-student', isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { month } = req.query; // Format: YYYY-MM (e.g., "2026-02")
+        
+        if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+            return res.status(400).json({ error: 'Invalid month format. Use YYYY-MM (e.g., 2026-02)' });
+        }
+
+        // Parse month and calculate start/end dates
+        const [year, monthNum] = month.split('-').map(Number);
+        const startDate = new Date(year, monthNum - 1, 1, 0, 0, 0);
+        const endDate = new Date(year, monthNum, 0, 23, 59, 59);
+        
+        const startTime = startDate.toISOString().slice(0, 19);
+        const endTime = endDate.toISOString().slice(0, 19);
+
+        // Fetch lessons from Java API
+        const lessons = await fetchFromJavaAPI(`/api/lessons/date-range?start=${startTime}&end=${endTime}`);
+        
+        if (!lessons || lessons.length === 0) {
+            return res.status(404).json({ error: 'No lessons found for this month' });
+        }
+
+        // Generate Excel using utility function
+        const { workbook, fileName } = await generateStudentsLessonsExcel(
+            lessons,
+            fetchStudentData,
+            fetchTutorData,
+            monthNum,
+            year
+        );
+
+        // Set response headers for file download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+        // Write to response
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error('Error generating students Excel report:', error);
         res.status(500).json({ error: 'Failed to generate report' });
     }
 });

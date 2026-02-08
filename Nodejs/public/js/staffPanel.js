@@ -315,15 +315,51 @@ async function downloadAllTutorsHours() {
     }
 }
 
-function downloadAllStudentsHours() {
+async function downloadAllStudentsHours() {
     const month = document.getElementById('studentAllMonth').value;
-    if (!month) { showToast('Please select a month'); return; }
-    const data = generateAllStudentsData(month);
-    const label = monthLabel(month).replace(' ', '_');
-    const filename = `Tutorly_All_Students_Hours_${label}.xlsx`;
-    downloadXLSX(data, filename);
-    addRecentDownload(filename, 'student');
-    showToast(`Downloaded: ${filename}`);
+    if (!month) { 
+        showToast('Please select a month'); 
+        return; 
+    }
+    
+    try {
+        showToast('Generating report...');
+        
+        // Call the server endpoint to generate Excel
+        const response = await fetch(`/api/reports/lessons-by-student?month=${month}`);
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate report');
+        }
+        
+        // Get the filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'students_report.xlsx';
+        if (contentDisposition) {
+            const matches = /filename="([^"]+)"/.exec(contentDisposition);
+            if (matches && matches[1]) {
+                filename = matches[1];
+            }
+        }
+        
+        // Convert response to blob and download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        addRecentDownload(filename, 'student');
+        showToast(`Downloaded: ${filename}`);
+    } catch (error) {
+        console.error('Error downloading report:', error);
+        showToast('Error: ' + error.message);
+    }
 }
 
 function downloadSingleTutorHours() {
