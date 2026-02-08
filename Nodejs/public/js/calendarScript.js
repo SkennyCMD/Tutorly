@@ -1,6 +1,16 @@
     // Initialize events from server data
     let events = [];
     
+    // Helper function to parse datetime as local time (ignore timezone)
+    function parseAsLocalDate(dateString) {
+      // Remove timezone info and parse as local
+      const cleanDate = dateString.replace(/\.\d{3}Z?$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+      const [datePart, timePart] = cleanDate.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hour, minute, second = 0] = (timePart || '00:00:00').split(':').map(Number);
+      return new Date(year, month - 1, day, hour, minute, second);
+    }
+    
     // Debug: Log server data
     console.log('Server Data:', window.serverData);
     console.log('Prenotations:', window.serverData?.prenotations);
@@ -10,8 +20,14 @@
     if (window.serverData && window.serverData.prenotations) {
       console.log('Converting', window.serverData.prenotations.length, 'prenotations');
       window.serverData.prenotations.forEach(prenotation => {
-        const startDate = new Date(prenotation.startTime);
-        const endDate = new Date(prenotation.endTime);
+        const startDate = parseAsLocalDate(prenotation.startTime);
+        const endDate = parseAsLocalDate(prenotation.endTime);
+        
+        // Format date in local timezone to avoid timezone shifts
+        const year = startDate.getFullYear();
+        const month = String(startDate.getMonth() + 1).padStart(2, '0');
+        const day = String(startDate.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
         
         events.push({
           id: prenotation.id,
@@ -19,7 +35,9 @@
           firstName: prenotation.studentName || 'Unknown',
           lastName: prenotation.studentSurname || '',
           classType: prenotation.studentClass || '',
-          date: startDate.toISOString().split('T')[0],
+          tutorUsername: prenotation.tutorUsername || '',
+          tutorId: prenotation.tutorId,
+          date: localDateStr,
           startTime: startDate.toTimeString().slice(0, 5),
           endTime: endDate.toTimeString().slice(0, 5)
         });
@@ -30,14 +48,20 @@
     if (window.serverData && window.serverData.calendarNotes) {
       console.log('Converting', window.serverData.calendarNotes.length, 'calendar notes');
       window.serverData.calendarNotes.forEach(note => {
-        const startDate = new Date(note.startTime);
-        const endDate = new Date(note.endTime);
+        const startDate = parseAsLocalDate(note.startTime);
+        const endDate = parseAsLocalDate(note.endTime);
+        
+        // Format date in local timezone to avoid timezone shifts
+        const year = startDate.getFullYear();
+        const month = String(startDate.getMonth() + 1).padStart(2, '0');
+        const day = String(startDate.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
         
         events.push({
           id: note.id,
           type: 'note',
           description: note.description,
-          date: startDate.toISOString().split('T')[0],
+          date: localDateStr,
           startTime: startDate.toTimeString().slice(0, 5),
           endTime: endDate.toTimeString().slice(0, 5),
           assignees: ['myself'] // Default assignees
@@ -68,7 +92,10 @@
     }
 
     function formatDate(date) {
-      return date.toISOString().split('T')[0];
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
 
     function formatDateDisplay(date) {
@@ -341,9 +368,14 @@
           eventEl.style.right = 'auto';
           
           if (event.type === 'lesson') {
+            const currentUserId = window.serverData?.currentUserId;
+            const isStaff = window.serverData?.userRole === 'STAFF';
+            const showTutor = isStaff && event.tutorId !== currentUserId;
+            
             eventEl.innerHTML = `
               <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
               <div class="opacity-75 truncate">${event.classType} · ${event.startTime}</div>
+              ${showTutor ? `<div class="opacity-60 text-xs truncate">👤 ${event.tutorUsername}</div>` : ''}
             `;
           } else {
             eventEl.innerHTML = `
@@ -456,9 +488,14 @@
           eventEl.style.right = 'auto';
           
           if (event.type === 'lesson') {
+            const currentUserId = window.serverData?.currentUserId;
+            const isStaff = window.serverData?.userRole === 'STAFF';
+            const showTutor = isStaff && event.tutorId !== currentUserId;
+            
             eventEl.innerHTML = `
               <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
               <div class="opacity-75 truncate">${event.classType} · ${event.startTime} - ${event.endTime}</div>
+              ${showTutor ? `<div class="opacity-60 text-xs truncate">👤 ${event.tutorUsername}</div>` : ''}
             `;
           } else {
             eventEl.innerHTML = `
@@ -537,6 +574,30 @@
       filteredStudents = allStudents;
       updateStudentDropdown();
       closeMenu();
+      
+      // Auto-assign to current user
+      const currentUserId = window.serverData?.currentUserId;
+      const userRole = window.serverData?.userRole;
+      const isStaff = userRole === 'STAFF';
+      
+      // Hide "Assign To" section if not STAFF
+      const lessonAssignToSection = document.getElementById('lessonAssignToSection');
+      if (lessonAssignToSection) {
+        lessonAssignToSection.style.display = isStaff ? 'block' : 'none';
+      }
+      
+      // Populate tutors in lesson modal
+      populateLessonTutors();
+      
+      // Auto-check current user's checkbox
+      setTimeout(() => {
+        if (currentUserId) {
+          const myselfCheckbox = document.querySelector(`input[name="lessonTutors"][value="${currentUserId}"]`);
+          if (myselfCheckbox) {
+            myselfCheckbox.checked = true;
+          }
+        }
+      }, 100);
     }
 
     function closeLessonModal() {
@@ -548,12 +609,89 @@
     function openNoteModal() {
       document.getElementById('addNoteModal').classList.add('open');
       closeMenu();
+      
+      // Auto-assign to current user
+      const currentUserId = window.serverData?.currentUserId;
+      const userRole = window.serverData?.userRole;
+      const isStaff = userRole === 'STAFF';
+      
+      // Hide "Assign To" section if not STAFF
+      const assignToSection = document.getElementById('assignToSection');
+      if (assignToSection) {
+        assignToSection.style.display = isStaff ? 'block' : 'none';
+      }
+      
+      // Auto-check current user's checkbox
+      setTimeout(() => {
+        if (currentUserId) {
+          const myselfCheckbox = document.querySelector(`input[name="assignees"][value="${currentUserId}"]`);
+          if (myselfCheckbox) {
+            myselfCheckbox.checked = true;
+          }
+        }
+      }, 100);
     }
 
     function closeNoteModal() {
       document.getElementById('addNoteModal').classList.remove('open');
       document.getElementById('noteForm').reset();
       setDefaultDates();
+    }
+
+    function populateLessonTutors() {
+      const container = document.getElementById('lessonTutorsContainer');
+      if (!container) return;
+      
+      const tutors = window.serverData?.tutors || [];
+      const currentUserId = window.serverData?.currentUserId;
+      
+      const colors = [
+        'bg-primary/20 text-primary',
+        'bg-blue-500/20 text-blue-400',
+        'bg-green-500/20 text-green-400',
+        'bg-pink-500/20 text-pink-400',
+        'bg-purple-500/20 text-purple-400',
+        'bg-orange-500/20 text-orange-400',
+        'bg-teal-500/20 text-teal-400'
+      ];
+      
+      container.innerHTML = '';
+      
+      if (tutors.length === 0) {
+        container.innerHTML = '<p class="text-sm text-muted p-3">No tutors available.</p>';
+        return;
+      }
+      
+      tutors.forEach((tutor, index) => {
+        const colorClass = colors[index % colors.length];
+        const initials = (tutor.name?.substring(0, 1) || '') + (tutor.surname?.substring(0, 1) || '');
+        const displayName = tutor.username + (tutor.id === currentUserId ? ' (You)' : '');
+        
+        const label = document.createElement('label');
+        label.className = 'checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors';
+        
+        label.innerHTML = `
+          <input type="radio" name="lessonTutors" value="${tutor.id}" class="w-4 h-4 rounded border-border bg-background accent-primary">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 ${colorClass} rounded-full flex items-center justify-center">
+              <span class="text-xs font-medium">${initials.toUpperCase()}</span>
+            </div>
+            <span class="text-sm text-foreground">${displayName}</span>
+          </div>
+        `;
+        
+        container.appendChild(label);
+      });
+    }
+
+    function assignLessonToMyself() {
+      const currentUserId = window.serverData?.currentUserId;
+      if (!currentUserId) return;
+      
+      const myselfRadio = document.querySelector(`input[name="lessonTutors"][value="${currentUserId}"]`);
+      if (myselfRadio) {
+        myselfRadio.checked = true;
+      }
     }
 
     function assignToMyself() {
@@ -584,10 +722,30 @@
         return;
       }
       
+      // Get selected tutor (for STAFF users)
+      const selectedTutorRadio = document.querySelector('input[name="lessonTutors"]:checked');
+      let assignedTutorId = selectedTutorRadio ? parseInt(selectedTutorRadio.value) : null;
+      
+      // If no tutor selected, default to current user
+      if (!assignedTutorId) {
+        assignedTutorId = window.serverData?.currentUserId;
+      }
+      
       // Prepare datetime with the selected date
       const [year, month, day] = lessonDate.split('-');
       const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
       const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
+      
+      const payload = {
+        studentId,
+        startTime: startDateTime,
+        endTime: endDateTime
+      };
+      
+      // Add tutorId if different from current user
+      if (assignedTutorId && assignedTutorId !== window.serverData?.currentUserId) {
+        payload.tutorId = assignedTutorId;
+      }
       
       try {
         const response = await fetch('/api/prenotations', {
@@ -595,11 +753,7 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            studentId,
-            startTime: startDateTime,
-            endTime: endDateTime
-          })
+          body: JSON.stringify(payload)
         });
         
         if (response.ok) {
@@ -638,7 +792,15 @@
       
       // Get selected assignee tutor IDs
       const assigneeCheckboxes = document.querySelectorAll('input[name="assignees"]:checked');
-      const tutorIds = Array.from(assigneeCheckboxes).map(cb => parseInt(cb.value));
+      let tutorIds = Array.from(assigneeCheckboxes).map(cb => parseInt(cb.value));
+      
+      // If no tutors selected (non-STAFF users), default to current user
+      if (tutorIds.length === 0) {
+        const currentUserId = window.serverData?.currentUserId;
+        if (currentUserId) {
+          tutorIds = [currentUserId];
+        }
+      }
       
       // Prepare datetime with the selected date
       const [year, month, day] = noteDate.split('-');

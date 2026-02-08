@@ -306,6 +306,16 @@
           </div>
         </div>
 
+        <div id="lessonAssignToSection">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-sm font-medium text-foreground">Assign To</label>
+            <button type="button" onclick="assignLessonToMyself()" class="text-xs text-primary hover:underline">Assign to myself</button>
+          </div>
+          <div id="lessonTutorsContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
+            <!-- Tutors will be loaded dynamically -->
+          </div>
+        </div>
+
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeLessonModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
           <button type="submit" class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors">Add Prenotation</button>
@@ -349,7 +359,7 @@
           </div>
         </div>
 
-        <div>
+        <div id="assignToSection">
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-medium text-foreground">Assign To</label>
             <button type="button" onclick="assignToMyself()" class="text-xs text-primary hover:underline">Assign to myself</button>

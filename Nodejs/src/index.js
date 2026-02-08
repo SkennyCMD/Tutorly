@@ -398,19 +398,27 @@ app.get('/calendar', isAuthenticated, async (req, res) => {
         
         // Fetch tutor data to get the role
         const tutorData = await fetchTutorData(tutorId);
+        const isStaff = tutorData && tutorData.role === 'STAFF';
+        
+        // Fetch prenotations: all if STAFF, only own if not
+        const prenotationsEndpoint = isStaff 
+            ? '/api/prenotations' 
+            : `/api/prenotations/tutor/${tutorId}`;
         
         // Fetch all required data in parallel
         const [prenotations, calendarNotes, students, tutors] = await Promise.all([
-            fetchFromJavaAPI(`/api/prenotations/tutor/${tutorId}`),
+            fetchFromJavaAPI(prenotationsEndpoint),
             fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`),
             fetchFromJavaAPI('/api/students'),
             fetchFromJavaAPI('/api/tutors')
         ]);
         
-        // Enrich prenotations with student data
+        // Enrich prenotations with student and tutor data
         const enrichedPrenotations = await Promise.all((prenotations || []).map(async prenotation => {
             const studentId = prenotation.studentId;
+            const prenotationTutorId = prenotation.tutorId;
             const student = studentId ? await fetchStudentData(studentId) : null;
+            const tutor = prenotationTutorId ? await fetchTutorData(prenotationTutorId) : null;
             
             return {
                 id: prenotation.id,
@@ -421,7 +429,9 @@ app.get('/calendar', isAuthenticated, async (req, res) => {
                 studentId: studentId,
                 studentName: student?.name || 'Unknown',
                 studentSurname: student?.surname || '',
-                studentClass: student?.studentClass || ''
+                studentClass: student?.studentClass || '',
+                tutorId: prenotationTutorId,
+                tutorUsername: tutor?.username || 'Unknown'
             };
         }));
         
@@ -835,8 +845,11 @@ app.post('/api/lessons', isAuthenticated, async (req, res) => {
 // API endpoint to create a new prenotation
 app.post('/api/prenotations', isAuthenticated, async (req, res) => {
     try {
-        const { studentId, startTime, endTime } = req.body;
-        const tutorId = req.session.userId;
+        const { studentId, startTime, endTime, tutorId: requestedTutorId } = req.body;
+        const currentUserId = req.session.userId;
+        
+        // Use requested tutorId if provided (for STAFF), otherwise use current user
+        const tutorId = requestedTutorId || currentUserId;
         
         let startDateTime, endDateTime;
         
@@ -871,7 +884,7 @@ app.post('/api/prenotations', isAuthenticated, async (req, res) => {
             flag: false,
             studentId: parseInt(studentId),
             tutorId: parseInt(tutorId),
-            creatorId: parseInt(tutorId)
+            creatorId: parseInt(currentUserId) // Always use the current logged-in user as creator
         };
         
         console.log('Creating prenotation:', prenotationData);
