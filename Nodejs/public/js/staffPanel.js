@@ -362,6 +362,54 @@ async function downloadAllStudentsHours() {
     }
 }
 
+// Download tutors monthly statistics report
+async function downloadTutorMonthlyStats() {
+    const year = document.getElementById('tutorStatsYear').value;
+    if (!year) { 
+        showToast('Please select a year'); 
+        return; 
+    }
+    
+    try {
+        showToast('Generating statistics report...');
+        
+        // Call the server endpoint to generate Excel
+        const response = await fetch(`/api/reports/tutors-monthly-stats?year=${year}`);
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate report');
+        }
+        
+        // Get the filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `Tutors_Monthly_Report_${year}.xlsx`;
+        if (contentDisposition) {
+            const matches = /filename="([^"]+)"/.exec(contentDisposition);
+            if (matches && matches[1]) {
+                filename = matches[1];
+            }
+        }
+        
+        // Convert response to blob and download
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        addRecentDownload(filename, 'tutor');
+        showToast(`Downloaded: ${filename}`);
+    } catch (error) {
+        console.error('Error downloading stats report:', error);
+        showToast('Error: ' + error.message);
+    }
+}
+
 function downloadSingleTutorHours() {
     if (!selectedTutor) {
     showToast('Please select a tutor first');

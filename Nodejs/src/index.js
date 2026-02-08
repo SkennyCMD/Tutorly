@@ -3,7 +3,7 @@ const session = require('express-session');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const https = require('https');
-const { generateLessonsExcel, generateStudentsLessonsExcel } = require('../server_utilities/excel');
+const { generateLessonsExcel, generateStudentsLessonsExcel, generateTutorMonthlyReport } = require('../server_utilities/excel');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -637,6 +637,60 @@ app.get('/api/reports/lessons-by-student', isAuthenticated, isStaff, async (req,
 
     } catch (error) {
         console.error('Error generating students Excel report:', error);
+        res.status(500).json({ error: 'Failed to generate report' });
+    }
+});
+
+// New endpoint: Tutors monthly report with statistics
+app.get('/api/reports/tutors-monthly-stats', isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { year } = req.query; // Format: YYYY (e.g., "2026")
+        
+        if (!year || !/^\d{4}$/.test(year)) {
+            return res.status(400).json({ error: 'Invalid year format. Use YYYY (e.g., 2026)' });
+        }
+
+        const yearNum = parseInt(year);
+        
+        // Calculate start/end dates for the entire year
+        const startDate = new Date(yearNum, 0, 1, 0, 0, 0);
+        const endDate = new Date(yearNum, 11, 31, 23, 59, 59);
+        
+        const startTime = startDate.toISOString().slice(0, 19);
+        const endTime = endDate.toISOString().slice(0, 19);
+
+        // Fetch all lessons for the year from Java API
+        const lessons = await fetchFromJavaAPI(`/api/lessons/date-range?start=${startTime}&end=${endTime}`);
+        
+        if (!lessons || lessons.length === 0) {
+            return res.status(404).json({ error: 'No lessons found for this year' });
+        }
+
+        // Fetch all tutors
+        const tutors = await fetchFromJavaAPI('/api/tutors');
+        
+        if (!tutors || tutors.length === 0) {
+            return res.status(404).json({ error: 'No tutors found' });
+        }
+
+        // Generate Excel using utility function
+        const { workbook, filename } = await generateTutorMonthlyReport(
+            lessons,
+            tutors,
+            fetchStudentData,
+            yearNum
+        );
+
+        // Set response headers for file download
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+        // Write to response
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error('Error generating tutors monthly stats report:', error);
         res.status(500).json({ error: 'Failed to generate report' });
     }
 });
