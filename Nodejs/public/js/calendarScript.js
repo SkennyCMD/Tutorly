@@ -198,7 +198,11 @@
       filteredStudents.forEach(student => {
         const option = document.createElement('option');
         option.value = student.id;
-        option.textContent = `${student.name} ${student.surname} (${student.studentClass})`;
+        let displayText = `${student.name} ${student.surname} (${student.studentClass})`;
+        if (student.description && student.description.trim() !== '') {
+          displayText += ` - ${student.description}`;
+        }
+        option.textContent = displayText;
         select.appendChild(option);
       });
     }
@@ -206,11 +210,20 @@
     // Filter students based on search
     function filterStudents(searchTerm) {
       const term = searchTerm.toLowerCase();
+      const select = document.getElementById('studentSelect');
+      
       filteredStudents = allStudents.filter(student => {
         const fullName = `${student.name} ${student.surname}`.toLowerCase();
         return fullName.includes(term);
       });
       updateStudentDropdown();
+      
+      // Auto-open dropdown and show multiple options when typing
+      if (term.length > 0 && filteredStudents.length > 0) {
+        select.size = Math.min(filteredStudents.length + 1, 8); // Show up to 8 options
+      } else {
+        select.size = 1; // Reset to default dropdown
+      }
     }
 
     function setDefaultDates() {
@@ -574,6 +587,8 @@
       document.getElementById('studentSearch').value = '';
       filteredStudents = allStudents;
       updateStudentDropdown();
+      // Reset dropdown to normal size
+      document.getElementById('studentSelect').size = 1;
       closeMenu();
       
       // Auto-assign to current user
@@ -604,6 +619,7 @@
     function closeLessonModal() {
       document.getElementById('addLessonModal').classList.remove('open');
       document.getElementById('lessonForm').reset();
+      document.getElementById('studentSelect').size = 1;
       setDefaultDates();
     }
 

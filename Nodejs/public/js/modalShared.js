@@ -29,7 +29,11 @@ function updateStudentDropdown() {
   filteredStudents.forEach(student => {
     const option = document.createElement('option');
     option.value = student.id;
-    option.textContent = `${student.name} ${student.surname} (${student.studentClass})`;
+    let displayText = `${student.name} ${student.surname} (${student.studentClass})`;
+    if (student.description && student.description.trim() !== '') {
+      displayText += ` - ${student.description}`;
+    }
+    option.textContent = displayText;
     select.appendChild(option);
   });
 }
@@ -39,11 +43,20 @@ function updateStudentDropdown() {
  */
 function filterStudents(searchTerm) {
   const term = searchTerm.toLowerCase();
+  const select = document.getElementById('studentSelect');
+  
   filteredStudents = allStudents.filter(student => {
     const fullName = `${student.name} ${student.surname}`.toLowerCase();
     return fullName.includes(term);
   });
   updateStudentDropdown();
+  
+  // Auto-open dropdown and show multiple options when typing
+  if (select && term.length > 0 && filteredStudents.length > 0) {
+    select.size = Math.min(filteredStudents.length + 1, 8); // Show up to 8 options
+  } else if (select) {
+    select.size = 1; // Reset to default dropdown
+  }
 }
 
 /**
@@ -60,6 +73,12 @@ function openModal() {
   const searchInput = document.getElementById('studentSearch');
   if (searchInput) {
     searchInput.value = '';
+  }
+  
+  // Reset dropdown to normal size
+  const select = document.getElementById('studentSelect');
+  if (select) {
+    select.size = 1;
   }
   
   // Set date to today by default
@@ -82,6 +101,12 @@ function closeModal() {
   
   modal.classList.remove('open');
   document.body.style.overflow = '';
+  
+  // Reset dropdown to normal size
+  const select = document.getElementById('studentSelect');
+  if (select) {
+    select.size = 1;
+  }
 }
 
 /**
