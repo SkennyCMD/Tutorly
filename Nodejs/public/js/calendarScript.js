@@ -555,6 +555,7 @@
       // Forms
       document.getElementById('lessonForm').addEventListener('submit', handleLessonSubmit);
       document.getElementById('noteForm').addEventListener('submit', handleNoteSubmit);
+      document.getElementById('addStudentForm').addEventListener('submit', handleAddStudentSubmit);
       
       // Student search
       document.getElementById('studentSearch').addEventListener('input', (e) => {
@@ -636,6 +637,59 @@
       document.getElementById('addNoteModal').classList.remove('open');
       document.getElementById('noteForm').reset();
       setDefaultDates();
+    }
+
+    function openAddStudentModal() {
+      document.getElementById('addStudentModal').classList.add('open');
+    }
+
+    function closeAddStudentModal() {
+      document.getElementById('addStudentModal').classList.remove('open');
+      document.getElementById('addStudentForm').reset();
+    }
+
+    async function handleAddStudentSubmit(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('studentName').value;
+      const surname = document.getElementById('studentSurname').value;
+      const studentClass = document.getElementById('studentClass').value;
+      const description = document.getElementById('studentDescription').value;
+      
+      try {
+        const response = await fetch('/api/students', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name,
+            surname,
+            studentClass,
+            description
+          })
+        });
+        
+        if (response.ok) {
+          const newStudent = await response.json();
+          alert('Student added successfully!');
+          closeAddStudentModal();
+          
+          // Add to students list
+          allStudents.push(newStudent);
+          filteredStudents.push(newStudent);
+          updateStudentDropdown();
+          
+          // Auto-select the new student
+          document.getElementById('studentSelect').value = newStudent.id;
+        } else {
+          const error = await response.json();
+          alert('Failed to add student: ' + (error.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error adding student:', error);
+        alert('Failed to add student. Please try again.');
+      }
     }
 
     function populateLessonTutors() {

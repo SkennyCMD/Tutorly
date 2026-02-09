@@ -1019,6 +1019,84 @@ app.post('/api/calendar-notes', isAuthenticated, async (req, res) => {
 // API endpoint to get today's tasks (calendar notes) for the logged-in tutor
 // Endpoint removed - tasks are now rendered server-side in /home route
 
+// API endpoint to create a new student
+app.post('/api/students', isAuthenticated, async (req, res) => {
+    try {
+        const { name, surname, studentClass, description } = req.body;
+        
+        if (!name || !surname || !studentClass) {
+            return res.status(400).json({ error: 'Name, surname, and class are required' });
+        }
+        
+        // Validate class
+        if (!['M', 'S', 'U'].includes(studentClass)) {
+            return res.status(400).json({ error: 'Class must be M, S, or U' });
+        }
+        
+        // Build student data
+        const studentData = {
+            name: name,
+            surname: surname,
+            studentClass: studentClass,
+            description: description || '',
+            status: 'ACTIVE'
+        };
+        
+        console.log('Creating student:', studentData);
+        
+        const postData = JSON.stringify(studentData);
+        
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: '/api/students',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+        
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    console.log('Student created successfully:', data);
+                    try {
+                        const student = JSON.parse(data);
+                        res.json(student);
+                    } catch (e) {
+                        res.json({ success: true, message: 'Student created' });
+                    }
+                } else {
+                    console.error('Error creating student, status:', httpsRes.statusCode);
+                    console.error('Response:', data);
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to create student' });
+                }
+            });
+        });
+        
+        httpsReq.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            res.status(500).json({ error: 'Failed to create student' });
+        });
+        
+        httpsReq.write(postData);
+        httpsReq.end();
+        
+    } catch (error) {
+        console.error('Error creating student:', error.message);
+        res.status(500).json({ error: 'Failed to create student' });
+    }
+});
+
 // API endpoint to get all lessons for the logged-in tutor
 // Endpoint removed - lessons are now rendered server-side in /lessons route
 

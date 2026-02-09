@@ -1,6 +1,7 @@
 package com.tutorly.app.backend_api.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +16,7 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "student")
+@JsonIgnoreProperties(value = {"lessons", "prenotations", "tests"}, allowGetters = true)
 public class Student {
     
     /**

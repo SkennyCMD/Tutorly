@@ -327,7 +327,15 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Select Student</label>
+          <label class="flex items-center justify-between text-sm font-medium text-foreground mb-1.5">
+            <span>Select Student</span>
+            <button type="button" onclick="openAddStudentModal()" class="ml-2 text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Add New Student
+            </button>
+          </label>
           <select id="studentSelect" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">-- Select a student --</option>
           </select>
@@ -357,6 +365,53 @@
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
           <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add Lesson</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Student Modal -->
+  <div id="addStudentModal" class="modal fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeAddStudentModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl font-semibold text-foreground">Add New Student</h2>
+        <button onclick="closeAddStudentModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="addStudentForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Name</label>
+          <input type="text" id="studentName" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Surname</label>
+          <input type="text" id="studentSurname" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Class</label>
+          <select id="studentClass" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">-- Select class --</option>
+            <option value="M">Middle School (M)</option>
+            <option value="S">High School (S)</option>
+            <option value="U">University (U)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Description (Optional)</label>
+          <textarea id="studentDescription" rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button type="button" onclick="closeAddStudentModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add Student</button>
         </div>
       </form>
     </div>
