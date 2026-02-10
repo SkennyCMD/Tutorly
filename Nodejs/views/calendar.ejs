@@ -432,6 +432,119 @@
     </div>
   </div>
 
+  <!-- Edit Prenotation Modal -->
+  <div id="editPrenotationModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeEditPrenotationModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-foreground">Edit Prenotation</h2>
+        <button onclick="closeEditPrenotationModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      
+      <form id="editPrenotationForm" class="space-y-4">
+        <input type="hidden" id="editPrenotationId">
+        
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
+          <input type="text" id="editStudentSearch" placeholder="Search by name..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" autocomplete="off">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Select Student</label>
+          <select id="editStudentSelect" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">-- Select a student --</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
+          <input type="date" id="editPrenotationDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <input type="time" id="editPrenotationStartTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <input type="time" id="editPrenotationEndTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+        </div>
+
+        <div id="editPrenotationAssignToSection">
+          <label class="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
+          <div id="editPrenotationTutorsContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
+            <!-- Tutors will be loaded dynamically -->
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button type="button" onclick="deletePrenotation()" class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
+          <button type="button" onclick="closeEditPrenotationModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit" class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Note Modal -->
+  <div id="editNoteModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeEditNoteModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-foreground">Edit Note</h2>
+        <button onclick="closeEditNoteModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      
+      <form id="editNoteForm" class="space-y-4">
+        <input type="hidden" id="editNoteId">
+        
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
+          <textarea id="editNoteDescription" required placeholder="Enter note description..." rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
+          <input type="date" id="editNoteDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <input type="time" id="editNoteStartTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <input type="time" id="editNoteEndTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+        </div>
+
+        <div id="editNoteAssignToSection">
+          <label class="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
+          <div id="editNoteAssigneesContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
+            <!-- Tutors will be loaded dynamically -->
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button type="button" onclick="deleteNote()" class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
+          <button type="button" onclick="closeEditNoteModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit" class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     // Pass server-side data to JavaScript
     window.serverData = {

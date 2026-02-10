@@ -427,19 +427,25 @@ app.get('/calendar', isAuthenticated, async (req, res) => {
                 createdAt: prenotation.createdAt,
                 flag: prenotation.flag,
                 studentId: studentId,
+                student: student,
                 studentName: student?.name || 'Unknown',
                 studentSurname: student?.surname || '',
                 studentClass: student?.studentClass || '',
                 tutorId: prenotationTutorId,
+                tutor: tutor,
                 tutorUsername: tutor?.username || 'Unknown'
             };
         }));
+        
+        // Calendar notes - pass as-is since API doesn't return creator info in list
+        // Creator verification will be done server-side on PUT/DELETE operations
+        const enrichedCalendarNotes = calendarNotes || [];
         
         res.render('calendar', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             prenotations: enrichedPrenotations,
-            calendarNotes: calendarNotes || [],
+            calendarNotes: enrichedCalendarNotes,
             students: students || [],
             tutors: tutors || []
         });
@@ -942,6 +948,131 @@ app.post('/api/prenotations', isAuthenticated, async (req, res) => {
     }
 });
 
+// API endpoint to update a prenotation
+app.put('/api/prenotations/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { studentId, startTime, endTime, tutorId: requestedTutorId } = req.body;
+        const currentUserId = req.session.userId;
+        
+        // Use requested tutorId if provided (for STAFF), otherwise use current user
+        const tutorId = requestedTutorId || currentUserId;
+        
+        // Build prenotation DTO with IDs
+        const prenotationData = {
+            startTime: startTime,
+            endTime: endTime,
+            flag: false,
+            studentId: parseInt(studentId),
+            tutorId: parseInt(tutorId),
+            creatorId: parseInt(currentUserId)
+        };
+        
+        console.log('Updating prenotation:', id, prenotationData);
+        
+        const postData = JSON.stringify(prenotationData);
+        
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: `/api/prenotations/${id}`,
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+        
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    console.log('Prenotation updated successfully:', data);
+                    try {
+                        const prenotation = JSON.parse(data);
+                        res.json(prenotation);
+                    } catch (e) {
+                        res.json({ success: true, message: 'Prenotation updated' });
+                    }
+                } else {
+                    console.error('Error updating prenotation, status:', httpsRes.statusCode);
+                    console.error('Response:', data);
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to update prenotation' });
+                }
+            });
+        });
+        
+        httpsReq.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            res.status(500).json({ error: 'Failed to update prenotation' });
+        });
+        
+        httpsReq.write(postData);
+        httpsReq.end();
+        
+    } catch (error) {
+        console.error('Error updating prenotation:', error.message);
+        res.status(500).json({ error: 'Failed to update prenotation' });
+    }
+});
+
+// API endpoint to delete a prenotation
+app.delete('/api/prenotations/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        console.log('Deleting prenotation:', id);
+        
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: `/api/prenotations/${id}`,
+            method: 'DELETE',
+            headers: {
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+        
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
+                    console.log('Prenotation deleted successfully');
+                    res.json({ success: true, message: 'Prenotation deleted' });
+                } else {
+                    console.error('Error deleting prenotation, status:', httpsRes.statusCode);
+                    console.error('Response:', data);
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete prenotation' });
+                }
+            });
+        });
+        
+        httpsReq.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            res.status(500).json({ error: 'Failed to delete prenotation' });
+        });
+        
+        httpsReq.end();
+        
+    } catch (error) {
+        console.error('Error deleting prenotation:', error.message);
+        res.status(500).json({ error: 'Failed to delete prenotation' });
+    }
+});
+
 // API endpoint to create a new calendar note
 app.post('/api/calendar-notes', isAuthenticated, async (req, res) => {
     try {
@@ -1013,6 +1144,161 @@ app.post('/api/calendar-notes', isAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error creating calendar note:', error.message);
         res.status(500).json({ error: 'Failed to create calendar note' });
+    }
+});
+
+// API endpoint to get a single calendar note by ID
+app.get('/api/calendar-notes/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const note = await fetchFromJavaAPI(`/api/calendar-notes/${id}`);
+        
+        if (!note) {
+            return res.status(404).json({ error: 'Note not found' });
+        }
+        
+        res.json(note);
+    } catch (error) {
+        console.error('Error fetching calendar note:', error);
+        res.status(500).json({ error: 'Failed to fetch calendar note' });
+    }
+});
+
+// API endpoint to update a calendar note
+app.put('/api/calendar-notes/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { description, startTime, endTime, tutorIds } = req.body;
+        const currentUserId = req.session.userId;
+        
+        if (!description || !startTime || !endTime) {
+            return res.status(400).json({ error: 'Description, start time, and end time are required' });
+        }
+        
+        // Fetch the note to verify creator
+        const existingNote = await fetchFromJavaAPI(`/api/calendar-notes/${id}`);
+        if (existingNote && existingNote.creator && existingNote.creator.id !== currentUserId) {
+            return res.status(403).json({ error: 'Only the creator can edit this note' });
+        }
+        
+        // Build calendar note data with DTO format
+        const calendarNoteData = {
+            description: description,
+            startTime: startTime,
+            endTime: endTime,
+            creatorId: parseInt(currentUserId),
+            tutorIds: tutorIds || []
+        };
+        
+        console.log('Updating calendar note:', id, calendarNoteData);
+        
+        const postData = JSON.stringify(calendarNoteData);
+        
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: `/api/calendar-notes/${id}`,
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(postData),
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+        
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    console.log('Calendar note updated successfully:', data);
+                    try {
+                        const note = JSON.parse(data);
+                        res.json(note);
+                    } catch (e) {
+                        res.json({ success: true, message: 'Calendar note updated' });
+                    }
+                } else {
+                    console.error('Error updating calendar note, status:', httpsRes.statusCode);
+                    console.error('Response:', data);
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to update calendar note' });
+                }
+            });
+        });
+        
+        httpsReq.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            res.status(500).json({ error: 'Failed to update calendar note' });
+        });
+        
+        httpsReq.write(postData);
+        httpsReq.end();
+        
+    } catch (error) {
+        console.error('Error updating calendar note:', error.message);
+        res.status(500).json({ error: 'Failed to update calendar note' });
+    }
+});
+
+// API endpoint to delete a calendar note
+app.delete('/api/calendar-notes/:id', isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const currentUserId = req.session.userId;
+        
+        // Fetch the note to verify creator
+        const existingNote = await fetchFromJavaAPI(`/api/calendar-notes/${id}`);
+        if (existingNote && existingNote.creator && existingNote.creator.id !== currentUserId) {
+            return res.status(403).json({ error: 'Only the creator can delete this note' });
+        }
+        
+        console.log('Deleting calendar note:', id);
+        
+        const options = {
+            hostname: 'localhost',
+            port: 8443,
+            path: `/api/calendar-notes/${id}?userId=${currentUserId}`,
+            method: 'DELETE',
+            headers: {
+                'X-API-Key': JAVA_API_KEY
+            },
+            rejectUnauthorized: false
+        };
+        
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
+                    console.log('Calendar note deleted successfully');
+                    res.json({ success: true, message: 'Calendar note deleted' });
+                } else {
+                    console.error('Error deleting calendar note, status:', httpsRes.statusCode);
+                    console.error('Response:', data);
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete calendar note' });
+                }
+            });
+        });
+        
+        httpsReq.on('error', (error) => {
+            console.error('Error calling Java API:', error);
+            res.status(500).json({ error: 'Failed to delete calendar note' });
+        });
+        
+        httpsReq.end();
+        
+    } catch (error) {
+        console.error('Error deleting calendar note:', error.message);
+        res.status(500).json({ error: 'Failed to delete calendar note' });
     }
 });
 

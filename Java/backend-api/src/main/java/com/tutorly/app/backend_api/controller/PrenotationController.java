@@ -192,20 +192,52 @@ public class PrenotationController {
     }
     
     /**
-     * Update an existing prenotation
+     * Update an existing prenotation using DTO with IDs
      * 
      * @param id The prenotation ID to update
-     * @param prenotation The updated prenotation data
+     * @param dto The updated prenotation data with student, tutor, and creator IDs
      * @return Updated prenotation if found, 404 Not Found otherwise
      * @apiNote PUT /api/prenotations/{id}
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Prenotation> updatePrenotation(@PathVariable Long id, @RequestBody Prenotation prenotation) {
-        if (prenotationService.getPrenotationById(id).isEmpty()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> updatePrenotationFromDTO(@PathVariable Long id, @RequestBody PrenotationCreateDTO dto) {
+        try {
+            // Check if prenotation exists
+            Optional<Prenotation> existingPrenotation = prenotationService.getPrenotationById(id);
+            if (existingPrenotation.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Fetch entities by ID
+            Optional<Student> student = studentService.getStudentById(dto.getStudentId());
+            Optional<Tutor> tutor = tutorService.getTutorById(dto.getTutorId());
+            Optional<Tutor> creator = tutorService.getTutorById(dto.getCreatorId());
+            
+            if (student.isEmpty()) {
+                return ResponseEntity.badRequest().body("Student not found with ID: " + dto.getStudentId());
+            }
+            if (tutor.isEmpty()) {
+                return ResponseEntity.badRequest().body("Tutor not found with ID: " + dto.getTutorId());
+            }
+            if (creator.isEmpty()) {
+                return ResponseEntity.badRequest().body("Creator not found with ID: " + dto.getCreatorId());
+            }
+            
+            // Update prenotation with new data
+            Prenotation prenotation = existingPrenotation.get();
+            prenotation.setStartTime(dto.getStartTime());
+            prenotation.setEndTime(dto.getEndTime());
+            prenotation.setStudent(student.get());
+            prenotation.setTutor(tutor.get());
+            prenotation.setCreator(creator.get());
+            prenotation.setFlag(dto.getFlag() != null ? dto.getFlag() : false);
+            
+            Prenotation updatedPrenotation = prenotationService.savePrenotation(prenotation);
+            return ResponseEntity.ok(updatedPrenotation);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating prenotation: " + e.getMessage());
         }
-        prenotation.setId(id);
-        return ResponseEntity.ok(prenotationService.savePrenotation(prenotation));
     }
     
     /**

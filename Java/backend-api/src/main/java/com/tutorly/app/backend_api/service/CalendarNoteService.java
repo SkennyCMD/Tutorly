@@ -119,6 +119,46 @@ public class CalendarNoteService {
     }
     
     /**
+     * Update a calendar note from a DTO with IDs
+     * 
+     * @param id The ID of the calendar note to update
+     * @param dto The DTO containing updated description, times, and tutor IDs
+     * @return The updated calendar note
+     * @throws RuntimeException if note or any tutor is not found
+     */
+    public CalendarNote updateCalendarNoteFromDTO(Long id, CalendarNoteCreateDTO dto) {
+        // Find existing note
+        CalendarNote note = calendarNoteRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Calendar note not found with ID: " + id));
+        
+        // Update fields
+        note.setDescription(dto.getDescription());
+        note.setStartTime(dto.getStartTime());
+        note.setEndTime(dto.getEndTime());
+        
+        // Keep existing creator (don't update creator)
+        // If you need to update creator, uncomment the following:
+        // if (dto.getCreatorId() != null) {
+        //     Tutor creator = tutorRepository.findById(dto.getCreatorId())
+        //             .orElseThrow(() -> new RuntimeException("Creator tutor not found with ID: " + dto.getCreatorId()));
+        //     note.setCreator(creator);
+        // }
+        
+        // Find and update tutors
+        if (dto.getTutorIds() != null) {
+            Set<Tutor> tutors = new HashSet<>();
+            for (Long tutorId : dto.getTutorIds()) {
+                Tutor tutor = tutorRepository.findById(tutorId)
+                        .orElseThrow(() -> new RuntimeException("Tutor not found with ID: " + tutorId));
+                tutors.add(tutor);
+            }
+            note.setTutors(tutors);
+        }
+        
+        return calendarNoteRepository.save(note);
+    }
+    
+    /**
      * Save or update a calendar note
      * 
      * Creates a new calendar note if ID is null, updates existing note otherwise.

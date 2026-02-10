@@ -114,20 +114,29 @@ public class CalendarNoteController {
     }
     
     /**
-     * Update an existing calendar note
+     * Update an existing calendar note using DTO with IDs
      * 
      * @param id The calendar note ID to update
-     * @param calendarNote The updated calendar note data
+     * @param dto The updated calendar note data with creator and tutor IDs
      * @return Updated calendar note if found, 404 Not Found otherwise
      * @apiNote PUT /api/calendar-notes/{id}
      */
     @PutMapping("/{id}")
-    public ResponseEntity<CalendarNote> updateCalendarNote(@PathVariable Long id, @RequestBody CalendarNote calendarNote) {
-        if (calendarNoteService.getCalendarNoteById(id).isEmpty()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<?> updateCalendarNoteFromDTO(@PathVariable Long id, @RequestBody CalendarNoteCreateDTO dto) {
+        try {
+            // Check if note exists
+            Optional<CalendarNote> existingNote = calendarNoteService.getCalendarNoteById(id);
+            if (existingNote.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Update using service method
+            CalendarNote updatedNote = calendarNoteService.updateCalendarNoteFromDTO(id, dto);
+            return ResponseEntity.ok(updatedNote);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating calendar note: " + e.getMessage());
         }
-        calendarNote.setId(id);
-        return ResponseEntity.ok(calendarNoteService.saveCalendarNote(calendarNote));
     }
     
     /**

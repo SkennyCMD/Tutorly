@@ -379,6 +379,25 @@
           eventEl.style.width = `${widthPercent}%`;
           eventEl.style.left = `${leftPercent}%`;
           eventEl.style.right = 'auto';
+          eventEl.style.cursor = 'pointer';
+          
+          // Add click handler based on event type
+          const eventId = event.id;
+          const eventType = event.type;
+          console.log('[Desktop] Setting up click for:', eventType, 'ID:', eventId);
+          if (eventType === 'lesson') {
+            eventEl.addEventListener('click', (e) => {
+              console.log('[Desktop] Clicked lesson ID:', eventId);
+              e.stopPropagation();
+              openEditPrenotationModal(eventId);
+            });
+          } else if (eventType === 'note') {
+            eventEl.addEventListener('click', (e) => {
+              console.log('[Desktop] Clicked note ID:', eventId);
+              e.stopPropagation();
+              openEditNoteModal(eventId);
+            });
+          }
           
           if (event.type === 'lesson') {
             const currentUserId = window.serverData?.currentUserId;
@@ -499,6 +518,22 @@
           eventEl.style.width = `${widthPercent}%`;
           eventEl.style.left = `${leftPercent}%`;
           eventEl.style.right = 'auto';
+          eventEl.style.cursor = 'pointer';
+          
+          // Add click handler based on event type
+          const eventId = event.id;
+          const eventType = event.type;
+          if (eventType === 'lesson') {
+            eventEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openEditPrenotationModal(eventId);
+            });
+          } else if (eventType === 'note') {
+            eventEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openEditNoteModal(eventId);
+            });
+          }
           
           if (event.type === 'lesson') {
             const currentUserId = window.serverData?.currentUserId;
@@ -906,3 +941,398 @@
         alert('Failed to create calendar note. Please try again.');
       }
     }
+
+  // ===== EDIT PRENOTATION MODAL FUNCTIONS =====
+  window.openEditPrenotationModal = function(prenotationId) {
+    console.log('[PRENOTATION] Opening modal for ID:', prenotationId);
+    console.log('[PRENOTATION] Available prenotations:', window.serverData.prenotations);
+    const prenotation = window.serverData.prenotations.find(p => p.id === prenotationId);
+    console.log('[PRENOTATION] Found:', prenotation);
+    if (!prenotation) {
+      console.error('Prenotation not found for ID:', prenotationId);
+      return;
+    }
+
+    console.log('[PRENOTATION] Step 1: Setting prenotation ID');
+    // Populate form fields
+    const editPrenotationIdElement = document.getElementById('editPrenotationId');
+    console.log('[PRENOTATION] editPrenotationId element:', editPrenotationIdElement);
+    if (!editPrenotationIdElement) {
+      console.error('[PRENOTATION] ERROR: editPrenotationId element not found!');
+      return;
+    }
+    editPrenotationIdElement.value = prenotation.id;
+    
+    console.log('[PRENOTATION] Step 2: Setting student');
+    // Set student
+    const studentId = prenotation.student?.id || prenotation.studentId;
+    console.log('[PRENOTATION] Student ID:', studentId);
+    
+    console.log('[PRENOTATION] Step 3: Updating student dropdown');
+    updateEditStudentDropdown('');
+    
+    // Select the student after populating the dropdown
+    const studentSelect = document.getElementById('editStudentSelect');
+    studentSelect.value = studentId;
+
+    console.log('[PRENOTATION] Step 4: Setting dates');
+    // Set date and times
+    const startDate = parseAsLocalDate(prenotation.startTime);
+    const endDate = parseAsLocalDate(prenotation.endTime);
+    document.getElementById('editPrenotationDate').value = formatDateForInput(startDate);
+    document.getElementById('editPrenotationStartTime').value = formatTimeForInput(startDate);
+    document.getElementById('editPrenotationEndTime').value = formatTimeForInput(endDate);
+
+    console.log('[PRENOTATION] Step 5: Checking STAFF role');
+    // Populate tutor assignment for STAFF
+    if (window.serverData.userRole === 'STAFF') {
+      console.log('[PRENOTATION] User is STAFF, populating tutors');
+      const container = document.getElementById('editPrenotationTutorsContainer');
+      container.innerHTML = '';
+      
+      const assignedTutorId = prenotation.tutor?.id || prenotation.tutorId;
+      
+      console.log('[PRENOTATION] Sample tutor object:', window.serverData.tutors[0]);
+      
+      window.serverData.tutors.forEach(tutor => {
+        const isAssigned = assignedTutorId === tutor.id;
+        const radioDiv = document.createElement('div');
+        radioDiv.className = 'flex items-center';
+        // Tutors have username field, not name/surname
+        const tutorName = tutor.username || `Tutor ${tutor.id}`;
+        radioDiv.innerHTML = `
+          <input type="radio" id="editTutor${tutor.id}" name="editAssignToTutor" 
+                 value="${tutor.id}" ${isAssigned ? 'checked' : ''}
+                 class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500">
+          <label for="editTutor${tutor.id}" class="ml-2 text-sm font-medium text-white">
+            ${tutorName}
+          </label>
+        `;
+        container.appendChild(radioDiv);
+      });
+    }
+
+    console.log('[PRENOTATION] Step 6: Opening modal');
+    const modalElement = document.getElementById('editPrenotationModal');
+    console.log('[PRENOTATION] Modal element:', modalElement);
+    if (!modalElement) {
+      console.error('[PRENOTATION] ERROR: editPrenotationModal element not found!');
+      return;
+    }
+    console.log('[PRENOTATION] Modal classes before:', modalElement.className);
+    modalElement.classList.add('open');
+    console.log('[PRENOTATION] Modal classes after:', modalElement.className);
+    console.log('[PRENOTATION] Modal opened successfully');
+  };
+
+  window.closeEditPrenotationModal = function() {
+    document.getElementById('editPrenotationModal').classList.remove('open');
+    document.getElementById('editPrenotationForm').reset();
+    
+    // Reset student select size
+    const select = document.getElementById('editStudentSelect');
+    select.size = 1;
+  };
+
+  window.deletePrenotation = async function() {
+    if (!confirm('Are you sure you want to delete this prenotation?')) return;
+
+    const prenotationId = document.getElementById('editPrenotationId').value;
+
+    try {
+      const response = await fetch(`/api/prenotations/${prenotationId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        alert('Prenotation deleted successfully!');
+        closeEditPrenotationModal();
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert('Failed to delete prenotation: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error deleting prenotation:', error);
+      alert('Failed to delete prenotation. Please try again.');
+    }
+  };
+
+  // Edit Prenotation form submit
+  document.getElementById('editPrenotationForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const prenotationId = document.getElementById('editPrenotationId').value;
+    const studentId = document.getElementById('editStudentSelect').value;
+    const prenotationDate = document.getElementById('editPrenotationDate').value;
+    const startTime = document.getElementById('editPrenotationStartTime').value;
+    const endTime = document.getElementById('editPrenotationEndTime').value;
+
+    if (!studentId || studentId === '') {
+      alert('Please select a student');
+      return;
+    }
+
+    if (!startTime || !endTime) {
+      alert('Please enter start and end times');
+      return;
+    }
+
+    // Get selected tutor (for STAFF users) or use current user
+    let tutorId = window.serverData.currentUserId;
+    if (window.serverData.userRole === 'STAFF') {
+      const selectedTutor = document.querySelector('input[name="editAssignToTutor"]:checked');
+      if (selectedTutor) {
+        tutorId = parseInt(selectedTutor.value);
+      }
+    }
+
+    const [year, month, day] = prenotationDate.split('-');
+    const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
+    const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
+
+    try {
+      const response = await fetch(`/api/prenotations/${prenotationId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          studentId: parseInt(studentId),
+          startTime: startDateTime,
+          endTime: endDateTime,
+          tutorId: tutorId
+        })
+      });
+
+      if (response.ok) {
+        alert('Prenotation updated successfully!');
+        closeEditPrenotationModal();
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert('Failed to update prenotation: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating prenotation:', error);
+      alert('Failed to update prenotation. Please try again.');
+    }
+  });
+
+  // Edit student search filter
+  document.getElementById('editStudentSearch').addEventListener('input', function(e) {
+    filterEditStudents(e.target.value);
+  });
+
+  function filterEditStudents(searchTerm) {
+    const select = document.getElementById('editStudentSelect');
+    const options = select.querySelectorAll('option');
+    let visibleCount = 0;
+
+    options.forEach(option => {
+      if (option.value === '') {
+        option.style.display = 'none';
+        return;
+      }
+
+      const text = option.textContent.toLowerCase();
+      const matches = text.includes(searchTerm.toLowerCase());
+      option.style.display = matches ? '' : 'none';
+      if (matches) visibleCount++;
+    });
+
+    select.size = Math.min(Math.max(visibleCount, 1), 8);
+  }
+
+  function updateEditStudentDropdown(searchTerm) {
+    const select = document.getElementById('editStudentSelect');
+    select.innerHTML = '<option value="">-- Select Student --</option>';
+    
+    const students = window.serverData.students || [];
+    const filteredStudents = students.filter(student => {
+      const studentClass = student.studentClass || student.class || '';
+      const fullName = `${student.name} ${student.surname} (${studentClass})`.toLowerCase();
+      return fullName.includes(searchTerm.toLowerCase());
+    });
+
+    filteredStudents.forEach(student => {
+      const option = document.createElement('option');
+      option.value = student.id;
+      const studentClass = student.studentClass || student.class || '';
+      const displayText = `${student.name} ${student.surname} (${studentClass})`;
+      option.textContent = student.description ? `${displayText} - ${student.description}` : displayText;
+      select.appendChild(option);
+    });
+
+    const visibleCount = filteredStudents.length;
+    select.size = Math.min(Math.max(visibleCount, 1), 8);
+  }
+
+  // ===== EDIT NOTE MODAL FUNCTIONS =====
+  window.openEditNoteModal = async function(noteId) {
+    console.log('[NOTE] Opening modal for ID:', noteId);
+    const note = window.serverData.calendarNotes.find(n => n.id === noteId);
+    console.log('[NOTE] Found in local data:', note);
+    if (!note) {
+      console.error('Note not found for ID:', noteId);
+      return;
+    }
+
+    // Fetch full note details from server to get tutors list
+    console.log('[NOTE] Fetching full details from server...');
+    try {
+      const response = await fetch(`/api/calendar-notes/${noteId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch note details');
+      }
+      const fullNote = await response.json();
+      console.log('[NOTE] Full note from server:', fullNote);
+      console.log('[NOTE] Tutors array:', fullNote.tutors);
+      
+      // Creator check will be done server-side
+
+      // Populate form fields
+      document.getElementById('editNoteId').value = fullNote.id;
+      document.getElementById('editNoteDescription').value = fullNote.description;
+
+      // Set date and times
+      const startDate = parseAsLocalDate(fullNote.startTime);
+      const endDate = parseAsLocalDate(fullNote.endTime);
+      document.getElementById('editNoteDate').value = formatDateForInput(startDate);
+      document.getElementById('editNoteStartTime').value = formatTimeForInput(startDate);
+      document.getElementById('editNoteEndTime').value = formatTimeForInput(endDate);
+
+      // Populate assignees
+      const container = document.getElementById('editNoteAssigneesContainer');
+      container.innerHTML = '';
+      
+      // Get assigned tutor IDs from full note details
+      const assignedTutorIds = fullNote.tutors ? fullNote.tutors.map(t => t.id) : [];
+      console.log('[NOTE] Assigned tutor IDs:', assignedTutorIds);
+      
+      window.serverData.tutors.forEach(tutor => {
+        const isAssigned = assignedTutorIds.includes(tutor.id);
+        const checkboxDiv = document.createElement('div');
+        checkboxDiv.className = 'flex items-center';
+        const tutorName = tutor.username || `Tutor ${tutor.id}`;
+        checkboxDiv.innerHTML = `
+          <input type="checkbox" id="editAssignee${tutor.id}" name="editAssignees" 
+                 value="${tutor.id}" ${isAssigned ? 'checked' : ''}
+                 class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+          <label for="editAssignee${tutor.id}" class="ml-2 text-sm font-medium text-white">
+            ${tutorName}
+          </label>
+        `;
+        container.appendChild(checkboxDiv);
+      });
+
+      document.getElementById('editNoteModal').classList.add('open');
+    } catch (error) {
+      console.error('Error fetching note details:', error);
+      alert('Failed to load note details');
+    }
+  };
+
+  window.closeEditNoteModal = function() {
+    document.getElementById('editNoteModal').classList.remove('open');
+    document.getElementById('editNoteForm').reset();
+  };
+
+  window.deleteNote = async function() {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+
+    const noteId = document.getElementById('editNoteId').value;
+
+    try {
+      const response = await fetch(`/api/calendar-notes/${noteId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        alert('Note deleted successfully!');
+        closeEditNoteModal();
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert('Failed to delete note: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      alert('Failed to delete note. Please try again.');
+    }
+  };
+
+  // Edit Note form submit
+  document.getElementById('editNoteForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const noteId = document.getElementById('editNoteId').value;
+    const description = document.getElementById('editNoteDescription').value;
+    const noteDate = document.getElementById('editNoteDate').value;
+    const startTime = document.getElementById('editNoteStartTime').value;
+    const endTime = document.getElementById('editNoteEndTime').value;
+
+    if (!description) {
+      alert('Please enter a description');
+      return;
+    }
+
+    if (!startTime || !endTime) {
+      alert('Please enter start and end times');
+      return;
+    }
+
+    // Get selected assignee tutor IDs
+    const assigneeCheckboxes = document.querySelectorAll('input[name="editAssignees"]:checked');
+    let tutorIds = Array.from(assigneeCheckboxes).map(cb => parseInt(cb.value));
+
+    // If no tutors selected, default to current user
+    if (tutorIds.length === 0) {
+      tutorIds = [window.serverData.currentUserId];
+    }
+
+    const [year, month, day] = noteDate.split('-');
+    const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
+    const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
+
+    try {
+      const response = await fetch(`/api/calendar-notes/${noteId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          description,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          tutorIds: tutorIds
+        })
+      });
+
+      if (response.ok) {
+        alert('Note updated successfully!');
+        closeEditNoteModal();
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert('Failed to update note: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating note:', error);
+      alert('Failed to update note. Please try again.');
+    }
+  });
+
+  // Helper functions for date/time formatting
+  function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatTimeForInput(date) {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }

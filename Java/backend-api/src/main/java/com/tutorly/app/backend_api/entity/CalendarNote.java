@@ -1,6 +1,7 @@
 package com.tutorly.app.backend_api.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -63,7 +64,8 @@ public class CalendarNote {
         joinColumns = @JoinColumn(name = "id_calendar_note"),
         inverseJoinColumns = @JoinColumn(name = "id_tutor")
     )
-    @JsonBackReference("tutor-calendarNotes")
+    @JsonIgnoreProperties({"password", "calendarNotes", "createdCalendarNotes", "createdPrenotations", 
+                           "lessons", "prenotations", "tests", "createdByAdmins"})
     private Set<Tutor> tutors = new HashSet<>();
     
     // Constructors
