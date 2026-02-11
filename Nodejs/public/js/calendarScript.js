@@ -1210,29 +1210,37 @@
       document.getElementById('editNoteStartTime').value = formatTimeForInput(startDate);
       document.getElementById('editNoteEndTime').value = formatTimeForInput(endDate);
 
-      // Populate assignees
-      const container = document.getElementById('editNoteAssigneesContainer');
-      container.innerHTML = '';
-      
-      // Get assigned tutor IDs from full note details
-      const assignedTutorIds = fullNote.tutors ? fullNote.tutors.map(t => t.id) : [];
-      console.log('[NOTE] Assigned tutor IDs:', assignedTutorIds);
-      
-      window.serverData.tutors.forEach(tutor => {
-        const isAssigned = assignedTutorIds.includes(tutor.id);
-        const checkboxDiv = document.createElement('div');
-        checkboxDiv.className = 'flex items-center';
-        const tutorName = tutor.username || `Tutor ${tutor.id}`;
-        checkboxDiv.innerHTML = `
-          <input type="checkbox" id="editAssignee${tutor.id}" name="editAssignees" 
-                 value="${tutor.id}" ${isAssigned ? 'checked' : ''}
-                 class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
-          <label for="editAssignee${tutor.id}" class="ml-2 text-sm font-medium text-white">
-            ${tutorName}
-          </label>
-        `;
-        container.appendChild(checkboxDiv);
-      });
+      // Populate assignees (only for STAFF users)
+      const assignToSection = document.getElementById('editNoteAssignToSection');
+      if (window.serverData.userRole === 'STAFF') {
+        assignToSection.style.display = 'block';
+        
+        const container = document.getElementById('editNoteAssigneesContainer');
+        container.innerHTML = '';
+        
+        // Get assigned tutor IDs from full note details
+        const assignedTutorIds = fullNote.tutors ? fullNote.tutors.map(t => t.id) : [];
+        console.log('[NOTE] Assigned tutor IDs:', assignedTutorIds);
+        
+        window.serverData.tutors.forEach(tutor => {
+          const isAssigned = assignedTutorIds.includes(tutor.id);
+          const checkboxDiv = document.createElement('div');
+          checkboxDiv.className = 'flex items-center';
+          const tutorName = tutor.username || `Tutor ${tutor.id}`;
+          checkboxDiv.innerHTML = `
+            <input type="checkbox" id="editAssignee${tutor.id}" name="editAssignees" 
+                   value="${tutor.id}" ${isAssigned ? 'checked' : ''}
+                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+            <label for="editAssignee${tutor.id}" class="ml-2 text-sm font-medium text-white">
+              ${tutorName}
+            </label>
+          `;
+          container.appendChild(checkboxDiv);
+        });
+      } else {
+        // Hide assign section for non-STAFF users
+        assignToSection.style.display = 'none';
+      }
 
       document.getElementById('editNoteModal').classList.add('open');
     } catch (error) {
@@ -1290,12 +1298,18 @@
       return;
     }
 
-    // Get selected assignee tutor IDs
-    const assigneeCheckboxes = document.querySelectorAll('input[name="editAssignees"]:checked');
-    let tutorIds = Array.from(assigneeCheckboxes).map(cb => parseInt(cb.value));
-
-    // If no tutors selected, default to current user
-    if (tutorIds.length === 0) {
+    // Get selected assignee tutor IDs (only if STAFF, otherwise keep existing assignments)
+    let tutorIds;
+    if (window.serverData.userRole === 'STAFF') {
+      const assigneeCheckboxes = document.querySelectorAll('input[name="editAssignees"]:checked');
+      tutorIds = Array.from(assigneeCheckboxes).map(cb => parseInt(cb.value));
+      
+      // If no tutors selected, default to current user
+      if (tutorIds.length === 0) {
+        tutorIds = [window.serverData.currentUserId];
+      }
+    } else {
+      // For non-STAFF users, keep current user as the only assignee
       tutorIds = [window.serverData.currentUserId];
     }
 
