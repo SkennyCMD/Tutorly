@@ -985,8 +985,11 @@
 
     console.log('[PRENOTATION] Step 5: Checking STAFF role');
     // Populate tutor assignment for STAFF
+    const assignToSection = document.getElementById('editPrenotationAssignToSection');
     if (window.serverData.userRole === 'STAFF') {
       console.log('[PRENOTATION] User is STAFF, populating tutors');
+      assignToSection.style.display = 'block';
+      
       const container = document.getElementById('editPrenotationTutorsContainer');
       container.innerHTML = '';
       
@@ -1010,6 +1013,9 @@
         `;
         container.appendChild(radioDiv);
       });
+    } else {
+      // Hide assign section for non-STAFF users
+      assignToSection.style.display = 'none';
     }
 
     console.log('[PRENOTATION] Step 6: Opening modal');
