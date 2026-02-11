@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorly - Admin Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#0a0a0a',
+            foreground: '#fafafa',
+            card: '#141414',
+            'card-foreground': '#fafafa',
+            primary: '#14b8a6',
+            'primary-foreground': '#0a0a0a',
+            secondary: '#262626',
+            'secondary-foreground': '#fafafa',
+            muted: '#262626',
+            'muted-foreground': '#a1a1aa',
+            border: '#2e2e2e',
+            ring: '#14b8a6',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/css/adminLogin.css">
+</head>
+<body class="bg-background text-foreground min-h-screen flex flex-col">
+
+  <!-- Background pattern -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-destructive/5 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="relative z-10 w-full py-5 px-6">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <a href="login.html" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+          </svg>
+        </div>
+        <span class="text-xl font-bold text-foreground">Tutorly</span>
+      </a>
+      <a href="/home" class="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Tutor Login
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
+    <div class="w-full max-w-md">
+
+      <!-- Admin badge -->
+      <div class="flex justify-center mb-6 fade-in">
+        <div class="pulse-ring inline-flex items-center gap-2 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-1.5 rounded-full text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          Restricted Access
+        </div>
+      </div>
+
+      <!-- Login Card -->
+      <div class="glow bg-card border border-border rounded-2xl p-8 md:p-10 fade-in-delay">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 border border-border">
+            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
+          <h1 class="text-2xl md:text-3xl font-bold text-foreground mb-2">Admin Portal</h1>
+          <p class="text-muted-foreground">Sign in with your administrator credentials</p>
+        </div>
+
+        <form id="adminLoginForm" class="space-y-5">
+          <!-- Admin ID -->
+          <div>
+            <label for="adminId" class="block text-sm font-medium text-foreground mb-1.5">Admin ID</label>
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -translate-y-1/2">
+                <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              <input type="text" id="adminId" required placeholder="admin@tutorly" class="w-full pl-10 pr-4 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all">
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <label for="adminPassword" class="block text-sm font-medium text-foreground mb-1.5">Password</label>
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -translate-y-1/2">
+                <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+              </div>
+              <input type="password" id="adminPassword" required placeholder="Enter your password" class="w-full pl-10 pr-12 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all">
+              <button type="button" id="togglePw" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                <svg id="pwEye" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Access Code -->
+           <!--
+          <div>
+            <label for="accessCode" class="block text-sm font-medium text-foreground mb-1.5">Access Code</label>
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -translate-y-1/2">
+                <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+              </div>
+              <input type="text" id="accessCode" required placeholder="6-digit access code" maxlength="6" class="w-full pl-10 pr-4 py-3 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent tracking-widest text-center font-mono transition-all">
+            </div>
+            <p class="text-xs text-muted-foreground mt-1.5">Contact the system administrator if you don't have a code</p>
+          </div> -->
+
+          <!-- Error message -->
+          <div id="loginError" class="hidden bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg px-4 py-3 flex items-center gap-2">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span id="errorText"></span>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            Sign in as Admin
+          </button>
+        </form>
+      </div>
+
+      <!-- Security note -->
+      <div class="fade-in-delay-2 mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        <span>This session is encrypted and monitored for security</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="relative z-10 py-6 px-6 border-t border-border">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-muted-foreground">Tutorly Admin Portal</p>
+      <p class="text-sm text-muted-foreground">For authorized personnel only</p>
+    </div>
+  </footer>
+
+  <script src="/js/adminLogin.js"></script>
+</body>
+</html>

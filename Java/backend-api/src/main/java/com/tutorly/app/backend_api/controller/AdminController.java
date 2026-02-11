@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -63,6 +64,36 @@ public class AdminController {
         Optional<Admin> admin = adminService.getAdminByUsername(username);
         return admin.map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
+    }
+    
+    /**
+     * Admin login endpoint
+     * 
+     * Authenticates admin by username and password.
+     * Returns admin ID if authentication is successful.
+     * 
+     * @param credentials Map containing username and password
+     * @return Admin ID as plain text if authenticated, 401 Unauthorized otherwise
+     * @apiNote POST /api/admins/login
+     */
+    @PostMapping("/login")
+    public ResponseEntity<String> login(@RequestBody Map<String, String> credentials) {
+        String username = credentials.get("username");
+        String password = credentials.get("password");
+        
+        if (username == null || password == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Username and password required");
+        }
+        
+        Optional<Admin> admin = adminService.getAdminByUsername(username);
+        
+        if (admin.isPresent() && admin.get().getPassword().equals(password)) {
+            // Authentication successful - return admin ID
+            return ResponseEntity.ok(admin.get().getId().toString());
+        }
+        
+        // Authentication failed
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
     }
     
     /**

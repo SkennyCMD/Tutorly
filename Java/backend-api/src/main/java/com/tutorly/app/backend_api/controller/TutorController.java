@@ -99,15 +99,22 @@ public class TutorController {
      * 
      * Validates that username is unique before creation.
      * 
-     * @param tutor The tutor data to create
+     * @param tutorRequest The tutor data to create
      * @return Created tutor with 201 Created status, or 409 Conflict if username already exists
      * @apiNote POST /api/tutors
      */
     @PostMapping
-    public ResponseEntity<Tutor> createTutor(@RequestBody Tutor tutor) {
-        if (tutorService.existsByUsername(tutor.getUsername())) {
+    public ResponseEntity<Tutor> createTutor(@RequestBody TutorCreateRequest tutorRequest) {
+        if (tutorService.existsByUsername(tutorRequest.getUsername())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
+        
+        Tutor tutor = new Tutor();
+        tutor.setUsername(tutorRequest.getUsername());
+        tutor.setPassword(tutorRequest.getPassword());
+        tutor.setRole(tutorRequest.getRole() != null ? tutorRequest.getRole() : "GENERIC");
+        tutor.setStatus(tutorRequest.getStatus() != null ? tutorRequest.getStatus() : "ACTIVE");
+        
         Tutor savedTutor = tutorService.saveTutor(tutor);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedTutor);
     }
@@ -146,6 +153,44 @@ public class TutorController {
     }
     
     /**
+     * Update tutor status only
+     * 
+     * @param id The tutor ID
+     * @param statusUpdate Object containing the new status
+     * @return Updated tutor if found, 404 Not Found otherwise
+     * @apiNote PATCH /api/tutors/{id}/status
+     */
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Tutor> updateTutorStatus(@PathVariable Long id, @RequestBody StatusUpdate statusUpdate) {
+        Optional<Tutor> tutorOptional = tutorService.getTutorById(id);
+        if (tutorOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Tutor tutor = tutorOptional.get();
+        tutor.setStatus(statusUpdate.getStatus());
+        return ResponseEntity.ok(tutorService.saveTutor(tutor));
+    }
+    
+    /**
+     * Update tutor role only
+     * 
+     * @param id The tutor ID
+     * @param roleUpdate Object containing the new role
+     * @return Updated tutor if found, 404 Not Found otherwise
+     * @apiNote PATCH /api/tutors/{id}/role
+     */
+    @PatchMapping("/{id}/role")
+    public ResponseEntity<Tutor> updateTutorRole(@PathVariable Long id, @RequestBody RoleUpdate roleUpdate) {
+        Optional<Tutor> tutorOptional = tutorService.getTutorById(id);
+        if (tutorOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Tutor tutor = tutorOptional.get();
+        tutor.setRole(roleUpdate.getRole());
+        return ResponseEntity.ok(tutorService.saveTutor(tutor));
+    }
+    
+    /**
      * Authenticate a tutor and get their ID
      * 
      * Validates the provided username and password.
@@ -166,6 +211,78 @@ public class TutorController {
             return ResponseEntity.ok(tutorId);
         } else {
             return ResponseEntity.ok(null);
+        }
+    }
+    
+    /**
+     * Inner class for tutor creation request payload
+     */
+    public static class TutorCreateRequest {
+        private String username;
+        private String password;
+        private String role;
+        private String status;
+        
+        public String getUsername() {
+            return username;
+        }
+        
+        public void setUsername(String username) {
+            this.username = username;
+        }
+        
+        public String getPassword() {
+            return password;
+        }
+        
+        public void setPassword(String password) {
+            this.password = password;
+        }
+        
+        public String getRole() {
+            return role;
+        }
+        
+        public void setRole(String role) {
+            this.role = role;
+        }
+        
+        public String getStatus() {
+            return status;
+        }
+        
+        public void setStatus(String status) {
+            this.status = status;
+        }
+    }
+    
+    /**
+     * Inner class for status update request payload
+     */
+    public static class StatusUpdate {
+        private String status;
+        
+        public String getStatus() {
+            return status;
+        }
+        
+        public void setStatus(String status) {
+            this.status = status;
+        }
+    }
+    
+    /**
+     * Inner class for role update request payload
+     */
+    public static class RoleUpdate {
+        private String role;
+        
+        public String getRole() {
+            return role;
+        }
+        
+        public void setRole(String role) {
+            this.role = role;
         }
     }
     

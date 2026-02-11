@@ -1,0 +1,36 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.mobile-menu {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+}
+.mobile-menu.open {
+    transform: translateX(0);
+}
+.modal {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.modal.open {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-content {
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+}
+.modal.open .modal-content {
+    transform: scale(1);
+}
+.toast {
+    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+}
+@keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fadeOut {
+    to { opacity: 0; }
+}

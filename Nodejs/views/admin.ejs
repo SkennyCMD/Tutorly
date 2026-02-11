@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorly - Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            background: '#0a0a0a',
+            foreground: '#fafafa',
+            card: '#141414',
+            'card-foreground': '#fafafa',
+            primary: '#14b8a6',
+            'primary-foreground': '#0a0a0a',
+            secondary: '#262626',
+            'secondary-foreground': '#fafafa',
+            muted: '#262626',
+            'muted-foreground': '#a1a1aa',
+            border: '#2e2e2e',
+            ring: '#14b8a6',
+            destructive: '#ef4444',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="bg-background text-foreground min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-card border-b border-border sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <a href="admin.html" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-foreground">Tutorly</span>
+          <span class="ml-2 text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">ADMIN</span>
+        </a>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="/admin" class="text-foreground font-medium transition-colors">Admin Panel</a>
+          <!-- <a href="staff.html" class="text-muted-foreground hover:text-foreground transition-colors">Staff Management</a>
+          <a href="reports.html" class="text-muted-foreground hover:text-foreground transition-colors">Reports</a> -->
+        </nav>
+
+        <div class="hidden md:flex items-center gap-4">
+          <a href="/adminLogout" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Logout</a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button id="menuToggle" class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu Overlay -->
+  <div id="menuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+  <!-- Mobile Sidebar Menu -->
+  <aside id="mobileMenu" class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
+    <div class="p-4 border-b border-border flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+          </svg>
+        </div>
+        <span class="text-lg font-bold text-foreground">Tutorly</span>
+        <span class="text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">ADMIN</span>
+      </div>
+      <button id="closeMenu" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+        <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="p-4 flex flex-col gap-2">
+      <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        Admin Panel
+      </a>
+      <!-- <a href="staff.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        Staff Management
+      </a>
+      <a href="reports.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Reports
+      </a> -->
+      <div class="border-t border-border mt-2 pt-2">
+        <a href="/adminLogout" class="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-secondary transition-colors">
+          Logout
+        </a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- Page Title -->
+    <div class="mb-8">
+      <h1 class="text-2xl sm:text-3xl font-bold text-foreground">Admin Panel</h1>
+      <p class="text-muted-foreground mt-1">Manage tutors, students, and accounts</p>
+    </div>
+
+    <!-- Three Column Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Tutors List -->
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-foreground">Tutors</h2>
+          <span id="tutorCount" class="text-sm text-muted-foreground"></span>
+        </div>
+
+        <!-- Search Tutors -->
+        <div class="mb-4">
+          <input type="text" id="tutorSearch" placeholder="Search tutors..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
+        </div>
+
+        <div id="tutorsList" class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+          <!-- Tutors rendered here -->
+        </div>
+      </div>
+
+      <!-- Students List -->
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-foreground">Students</h2>
+          <span id="studentCount" class="text-sm text-muted-foreground"></span>
+        </div>
+
+        <!-- Search Students -->
+        <div class="mb-4">
+          <input type="text" id="studentSearch" placeholder="Search students..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
+        </div>
+
+        <div id="studentsList" class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+          <!-- Students rendered here -->
+        </div>
+      </div>
+
+      <!-- Create Tutor Form -->
+      <div class="bg-card border border-border rounded-xl p-5">
+        <h2 class="text-lg font-semibold text-foreground mb-4">Create New Tutor</h2>
+
+        <form id="createTutorForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Username</label>
+            <input type="text" id="newUsername" required placeholder="e.g. john.doe" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Password</label>
+            <div class="relative">
+              <input type="password" id="newPassword" required placeholder="Min 8 characters" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring pr-10">
+              <button type="button" id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Password strength -->
+            <div id="passwordStrength" class="mt-2 hidden">
+              <div class="flex gap-1">
+                <div id="str1" class="h-1 flex-1 rounded-full bg-border"></div>
+                <div id="str2" class="h-1 flex-1 rounded-full bg-border"></div>
+                <div id="str3" class="h-1 flex-1 rounded-full bg-border"></div>
+                <div id="str4" class="h-1 flex-1 rounded-full bg-border"></div>
+              </div>
+              <p id="strengthText" class="text-xs mt-1 text-muted-foreground"></p>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Confirm Password</label>
+            <input type="password" id="confirmPassword" required placeholder="Re-enter password" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <p id="passwordMatch" class="text-xs mt-1 hidden"></p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Role</label>
+            <div class="flex gap-2">
+              <label class="flex-1">
+                <input type="radio" name="role" value="GENERIC" class="sr-only peer" checked>
+                <div class="px-4 py-2.5 border border-border rounded-lg text-center cursor-pointer text-muted-foreground peer-checked:bg-primary peer-checked:text-primary-foreground peer-checked:border-primary transition-colors text-sm font-medium">GENERIC</div>
+              </label>
+              <label class="flex-1">
+                <input type="radio" name="role" value="STAFF" class="sr-only peer">
+                <div class="px-4 py-2.5 border border-border rounded-lg text-center cursor-pointer text-muted-foreground peer-checked:bg-primary peer-checked:text-primary-foreground peer-checked:border-primary transition-colors text-sm font-medium">STAFF</div>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            Create Tutor
+          </button>
+        </form>
+
+        <!-- Recently Created -->
+        <div id="recentlyCreated" class="mt-6 border-t border-border pt-4 hidden">
+          <h3 class="text-sm font-medium text-muted-foreground mb-3">Recently Created</h3>
+          <div id="recentList" class="space-y-2"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Confirm Modal -->
+  <div id="confirmModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeConfirmModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-sm p-6">
+      <div class="text-center">
+        <div id="confirmIcon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"></div>
+        <h3 id="confirmTitle" class="text-lg font-semibold text-foreground mb-2"></h3>
+        <p id="confirmMessage" class="text-sm text-muted-foreground mb-6"></p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+        <button id="confirmBtn" class="flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>
