@@ -51,7 +51,8 @@ public class CalendarNote {
      */
     @ManyToOne
     @JoinColumn(name = "id_creator", nullable = false)
-    @JsonBackReference("tutor-createdCalendarNotes")
+    @JsonIgnoreProperties({"password", "calendarNotes", "createdCalendarNotes", "createdPrenotations", 
+                           "lessons", "prenotations", "tests", "createdByAdmins"})
     private Tutor creator;
     
     /**

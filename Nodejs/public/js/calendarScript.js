@@ -1189,7 +1189,15 @@
       console.log('[NOTE] Full note from server:', fullNote);
       console.log('[NOTE] Tutors array:', fullNote.tutors);
       
-      // Creator check will be done server-side
+      // Check if current user is the creator
+      const currentUserId = window.serverData.currentUserId;
+      const creatorId = fullNote.creator?.id;
+      console.log('[NOTE] Current user ID:', currentUserId, 'Creator ID:', creatorId);
+      
+      if (creatorId && creatorId !== currentUserId) {
+        alert('Only the creator can edit this note');
+        return;
+      }
 
       // Populate form fields
       document.getElementById('editNoteId').value = fullNote.id;
