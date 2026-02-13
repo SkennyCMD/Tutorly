@@ -5,355 +5,32 @@ const bcrypt = require('bcrypt');
 const https = require('https');
 const fs = require('fs');
 const { generateLessonsExcel, generateStudentsLessonsExcel, generateTutorMonthlyReport } = require('../server_utilities/excel');
+const { logAdminLoginAttempt } = require('../server_utilities/adminLogger');
+const { authenticateTutorWithJavaAPI, authenticateAdminWithJavaAPI } = require('../server_utilities/authService');
+const { isAuthenticated, isAdmin, isStaff } = require('../server_utilities/authMiddleware');
+const { 
+    fetchFromJavaAPI,
+    fetchTutorData,
+    fetchCalendarNotesByTutor,
+    fetchCalendarNotesByDateRange,
+    fetchLessonsByTutor,
+    fetchAllLessons,
+    fetchAllPrenotations,
+    fetchPrenotationsByTutor,
+    fetchStudentData,
+    fetchAllStudents
+} = require('../server_utilities/javaApiService');
+const { 
+    JAVA_API_URL, 
+    JAVA_API_KEY, 
+    PORT, 
+    TUTOR_SESSION_SECRET, 
+    ADMIN_SESSION_SECRET,
+    TUTOR_SESSION_DURATION,
+    ADMIN_SESSION_DURATION
+} = require('../server_utilities/config');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Java Backend API configuration
-const JAVA_API_URL = 'https://localhost:8443';
-const JAVA_API_KEY = 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu';
-
-// ===== UTILITY FUNCTIONS =====
-
-/**
- * Log admin login attempts to file
- * @param {string} username - Admin username
- * @param {string} ip - Client IP address
- * @param {boolean} success - Whether login was successful
- */
-function logAdminLoginAttempt(username, ip, success) {
-    const logFile = path.join(__dirname, '..', 'admin_login_attempts.txt');
-    
-    const timestamp = new Date().toISOString();
-    const status = success ? 'SUCCESS' : 'FAILED';
-    const logEntry = `[${timestamp}] IP: ${ip} | Username: ${username} | Status: ${status}\n`;
-    
-    fs.appendFile(logFile, logEntry, (err) => {
-        if (err) {
-            console.error('Error writing to admin login log:', err);
-        }
-    });
-}
-
-/**
- * Authenticate tutor with Java backend API
- * @param {string} username - Tutor username
- * @param {string} password - Tutor password
- * @returns {Promise<number|null>} Tutor ID if authenticated, null otherwise
- */
-function authenticateTutorWithJavaAPI(username, password) {
-    return new Promise((resolve, reject) => {
-        const postData = JSON.stringify({
-            username: username,
-            password: password
-        });
-
-        console.log('Java API Call:', {
-            url: `https://localhost:8443/api/tutors/login`,
-            data: { username, password: '***' }
-        });
-
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: '/api/tutors/login',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false // Accept self-signed certificate
-        };
-
-        const req = https.request(options, (res) => {
-            let data = '';
-
-            console.log('Status Code API Java:', res.statusCode);
-
-            res.on('data', (chunk) => {
-                data += chunk;
-            });
-
-            res.on('end', () => {
-                console.log('Java API Full Response:', data);
-                
-                try {
-                    if (res.statusCode === 200) {
-                        const tutorId = data ? parseInt(data) : null;
-                        console.log('Parsed Tutor ID:', tutorId);
-                        resolve(tutorId);
-                    } else {
-                        console.log('Non-200 status code, returning null');
-                        resolve(null);
-                    }
-                } catch (error) {
-                    console.error('Error parsing response:', error);
-                    resolve(null);
-                }
-            });
-        });
-
-        req.on('error', (error) => {
-            console.error('Error calling Java API:', error);
-            reject(error);
-        });
-
-        req.write(postData);
-        req.end();
-    });
-}
-
-/**
- * Authenticate admin with Java backend API
- * @param {string} username - Admin username
- * @param {string} password - Admin password
- * @returns {Promise<number|null>} Admin ID if authenticated, null otherwise
- */
-function authenticateAdminWithJavaAPI(username, password) {
-    return new Promise((resolve, reject) => {
-        const postData = JSON.stringify({
-            username: username,
-            password: password
-        });
-
-        console.log('Java API Call (Admin):', {
-            url: `https://localhost:8443/api/admins/login`,
-            data: { username, password: '***' }
-        });
-
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: '/api/admins/login',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
-
-        const req = https.request(options, (res) => {
-            let data = '';
-
-            console.log('Status Code API Java (Admin):', res.statusCode);
-
-            res.on('data', (chunk) => {
-                data += chunk;
-            });
-
-            res.on('end', () => {
-                console.log('Java API Full Response (Admin):', data);
-                
-                try {
-                    if (res.statusCode === 200) {
-                        const adminId = data ? parseInt(data) : null;
-                        console.log('Parsed Admin ID:', adminId);
-                        resolve(adminId);
-                    } else {
-                        console.log('Non-200 status code, returning null');
-                        resolve(null);
-                    }
-                } catch (error) {
-                    console.error('Error parsing response:', error);
-                    resolve(null);
-                }
-            });
-        });
-
-        req.on('error', (error) => {
-            console.error('Error calling Java API (Admin):', error);
-            reject(error);
-        });
-
-        req.write(postData);
-        req.end();
-    });
-}
-
-/**
- * Generic function to fetch data from Java backend API
- * @param {string} path - API path (e.g., '/api/prenotations')
- * @param {string} method - HTTP method (GET, POST, PUT, PATCH, DELETE)
- * @param {object} data - Request body for POST/PUT/PATCH requests (optional)
- * @returns {Promise<any|null>} Parsed JSON data if successful, null otherwise
- */
-function fetchFromJavaAPI(path, method = 'GET', data = null) {
-    return new Promise((resolve, reject) => {
-        const postData = data ? JSON.stringify(data) : null;
-        
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: path,
-            method: method,
-            headers: {
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
-
-        if (postData) {
-            options.headers['Content-Type'] = 'application/json';
-            options.headers['Content-Length'] = Buffer.byteLength(postData);
-        }
-
-        const req = https.request(options, (res) => {
-            let responseData = '';
-
-            res.on('data', (chunk) => {
-                responseData += chunk;
-            });
-
-            res.on('end', () => {
-                try {
-                    if (res.statusCode >= 200 && res.statusCode < 300) {
-                        if (responseData) {
-                            resolve(JSON.parse(responseData));
-                        } else {
-                            resolve(null);
-                        }
-                    } else {
-                        console.error(`Error ${method} ${path}: ${res.statusCode}`);
-                        const error = new Error(`HTTP ${res.statusCode}`);
-                        error.statusCode = res.statusCode;
-                        reject(error);
-                    }
-                } catch (error) {
-                    console.error(`Error parsing data from ${path}:`, error);
-                    reject(error);
-                }
-            });
-        });
-
-        req.on('error', (error) => {
-            console.error(`Error ${method} ${path}:`, error);
-            reject(error);
-        });
-
-        if (postData) {
-            req.write(postData);
-        }
-        
-        req.end();
-    });
-}
-
-/**
- * Fetch tutor data from Java backend API
- * @param {number} tutorId - Tutor ID
- * @returns {Promise<object|null>} Tutor data if found, null otherwise
- */
-function fetchTutorData(tutorId) {
-    return fetchFromJavaAPI(`/api/tutors/${tutorId}`, 'GET');
-}
-
-/**
- * Fetch calendar notes by tutor ID
- * @param {number} tutorId - Tutor ID
- * @returns {Promise<Array>} Calendar notes array
- */
-function fetchCalendarNotesByTutor(tutorId) {
-    return fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`, 'GET')
-        .then(data => data || [])
-        .catch(error => {
-            console.error('Error fetching calendar notes:', error);
-            return [];
-        });
-}
-
-/**
- * Fetch calendar notes by date range from Java backend API
- * @param {string} startTime - Start time in ISO format
- * @param {string} endTime - End time in ISO format
- * @returns {Promise<Array>} Calendar notes array
- */
-function fetchCalendarNotesByDateRange(startTime, endTime) {
-    return fetchFromJavaAPI(`/api/calendar-notes/date-range?startTime=${startTime}&endTime=${endTime}`, 'GET')
-        .then(data => data || [])
-        .catch(error => {
-            console.error('Error fetching calendar notes:', error);
-            return [];
-        });
-}
-
-/**
- * Fetch lessons by tutor ID
- * @param {number} tutorId - Tutor ID
- * @returns {Promise<Array>} Lessons array
- */
-function fetchLessonsByTutor(tutorId) {
-    return fetchFromJavaAPI(`/api/lessons/tutor/${tutorId}`, 'GET')
-        .then(data => data || [])
-        .catch(error => {
-            console.error('Error fetching lessons:', error);
-            return [];
-        });
-}
-
-/**
- * Fetch all lessons from Java backend API
- * @returns {Promise<Array>} All lessons array
- */
-function fetchAllLessons() {
-    return fetchFromJavaAPI('/api/lessons', 'GET')
-        .then(data => data || [])
-        .catch(error => {
-            console.error('Error fetching lessons:', error);
-            return [];
-        });
-}
-
-/**
- * Fetch all prenotations from Java backend API
- * @returns {Promise<Array>} All prenotations array
- */
-function fetchAllPrenotations() {
-    return fetchFromJavaAPI('/api/prenotations', 'GET')
-        .then(data => data || [])
-        .catch(error => {
-            console.error('Error fetching prenotations:', error);
-            return [];
-        });
-}
-
-/**
- * Fetch prenotations by tutor ID from Java backend API
- * @param {number} tutorId - Tutor ID
- * @returns {Promise<Array>} Prenotations array
- */
-function fetchPrenotationsByTutor(tutorId) {
-    return fetchFromJavaAPI(`/api/prenotations/tutor/${tutorId}`, 'GET')
-        .then(data => data || [])
-        .catch(error => {
-            console.error('Error fetching prenotations:', error);
-            return [];
-        });
-}
-
-/**
- * Fetch student data from Java backend API
- * @param {number} studentId - Student ID
- * @returns {Promise<object|null>} Student data if found, null otherwise
- */
-function fetchStudentData(studentId) {
-    return fetchFromJavaAPI(`/api/students/${studentId}`, 'GET');
-}
-
-/**
- * Fetch all students from Java backend API
- * @returns {Promise<Array>} All students array
- */
-function fetchAllStudents() {
-    return fetchFromJavaAPI('/api/students', 'GET')
-        .then(data => data || [])
-        .catch(error => {
-            console.error('Error fetching students:', error);
-            return [];
-        });
-}
 
 // Middleware
 app.use(express.json());
@@ -363,11 +40,11 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Tutor session configuration
 const tutorSession = session({
     name: 'tutorly.tutor.sid', // Cookie name for tutor session
-    secret: 'tutorly-tutor-secret-key-change-in-production',
+    secret: TUTOR_SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+        maxAge: TUTOR_SESSION_DURATION,
         httpOnly: true,
         secure: false // Set to true in production with HTTPS
     }
@@ -376,11 +53,11 @@ const tutorSession = session({
 // Admin session configuration
 const adminSession = session({
     name: 'tutorly.admin.sid', // Cookie name for admin session
-    secret: 'tutorly-admin-secret-key-change-in-production',
+    secret: ADMIN_SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        maxAge: 1000 * 60 * 60 * 1, // 1 hour (shorter for admin sessions)
+        maxAge: ADMIN_SESSION_DURATION,
         httpOnly: true,
         secure: false // Set to true in production with HTTPS
     }
@@ -389,40 +66,6 @@ const adminSession = session({
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
-
-// Authentication middleware
-const isAuthenticated = (req, res, next) => {
-    if (req.session && req.session.userId) {
-        return next();
-    }
-    res.redirect('/login');
-};
-
-// STAFF role middleware
-const isStaff = async (req, res, next) => {
-    if (!req.session || !req.session.userId) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-    
-    try {
-        const tutorData = await fetchTutorData(req.session.userId);
-        if (tutorData && tutorData.role === 'STAFF') {
-            return next();
-        }
-        return res.status(403).json({ error: 'Access denied. STAFF role required.' });
-    } catch (error) {
-        console.error('Error verifying STAFF role:', error);
-        return res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-// Middleware to check if user is authenticated as admin
-const isAdmin = (req, res, next) => {
-    if (req.session && req.session.adminId) {
-        return next();
-    }
-    res.redirect('/adminLogin');
-};
 
 // Routes
 

@@ -1,7 +1,5 @@
 const https = require('https');
-
-// Java Backend API configuration
-const JAVA_API_KEY = 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu';
+const { JAVA_API_KEY } = require('./config');
 
 /**
  * Authenticate tutor with Java backend API

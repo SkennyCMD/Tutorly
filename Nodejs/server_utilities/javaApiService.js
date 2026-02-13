@@ -1,8 +1,5 @@
 const https = require('https');
-
-// Java Backend API configuration
-const JAVA_API_URL = 'https://localhost:8443';
-const JAVA_API_KEY = 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu';
+const { JAVA_API_URL, JAVA_API_KEY } = require('./config');
 
 /**
  * Generic function to fetch data from Java backend API

@@ -1,5 +1,7 @@
+const { fetchTutorData } = require('./javaApiService');
+
 /**
- * Middleware per verificare l'autenticazione dell'utente
+ * Middleware to verify user (tutor) authentication
  */
 const isAuthenticated = (req, res, next) => {
     if (req.session && req.session.userId) {
@@ -9,7 +11,37 @@ const isAuthenticated = (req, res, next) => {
 };
 
 /**
- * Middleware per verificare ruoli specifici
+ * Middleware to verify if user is admin
+ */
+const isAdmin = (req, res, next) => {
+    if (req.session && req.session.adminId) {
+        return next();
+    }
+    res.redirect('/adminLogin');
+};
+
+/**
+ * Middleware to verify if user has STAFF role
+ */
+const isStaff = async (req, res, next) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    
+    try {
+        const tutorData = await fetchTutorData(req.session.userId);
+        if (tutorData && tutorData.role === 'STAFF') {
+            return next();
+        }
+        return res.status(403).json({ error: 'Access denied. STAFF role required.' });
+    } catch (error) {
+        console.error('Error verifying STAFF role:', error);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+/**
+ * Middleware to verify specific roles
  */
 const hasRole = (...roles) => {
     return (req, res, next) => {
@@ -22,13 +54,13 @@ const hasRole = (...roles) => {
         }
 
         res.status(403).json({ 
-            error: 'Non hai i permessi per accedere a questa risorsa' 
+            error: 'You do not have permission to access this resource' 
         });
     };
 };
 
 /**
- * Middleware per verificare se l'utente è già autenticato
+ * Middleware to verify if user is already authenticated
  */
 const isGuest = (req, res, next) => {
     if (req.session && req.session.userId) {
@@ -38,7 +70,7 @@ const isGuest = (req, res, next) => {
 };
 
 /**
- * Middleware per logging delle richieste autenticate
+ * Middleware for logging authenticated requests
  */
 const logAuthentication = (req, res, next) => {
     if (req.session && req.session.userId) {
@@ -49,6 +81,8 @@ const logAuthentication = (req, res, next) => {
 
 module.exports = {
     isAuthenticated,
+    isAdmin,
+    isStaff,
     hasRole,
     isGuest,
     logAuthentication
