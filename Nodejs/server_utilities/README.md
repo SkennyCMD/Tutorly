@@ -26,8 +26,33 @@ Centralized application configuration.
 Authentication services for tutors and administrators.
 
 **Exports:**
-- `authenticateTutorWithJavaAPI(username, password)`: Authenticates a tutor with the Java backend, returns tutor ID or null
-- `authenticateAdminWithJavaAPI(username, password)`: Authenticates an admin with the Java backend, returns admin ID or null
+- `authenticateTutor(username, password)`: Authenticates a tutor with bcrypt password verification, returns `{tutorId, tutorData}` or null
+- `authenticateAdmin(username, password)`: Authenticates an admin with bcrypt password verification, returns `{adminId, adminData}` or null
+- `authenticateTutorWithJavaAPI(username, password)`: ⚠️ DEPRECATED - Legacy method
+- `authenticateAdminWithJavaAPI(username, password)`: ⚠️ DEPRECATED - Legacy method
+
+**Note:** The new authentication methods use bcrypt for secure password verification. Passwords are hashed using bcrypt with 10 salt rounds when creating users.
+
+---
+
+### 🔒 `passwordService.js`
+Password security and authentication logging utilities.
+
+**Exports:**
+- `hashPassword(password)`: Hashes a plain text password using bcrypt (10 salt rounds)
+- `verifyPassword(password, hash)`: Verifies a plain text password against a bcrypt hash
+- `logAuthAttempt(type, username, ip, success)`: Logs authentication attempts with colored console output (orange for attempts, green for success, red for failure)
+
+**Usage example:**
+```javascript
+const { hashPassword, verifyPassword } = require('./server_utilities/passwordService');
+
+// When creating a user
+const hashedPassword = await hashPassword('mySecurePassword123');
+
+// When authenticating
+const isValid = await verifyPassword('mySecurePassword123', hashedPassword);
+```
 
 ---
 
@@ -117,22 +142,40 @@ User management service (if present).
    const { fetchStudentData, fetchAllLessons } = require('./server_utilities/javaApiService');
    ```
 
-2. **Error Handling**: Fetch functions already handle errors and return empty arrays or null
+2. **Password Security**: Always hash passwords before storing
+   ```javascript
+   const { hashPassword } = require('./server_utilities/passwordService');
+   const hashedPassword = await hashPassword(plainTextPassword);
+   // Store hashedPassword in database, NEVER store plain text passwords
+   ```
+
+3. **Authentication**: Use the new bcrypt-based authentication methods
+   ```javascript
+   const { authenticateTutor } = require('./server_utilities/authService');
+   const authResult = await authenticateTutor(username, password);
+   if (authResult) {
+       // Login successful, authResult contains tutorId and tutorData
+   }
+   ```
+
+4. **Error Handling**: Fetch functions already handle errors and return empty arrays or null
    ```javascript
    const students = await fetchAllStudents(); // Returns [] in case of error
    ```
 
-3. **Middleware Chain**: Combine middleware to protect routes
+5. **Middleware Chain**: Combine middleware to protect routes
    ```javascript
    app.get('/admin/reports', adminSession, isAdmin, isStaff, (req, res) => {
        // Protected route for admin with STAFF role
    });
    ```
 
-4. **Configuration**: Always import from `config.js` for shared values
+6. **Configuration**: Always import from `config.js` for shared values
    ```javascript
    const { JAVA_API_KEY, PORT } = require('./server_utilities/config');
    ```
+
+7. **Logging**: Authentication attempts are automatically logged with colored output for better visibility
 
 ## Maintenance
 

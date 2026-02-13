@@ -6,8 +6,9 @@ const https = require('https');
 const fs = require('fs');
 const { generateLessonsExcel, generateStudentsLessonsExcel, generateTutorMonthlyReport } = require('../server_utilities/excel');
 const { logAdminLoginAttempt } = require('../server_utilities/adminLogger');
-const { authenticateTutorWithJavaAPI, authenticateAdminWithJavaAPI } = require('../server_utilities/authService');
+const { authenticateTutor, authenticateAdmin } = require('../server_utilities/authService');
 const { isAuthenticated, isAdmin, isStaff } = require('../server_utilities/authMiddleware');
+const { hashPassword, logAuthAttempt } = require('../server_utilities/passwordService');
 const { 
     fetchFromJavaAPI,
     fetchTutorData,
@@ -98,27 +99,34 @@ app.post('/adminLogin', adminSession, async (req, res) => {
     const { username, password } = req.body;
     const clientIp = req.ip || req.connection.remoteAddress;
 
-    console.log('Admin Login Attempt:', { username, password: '***', ip: clientIp });
-
     try {
-        // Call Java backend API to authenticate admin
-        const adminId = await authenticateAdminWithJavaAPI(username, password);
+        // Authenticate admin with bcrypt password verification
+        const authResult = await authenticateAdmin(username, password);
 
-        if (adminId === null) {
+        if (authResult === null) {
+            logAuthAttempt('admin', username, clientIp, false, null, null);
+            logAdminLoginAttempt(username, clientIp, false);
+            return res.render('adminLogin', { error: 'Username or password incorrect' });
+        }
+
+        if (!authResult.adminId) {
+            // Password incorrect - show both hashes for comparison
+            logAuthAttempt('admin', username, clientIp, false, authResult.passwordHash, authResult.dbHash);
             logAdminLoginAttempt(username, clientIp, false);
             return res.render('adminLogin', { error: 'Username or password incorrect' });
         }
 
         // Create session with admin data
-        req.session.adminId = adminId;
+        req.session.adminId = authResult.adminId;
         req.session.adminUsername = username;
         req.session.role = 'admin';
 
+        logAuthAttempt('admin', username, clientIp, true, authResult.passwordHash, authResult.dbHash);
         logAdminLoginAttempt(username, clientIp, true);
-        console.log('Admin login successful for:', username);
         res.redirect('/admin');
     } catch (error) {
         console.error('Admin login error:', error);
+        logAuthAttempt('admin', username, clientIp, false, null, null);
         logAdminLoginAttempt(username, clientIp, false);
         res.render('adminLogin', { error: 'Error during login. Please ensure the Java server is running.' });
     }
@@ -153,28 +161,38 @@ app.get('/adminLogout', adminSession, (req, res) => {
 
 app.post('/login', tutorSession, async (req, res) => {
     const { username, password } = req.body;
-
-    console.log('Login Attempt:', { username, password: '***' });
+    const clientIp = req.ip || req.connection.remoteAddress;
 
     try {
-        // Call Java backend API to authenticate tutor
-        const tutorId = await authenticateTutorWithJavaAPI(username, password);
+        // Authenticate tutor with bcrypt password verification
+        const authResult = await authenticateTutor(username, password);
 
-        console.log('Java API (Server) - Tutor ID:', tutorId);
+        if (authResult === null) {
+            logAuthAttempt('tutor', username, clientIp, false, null, null);
+            return res.render('login', { error: 'Username or password incorrect' });
+        }
 
-        if (tutorId === null) {
+        if (!authResult.tutorId) {
+            // Check if account is blocked
+            if (authResult.blocked) {
+                logAuthAttempt('tutor', username, clientIp, false, authResult.passwordHash, authResult.dbHash);
+                return res.render('login', { error: 'Account is blocked. Contact administrator.' });
+            }
+            // Password incorrect - show both hashes for comparison
+            logAuthAttempt('tutor', username, clientIp, false, authResult.passwordHash, authResult.dbHash);
             return res.render('login', { error: 'Username or password incorrect' });
         }
 
         // Create session with tutor data
-        req.session.userId = tutorId;
+        req.session.userId = authResult.tutorId;
         req.session.username = username;
-        req.session.role = 'tutor';
+        req.session.role = authResult.tutorData.role.toLowerCase();
 
-        console.log('Login successful for:', username);
+        logAuthAttempt('tutor', username, clientIp, true, authResult.passwordHash, authResult.dbHash);
         res.redirect('/home');
     } catch (error) {
         console.error('Login error:', error);
+        logAuthAttempt('tutor', username, clientIp, false, null, null);
         res.render('login', { error: 'Error during login. Please ensure the Java server is running.' });
     }
 });
@@ -1363,8 +1381,9 @@ app.patch('/api/admin/tutors/:id/status', adminSession, isAdmin, async (req, res
 app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     try {
         const { username, password, role } = req.body;
+        const clientIp = req.ip || req.connection.remoteAddress;
 
-        console.log('Create tutor request:', { username, role, passwordLength: password?.length });
+        console.log('\x1b[38;5;214m[CREATE TUTOR]\x1b[0m Request from IP:', clientIp, '| Username:', username, '| Role:', role);
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password are required' });
@@ -1378,22 +1397,23 @@ app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Password must be at least 8 characters' });
         }
 
+        // Hash password with bcrypt before saving
+        const hashedPassword = await hashPassword(password);
+        console.log('\x1b[38;5;214m[CREATE TUTOR]\x1b[0m Password hashed successfully');
+
         const tutorData = {
             username: username,
-            password: password,
+            password: hashedPassword,
             role: role,
             status: 'ACTIVE'
         };
 
-        console.log('Sending to Java API:', tutorData);
-
         const newTutor = await fetchFromJavaAPI('/api/tutors', 'POST', tutorData);
         
-        console.log('Tutor created successfully:', newTutor);
+        console.log('\x1b[32m[CREATE TUTOR]\x1b[0m Tutor created successfully:', username);
         res.status(201).json(newTutor);
     } catch (error) {
-        console.error('Error creating tutor:', error);
-        console.error('Error details:', { statusCode: error.statusCode, message: error.message });
+        console.error('\x1b[31m[CREATE TUTOR ERROR]\x1b[0m', error.message);
         if (error.statusCode === 409) {
             return res.status(409).json({ error: 'Username already exists' });
         }
