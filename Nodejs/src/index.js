@@ -9,6 +9,7 @@ const { logAdminLoginAttempt } = require('../server_utilities/adminLogger');
 const { authenticateTutor, authenticateAdmin } = require('../server_utilities/authService');
 const { isAuthenticated, isAdmin, isStaff } = require('../server_utilities/authMiddleware');
 const { hashPassword, logAuthAttempt } = require('../server_utilities/passwordService');
+const { logError, logSuccess, logWarning, logInfo, requestLogger } = require('../server_utilities/logger');
 const { 
     fetchFromJavaAPI,
     fetchTutorData,
@@ -37,6 +38,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Request logging middleware
+app.use(requestLogger);
 
 // Tutor session configuration
 const tutorSession = session({
@@ -123,9 +127,10 @@ app.post('/adminLogin', adminSession, async (req, res) => {
 
         logAuthAttempt('admin', username, clientIp, true, authResult.passwordHash, authResult.dbHash);
         logAdminLoginAttempt(username, clientIp, true);
+        logSuccess(`Admin login successful: ${username}`, req);
         res.redirect('/admin');
     } catch (error) {
-        console.error('Admin login error:', error);
+        logError(`Admin login error for ${username}: ${error.message}`, req, { error: error.stack });
         logAuthAttempt('admin', username, clientIp, false, null, null);
         logAdminLoginAttempt(username, clientIp, false);
         res.render('adminLogin', { error: 'Error during login. Please ensure the Java server is running.' });
@@ -141,9 +146,12 @@ app.get('/admin', adminSession, isAdmin, (req, res) => {
 
 // Logout route for tutors
 app.get('/logout', tutorSession, (req, res) => {
+    const username = req.session?.username || 'unknown';
     req.session.destroy((err) => {
         if (err) {
-            console.error('Error destroying session:', err);
+            logError(`Error destroying tutor session for ${username}: ${err.message}`, req);
+        } else {
+            logInfo(`Tutor logged out: ${username}`, req);
         }
         res.redirect('/login');
     });
@@ -151,9 +159,12 @@ app.get('/logout', tutorSession, (req, res) => {
 
 // Logout route for admins
 app.get('/adminLogout', adminSession, (req, res) => {
+    const username = req.session?.adminUsername || 'unknown';
     req.session.destroy((err) => {
         if (err) {
-            console.error('Error destroying admin session:', err);
+            logError(`Error destroying admin session for ${username}: ${err.message}`, req);
+        } else {
+            logInfo(`Admin logged out: ${username}`, req);
         }
         res.redirect('/adminLogin');
     });
@@ -189,9 +200,10 @@ app.post('/login', tutorSession, async (req, res) => {
         req.session.role = authResult.tutorData.role.toLowerCase();
 
         logAuthAttempt('tutor', username, clientIp, true, authResult.passwordHash, authResult.dbHash);
+        logSuccess(`Tutor login successful: ${username}`, req);
         res.redirect('/home');
     } catch (error) {
-        console.error('Login error:', error);
+        logError(`Login error for tutor ${username}: ${error.message}`, req, { error: error.stack });
         logAuthAttempt('tutor', username, clientIp, false, null, null);
         res.render('login', { error: 'Error during login. Please ensure the Java server is running.' });
     }
@@ -302,7 +314,7 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             students: students || []
         });
     } catch (error) {
-        console.error('Error fetching home data:', error);
+        logError('Error fetching home data', req, { error: error.message });
         res.render('home', {
             username: req.session.username,
             userId: req.session.userId,
@@ -380,7 +392,7 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             tutors: tutors || []
         });
     } catch (error) {
-        console.error('Error fetching calendar data:', error);
+        logError('Error fetching calendar data', req, { error: error.message });
         res.render('calendar', {
             username: req.session.username,
             userId: req.session.userId,
@@ -450,7 +462,7 @@ app.get('/lessons', tutorSession, isAuthenticated, async (req, res) => {
             prenotations: prenotationsWithStudents
         });
     } catch (error) {
-        console.error('Error fetching lessons data:', error);
+        logError('Error fetching lessons data', req, { error: error.message });
         res.render('lessons', {
             username: req.session.username,
             userId: req.session.userId,
@@ -485,7 +497,7 @@ app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
             tutors: allTutors || []
         });
     } catch (error) {
-        console.error('Error accessing staff panel:', error);
+        logError('Error accessing staff panel', req, { error: error.message });
         res.redirect('/home');
     }
 });
@@ -532,9 +544,11 @@ app.get('/api/reports/lessons-by-month', tutorSession, isAuthenticated, isStaff,
         // Write to response
         await workbook.xlsx.write(res);
         res.end();
+        
+        logSuccess('Lessons report generated', req, { month, fileName });
 
     } catch (error) {
-        console.error('Error generating Excel report:', error);
+        logError('Error generating Excel report', req, { month: req.query.month, error: error.message });
         res.status(500).json({ error: 'Failed to generate report' });
     }
 });
@@ -579,9 +593,11 @@ app.get('/api/reports/lessons-by-student', tutorSession, isAuthenticated, isStaf
         // Write to response
         await workbook.xlsx.write(res);
         res.end();
+        
+        logSuccess('Students lessons report generated', req, { month, fileName });
 
     } catch (error) {
-        console.error('Error generating students Excel report:', error);
+        logError('Error generating students Excel report', req, { month: req.query.month, error: error.message });
         res.status(500).json({ error: 'Failed to generate report' });
     }
 });
@@ -633,9 +649,11 @@ app.get('/api/reports/tutors-monthly-stats', tutorSession, isAuthenticated, isSt
         // Write to response
         await workbook.xlsx.write(res);
         res.end();
+        
+        logSuccess('Tutors monthly stats report generated', req, { year, filename });
 
     } catch (error) {
-        console.error('Error generating tutors monthly stats report:', error);
+        logError('Error generating tutors monthly stats report', req, { year: req.query.year, error: error.message });
         res.status(500).json({ error: 'Failed to generate report' });
     }
 });
@@ -643,7 +661,7 @@ app.get('/api/reports/tutors-monthly-stats', tutorSession, isAuthenticated, isSt
 app.get('/logout', tutorSession, (req, res) => {
     req.session.destroy((err) => {
         if (err) {
-            console.error('Error destroying session:', err);
+            logError('Error destroying session', req, { error: err.message });
         }
         res.redirect('/login');
     });
@@ -652,7 +670,7 @@ app.get('/logout', tutorSession, (req, res) => {
 app.post('/logout', tutorSession, (req, res) => {
     req.session.destroy((err) => {
         if (err) {
-            console.error('Logout error:', err);
+            logError('Logout error', req, { error: err.message });
         }
         res.redirect('/login');
     });
@@ -726,7 +744,7 @@ app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
             studentId: parseInt(studentId)
         };
         
-        console.log('Creating lesson:', lessonData);
+        logInfo('Creating new lesson', req, { studentId, tutorId });
         
         const postData = JSON.stringify(lessonData);
         
@@ -752,7 +770,7 @@ app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
             
             httpsRes.on('end', () => {
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
-                    console.log('Lesson created successfully:', data);
+                    logSuccess('Lesson created successfully', req, { studentId, tutorId });
                     try {
                         const lesson = JSON.parse(data);
                         res.json(lesson);
@@ -760,15 +778,14 @@ app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
                         res.json({ success: true, message: 'Lesson created' });
                     }
                 } else {
-                    console.error('Error creating lesson, status:', httpsRes.statusCode);
-                    console.error('Response:', data);
+                    logError(`Error creating lesson, status: ${httpsRes.statusCode}`, req, { response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to create lesson' });
                 }
             });
         });
         
         httpsReq.on('error', (error) => {
-            console.error('Error calling Java API:', error);
+            logError('Error calling Java API for lesson creation', req, { error: error.message });
             res.status(500).json({ error: 'Failed to create lesson' });
         });
         
@@ -776,7 +793,7 @@ app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
         httpsReq.end();
         
     } catch (error) {
-        console.error('Error creating lesson:', error.message);
+        logError('Error creating lesson', req, { error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to create lesson' });
     }
 });
@@ -826,7 +843,7 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) =>
             creatorId: parseInt(currentUserId) // Always use the current logged-in user as creator
         };
         
-        console.log('Creating prenotation:', prenotationData);
+        logInfo('Creating prenotation', req, { studentId, tutorId, startDateTime, endDateTime });
         
         const postData = JSON.stringify(prenotationData);
         
@@ -852,7 +869,7 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) =>
             
             httpsRes.on('end', () => {
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
-                    console.log('Prenotation created successfully:', data);
+                    logSuccess('Prenotation created successfully', req, { data });
                     try {
                         const prenotation = JSON.parse(data);
                         res.json(prenotation);
@@ -860,15 +877,14 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) =>
                         res.json({ success: true, message: 'Prenotation created' });
                     }
                 } else {
-                    console.error('Error creating prenotation, status:', httpsRes.statusCode);
-                    console.error('Response:', data);
+                    logError(`Error creating prenotation, status: ${httpsRes.statusCode}`, req, { response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to create prenotation' });
                 }
             });
         });
         
         httpsReq.on('error', (error) => {
-            console.error('Error calling Java API:', error);
+            logError('Error calling Java API for prenotation creation', req, { error: error.message });
             res.status(500).json({ error: 'Failed to create prenotation' });
         });
         
@@ -876,7 +892,7 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) =>
         httpsReq.end();
         
     } catch (error) {
-        console.error('Error creating prenotation:', error.message);
+        logError('Error creating prenotation', req, { error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to create prenotation' });
     }
 });
@@ -901,7 +917,7 @@ app.put('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res)
             creatorId: parseInt(currentUserId)
         };
         
-        console.log('Updating prenotation:', id, prenotationData);
+        logInfo('Updating prenotation', req, { id, studentId, tutorId, startTime, endTime });
         
         const postData = JSON.stringify(prenotationData);
         
@@ -927,7 +943,7 @@ app.put('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res)
             
             httpsRes.on('end', () => {
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
-                    console.log('Prenotation updated successfully:', data);
+                    logSuccess('Prenotation updated successfully', req, { id });
                     try {
                         const prenotation = JSON.parse(data);
                         res.json(prenotation);
@@ -935,15 +951,14 @@ app.put('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res)
                         res.json({ success: true, message: 'Prenotation updated' });
                     }
                 } else {
-                    console.error('Error updating prenotation, status:', httpsRes.statusCode);
-                    console.error('Response:', data);
+                    logError(`Error updating prenotation, status: ${httpsRes.statusCode}`, req, { id, response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to update prenotation' });
                 }
             });
         });
         
         httpsReq.on('error', (error) => {
-            console.error('Error calling Java API:', error);
+            logError('Error calling Java API for prenotation update', req, { id, error: error.message });
             res.status(500).json({ error: 'Failed to update prenotation' });
         });
         
@@ -951,7 +966,7 @@ app.put('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res)
         httpsReq.end();
         
     } catch (error) {
-        console.error('Error updating prenotation:', error.message);
+        logError('Error updating prenotation', req, { id: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to update prenotation' });
     }
 });
@@ -961,7 +976,7 @@ app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, r
     try {
         const { id } = req.params;
         
-        console.log('Deleting prenotation:', id);
+        logInfo('Deleting prenotation', req, { id });
         
         const options = {
             hostname: 'localhost',
@@ -983,25 +998,24 @@ app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, r
             
             httpsRes.on('end', () => {
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
-                    console.log('Prenotation deleted successfully');
+                    logSuccess('Prenotation deleted successfully', req, { id });
                     res.json({ success: true, message: 'Prenotation deleted' });
                 } else {
-                    console.error('Error deleting prenotation, status:', httpsRes.statusCode);
-                    console.error('Response:', data);
+                    logError(`Error deleting prenotation, status: ${httpsRes.statusCode}`, req, { id, response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete prenotation' });
                 }
             });
         });
         
         httpsReq.on('error', (error) => {
-            console.error('Error calling Java API:', error);
+            logError('Error calling Java API for prenotation deletion', req, { id, error: error.message });
             res.status(500).json({ error: 'Failed to delete prenotation' });
         });
         
         httpsReq.end();
         
     } catch (error) {
-        console.error('Error deleting prenotation:', error.message);
+        logError('Error deleting prenotation', req, { id: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to delete prenotation' });
     }
 });
@@ -1025,7 +1039,7 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, async (req, res) 
             tutorIds: tutorIds || [] // Empty array if no tutors selected
         };
         
-        console.log('Creating calendar note:', calendarNoteData);
+        logInfo('Creating calendar note', req, { description, startTime, endTime, tutorIds });
         
         const postData = JSON.stringify(calendarNoteData);
         
@@ -1051,7 +1065,7 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, async (req, res) 
             
             httpsRes.on('end', () => {
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
-                    console.log('Calendar note created successfully:', data);
+                    logSuccess('Calendar note created successfully', req);
                     try {
                         const note = JSON.parse(data);
                         res.json(note);
@@ -1059,15 +1073,14 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, async (req, res) 
                         res.json({ success: true, message: 'Calendar note created' });
                     }
                 } else {
-                    console.error('Error creating calendar note, status:', httpsRes.statusCode);
-                    console.error('Response:', data);
+                    logError(`Error creating calendar note, status: ${httpsRes.statusCode}`, req, { response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to create calendar note' });
                 }
             });
         });
         
         httpsReq.on('error', (error) => {
-            console.error('Error calling Java API:', error);
+            logError('Error calling Java API for calendar note creation', req, { error: error.message });
             res.status(500).json({ error: 'Failed to create calendar note' });
         });
         
@@ -1075,7 +1088,7 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, async (req, res) 
         httpsReq.end();
         
     } catch (error) {
-        console.error('Error creating calendar note:', error.message);
+        logError('Error creating calendar note', req, { error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to create calendar note' });
     }
 });
@@ -1092,7 +1105,7 @@ app.get('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
         
         res.json(note);
     } catch (error) {
-        console.error('Error fetching calendar note:', error);
+        logError('Error fetching calendar note', req, { id: req.params.id, error: error.message });
         res.status(500).json({ error: 'Failed to fetch calendar note' });
     }
 });
@@ -1111,6 +1124,7 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
         // Fetch the note to verify creator
         const existingNote = await fetchFromJavaAPI(`/api/calendar-notes/${id}`);
         if (existingNote && existingNote.creator && existingNote.creator.id !== currentUserId) {
+            logWarning('Unauthorized attempt to edit calendar note', req, { noteId: id, noteCreatorId: existingNote.creator.id });
             return res.status(403).json({ error: 'Only the creator can edit this note' });
         }
         
@@ -1123,7 +1137,7 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
             tutorIds: tutorIds || []
         };
         
-        console.log('Updating calendar note:', id, calendarNoteData);
+        logInfo('Updating calendar note', req, { id, description });
         
         const postData = JSON.stringify(calendarNoteData);
         
@@ -1149,7 +1163,7 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
             
             httpsRes.on('end', () => {
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
-                    console.log('Calendar note updated successfully:', data);
+                    logSuccess('Calendar note updated successfully', req, { id });
                     try {
                         const note = JSON.parse(data);
                         res.json(note);
@@ -1157,15 +1171,14 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
                         res.json({ success: true, message: 'Calendar note updated' });
                     }
                 } else {
-                    console.error('Error updating calendar note, status:', httpsRes.statusCode);
-                    console.error('Response:', data);
+                    logError(`Error updating calendar note, status: ${httpsRes.statusCode}`, req, { id, response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to update calendar note' });
                 }
             });
         });
         
         httpsReq.on('error', (error) => {
-            console.error('Error calling Java API:', error);
+            logError('Error calling Java API for calendar note update', req, { id, error: error.message });
             res.status(500).json({ error: 'Failed to update calendar note' });
         });
         
@@ -1173,7 +1186,7 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
         httpsReq.end();
         
     } catch (error) {
-        console.error('Error updating calendar note:', error.message);
+        logError('Error updating calendar note', req, { id: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to update calendar note' });
     }
 });
@@ -1187,10 +1200,11 @@ app.delete('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req,
         // Fetch the note to verify creator
         const existingNote = await fetchFromJavaAPI(`/api/calendar-notes/${id}`);
         if (existingNote && existingNote.creator && existingNote.creator.id !== currentUserId) {
+            logWarning('Unauthorized attempt to delete calendar note', req, { noteId: id, noteCreatorId: existingNote.creator.id });
             return res.status(403).json({ error: 'Only the creator can delete this note' });
         }
         
-        console.log('Deleting calendar note:', id);
+        logInfo('Deleting calendar note', req, { id });
         
         const options = {
             hostname: 'localhost',
@@ -1212,25 +1226,24 @@ app.delete('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req,
             
             httpsRes.on('end', () => {
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
-                    console.log('Calendar note deleted successfully');
+                    logSuccess('Calendar note deleted successfully', req, { id });
                     res.json({ success: true, message: 'Calendar note deleted' });
                 } else {
-                    console.error('Error deleting calendar note, status:', httpsRes.statusCode);
-                    console.error('Response:', data);
+                    logError(`Error deleting calendar note, status: ${httpsRes.statusCode}`, req, { id, response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete calendar note' });
                 }
             });
         });
         
         httpsReq.on('error', (error) => {
-            console.error('Error calling Java API:', error);
+            logError('Error calling Java API for calendar note deletion', req, { id, error: error.message });
             res.status(500).json({ error: 'Failed to delete calendar note' });
         });
         
         httpsReq.end();
         
     } catch (error) {
-        console.error('Error deleting calendar note:', error.message);
+        logError('Error deleting calendar note', req, { id: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to delete calendar note' });
     }
 });
@@ -1258,7 +1271,7 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
             status: 'ACTIVE'
         };
         
-        console.log('Creating student:', studentData);
+        logInfo('Creating student', req, { name, surname, studentClass });
         
         const postData = JSON.stringify(studentData);
         
@@ -1284,7 +1297,7 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
             
             httpsRes.on('end', () => {
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
-                    console.log('Student created successfully:', data);
+                    logSuccess('Student created successfully', req, { name, surname });
                     try {
                         const student = JSON.parse(data);
                         res.json(student);
@@ -1292,15 +1305,14 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
                         res.json({ success: true, message: 'Student created' });
                     }
                 } else {
-                    console.error('Error creating student, status:', httpsRes.statusCode);
-                    console.error('Response:', data);
+                    logError(`Error creating student, status: ${httpsRes.statusCode}`, req, { response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to create student' });
                 }
             });
         });
         
         httpsReq.on('error', (error) => {
-            console.error('Error calling Java API:', error);
+            logError('Error calling Java API for student creation', req, { error: error.message });
             res.status(500).json({ error: 'Failed to create student' });
         });
         
@@ -1308,7 +1320,7 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
         httpsReq.end();
         
     } catch (error) {
-        console.error('Error creating student:', error.message);
+        logError('Error creating student', req, { error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to create student' });
     }
 });
@@ -1321,7 +1333,7 @@ app.get('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
         const tutors = await fetchFromJavaAPI('/api/tutors', 'GET');
         res.json(tutors);
     } catch (error) {
-        console.error('Error fetching tutors:', error);
+        logError('Error fetching tutors', req, { error: error.message });
         res.status(500).json({ error: 'Failed to fetch tutors' });
     }
 });
@@ -1332,7 +1344,7 @@ app.get('/api/admin/students', adminSession, isAdmin, async (req, res) => {
         const students = await fetchFromJavaAPI('/api/students', 'GET');
         res.json(students);
     } catch (error) {
-        console.error('Error fetching students:', error);
+        logError('Error fetching students', req, { error: error.message });
         res.status(500).json({ error: 'Failed to fetch students' });
     }
 });
@@ -1350,9 +1362,10 @@ app.patch('/api/admin/tutors/:id/role', adminSession, isAdmin, async (req, res) 
         // Use the specific PATCH endpoint for role update
         const updatedTutor = await fetchFromJavaAPI(`/api/tutors/${tutorId}/role`, 'PATCH', { role });
         
+        logSuccess('Tutor role updated', req, { tutorId, role });
         res.json(updatedTutor);
     } catch (error) {
-        console.error('Error updating tutor role:', error);
+        logError('Error updating tutor role', req, { tutorId: req.params.id, error: error.message });
         res.status(500).json({ error: 'Failed to update tutor role' });
     }
 });
@@ -1370,9 +1383,10 @@ app.patch('/api/admin/tutors/:id/status', adminSession, isAdmin, async (req, res
         // Use the specific PATCH endpoint for status update
         const updatedTutor = await fetchFromJavaAPI(`/api/tutors/${tutorId}/status`, 'PATCH', { status });
         
+        logSuccess('Tutor status updated', req, { tutorId, status });
         res.json(updatedTutor);
     } catch (error) {
-        console.error('Error updating tutor status:', error);
+        logError('Error updating tutor status', req, { tutorId: req.params.id, error: error.message });
         res.status(500).json({ error: 'Failed to update tutor status' });
     }
 });
@@ -1381,9 +1395,8 @@ app.patch('/api/admin/tutors/:id/status', adminSession, isAdmin, async (req, res
 app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     try {
         const { username, password, role } = req.body;
-        const clientIp = req.ip || req.connection.remoteAddress;
 
-        console.log('\x1b[38;5;214m[CREATE TUTOR]\x1b[0m Request from IP:', clientIp, '| Username:', username, '| Role:', role);
+        logInfo('Creating new tutor', req, { username, role });
 
         if (!username || !password) {
             return res.status(400).json({ error: 'Username and password are required' });
@@ -1399,7 +1412,7 @@ app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
 
         // Hash password with bcrypt before saving
         const hashedPassword = await hashPassword(password);
-        console.log('\x1b[38;5;214m[CREATE TUTOR]\x1b[0m Password hashed successfully');
+        logInfo('Password hashed for new tutor', req, { username });
 
         const tutorData = {
             username: username,
@@ -1410,10 +1423,10 @@ app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
 
         const newTutor = await fetchFromJavaAPI('/api/tutors', 'POST', tutorData);
         
-        console.log('\x1b[32m[CREATE TUTOR]\x1b[0m Tutor created successfully:', username);
+        logSuccess('Tutor created successfully', req, { username });
         res.status(201).json(newTutor);
     } catch (error) {
-        console.error('\x1b[31m[CREATE TUTOR ERROR]\x1b[0m', error.message);
+        logError('Error creating tutor', req, { error: error.message, stack: error.stack });
         if (error.statusCode === 409) {
             return res.status(409).json({ error: 'Username already exists' });
         }
@@ -1441,9 +1454,10 @@ app.patch('/api/admin/students/:id/class', adminSession, isAdmin, async (req, re
         student.studentClass = studentClass;
         const updatedStudent = await fetchFromJavaAPI(`/api/students/${studentId}`, 'PUT', student);
         
+        logSuccess('Student class updated', req, { studentId, studentClass });
         res.json(updatedStudent);
     } catch (error) {
-        console.error('Error updating student class:', error);
+        logError('Error updating student class', req, { studentId: req.params.id, error: error.message });
         res.status(500).json({ error: 'Failed to update student class' });
     }
 });
