@@ -1,31 +1,65 @@
 package com.tutorly.app.backend_api.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
- * JPA Entity representing the Admin-Creates-Tutor relationship
+ * JPA Entity representing the Admin-Creates-Tutor relationship.
  * 
- * This is a join/association table entity that tracks which admin created which tutor.
- * Uses a composite primary key (AdminCreatesTutorId) consisting of admin ID and tutor ID.
- * Also stores the creation timestamp.
+ * <p>This is an association/join table entity that tracks which admin user created which tutor.
+ * It implements a many-to-many relationship with additional metadata (creation timestamp)
+ * between Admin and Tutor entities.</p>
  * 
- * Database table: admin_creates_tutor
+ * <p>Design Details:
+ * <ul>
+ *   <li>Uses a composite primary key (AdminCreatesTutorId) consisting of admin ID and tutor ID</li>
+ *   <li>Stores the creation timestamp for audit purposes</li>
+ *   <li>Prevents circular JSON serialization with @JsonBackReference annotations</li>
+ *   <li>Automatically initializes createdAt timestamp to current time</li>
+ * </ul>
+ * </p>
+ * 
+ * <p>Usage Example:
+ * <pre>
+ * Admin admin = adminRepository.findById(adminId).orElseThrow();
+ * Tutor tutor = tutorRepository.findById(tutorId).orElseThrow();
+ * AdminCreatesTutor relation = new AdminCreatesTutor(admin, tutor);
+ * adminCreatesTutorRepository.save(relation);
+ * </pre>
+ * </p>
+ * 
+ * <p>Database Mapping:
+ * <ul>
+ *   <li>Table: admin_creates_tutor</li>
+ *   <li>Composite PK: (id_admin, id_tutor)</li>
+ *   <li>Additional columns: created_at</li>
+ * </ul>
+ * </p>
+ * 
+ * @see Admin
+ * @see Tutor
+ * @see AdminCreatesTutorId
+ * @author Tutorly Development Team
+ * @version 1.0
+ * @since 1.0
  */
 @Entity
 @Table(name = "admin_creates_tutor")
 public class AdminCreatesTutor {
     
     /**
-     * Composite primary key containing both admin ID and tutor ID
+     * Composite primary key containing both admin ID and tutor ID.
+     * This embedded ID uniquely identifies each admin-tutor creation relationship.
      */
     @EmbeddedId
     private AdminCreatesTutorId id;
     
     /**
-     * The admin who created the tutor
+     * The admin user who created the tutor account.
+     * 
+     * Many-to-one relationship with Admin entity.
+     * Uses @JsonBackReference to prevent circular references during JSON serialization.
      */
     @ManyToOne
     @MapsId("idAdmin")
@@ -34,7 +68,10 @@ public class AdminCreatesTutor {
     private Admin admin;
     
     /**
-     * The tutor that was created
+     * The tutor account that was created by the admin.
+     * 
+     * Many-to-one relationship with Tutor entity.
+     * Uses @JsonBackReference to prevent circular references during JSON serialization.
      */
     @ManyToOne
     @MapsId("idTutor")
@@ -43,26 +80,33 @@ public class AdminCreatesTutor {
     private Tutor tutor;
     
     /**
-     * Timestamp when the tutor was created by the admin
-     * Automatically set to current time
+     * Timestamp when the tutor was created by the admin.
+     * 
+     * Automatically initialized to the current time when the entity is instantiated.
+     * Non-nullable field for audit tracking purposes.
      */
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
     
+    
     // Constructors
     
+    
     /**
-     * Default constructor required by JPA
+     * Default no-argument constructor.
+     * Required by JPA for entity instantiation.
      */
     public AdminCreatesTutor() {
     }
     
     /**
-     * Constructor with admin and tutor
-     * Automatically creates the composite ID from the admin and tutor IDs
+     * Parameterized constructor to create a new admin-tutor relationship.
      * 
-     * @param admin The admin creating the tutor
-     * @param tutor The tutor being created
+     * Automatically creates and sets the composite ID from the admin and tutor IDs.
+     * The createdAt timestamp is initialized by the field default value.
+     * 
+     * @param admin The admin user creating the tutor account
+     * @param tutor The tutor account being created
      */
     public AdminCreatesTutor(Admin admin, Tutor tutor) {
         this.admin = admin;
@@ -70,40 +114,78 @@ public class AdminCreatesTutor {
         this.id = new AdminCreatesTutorId(admin.getId(), tutor.getId());
     }
     
+    
     // Getters and Setters
     
+    
     /**
-     * Get the composite primary key
-     * @return AdminCreatesTutorId containing admin and tutor IDs
+     * Gets the composite primary key.
+     * 
+     * @return AdminCreatesTutorId containing both admin ID and tutor ID
      */
     public AdminCreatesTutorId getId() {
         return id;
     }
     
+    /**
+     * Sets the composite primary key.
+     * 
+     * @param id The composite primary key containing admin and tutor IDs
+     */
     public void setId(AdminCreatesTutorId id) {
         this.id = id;
     }
     
+    /**
+     * Gets the admin user who created the tutor.
+     * 
+     * @return The Admin entity
+     */
     public Admin getAdmin() {
         return admin;
     }
     
+    /**
+     * Sets the admin user who created the tutor.
+     * 
+     * @param admin The Admin entity
+     */
     public void setAdmin(Admin admin) {
         this.admin = admin;
     }
     
+    /**
+     * Gets the tutor account that was created.
+     * 
+     * @return The Tutor entity
+     */
     public Tutor getTutor() {
         return tutor;
     }
     
+    /**
+     * Sets the tutor account that was created.
+     * 
+     * @param tutor The Tutor entity
+     */
     public void setTutor(Tutor tutor) {
         this.tutor = tutor;
     }
     
+    /**
+     * Gets the timestamp when the tutor was created.
+     * 
+     * @return The creation date and time
+     */
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
     
+    /**
+     * Sets the timestamp when the tutor was created.
+     * 
+     * @param createdAt The creation date and time
+     */
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
