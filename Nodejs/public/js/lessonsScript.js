@@ -1,12 +1,73 @@
-// Data
+/**
+ *
+ * Lessons Management Script
+ *
+ * 
+ * Comprehensive lessons tracking and statistics interface for tutors.
+ * 
+ * Features:
+ * - Lessons history (completed lessons with search)
+ * - Today's booked lessons (prenotations)
+ * - Monthly statistics by class type (M/S/U)
+ * - Search/filter by student name
+ * - Month-by-month navigation for stats
+ * - Student creation modal
+ * - Mobile-responsive design
+ * 
+ * Data Sources:
+ * - Lessons: From window.initialLessons (server-rendered)
+ * - Prenotations: From window.initialPrenotations (server-rendered)
+ * 
+ * Lesson Statuses:
+ * - completed: Past lessons (end time < now)
+ * - booked: Future lessons (start time > now)
+ * - in-progress: Currently ongoing lessons
+ * 
+ * Class Types:
+ * - M: Middle School (blue)
+ * - S: High School/Superiori (green)
+ * - U: University (purple)
+ * 
+ * Dependencies:
+ * - Backend API: /api/students (POST)
+ * - modalShared.js: Modal initialization for calendar notes
+ *
+ */
+
+
+// Global State
+
+
+// Array of all lessons (completed past lessons)
 let lessons = [];
+
+// Array of prenotations (booked future lessons)
 let prenotations = [];
+
+// Current month/year for statistics display
 let statsDate = new Date();
+
+// Search term for filtering lessons by student name
 let searchTerm = '';
+
+// Total lesson count available on server (for pagination)
 let totalLessonsCount = 0;
+
+// Number of lessons loaded so far
 let loadedLessonsCount = 0;
 
-// Initialize
+
+// Initialization
+
+
+/**
+ * Initialize the lessons page on load.
+ * 
+ * - Updates statistics month display
+ * - Loads lessons and prenotations from server data
+ * - Sets up event listeners
+ * - Initializes modal system
+ */
 document.addEventListener('DOMContentLoaded', () => {
     updateStatsMonth();
     loadLessons();
@@ -19,13 +80,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Reload both lessons and prenotations
+
+// Data Loading
+
+
+/**
+ * Reload both lessons and prenotations.
+ * 
+ * Used when data needs to be refreshed.
+ */
 async function loadLessonsAndPrenotations() {
     await loadLessons();
     await loadPrenotations();
 }
 
-// Load lessons from server-rendered data
+/**
+ * Load lessons from server-rendered data.
+ * 
+ * Retrieves completed lessons from window.initialLessons.
+ * Transforms data to local format and determines status.
+ * Updates statistics and renders all views.
+ */
 async function loadLessons() {
     try {
         // Get lessons from window.initialLessons
@@ -46,7 +121,7 @@ async function loadLessons() {
         
         loadedLessonsCount = lessons.length;
         
-        // Use same data for statistics
+        // Use same data for statistics calculation
         allLessonsForStats = [...lessons];
         
         renderStatistics();
@@ -57,10 +132,15 @@ async function loadLessons() {
     }
 }
 
-// All lessons data for statistics (same as lessons now)
+// Copy of all lessons data used for statistics calculation
 let allLessonsForStats = [];
 
-// Load prenotations from server-rendered data
+/**
+ * Load prenotations from server-rendered data.
+ * 
+ * Retrieves booked lessons from window.initialPrenotations.
+ * Transforms data and renders today's bookings.
+ */
 async function loadPrenotations() {
     try {
         // Get prenotations from window.initialPrenotations
@@ -84,7 +164,15 @@ async function loadPrenotations() {
     }
 }
 
-// Determine lesson status based on time
+/**
+ * Determine lesson status based on start and end times.
+ * 
+ * Compares lesson times with current time to determine status.
+ * 
+ * @param {string} startTime - ISO datetime string
+ * @param {string} endTime - ISO datetime string
+ * @returns {string} Status: 'completed', 'booked', or 'in-progress'
+ */
 function determineStatus(startTime, endTime) {
     const now = new Date();
     const start = new Date(startTime);
@@ -99,8 +187,21 @@ function determineStatus(startTime, endTime) {
     }
 }
 
+
+// Event Listeners Setup
+
+
+/**
+ * Set up all event listeners for the lessons page.
+ * 
+ * Handles:
+ * - Mobile menu toggle
+ * - Statistics month navigation
+ * - Search inputs (desktop and mobile)
+ * - Student creation form submission
+ */
 function setupEventListeners() {
-    // Mobile menu
+    // Mobile menu toggle
     document.getElementById('menuToggle').addEventListener('click', () => {
     document.getElementById('mobileMenu').classList.add('open');
     document.getElementById('menuOverlay').classList.remove('hidden');
@@ -109,26 +210,28 @@ function setupEventListeners() {
     document.getElementById('closeMenu').addEventListener('click', closeMobileMenu);
     document.getElementById('menuOverlay').addEventListener('click', closeMobileMenu);
 
-    // Stats month navigation
+    // Stats month navigation - previous month
     document.getElementById('prevStatsMonth').addEventListener('click', () => {
     statsDate.setMonth(statsDate.getMonth() - 1);
     updateStatsMonth();
     renderStatistics();
     });
 
+    // Stats month navigation - next month
     document.getElementById('nextStatsMonth').addEventListener('click', () => {
     statsDate.setMonth(statsDate.getMonth() + 1);
     updateStatsMonth();
     renderStatistics();
     });
 
-    // Search
+    // Search input - desktop (filters by student name)
     document.getElementById('searchInput').addEventListener('input', (e) => {
     searchTerm = e.target.value.toLowerCase();
     renderStatistics();
     renderLessons();
     });
 
+    // Search input - mobile (syncs with desktop search)
     document.getElementById('searchInputMobile').addEventListener('input', (e) => {
     searchTerm = e.target.value.toLowerCase();
     document.getElementById('searchInput').value = e.target.value;
@@ -136,25 +239,49 @@ function setupEventListeners() {
     renderLessons();
     });
     
-    // Add student form
+    // Add student form submission
     document.getElementById('addStudentForm').addEventListener('submit', handleAddStudentSubmit);
 }
 
+/**
+ * Close the mobile menu.
+ */
 function closeMobileMenu() {
     document.getElementById('mobileMenu').classList.remove('open');
     document.getElementById('menuOverlay').classList.add('hidden');
 }
 
+
+// Statistics Display
+
+
+/**
+ * Update the statistics month display label.
+ * 
+ * Shows current month and year for statistics view.
+ */
 function updateStatsMonth() {
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     document.getElementById('statsMonth').textContent = `${monthNames[statsDate.getMonth()]} ${statsDate.getFullYear()}`;
 }
 
+/**
+ * Render lesson statistics for the current month.
+ * 
+ * Calculates and displays:
+ * - Total hours taught
+ * - Hours by class type (M/S/U)
+ * 
+ * Filters by:
+ * - Selected month/year
+ * - Only completed lessons
+ * - Search term (student name)
+ */
 function renderStatistics() {
     const month = statsDate.getMonth();
     const year = statsDate.getFullYear();
 
-    // Filter lessons by month/year and search term (use all lessons for accurate stats)
+    // Filter lessons by month/year, completed status, and search term
     const monthLessons = allLessonsForStats.filter(l => {
     const lessonDate = new Date(l.date);
     const matchesDate = lessonDate.getMonth() === month && lessonDate.getFullYear() === year && l.status === 'completed';
@@ -168,11 +295,13 @@ function renderStatistics() {
     return matchesDate;
     });
 
+    // Initialize duration counters (in minutes)
     let totalMinutes = 0;
     let minutesM = 0;
     let minutesS = 0;
     let minutesU = 0;
 
+    // Calculate durations for each lesson
     monthLessons.forEach(lesson => {
     const start = lesson.startTime.split(':').map(Number);
     const end = lesson.endTime.split(':').map(Number);
@@ -180,17 +309,25 @@ function renderStatistics() {
     
     totalMinutes += duration;
     
+    // Add to class-specific counter
     if (lesson.classType === 'M') minutesM += duration;
     else if (lesson.classType === 'S') minutesS += duration;
     else if (lesson.classType === 'U') minutesU += duration;
     });
 
+    // Update statistics display
     document.getElementById('totalHours').textContent = formatHours(totalMinutes);
     document.getElementById('hoursM').textContent = formatHours(minutesM);
     document.getElementById('hoursS').textContent = formatHours(minutesS);
     document.getElementById('hoursU').textContent = formatHours(minutesU);
 }
 
+/**
+ * Format minutes as hours and minutes.
+ * 
+ * @param {number} minutes - Total minutes
+ * @returns {string} Formatted time (e.g., "2h 30m" or "1h")
+ */
 function formatHours(minutes) {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -198,12 +335,27 @@ function formatHours(minutes) {
     return `${hours}h ${mins}m`;
 }
 
+
+// Lessons History Rendering
+
+
+/**
+ * Render the lessons history list.
+ * 
+ * Shows only completed lessons, filtered by search term.
+ * Each lesson card displays:
+ * - Student name with class type badge
+ * - Date
+ * - Time range and duration
+ * 
+ * Shows empty state if no lessons match filters.
+ */
 function renderLessons() {
     const container = document.getElementById('lessonsList');
     const emptyState = document.getElementById('emptyLessons');
     const countEl = document.getElementById('lessonsCount');
 
-    // Filter lessons (already sorted by server, completed only for history)
+    // Filter completed lessons by search term
     let filteredLessons = lessons
     .filter(l => l.status === 'completed')
     .filter(l => {
@@ -212,7 +364,7 @@ function renderLessons() {
         return fullName.includes(searchTerm);
     });
 
-    // Calculate total from allLessonsForStats for accurate count
+    // Calculate total from all lessons for accurate count
     const totalCompletedWithSearch = allLessonsForStats
         .filter(l => l.status === 'completed')
         .filter(l => {
@@ -223,6 +375,7 @@ function renderLessons() {
 
     countEl.textContent = `${totalCompletedWithSearch} lesson${totalCompletedWithSearch !== 1 ? 's' : ''}`;
 
+    // Show empty state if no lessons
     if (filteredLessons.length === 0) {
     container.innerHTML = '';
     emptyState.classList.remove('hidden');
@@ -231,6 +384,7 @@ function renderLessons() {
 
     emptyState.classList.add('hidden');
 
+    // Render each lesson card
     const lessonsHTML = filteredLessons.map(lesson => {
     const classColors = {
         'M': 'bg-blue-500/20 text-blue-400',
@@ -260,7 +414,7 @@ function renderLessons() {
     `;
     }).join('');
 
-    // Add load more button if there are more lessons to load from server
+    // Add load more button if there are more lessons available on server
     const completedLoaded = lessons.filter(l => l.status === 'completed').length;
     const completedTotal = allLessonsForStats.filter(l => l.status === 'completed').length;
     
@@ -277,11 +431,31 @@ function renderLessons() {
     container.innerHTML = lessonsHTML;
 }
 
+/**
+ * Load more lessons from server (pagination).
+ * 
+ * Currently disabled - all lessons are loaded initially.
+ */
 async function loadMoreLessons() {
     // No longer needed - all lessons are loaded initially from server-rendered data
     console.log('All lessons already loaded');
 }
 
+
+// Today's Booked Lessons Rendering
+
+
+/**
+ * Render today's booked lessons (prenotations).
+ * 
+ * Shows only prenotations for today, sorted by start time.
+ * Each card displays:
+ * - Student name with confirmation status badge
+ * - Class type badge
+ * - Date and time range
+ * 
+ * Shows empty state if no bookings today.
+ */
 function renderBookedLessons() {
     const container = document.getElementById('bookedList');
     const emptyState = document.getElementById('emptyBooked');
@@ -290,7 +464,7 @@ function renderBookedLessons() {
     // Get today's date (YYYY-MM-DD format)
     const today = new Date().toISOString().split('T')[0];
     
-    // Filter only today's prenotations and sort by time (earliest first)
+    // Filter and sort today's prenotations by start time (earliest first)
     const todayPrenotations = prenotations
         .filter(prenotation => prenotation.date === today)
         .sort((a, b) => {
@@ -301,6 +475,7 @@ function renderBookedLessons() {
 
     countEl.textContent = todayPrenotations.length;
 
+    // Show empty state if no bookings today
     if (todayPrenotations.length === 0) {
     container.innerHTML = '';
     emptyState.classList.remove('hidden');
@@ -309,6 +484,7 @@ function renderBookedLessons() {
 
     emptyState.classList.add('hidden');
 
+    // Render each prenotation card
     container.innerHTML = todayPrenotations.map(prenotation => {
     const classColors = {
         'M': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -319,7 +495,7 @@ function renderBookedLessons() {
     const date = new Date(prenotation.date);
     const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     
-    // Add status badge
+    // Add confirmation status badge
     const statusBadge = prenotation.confirmed 
         ? '<span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary ml-2">Confirmed</span>'
         : '<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">Pending</span>';
@@ -342,11 +518,28 @@ function renderBookedLessons() {
     }).join('');
 }
 
+
+// Time Formatting Utilities
+
+
+/**
+ * Format time string to HH:mm.
+ * 
+ * @param {string} time - Time in HH:mm:ss format
+ * @returns {string} Time in HH:mm format
+ */
 function formatTime(time) {
     const [hours, minutes] = time.split(':');
     return `${hours}:${minutes}`;
 }
 
+/**
+ * Calculate duration between start and end times.
+ * 
+ * @param {string} start - Start time (HH:mm)
+ * @param {string} end - End time (HH:mm)
+ * @returns {string} Duration formatted (e.g., "1h 30min" or "45min")
+ */
 function calculateDuration(start, end) {
     const [sh, sm] = start.split(':').map(Number);
     const [eh, em] = end.split(':').map(Number);
@@ -358,16 +551,35 @@ function calculateDuration(start, end) {
     return `${hours}h ${mins}min`;
 }
 
-// Student modal functions
+
+// Student Modal Functions
+
+
+/**
+ * Open the student creation modal.
+ */
 function openAddStudentModal() {
     document.getElementById('addStudentModal').classList.add('open');
 }
 
+/**
+ * Close the student creation modal and reset form.
+ */
 function closeAddStudentModal() {
     document.getElementById('addStudentModal').classList.remove('open');
     document.getElementById('addStudentForm').reset();
 }
 
+/**
+ * Handle student creation form submission.
+ * 
+ * - Validates form data
+ * - Sends POST request to /api/students
+ * - Shows success/error message
+ * - Reloads page on success to refresh student list
+ * 
+ * @param {Event} e - Form submit event
+ */
 async function handleAddStudentSubmit(e) {
     e.preventDefault();
     
@@ -395,7 +607,7 @@ async function handleAddStudentSubmit(e) {
             alert('Student added successfully!');
             closeAddStudentModal();
             
-            // Reload page to refresh student list
+            // Reload page to refresh student list and other data
             window.location.reload();
         } else {
             const error = await response.json();

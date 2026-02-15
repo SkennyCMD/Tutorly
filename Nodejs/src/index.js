@@ -1,15 +1,40 @@
+/**
+ * Tutorly - Main Server Application
+ * 
+ * Express.js server for managing tutoring sessions, lessons, and student data.
+ * Communicates with a Java Backend API for data persistence.
+ * Features:
+ * - Dual authentication (tutors and admins)
+ * - Session management with bcrypt password hashing
+ * - Role-based access control (STAFF, GENERIC, ADMIN)
+ * - Comprehensive logging system with color-coded output
+ * - Excel report generation
+ * - RESTful API endpoints
+ */
+
+//------------------------------------------------------------------------------------------------------
+// DEPENDENCIES
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const https = require('https');
 const fs = require('fs');
+
+// Excel generation utilities
 const { generateLessonsExcel, generateStudentsLessonsExcel, generateTutorMonthlyReport } = require('../server_utilities/excel');
+
+// Admin logging utilities
 const { logAdminLoginAttempt } = require('../server_utilities/adminLogger');
+
+// Authentication services
 const { authenticateTutor, authenticateAdmin } = require('../server_utilities/authService');
 const { isAuthenticated, isAdmin, isStaff } = require('../server_utilities/authMiddleware');
 const { hashPassword, logAuthAttempt } = require('../server_utilities/passwordService');
+
+// Logging utilities
 const { logError, logSuccess, logWarning, logInfo, requestLogger } = require('../server_utilities/logger');
+// Java API communication services
 const { 
     fetchFromJavaAPI,
     fetchTutorData,
@@ -22,6 +47,8 @@ const {
     fetchStudentData,
     fetchAllStudents
 } = require('../server_utilities/javaApiService');
+
+// Configuration constants
 const { 
     JAVA_API_URL, 
     JAVA_API_KEY, 
@@ -32,49 +59,58 @@ const {
     ADMIN_SESSION_DURATION
 } = require('../server_utilities/config');
 
+//------------------------------------------------------------------------------------------------------
+// EXPRESS APP INITIALIZATION 
 const app = express();
 
-// Middleware
+//------------------------------------------------------------------------------------------------------
+// MIDDLEWARE CONFIGURATION 
+// Parse JSON request bodies
 app.use(express.json());
+// Parse URL-encoded request bodies
 app.use(express.urlencoded({ extended: true }));
+// Serve static files (CSS, JS, images)
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Request logging middleware
-app.use(requestLogger);
-
-// Tutor session configuration
-const tutorSession = session({
-    name: 'tutorly.tutor.sid', // Cookie name for tutor session
+//------------------------------------------------------------------------------------------------------
+// SESSION MANAGEMENT
+// Unified session configuration for both tutors and admins
+// Uses the same session store to allow proper username tracking in logs
+const sessionMiddleware = session({
+    name: 'tutorly.sid',
     secret: TUTOR_SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        maxAge: TUTOR_SESSION_DURATION,
-        httpOnly: true,
-        secure: false // Set to true in production with HTTPS
+        maxAge: TUTOR_SESSION_DURATION, // 30 days - longer duration for tutors
+        httpOnly: true,                  // Prevent XSS attacks
+        secure: false                    // Set to true in production with HTTPS
     }
 });
 
-// Admin session configuration
-const adminSession = session({
-    name: 'tutorly.admin.sid', // Cookie name for admin session
-    secret: ADMIN_SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        maxAge: ADMIN_SESSION_DURATION,
-        httpOnly: true,
-        secure: false // Set to true in production with HTTPS
-    }
-});
+// Apply session middleware globally to make req.session available everywhere
+app.use(sessionMiddleware);
 
-// View engine setup
+// Request logging middleware (must be after session middleware to access req.session)
+app.use(requestLogger);
+
+// Keep references for backward compatibility with existing route definitions
+const tutorSession = (req, res, next) => next();
+const adminSession = (req, res, next) => next();
+
+//------------------------------------------------------------------------------------------------------
+// VIEW ENGINE SETUP
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 
-// Routes
+//------------------------------------------------------------------------------------------------------
+// !!! ROUTES  !!!
 
-// Root route - use tutor session
+// !! PUBLIC ROUTES !!
+
+/**
+ * Root route - Redirect to home if authenticated, otherwise to login
+ */
 app.get('/', tutorSession, (req, res) => {
     if (req.session && req.session.userId) {
         res.redirect('/home');
@@ -83,7 +119,10 @@ app.get('/', tutorSession, (req, res) => {
     }
 });
 
-// Tutor login routes
+/**
+ * Tutor login page
+ * GET /login - Display login form
+ */
 app.get('/login', tutorSession, (req, res) => {
     if (req.session && req.session.userId) {
         return res.redirect('/home');
@@ -91,7 +130,10 @@ app.get('/login', tutorSession, (req, res) => {
     res.render('login', { error: null });
 });
 
-// Admin login routes
+/**
+ * Admin login page
+ * GET /adminLogin - Display admin login form
+ */
 app.get('/adminLogin', adminSession, (req, res) => {
     if (req.session && req.session.adminId) {
         return res.redirect('/admin');
@@ -99,6 +141,11 @@ app.get('/adminLogin', adminSession, (req, res) => {
     res.render('adminLogin', { error: null });
 });
 
+/**
+ * Admin login authentication
+ * POST /adminLogin - Authenticate admin credentials with bcrypt
+ * Logs all authentication attempts with hashes for debugging
+ */
 app.post('/adminLogin', adminSession, async (req, res) => {
     const { username, password } = req.body;
     const clientIp = req.ip || req.connection.remoteAddress;
@@ -137,6 +184,10 @@ app.post('/adminLogin', adminSession, async (req, res) => {
     }
 });
 
+/**
+ * Admin dashboard
+ * GET /admin - Display admin panel (requires admin authentication)
+ */
 app.get('/admin', adminSession, isAdmin, (req, res) => {
     res.render('admin', { 
         adminUsername: req.session.adminUsername,
@@ -144,7 +195,10 @@ app.get('/admin', adminSession, isAdmin, (req, res) => {
     });
 });
 
-// Logout route for tutors
+/**
+ * Tutor logout
+ * GET /logout - Destroy tutor session and redirect to login
+ */
 app.get('/logout', tutorSession, (req, res) => {
     const username = req.session?.username || 'unknown';
     req.session.destroy((err) => {
@@ -157,7 +211,10 @@ app.get('/logout', tutorSession, (req, res) => {
     });
 });
 
-// Logout route for admins
+/**
+ * Admin logout
+ * GET /adminLogout - Destroy admin session and redirect to admin login
+ */
 app.get('/adminLogout', adminSession, (req, res) => {
     const username = req.session?.adminUsername || 'unknown';
     req.session.destroy((err) => {
@@ -170,6 +227,11 @@ app.get('/adminLogout', adminSession, (req, res) => {
     });
 });
 
+/**
+ * Tutor login authentication
+ * POST /login - Authenticate tutor credentials with bcrypt
+ * Checks for blocked accounts and logs all authentication attempts
+ */
 app.post('/login', tutorSession, async (req, res) => {
     const { username, password } = req.body;
     const clientIp = req.ip || req.connection.remoteAddress;
@@ -209,8 +271,13 @@ app.post('/login', tutorSession, async (req, res) => {
     }
 });
 
-// ===== TUTOR ROUTES =====
+// !! AUTHENTICATED TUTOR ROUTES !!
 
+/**
+ * Home dashboard
+ * GET /home - Display tutor's home page with today's lessons and tasks
+ * Shows: calendar notes (tasks), lessons, prenotations, and students
+ */
 app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
@@ -326,6 +393,10 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
     }
 });
 
+/**
+ * Dashboard view
+ * GET /dashboard - Display tutor dashboard
+ */
 app.get('/dashboard', tutorSession, isAuthenticated, (req, res) => {
     res.render('dashboard', {
         username: req.session.username,
@@ -333,6 +404,12 @@ app.get('/dashboard', tutorSession, isAuthenticated, (req, res) => {
     });
 });
 
+/**
+ * Calendar view
+ * GET /calendar - Display calendar with prenotations and notes
+ * STAFF role: sees all prenotations
+ * GENERIC role: sees only own prenotations
+ */
 app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
@@ -405,6 +482,11 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
     }
 });
 
+/**
+ * Lessons view
+ * GET /lessons - Display all lessons and prenotations for the logged-in tutor
+ * Shows confirmed lessons and pending prenotations
+ */
 app.get('/lessons', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
@@ -475,6 +557,11 @@ app.get('/lessons', tutorSession, isAuthenticated, async (req, res) => {
     }
 });
 
+/**
+ * Staff panel
+ * GET /staffPanel - Display staff management panel (STAFF role only)
+ * Allows viewing and managing all tutors
+ */
 app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
@@ -502,9 +589,13 @@ app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
     }
 });
 
-// ===== API ROUTES =====
+// ! REPORT GENERATION API ROUTES (STAFF only) !
 
-// Endpoint to generate Excel report for lessons in a specific month
+/**
+ * Generate Excel report for lessons in a specific month
+ * GET /api/reports/lessons-by-month?month=YYYY-MM
+ * Returns: Excel file download with lessons grouped by tutor
+ */
 app.get('/api/reports/lessons-by-month', tutorSession, isAuthenticated, isStaff, async (req, res) => {
     try {
         const { month } = req.query; // Format: YYYY-MM (e.g., "2026-02")
@@ -553,7 +644,11 @@ app.get('/api/reports/lessons-by-month', tutorSession, isAuthenticated, isStaff,
     }
 });
 
-// Endpoint to generate Excel report for lessons by student in a specific month
+/**
+ * Generate Excel report for lessons grouped by student in a specific month
+ * GET /api/reports/lessons-by-student?month=YYYY-MM
+ * Returns: Excel file download with lessons grouped by student
+ */
 app.get('/api/reports/lessons-by-student', tutorSession, isAuthenticated, isStaff, async (req, res) => {
     try {
         const { month } = req.query; // Format: YYYY-MM (e.g., "2026-02")
@@ -602,7 +697,11 @@ app.get('/api/reports/lessons-by-student', tutorSession, isAuthenticated, isStaf
     }
 });
 
-// New endpoint: Tutors monthly report with statistics
+/**
+ * Generate yearly tutors statistics report
+ * GET /api/reports/tutors-monthly-stats?year=YYYY
+ * Returns: Excel file with monthly statistics for each tutor across 12 months
+ */
 app.get('/api/reports/tutors-monthly-stats', tutorSession, isAuthenticated, isStaff, async (req, res) => {
     try {
         const { year } = req.query; // Format: YYYY (e.g., "2026")
@@ -676,7 +775,13 @@ app.post('/logout', tutorSession, (req, res) => {
     });
 });
 
-// API endpoint to check authentication status
+// !!! AUTHENTICATION & SESSION API ROUTES !!!
+
+/**
+ * Check authentication status
+ * GET /api/auth/status
+ * Returns: JSON with authentication status and user info if logged in
+ */
 app.get('/api/auth/status', tutorSession, (req, res) => {
     if (req.session && req.session.userId) {
         res.json({
@@ -692,7 +797,14 @@ app.get('/api/auth/status', tutorSession, (req, res) => {
     }
 });
 
-// API endpoint to create a new lesson
+// !!! LESSONS API ROUTES !!!
+
+/**
+ * Create a new lesson
+ * POST /api/lessons
+ * Body: { studentId, description, lessonDate, startTime, endTime }
+ * Supports multiple date/time formats for flexibility
+ */
 app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { studentId, description, lessonDate, startTime, endTime } = req.body;
@@ -798,7 +910,14 @@ app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
     }
 });
 
-// API endpoint to create a new prenotation
+// !!! PRENOTATIONS (BOOKINGS) API ROUTES !!!
+
+/**
+ * Create a new prenotation (lesson booking)
+ * POST /api/prenotations
+ * Body: { studentId, startTime, endTime, tutorId (optional for STAFF) }
+ * STAFF can create prenotations for other tutors
+ */
 app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { studentId, startTime, endTime, tutorId: requestedTutorId } = req.body;
@@ -897,7 +1016,11 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) =>
     }
 });
 
-// API endpoint to update a prenotation
+/**
+ * Update an existing prenotation
+ * PUT /api/prenotations/:id
+ * Body: { studentId, startTime, endTime, tutorId (optional for STAFF) }
+ */
 app.put('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
@@ -971,7 +1094,10 @@ app.put('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res)
     }
 });
 
-// API endpoint to delete a prenotation
+/**
+ * Delete a prenotation
+ * DELETE /api/prenotations/:id
+ */
 app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1020,7 +1146,14 @@ app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, r
     }
 });
 
-// API endpoint to create a new calendar note
+// !!! CALENDAR NOTES API ROUTES !!!
+
+/**
+ * Create a new calendar note (task/reminder)
+ * POST /api/calendar-notes
+ * Body: { description, startTime, endTime, tutorIds[] }
+ * Can be shared with multiple tutors
+ */
 app.post('/api/calendar-notes', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { description, startTime, endTime, tutorIds } = req.body;
@@ -1093,7 +1226,10 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, async (req, res) 
     }
 });
 
-// API endpoint to get a single calendar note by ID
+/**
+ * Get a single calendar note by ID
+ * GET /api/calendar-notes/:id
+ */
 app.get('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1110,7 +1246,12 @@ app.get('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
     }
 });
 
-// API endpoint to update a calendar note
+/**
+ * Update a calendar note
+ * PUT /api/calendar-notes/:id
+ * Body: { description, startTime, endTime, tutorIds[] }
+ * Only the creator can edit the note (authorization check included)
+ */
 app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1191,7 +1332,11 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
     }
 });
 
-// API endpoint to delete a calendar note
+/**
+ * Delete a calendar note
+ * DELETE /api/calendar-notes/:id
+ * Only the creator can delete the note (authorization check included)
+ */
 app.delete('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
@@ -1248,7 +1393,14 @@ app.delete('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req,
     }
 });
 
-// API endpoint to create a new student
+// !!! STUDENTS API ROUTES !!!
+
+/**
+ * Create a new student
+ * POST /api/students
+ * Body: { name, surname, studentClass, description (optional) }
+ * studentClass must be M (Middle), S (Secondary), or U (University)
+ */
 app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const { name, surname, studentClass, description } = req.body;
@@ -1325,9 +1477,13 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
     }
 });
 
-// ===== ADMIN API ROUTES =====
+// !!! ADMIN API ROUTES (Admin only) !!!
 
-// Get all tutors (Admin only)
+/**
+ * Get all tutors
+ * GET /api/admin/tutors
+ * Returns list of all tutors in the system
+ */
 app.get('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     try {
         const tutors = await fetchFromJavaAPI('/api/tutors', 'GET');
@@ -1338,7 +1494,11 @@ app.get('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     }
 });
 
-// Get all students (Admin only)
+/**
+ * Get all students
+ * GET /api/admin/students
+ * Returns list of all students in the system
+ */
 app.get('/api/admin/students', adminSession, isAdmin, async (req, res) => {
     try {
         const students = await fetchFromJavaAPI('/api/students', 'GET');
@@ -1349,7 +1509,12 @@ app.get('/api/admin/students', adminSession, isAdmin, async (req, res) => {
     }
 });
 
-// Change tutor role (Admin only)
+/**
+ * Change tutor role
+ * PATCH /api/admin/tutors/:id/role
+ * Body: { role: 'STAFF' | 'GENERIC' }
+ * Updates tutor's role for access control
+ */
 app.patch('/api/admin/tutors/:id/role', adminSession, isAdmin, async (req, res) => {
     try {
         const tutorId = req.params.id;
@@ -1370,7 +1535,12 @@ app.patch('/api/admin/tutors/:id/role', adminSession, isAdmin, async (req, res) 
     }
 });
 
-// Change tutor status (Block/Unblock) (Admin only)
+/**
+ * Change tutor status (block/unblock)
+ * PATCH /api/admin/tutors/:id/status
+ * Body: { status: 'ACTIVE' | 'BLOCKED' }
+ * Used to block misbehaving tutors or reactivate accounts
+ */
 app.patch('/api/admin/tutors/:id/status', adminSession, isAdmin, async (req, res) => {
     try {
         const tutorId = req.params.id;
@@ -1391,7 +1561,12 @@ app.patch('/api/admin/tutors/:id/status', adminSession, isAdmin, async (req, res
     }
 });
 
-// Create new tutor (Admin only)
+/**
+ * Create a new tutor
+ * POST /api/admin/tutors
+ * Body: { username, password, role: 'STAFF' | 'GENERIC' }
+ * Password is automatically hashed with bcrypt before storing
+ */
 app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     try {
         const { username, password, role } = req.body;
@@ -1434,7 +1609,12 @@ app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     }
 });
 
-// Change student class (Admin only)
+/**
+ * Change student class
+ * PATCH /api/admin/students/:id/class
+ * Body: { studentClass: 'M' | 'S' | 'U' }
+ * M = Middle School, S = Secondary School, U = University
+ */
 app.patch('/api/admin/students/:id/class', adminSession, isAdmin, async (req, res) => {
     try {
         const studentId = req.params.id;
@@ -1462,7 +1642,12 @@ app.patch('/api/admin/students/:id/class', adminSession, isAdmin, async (req, re
     }
 });
 
-// 404 page handler
+// !!! ERROR HANDLERS !!!
+
+/**
+ * 404 Not Found handler
+ * Renders custom 404 page with user context if authenticated
+ */
 app.use((req, res) => {
     const hasSession = req.session && (req.session.userId || req.session.adminId);
     res.status(404).render('404', {
@@ -1475,7 +1660,13 @@ app.use((req, res) => {
     });
 });
 
-// Start server
+//------------------------------------------------------------------------------------------------------
+// !!! SERVER INITIALIZATION !!!
+
+/**
+ * Start the Express server
+ * Listens on the configured PORT (default: 3000)
+ */
 app.listen(PORT, () => {
     console.log(`Tutorly server running at http://localhost:${PORT}`);
 });

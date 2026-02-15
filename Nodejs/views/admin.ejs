@@ -1,10 +1,28 @@
+<!--
+    Admin Panel - Tutorly
+    
+    Purpose: Administrative dashboard for managing tutors, students, and accounts
+    Features:
+    - View and search all tutors with role and status management
+    - View and search all students with class management
+    - Create new tutor accounts with password validation
+    - Responsive design with mobile sidebar
+    - Real-time search and filtering
+    - Confirmation modals for critical actions
+    - Toast notifications for user feedback
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Character encoding and viewport for responsive design -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tutorly - Admin Panel</title>
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Custom Tailwind configuration with dark theme colors -->
   <script>
     tailwind.config = {
       theme: {
@@ -28,14 +46,18 @@
       }
     }
   </script>
+  
+  <!-- Custom admin panel styles -->
   <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body class="bg-background text-foreground min-h-screen">
 
-  <!-- Header -->
+  <!-- HEADER -->
+  <!-- Sticky header with logo, navigation, and logout -->
   <header class="bg-card border-b border-border sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
+        <!-- Logo with ADMIN badge -->
         <a href="admin.html" class="flex items-center gap-2">
           <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,18 +69,20 @@
           <span class="ml-2 text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">ADMIN</span>
         </a>
 
-        <!-- Desktop Navigation -->
+        <!-- Desktop Navigation (commented links are for future features) -->
         <nav class="hidden md:flex items-center gap-6">
           <a href="/admin" class="text-foreground font-medium transition-colors">Admin Panel</a>
+          <!-- Future features: Staff Management and Reports -->
           <!-- <a href="staff.html" class="text-muted-foreground hover:text-foreground transition-colors">Staff Management</a>
           <a href="reports.html" class="text-muted-foreground hover:text-foreground transition-colors">Reports</a> -->
         </nav>
 
+        <!-- Logout button (desktop only) -->
         <div class="hidden md:flex items-center gap-4">
           <a href="/adminLogout" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Logout</a>
         </div>
 
-        <!-- Mobile Menu Button -->
+        <!-- Mobile menu toggle button -->
         <button id="menuToggle" class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -68,11 +92,13 @@
     </div>
   </header>
 
-  <!-- Mobile Menu Overlay -->
+  <!-- MOBILE MENU -->
+  <!-- Overlay - clicking this closes the mobile menu -->
   <div id="menuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
-  <!-- Mobile Sidebar Menu -->
+  <!-- Slide-in mobile sidebar -->
   <aside id="mobileMenu" class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
+    <!-- Mobile menu header with logo and close button -->
     <div class="p-4 border-b border-border flex items-center justify-between">
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -90,6 +116,8 @@
         </svg>
       </button>
     </div>
+    
+    <!-- Mobile navigation links -->
     <nav class="p-4 flex flex-col gap-2">
       <a href="/admin" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,6 +126,8 @@
         </svg>
         Admin Panel
       </a>
+      
+      <!-- Future navigation items (commented out) -->
       <!-- <a href="staff.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
@@ -110,6 +140,8 @@
         </svg>
         Reports
       </a> -->
+      
+      <!-- Logout section (separated with border) -->
       <div class="border-t border-border mt-2 pt-2">
         <a href="/adminLogout" class="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-secondary transition-colors">
           Logout
@@ -118,62 +150,70 @@
     </nav>
   </aside>
 
-  <!-- Main Content -->
+  <!-- MAIN CONTENT -->
+  <!-- Three-column layout: Tutors list | Students list | Create tutor form -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
-    <!-- Page Title -->
+    <!-- Page header with title and description -->
     <div class="mb-8">
       <h1 class="text-2xl sm:text-3xl font-bold text-foreground">Admin Panel</h1>
       <p class="text-muted-foreground mt-1">Manage tutors, students, and accounts</p>
     </div>
 
-    <!-- Three Column Grid -->
+    <!-- Three-column responsive grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-      <!-- Tutors List -->
+      <!-- COLUMN 1: TUTORS LIST -->
+      <!-- Displays all tutors with search, role, and status management -->
       <div class="bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-foreground">Tutors</h2>
           <span id="tutorCount" class="text-sm text-muted-foreground"></span>
         </div>
 
-        <!-- Search Tutors -->
+        <!-- Search input for filtering tutors -->
         <div class="mb-4">
           <input type="text" id="tutorSearch" placeholder="Search tutors..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
         </div>
 
+        <!-- Scrollable list of tutors (populated by JavaScript) -->
         <div id="tutorsList" class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-          <!-- Tutors rendered here -->
+          <!-- Tutor cards will be dynamically inserted here by admin.js -->
         </div>
       </div>
 
-      <!-- Students List -->
+      <!-- COLUMN 2: STUDENTS LIST -->
+      <!-- Displays all students with search and class management -->
       <div class="bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-foreground">Students</h2>
           <span id="studentCount" class="text-sm text-muted-foreground"></span>
         </div>
 
-        <!-- Search Students -->
+        <!-- Search input for filtering students -->
         <div class="mb-4">
           <input type="text" id="studentSearch" placeholder="Search students..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
         </div>
 
+        <!-- Scrollable list of students (populated by JavaScript) -->
         <div id="studentsList" class="space-y-3 max-h-[520px] overflow-y-auto pr-1">
-          <!-- Students rendered here -->
+          <!-- Student cards will be dynamically inserted here by admin.js -->
         </div>
       </div>
 
-      <!-- Create Tutor Form -->
+      <!-- COLUMN 3: CREATE TUTOR FORM -->
+      <!-- Form for creating new tutor accounts with validation -->
       <div class="bg-card border border-border rounded-xl p-5">
         <h2 class="text-lg font-semibold text-foreground mb-4">Create New Tutor</h2>
 
         <form id="createTutorForm" class="space-y-4">
+          <!-- Username input -->
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Username</label>
             <input type="text" id="newUsername" required placeholder="e.g. john.doe" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
 
+          <!-- Password input with visibility toggle -->
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Password</label>
             <div class="relative">
@@ -185,7 +225,8 @@
                 </svg>
               </button>
             </div>
-            <!-- Password strength -->
+            
+            <!-- Password strength indicator (4 bars) -->
             <div id="passwordStrength" class="mt-2 hidden">
               <div class="flex gap-1">
                 <div id="str1" class="h-1 flex-1 rounded-full bg-border"></div>
@@ -197,12 +238,14 @@
             </div>
           </div>
 
+          <!-- Confirm password input with match validation -->
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Confirm Password</label>
             <input type="password" id="confirmPassword" required placeholder="Re-enter password" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <p id="passwordMatch" class="text-xs mt-1 hidden"></p>
           </div>
 
+          <!-- Role selection: GENERIC or STAFF -->
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Role</label>
             <div class="flex gap-2">
@@ -217,6 +260,7 @@
             </div>
           </div>
 
+          <!-- Submit button -->
           <button type="submit" class="w-full px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
@@ -225,7 +269,7 @@
           </button>
         </form>
 
-        <!-- Recently Created -->
+        <!-- Recently created tutors list (shown after successful creation) -->
         <div id="recentlyCreated" class="mt-6 border-t border-border pt-4 hidden">
           <h3 class="text-sm font-medium text-muted-foreground mb-3">Recently Created</h3>
           <div id="recentList" class="space-y-2"></div>
@@ -234,15 +278,22 @@
     </div>
   </main>
 
-  <!-- Confirm Modal -->
+  <!-- MODALS & NOTIFICATIONS -->
+  <!-- Confirmation modal for critical actions (role change, status change, etc.) -->
   <div id="confirmModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <!-- Modal backdrop - clicking this closes the modal -->
     <div class="absolute inset-0 bg-black/60" onclick="closeConfirmModal()"></div>
+    
+    <!-- Modal content -->
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-sm p-6">
       <div class="text-center">
+        <!-- Dynamic icon, title, and message set by JavaScript -->
         <div id="confirmIcon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"></div>
         <h3 id="confirmTitle" class="text-lg font-semibold text-foreground mb-2"></h3>
         <p id="confirmMessage" class="text-sm text-muted-foreground mb-6"></p>
       </div>
+      
+      <!-- Action buttons (Cancel and Confirm) -->
       <div class="flex gap-3">
         <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
         <button id="confirmBtn" class="flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors"></button>
@@ -250,9 +301,10 @@
     </div>
   </div>
 
-  <!-- Toast Container -->
+  <!-- Toast notification container (bottom-right corner) -->
   <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
 
+  <!-- JavaScript for admin panel functionality (API calls, form handling, etc.) -->
   <script src="/js/admin.js"></script>
 </body>
 </html>

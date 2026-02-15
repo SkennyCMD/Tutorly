@@ -1,5 +1,25 @@
+<!--
+
+LESSONS PAGE
+
+Description: Complete lessons management page with search, statistics, and booking overview
+Features:
+  - Search functionality (desktop header and mobile view)
+  - Monthly statistics with total hours and breakdown by class (M/S/U)
+  - Booked lessons list (upcoming lessons)
+  - Comprehensive lessons history with filtering
+  - Add lesson with student search and selection
+  - Quick add student modal
+  - Responsive design with mobile sidebar menu
+  - Role-based features (STAFF access to Staff Panel)
+  - Empty states for no lessons/bookings
+
+-->
+
 <!DOCTYPE html>
 <html lang="en">
+<!-- HEAD: Page Configuration -->
+<!-- Tailwind CSS configuration with custom dark theme colors -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,12 +52,13 @@
 </head>
 <body class="bg-background text-foreground min-h-screen">
   
-  <!-- Header -->
+  <!-- HEADER: Top Navigation Bar -->
+  <!-- Logo, search bar (desktop), navigation links, and logout button -->
   <header class="bg-card border-b border-border sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         
-        <!-- Logo -->
+        <!-- Logo with link to home/dashboard -->
         <a href="/home" class="flex items-center gap-2">
           <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,7 +69,7 @@
           <span class="text-xl font-bold text-foreground">Tutorly</span>
         </a>
 
-        <!-- Search Bar (Center - Desktop) -->
+        <!-- Search Bar: Center position on desktop, hidden on mobile -->
         <div class="hidden md:flex flex-1 max-w-md mx-8">
           <div class="relative w-full">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +79,7 @@
           </div>
         </div>
 
-        <!-- Logout Button (Desktop) -->
+        <!-- Commented out alternative logout position (kept for reference) -->
         <!--<div class="hidden md:flex items-center">
           <form action="/logout" method="POST" class="inline">
             <button type="submit" class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
@@ -70,18 +91,18 @@
           </form>
         </div>-->
 
-        <!-- Desktop Navigation -->
+        <!-- Desktop Navigation: Dashboard, Calendar, My Lessons (active), Staff Panel (STAFF only) -->
         <nav class="hidden md:flex items-center gap-6">
           <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
           <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors">Calendar</a>
           <a href="/lessons" class="text-foreground font-medium">My Lessons</a>
-          <!-- STAFF Only Button -->
+          <!-- STAFF role-based link to Staff Panel -->
           <% if (user && user.role === 'STAFF') { %>
             <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors">Staff Panel</a>
           <% } %>
         </nav>
 
-        <!-- Logout Button (Desktop) -->
+        <!-- Logout form button (Desktop) -->
         <div class="hidden md:flex items-center">
           <form action="/logout" method="POST" class="inline">
             <button type="submit" class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
@@ -93,7 +114,7 @@
           </form>
         </div>
 
-        <!-- Mobile Menu Button -->
+        <!-- Mobile hamburger menu toggle button -->
         <button id="menuToggle" class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -103,10 +124,11 @@
     </div>
   </header>
 
-  <!-- Mobile Menu Overlay -->
+  <!-- MOBILE MENU: Overlay and Sidebar -->
+  <!-- Overlay backdrop for mobile menu -->
   <div id="menuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
-  <!-- Mobile Sidebar Menu -->
+  <!-- Mobile Sidebar: Navigation links and logout -->
   <aside id="mobileMenu" class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
     <div class="p-4 border-b border-border flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -143,7 +165,7 @@
         </svg>
         My Lessons
       </a>
-      <!-- STAFF Only in Mobile -->
+      <!-- STAFF role-based link in mobile menu -->
       <% if (user && user.role === 'STAFF') { %>
         <a href="/staffPanel" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -152,6 +174,7 @@
           Staff Panel
         </a>
       <% } %>
+      <!-- Logout button in mobile menu -->
       <div class="mt-4 pt-4 border-t border-border">
         <form action="/logout" method="POST">
           <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-secondary transition-colors">
@@ -165,10 +188,10 @@
     </nav>
   </aside>
 
-  <!-- Main Content -->
+  <!-- MAIN CONTENT: Lessons Management -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
     
-    <!-- Mobile Search Bar -->
+    <!-- Mobile Search Bar: Visible only on mobile devices -->
     <div class="md:hidden mb-4">
       <div class="relative w-full">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,7 +201,7 @@
       </div>
     </div>
 
-    <!-- Page Header -->
+    <!-- Page Header: Title, description, and Add Lesson button -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div>
         <h1 class="text-2xl sm:text-3xl font-bold text-foreground">My Lessons</h1>
@@ -192,13 +215,13 @@
       </button>
     </div>
 
-    <!-- Main Grid -->
+    <!-- Main Grid: Statistics/Booked (left column) and Lessons History (right column) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
-      <!-- Left Column: Stats & Booked -->
+      <!-- Left Column: Statistics Card and Booked Lessons Card -->
       <div class="lg:col-span-1 space-y-6">
         
-        <!-- Statistics Card -->
+        <!-- Statistics Card: Monthly stats with total hours and breakdown by class type -->
         <div class="bg-card border border-border rounded-xl p-5">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-foreground">Statistics</h2>
@@ -217,7 +240,7 @@
             </div>
           </div>
           
-          <!-- Total Hours -->
+          <!-- Total Hours: Display total teaching hours for selected month -->
           <div class="bg-secondary rounded-lg p-4 mb-4">
             <div class="flex items-center justify-between">
               <span class="text-muted-foreground text-sm">Total Hours</span>
@@ -228,10 +251,11 @@
             <p id="totalHours" class="text-3xl font-bold text-foreground mt-2">0h</p>
           </div>
           
-          <!-- Hours by Class -->
+          <!-- Hours by Class: Breakdown of hours by student class level (M/S/U) -->
           <div class="space-y-3">
             <h3 class="text-sm font-medium text-muted-foreground">Hours by Class</h3>
             
+            <!-- Middle School (M) hours -->
             <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
@@ -242,6 +266,7 @@
               <span id="hoursM" class="font-semibold text-foreground">0h</span>
             </div>
             
+            <!-- Senior High School (S) hours -->
             <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -252,6 +277,7 @@
               <span id="hoursS" class="font-semibold text-foreground">0h</span>
             </div>
             
+            <!-- University (U) hours -->
             <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
@@ -264,7 +290,7 @@
           </div>
         </div>
 
-        <!-- Booked Lessons Card -->
+        <!-- Booked Lessons Card: List of upcoming scheduled lessons -->
         <div class="bg-card border border-border rounded-xl p-5">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-foreground">Booked Lessons</h2>
@@ -272,28 +298,29 @@
           </div>
           
           <div id="bookedList" class="space-y-3 max-h-80 overflow-y-auto scrollbar-thin">
-            <!-- Booked lessons will be rendered here -->
+            <!-- Booked lesson items will be rendered dynamically by JavaScript -->
           </div>
           
+          <!-- Empty state when no booked lessons exist -->
           <div id="emptyBooked" class="hidden py-8 text-center">
             <p class="text-muted-foreground text-sm">No booked lessons</p>
           </div>
         </div>
       </div>
 
-      <!-- Right Column: Lessons History -->
+      <!-- Right Column: Lessons History with search filtering -->
       <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-foreground">Lessons History</h2>
           <span id="lessonsCount" class="text-sm text-muted-foreground">0 lessons</span>
         </div>
 
-        <!-- Lessons List -->
+        <!-- Lessons List: Scrollable list of all lesson records -->
         <div id="lessonsList" class="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto scrollbar-thin">
-          <!-- Lessons will be rendered here -->
+          <!-- Lesson items will be rendered dynamically by JavaScript -->
         </div>
 
-        <!-- Empty State -->
+        <!-- Empty State: Shown when no lessons match search or no lessons exist -->
         <div id="emptyLessons" class="hidden py-12 text-center">
           <div class="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
             <svg class="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -307,7 +334,8 @@
     </div>
   </main>
 
-  <!-- Add Lesson Modal -->
+  <!-- MODALS: Add Lesson and Add Student Dialogs -->
+  <!-- Add Lesson Modal: Form to create new lesson record with student, description, date, and time -->
   <div id="addLessonModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
@@ -320,12 +348,15 @@
         </button>
       </div>
       
+      <!-- Form with student search/select, description, date, and time fields -->
       <form id="lessonForm" class="space-y-4">
+        <!-- Student search field with autocomplete filtering -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
           <input type="text" id="studentSearch" placeholder="Search by name..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" autocomplete="off">
         </div>
 
+        <!-- Student selection dropdown with quick add new student option -->
         <div>
           <label class="flex items-center justify-between text-sm font-medium text-foreground mb-1.5">
             <span>Select Student</span>
@@ -341,16 +372,19 @@
           </select>
         </div>
 
+        <!-- Lesson description textarea (optional) -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
           <textarea id="description" placeholder="Lesson description..." rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"></textarea>
         </div>
 
+        <!-- Date picker for lesson -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
           <input type="date" id="lessonDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
+        <!-- Start and End time pickers (15-minute intervals) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
@@ -362,6 +396,7 @@
           </div>
         </div>
 
+        <!-- Action buttons: Cancel and Add Lesson -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
           <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add Lesson</button>
@@ -370,7 +405,7 @@
     </div>
   </div>
 
-  <!-- Add Student Modal -->
+  <!-- Add Student Modal: Quick form to add new student (higher z-index to overlay lesson modal) -->
   <div id="addStudentModal" class="modal fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeAddStudentModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
@@ -383,6 +418,7 @@
         </button>
       </div>
 
+      <!-- Form with name, surname, class selection, and optional description -->
       <form id="addStudentForm" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Name</label>
@@ -394,6 +430,7 @@
           <input type="text" id="studentSurname" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
+        <!-- Class selection: Middle School (M), High School (S), University (U) -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Class</label>
           <select id="studentClass" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
@@ -404,11 +441,13 @@
           </select>
         </div>
 
+        <!-- Optional description field -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Description (Optional)</label>
           <textarea id="studentDescription" rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"></textarea>
         </div>
 
+        <!-- Action buttons: Cancel and Add Student -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeAddStudentModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
           <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add Student</button>
@@ -417,8 +456,10 @@
     </div>
   </div>
 
+  <!-- SCRIPTS: Data Injection and Functionality -->
+  <!-- Server-side data injection: students, lessons, prenotations, and total lesson count -->
   <script>
-    // Pass server-rendered data to JavaScript
+    // Pass server-rendered data to JavaScript for client-side rendering and statistics
     window.allStudents = <%- JSON.stringify(students) %>;
     window.initialLessons = <%- JSON.stringify(lessons) %>;
     window.totalLessonsCount = <%= totalLessons %>;

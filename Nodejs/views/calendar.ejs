@@ -1,5 +1,25 @@
+<!--
+
+CALENDAR PAGE
+
+Description: Interactive calendar view for managing lessons and notes with weekly/daily views
+Features:
+  - Desktop week view and mobile day view
+  - Add/Edit/Delete prenotations (lessons) and notes
+  - Student search and selection
+  - Tutor assignment for lessons and notes
+  - Color-coded events (blue for lessons, orange for notes)
+  - Time grid with 15-minute intervals
+  - Quick navigation (Today, Previous/Next week/day)
+  - Role-based features (STAFF access to Staff Panel)
+  - Responsive design with mobile sidebar menu
+
+-->
+
 <!DOCTYPE html>
 <html lang="en">
+<!-- HEAD: Page Configuration -->
+<!-- Tailwind CSS configuration with custom dark theme and calendar-specific colors -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,12 +56,13 @@
 </head>
 <body class="bg-background text-foreground min-h-screen">
   
-  <!-- Header -->
+  <!-- HEADER: Top Navigation Bar -->
+  <!-- Logo, navigation links, action buttons (Add Prenotation/Note), and logout -->
   <header class="bg-card border-b border-border sticky top-0 z-40">
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         
-        <!-- Logo -->
+        <!-- Logo with link to home/dashboard -->
         <a href="/home" class="flex items-center gap-2">
           <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,18 +73,18 @@
           <span class="text-xl font-bold text-foreground">Tutorly</span>
         </a>
 
-        <!-- Desktop Navigation -->
+        <!-- Desktop Navigation: Dashboard, Calendar (active), My Lessons, Staff Panel (STAFF only) -->
         <nav class="hidden md:flex items-center gap-6">
           <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
           <a href="/calendar" class="text-foreground font-medium">Calendar</a>
           <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors">My Lessons</a>
-          <!-- STAFF Only Button -->
+          <!-- STAFF role-based link to Staff Panel -->
           <% if (user && user.role === 'STAFF') { %>
             <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors">Staff Panel</a>
           <% } %>
         </nav>
 
-        <!-- Action Buttons (Desktop) -->
+        <!-- Action Buttons: Add Prenotation, Add Note, Logout (Desktop only) -->
         <div class="hidden md:flex items-center gap-3">
           <button id="addLessonBtn" class="inline-flex items-center gap-2 bg-lesson text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-lesson/90 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +98,7 @@
             </svg>
             Note
           </button>
-          <!-- Logout Button (Desktop) -->
+          <!-- Logout form button -->
           <div class="hidden md:flex items-center">
             <form action="/logout" method="POST" class="inline">
               <button type="submit" class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
@@ -90,7 +111,7 @@
           </div>
         </div>
 
-        <!-- Mobile Menu Button -->
+        <!-- Mobile menu toggle button -->
         <button id="menuToggle" class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -100,10 +121,11 @@
     </div>
   </header>
 
-  <!-- Mobile Menu Overlay -->
+  <!-- MOBILE MENU: Overlay and Sidebar -->
+  <!-- Overlay backdrop for mobile menu -->
   <div id="menuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
-  <!-- Mobile Sidebar Menu -->
+  <!-- Mobile Sidebar: Navigation links, action buttons, and logout -->
   <aside id="mobileMenu" class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
     <div class="p-4 border-b border-border flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -140,7 +162,7 @@
         </svg>
         My Lessons
       </a>
-      <!-- STAFF Only in Mobile -->
+      <!-- STAFF role-based link in mobile menu -->
       <% if (user && user.role === 'STAFF') { %>
         <a href="/staffPanel" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +173,7 @@
       <% } %>
     </nav>
     
-    <!-- Mobile Action Buttons -->
+    <!-- Mobile Action Buttons: Add Lesson, Add Note, Logout -->
     <div class="p-4 border-t border-border mt-auto">
       <div class="flex flex-col gap-2">
         <button onclick="openLessonModal()" class="flex items-center justify-center gap-2 bg-lesson text-white px-4 py-2.5 rounded-lg font-medium">
@@ -178,10 +200,10 @@
     </div>
   </aside>
 
-  <!-- Main Content -->
+  <!-- MAIN CONTENT: Calendar Display -->
   <main class="flex flex-col h-[calc(100vh-64px)]">
     
-    <!-- Calendar Header -->
+    <!-- Calendar Header: Today button, week navigation, date label, and event legend -->
     <div class="bg-card border-b border-border px-4 sm:px-6 py-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-4">
@@ -203,7 +225,7 @@
           <h2 id="currentWeekLabel" class="text-lg font-semibold text-foreground"></h2>
         </div>
         
-        <!-- Legend -->
+        <!-- Color legend for event types (Prenotation = blue, Note = orange) -->
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
             <span class="w-3 h-3 rounded-sm bg-lesson"></span>
@@ -217,12 +239,12 @@
       </div>
     </div>
 
-    <!-- Calendar View -->
+    <!-- Calendar View: Desktop week grid and mobile day view -->
     <div class="flex-1 overflow-auto custom-scrollbar">
       
-      <!-- Desktop Week View -->
+      <!-- Desktop Week View: 7-day grid with time slots from 8:00 to 22:00 -->
       <div id="weekView" class="hidden md:block min-w-[800px]">
-        <!-- Day Headers -->
+        <!-- Day Headers: Column headers for each day of the week -->
         <div class="calendar-grid sticky top-0 bg-card border-b border-border z-20">
           <div class="p-2 text-center text-xs text-muted-foreground"></div>
           <div id="dayHeaders" class="contents">
@@ -230,15 +252,15 @@
           </div>
         </div>
         
-        <!-- Time Grid -->
+        <!-- Time Grid: Hourly rows with event blocks positioned by time -->
         <div class="calendar-grid" id="timeGrid">
           <!-- Time slots and events will be rendered here -->
         </div>
       </div>
 
-      <!-- Mobile Day View -->
+      <!-- Mobile Day View: Single day with time slots and date navigation -->
       <div id="dayView" class="md:hidden">
-        <!-- Mobile Date Selector -->
+        <!-- Mobile Date Selector: Navigation arrows and current date display -->
         <div class="flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
           <button id="prevDay" class="p-2 rounded-lg hover:bg-secondary transition-colors">
             <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -256,7 +278,7 @@
           </button>
         </div>
         
-        <!-- Mobile Time Grid -->
+        <!-- Mobile Time Grid: Single-column time slots for selected day -->
         <div id="mobileTimeGrid" class="calendar-grid">
           <!-- Mobile time slots will be rendered here -->
         </div>
@@ -264,7 +286,8 @@
     </div>
   </main>
 
-  <!-- Add Lesson Modal -->
+  <!-- MODALS: Add/Edit Dialogs -->
+  <!-- Add Lesson Modal: Form to create new prenotation with student selection and time -->
   <div id="addLessonModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeLessonModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
@@ -277,12 +300,14 @@
         </button>
       </div>
       
+      <!-- Form with student search/select, date/time pickers, and tutor assignment -->
       <form id="lessonForm" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
           <input type="text" id="studentSearch" placeholder="Search by name..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" autocomplete="off">
         </div>
 
+        <!-- Student selection dropdown with option to add new student -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-medium text-foreground">Select Student</label>
@@ -298,11 +323,13 @@
           </select>
         </div>
 
+        <!-- Date picker for lesson -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
           <input type="date" id="lessonDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
+        <!-- Start and End time pickers (15-minute intervals) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
@@ -314,13 +341,14 @@
           </div>
         </div>
 
+        <!-- Tutor assignment section with quick 'assign to myself' option -->
         <div id="lessonAssignToSection">
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-medium text-foreground">Assign To</label>
             <button type="button" onclick="assignLessonToMyself()" class="text-xs text-primary hover:underline">Assign to myself</button>
           </div>
           <div id="lessonTutorsContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
-            <!-- Tutors will be loaded dynamically -->
+            <!-- Tutor checkboxes will be loaded dynamically from server data -->
           </div>
         </div>
 
@@ -332,7 +360,7 @@
     </div>
   </div>
 
-  <!-- Add Note Modal -->
+  <!-- Add Note Modal: Form to create new calendar note with description and time -->
   <div id="addNoteModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeNoteModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
@@ -345,17 +373,21 @@
         </button>
       </div>
       
+      <!-- Form with description, date/time pickers, and tutor assignment -->
       <form id="noteForm" class="space-y-4">
+        <!-- Note description textarea -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
           <textarea id="noteDescription" required placeholder="Enter note description..." rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
+        <!-- Date picker for note -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
           <input type="date" id="noteDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
+        <!-- Start and End time pickers (15-minute intervals) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
@@ -367,13 +399,14 @@
           </div>
         </div>
 
+        <!-- Tutor assignment section with quick 'assign to myself' option -->
         <div id="assignToSection">
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-medium text-foreground">Assign To</label>
             <button type="button" onclick="assignToMyself()" class="text-xs text-primary hover:underline">Assign to myself</button>
           </div>
           <div id="assigneesContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
-            <!-- Tutors will be loaded dynamically -->
+            <!-- Tutor checkboxes will be loaded dynamically from server data -->
           </div>
         </div>
 
@@ -385,7 +418,7 @@
     </div>
   </div>
 
-  <!-- Add Student Modal -->
+  <!-- Add Student Modal: Quick form to add new student (higher z-index to overlay lesson modal) -->
   <div id="addStudentModal" class="modal fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeAddStudentModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
@@ -398,6 +431,7 @@
         </button>
       </div>
       
+      <!-- Form with first name, last name, class selection, and optional description -->
       <form id="addStudentForm" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">First Name</label>
@@ -409,6 +443,7 @@
           <input type="text" id="studentSurname" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
+        <!-- Class selection: M (Media/Middle School), S (Superiore/High School), U (Università/University) -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Class</label>
           <select id="studentClass" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
@@ -432,7 +467,7 @@
     </div>
   </div>
 
-  <!-- Edit Prenotation Modal -->
+  <!-- Edit Prenotation Modal: Form to modify existing lesson or delete it -->
   <div id="editPrenotationModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeEditPrenotationModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
@@ -445,9 +480,11 @@
         </button>
       </div>
       
+      <!-- Form with hidden ID field, student search/select, date/time pickers, tutor assignment, and delete option -->
       <form id="editPrenotationForm" class="space-y-4">
         <input type="hidden" id="editPrenotationId">
         
+        <!-- Student search field with autocomplete filtering -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
           <input type="text" id="editStudentSearch" placeholder="Search by name..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" autocomplete="off">
@@ -476,13 +513,15 @@
           </div>
         </div>
 
+        <!-- Tutor assignment section for editing -->
         <div id="editPrenotationAssignToSection">
           <label class="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
           <div id="editPrenotationTutorsContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
-            <!-- Tutors will be loaded dynamically -->
+            <!-- Tutor checkboxes will be loaded dynamically -->
           </div>
         </div>
 
+        <!-- Action buttons: Delete, Cancel, Update -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="deletePrenotation()" class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
           <button type="button" onclick="closeEditPrenotationModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
@@ -492,7 +531,7 @@
     </div>
   </div>
 
-  <!-- Edit Note Modal -->
+  <!-- Edit Note Modal: Form to modify existing note or delete it -->
   <div id="editNoteModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeEditNoteModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
@@ -505,9 +544,11 @@
         </button>
       </div>
       
+      <!-- Form with hidden ID field, description, date/time pickers, tutor assignment, and delete option -->
       <form id="editNoteForm" class="space-y-4">
         <input type="hidden" id="editNoteId">
         
+        <!-- Note description textarea -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
           <textarea id="editNoteDescription" required placeholder="Enter note description..." rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
@@ -529,13 +570,15 @@
           </div>
         </div>
 
+        <!-- Tutor assignment section for editing -->
         <div id="editNoteAssignToSection">
           <label class="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
           <div id="editNoteAssigneesContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
-            <!-- Tutors will be loaded dynamically -->
+            <!-- Tutor checkboxes will be loaded dynamically -->
           </div>
         </div>
 
+        <!-- Action buttons: Delete, Cancel, Update -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="deleteNote()" class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
           <button type="button" onclick="closeEditNoteModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
@@ -545,8 +588,10 @@
     </div>
   </div>
 
+  <!-- SCRIPTS: Data and Functionality -->
+  <!-- Server-side data injection: prenotations, notes, students, tutors, user info -->
   <script>
-    // Pass server-side data to JavaScript
+    // Pass server-side data to JavaScript for client-side rendering
     window.serverData = {
       prenotations: <%- JSON.stringify(prenotations) %>,
       calendarNotes: <%- JSON.stringify(calendarNotes) %>,
@@ -556,6 +601,7 @@
       userRole: '<%= user.role %>'
     };
   </script>
+  <!-- JavaScript for calendar rendering, event management, and modal interactions -->
   <script src="/js/calendarScript.js"></script>
 </body>
 </html>

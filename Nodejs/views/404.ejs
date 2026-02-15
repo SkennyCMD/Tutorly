@@ -1,15 +1,36 @@
+<!--
+    404 Error Page - Tutorly
+    
+    Purpose: Custom 404 page displayed when a user visits a non-existent route
+    Features:
+    - Responsive design with Tailwind CSS
+    - Conditional navigation based on authentication status
+    - Mobile sidebar menu for authenticated users
+    - Visual 404 illustration
+    - Action buttons to navigate back or go to dashboard
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Character encoding and viewport for responsive design -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 - Page Not Found | Tutorly</title>
+    
+    <!-- Tailwind CSS CDN for utility-first styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts - Inter font family -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom styles for scrollbar and font -->
     <style>
+        /* Apply Inter font to all elements */
         * { font-family: 'Inter', sans-serif; }
+        
+        /* Custom scrollbar styling for dark theme */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -17,11 +38,12 @@
     </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
-    <!-- Header -->
+    <!-- HEADER -->
+    <!-- Sticky header with logo, navigation, and logout button -->
     <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <!-- Logo -->
+                <!-- Tutorly Logo - redirects to home if authenticated, login otherwise -->
                 <a href="<%= isAuthenticated ? '/home' : '/login' %>" class="flex items-center gap-2">
                     <div class="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,7 +53,7 @@
                     <span class="text-xl font-bold text-white">Tutorly</span>
                 </a>
 
-                <!-- Desktop Navigation (Only for authenticated user)-->
+                <!-- Desktop Navigation (only shown when user is authenticated) -->
                 <% if(isAuthenticated){ %>
                     <nav class="hidden md:flex items-center gap-6">
                         <a href="/home" class="text-slate-300 hover:text-white transition-colors">Dashboard</a>
@@ -39,7 +61,7 @@
                         <a href="/lessons" class="text-slate-300 hover:text-white transition-colors">My Lessons</a>
                     </nav>
 
-                    <!-- Logout Button (Desktop) -->
+                    <!-- Logout Button (Desktop only) -->
                     <div class="hidden md:flex items-center">
                         <form action="/logout" method="POST" class="inline">
                             <button type="submit" class="flex items-center gap-2 px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-700 rounded-lg transition-colors">
@@ -52,7 +74,7 @@
                     </div>
                 <% } %>
 
-                <!-- Mobile Menu Button -->
+                <!-- Mobile Menu Toggle Button (only shown when authenticated) -->
                 <% if(isAuthenticated){ %>
                 <button id="menuBtn" class="md:hidden p-2 text-slate-400 hover:text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,11 +86,16 @@
         </div>
     </header>
 
-    <!-- Mobile Sidebar -->
+    <!-- MOBILE SIDEBAR -->
+    <!-- Slide-in sidebar menu for mobile devices (only for authenticated users) -->
     <% if(isAuthenticated){ %>
     <div id="mobileSidebar" class="fixed inset-0 z-50 hidden">
+        <!-- Overlay - clicking this closes the sidebar -->
         <div class="absolute inset-0 bg-black/50" id="sidebarOverlay"></div>
+        
+        <!-- Sidebar content with navigation links -->
         <div class="absolute left-0 top-0 h-full w-64 bg-slate-800 border-r border-slate-700 transform transition-transform duration-300">
+            <!-- Sidebar header with logo and close button -->
             <div class="p-4 border-b border-slate-700 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
@@ -84,25 +111,34 @@
                     </svg>
                 </button>
             </div>
+            
+            <!-- Mobile navigation menu -->
             <nav class="p-4 space-y-2">
+                <!-- Dashboard link -->
                 <a href="/home" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
                     Dashboard
                 </a>
+                
+                <!-- Calendar link -->
                 <a href="/calendar" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
                     Calendar
                 </a>
+                
+                <!-- Lessons link -->
                 <a href="/lessons" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                     </svg>
                     My Lessons
                 </a>
+                
+                <!-- Logout section (separated with border) -->
                 <div class="mt-4 pt-4 border-t border-slate-600">
                     <form action="/logout" method="POST">
                         <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors">
@@ -118,13 +154,17 @@
     </div>
     <% } %>
 
-    <!-- Main Content -->
+    <!-- MAIN CONTENT -->
+    <!-- Centered 404 error message with illustration and actions -->
     <main class="flex-1 flex items-center justify-center px-4 py-12">
         <div class="text-center max-w-lg">
-            <!-- 404 Illustration -->
+            <!-- 404 Visual Illustration -->
             <div class="mb-8">
                 <div class="relative inline-block">
+                    <!-- Large 404 text as background -->
                     <span class="text-9xl sm:text-[12rem] font-bold text-slate-800">404</span>
+                    
+                    <!-- Sad face icon overlaid on 404 -->
                     <div class="absolute inset-0 flex items-center justify-center">
                         <div class="w-24 h-24 sm:w-32 sm:h-32 bg-slate-800 rounded-full border-4 border-teal-500 flex items-center justify-center">
                             <svg class="w-12 h-12 sm:w-16 sm:h-16 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,20 +175,23 @@
                 </div>
             </div>
 
-            <!-- Error Message -->
+            <!-- Error Message and Description -->
             <h1 class="text-2xl sm:text-3xl font-bold text-white mb-3">Page Not Found</h1>
             <p class="text-slate-400 mb-8 text-base sm:text-lg">
                 Oops! The page you're looking for doesn't exist or has been moved. Let's get you back on track.
             </p>
 
-            <!-- Action Buttons -->
+            <!-- Navigation Action Buttons -->
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <!-- Primary action: Go to Dashboard -->
                 <a href="/home" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-teal-500 hover:bg-teal-600 text-white font-medium rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
                     Go to Dashboard
                 </a>
+                
+                <!-- Secondary action: Go back to previous page -->
                 <button onclick="history.back()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-transparent border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white font-medium rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
@@ -159,13 +202,15 @@
         </div>
     </main>
 
-    <!-- Footer -->
+    <!-- FOOTER -->
+    <!-- Simple footer with copyright information -->
     <footer class="bg-slate-800 border-t border-slate-700 py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-slate-500 text-sm">&copy; 2026 Tutorly. All rights reserved.</p>
         </div>
     </footer>
 
+    <!-- JavaScript for mobile sidebar toggle functionality -->
     <script src="/js/404.js"></script>
 </body>
 </html>

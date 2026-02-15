@@ -1,5 +1,22 @@
+<!--
+
+ADMIN LOGIN PAGE
+
+Description: Secure authentication page for administrators to access the admin panel
+Features:
+  - Admin ID and password authentication
+  - Password visibility toggle
+  - Security encryption notice
+  - Restricted access indicators
+  - Link to tutor login page
+  - Dark themed design with animated background patterns
+
+-->
+
 <!DOCTYPE html>
 <html lang="en">
+<!-- HEAD: Page Configuration -->
+<!-- Tailwind CSS configuration with custom dark theme colors (teal primary, slate backgrounds) -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,13 +49,15 @@
 </head>
 <body class="bg-background text-foreground min-h-screen flex flex-col">
 
-  <!-- Background pattern -->
+  <!-- BACKGROUND PATTERN: Decorative Elements -->
+  <!-- Fixed background with blurred circular gradients for visual depth -->
   <div class="fixed inset-0 overflow-hidden pointer-events-none">
     <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
     <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-destructive/5 rounded-full blur-3xl"></div>
   </div>
 
-  <!-- Header -->
+  <!-- HEADER: Navigation -->
+  <!-- Site logo and link back to tutor login page -->
   <header class="relative z-10 w-full py-5 px-6">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <a href="login.html" class="flex items-center gap-2">
@@ -59,11 +78,11 @@
     </div>
   </header>
 
-  <!-- Main Content -->
+  <!-- MAIN CONTENT: Admin Login Form -->
   <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
     <div class="w-full max-w-md">
 
-      <!-- Admin badge -->
+      <!-- Restricted access indicator badge with pulsing animation -->
       <div class="flex justify-center mb-6 fade-in">
         <div class="pulse-ring inline-flex items-center gap-2 bg-destructive/10 border border-destructive/20 text-destructive px-4 py-1.5 rounded-full text-sm font-medium">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +92,7 @@
         </div>
       </div>
 
-      <!-- Login Card -->
+      <!-- Login form card with admin authentication fields -->
       <div class="glow bg-card border border-border rounded-2xl p-8 md:p-10 fade-in-delay">
         <div class="text-center mb-8">
           <div class="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-4 border border-border">
@@ -85,8 +104,9 @@
           <p class="text-muted-foreground">Sign in with your administrator credentials</p>
         </div>
 
+        <!-- Admin login form -->
         <form id="adminLoginForm" class="space-y-5">
-          <!-- Admin ID -->
+          <!-- Admin ID input field with user icon -->
           <div>
             <label for="adminId" class="block text-sm font-medium text-foreground mb-1.5">Admin ID</label>
             <div class="relative">
@@ -99,7 +119,7 @@
             </div>
           </div>
 
-          <!-- Password -->
+          <!-- Password field with visibility toggle button -->
           <div>
             <label for="adminPassword" class="block text-sm font-medium text-foreground mb-1.5">Password</label>
             <div class="relative">
@@ -118,7 +138,7 @@
             </div>
           </div>
 
-          <!-- Access Code -->
+          <!-- Access Code field (currently disabled / commented out for future use) -->
            <!--
           <div>
             <label for="accessCode" class="block text-sm font-medium text-foreground mb-1.5">Access Code</label>
@@ -133,7 +153,7 @@
             <p class="text-xs text-muted-foreground mt-1.5">Contact the system administrator if you don't have a code</p>
           </div> -->
 
-          <!-- Error message -->
+          <!-- Error message display (hidden by default, shown when authentication fails) -->
           <div id="loginError" class="hidden bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg px-4 py-3 flex items-center gap-2">
             <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -141,7 +161,7 @@
             <span id="errorText"></span>
           </div>
 
-          <!-- Submit -->
+          <!-- Submit button -->
           <button type="submit" class="w-full py-3 px-4 bg-primary text-primary-foreground font-semibold rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all flex items-center justify-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
@@ -151,7 +171,7 @@
         </form>
       </div>
 
-      <!-- Security note -->
+      <!-- Security notification informing users about encryption and monitoring -->
       <div class="fade-in-delay-2 mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
@@ -161,7 +181,7 @@
     </div>
   </main>
 
-  <!-- Footer -->
+  <!-- FOOTER: Admin Portal Information -->
   <footer class="relative z-10 py-6 px-6 border-t border-border">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
       <p class="text-sm text-muted-foreground">Tutorly Admin Portal</p>
@@ -169,6 +189,7 @@
     </div>
   </footer>
 
+  <!-- JavaScript for admin login functionality (form validation, password toggle, authentication) -->
   <script src="/js/adminLogin.js"></script>
 </body>
 </html>

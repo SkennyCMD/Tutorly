@@ -1,7 +1,7 @@
 /**
  * Migration script to hash existing plain-text passwords in the database
  * 
- * ⚠️ WARNING: This script should be run ONLY ONCE to migrate existing passwords
+ * WARNING: This script should be run ONLY ONCE to migrate existing passwords
  * After running this script, all passwords will be hashed with bcrypt
  * 
  * Usage: node migrations/hashExistingPasswords.js

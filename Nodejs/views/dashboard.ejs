@@ -1,5 +1,20 @@
+<!--
+
+DASHBOARD PAGE
+
+Description: Main dashboard page displayed after successful user authentication
+Features:
+  - Welcome message with username and role
+  - User information display
+  - Role-based action links (Admin or Student specific)
+  - Logout functionality
+  - Simple and clean layout
+
+-->
+
 <!DOCTYPE html>
 <html lang="it">
+<!-- HEAD: Page Configuration -->
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,40 +23,50 @@
 </head>
 <body>
     <div class="dashboard-container">
+        <!-- NAVBAR: Top Navigation Bar -->
+        <!-- Brand logo and user info with logout button -->
         <nav class="navbar">
+            <!-- Tutorly brand logo -->
             <div class="nav-brand">
                 <h2>Tutorly</h2>
             </div>
+            <!-- User welcome message and logout form -->
             <div class="nav-user">
-                <span>Benvenuto, <strong><%= username %></strong> (<%= role %>)</span>
+                <span>Welcome, <strong><%= username %></strong> (<%= role %>)</span>
                 <form action="/logout" method="POST" style="display: inline;">
                     <button type="submit" class="logout-btn">Logout</button>
                 </form>
             </div>
         </nav>
 
+        <!-- DASHBOARD CONTENT: Main Content Area -->
         <div class="dashboard-content">
+            <!-- Welcome card with user information and role-based actions -->
             <div class="welcome-card">
                 <h1>Dashboard</h1>
-                <p>Sei autenticato con successo come <strong><%= role %></strong></p>
+                <p>You are logged as <strong><%= role %></strong></p>
                 
+                <!-- User information section -->
                 <div class="info-section">
-                    <h3>Informazioni Utente:</h3>
+                    <h3>User Info:</h3>
                     <ul>
                         <li><strong>Username:</strong> <%= username %></li>
-                        <li><strong>Ruolo:</strong> <%= role %></li>
+                        <li><strong>Role:</strong> <%= role %></li>
                     </ul>
                 </div>
 
+                <!-- Role-based action links -->
                 <div class="actions">
+                    <!-- Admin-specific actions: manage users, tutors, and lessons -->
                     <% if (role === 'admin') { %>
-                        <a href="/admin/users" class="action-btn">Gestisci Utenti</a>
-                        <a href="/admin/tutors" class="action-btn">Gestisci Tutor</a>
-                        <a href="/admin/lessons" class="action-btn">Gestisci Lezioni</a>
+                        <a href="/admin/users" class="action-btn">Manage Users</a>
+                        <a href="/admin/tutors" class="action-btn">Manage Tutors</a>
+                        <a href="/admin/lessons" class="action-btn">Manage Lessons</a>
+                    <!-- Student-specific actions: view lessons, find tutors, access calendar -->
                     <% } else if (role === 'student') { %>
-                        <a href="/student/lessons" class="action-btn">Le Mie Lezioni</a>
-                        <a href="/student/tutors" class="action-btn">Trova Tutor</a>
-                        <a href="/student/calendar" class="action-btn">Calendario</a>
+                        <a href="/student/lessons" class="action-btn">My Lessons</a>
+                        <a href="/student/tutors" class="action-btn">Find Tutor</a>
+                        <a href="/student/calendar" class="action-btn">Calendar</a>
                     <% } %>
                 </div>
             </div>
