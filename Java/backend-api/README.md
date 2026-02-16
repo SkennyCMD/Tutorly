@@ -1463,22 +1463,6 @@ docker build -t tutorly-backend .
 docker run -p 8443:8443 tutorly-backend
 ```
 
----
-
-## Roadmap and Future Improvements
-
-- [ ] **JWT Authentication** instead of static API Key
-- [ ] **Spring Security** with roles and permissions
-- [ ] **Advanced validation** with Bean Validation
-- [ ] **Pagination and Sorting** on all endpoints
-- [ ] **Dynamic filtering** with Specifications
-- [ ] **Audit logging** on data changes (who, when, what)
-- [ ] **Rate limiting** to prevent abuse
-- [ ] **Health checks** and monitoring (Actuator)
-- [ ] **Swagger/OpenAPI** for interactive documentation
-- [ ] **Automated testing** (Unit + Integration tests)
-- [ ] **CI/CD pipeline** with GitHub Actions
-- [ ] **Full containerization** with Docker Compose
 
 ---
 
