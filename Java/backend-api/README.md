@@ -170,6 +170,8 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 
 ### Entity Relationships
 
+![ER MODEL](TUTORLY_Normal.png)
+
 #### 1. **Admin → Tutor** (Many-to-Many with associative entity)
 - An admin can create multiple tutors
 - A tutor can be created by multiple admins (joint management)
