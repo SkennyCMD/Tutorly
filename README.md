@@ -667,7 +667,7 @@ Developed by Matteo Schintu (Skenny)
 
 For questions, support or feedback:
 
-- **Email**: skenny.dev@gamil.con
+- **Email**: skenny.dev@gmail.com
 - **Team**: Tutorly Development Team (Skenny)
 
 ---

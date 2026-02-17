@@ -1694,7 +1694,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contacts
 
 For questions or support:
-- **Email**: skenny.dev@gamil.con
+- **Email**: skenny.dev@gmail.com
 - **Team**: Tutorly Development Team (Skenny)
 - **Backend Documentation:** [../Java/backend-api/README.md](../Java/backend-api/README.md)
 
