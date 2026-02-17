@@ -397,12 +397,14 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
  * Dashboard view
  * GET /dashboard - Display tutor dashboard
  */
+/*
 app.get('/dashboard', tutorSession, isAuthenticated, (req, res) => {
     res.render('dashboard', {
         username: req.session.username,
         role: req.session.role
     });
 });
+*/
 
 /**
  * Calendar view

@@ -59,7 +59,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 │  ┌──────────────────────────────────────────────────────────┐ │
 │  │              ROUTE HANDLERS                               │ │
 │  │  - Authentication Routes (/login, /logout)               │ │
-│  │  - Dashboard Routes (/home, /dashboard)                  │ │
+│  │  - Dashboard Routes (/home)                              │ │
 │  │  - Lesson Management (/lessons, /calendar)               │ │
 │  │  - Admin Panel (/admin, /staffPanel)                     │ │
 │  │  - API Endpoints (/api/*)                                │ │
@@ -158,7 +158,6 @@ Nodejs/
 │   ├── login.ejs                   # Tutor login page
 │   ├── adminLogin.ejs              # Admin login page
 │   ├── home.ejs                    # Tutor home dashboard
-│   ├── dashboard.ejs               # Extended dashboard view
 │   ├── lessons.ejs                 # Lesson management interface
 │   ├── calendar.ejs                # Calendar view with notes
 │   ├── admin.ejs                   # Admin panel
@@ -170,7 +169,6 @@ Nodejs/
 │   │   ├── login.css               # Login page styles
 │   │   ├── adminLogin.css          # Admin login styles
 │   │   ├── home.css                # Home dashboard styles
-│   │   ├── dashboard.css           # Dashboard styles
 │   │   ├── lessons.css             # Lesson management styles
 │   │   ├── calendar.css            # Calendar view styles
 │   │   ├── admin.css               # Admin panel styles
@@ -222,7 +220,7 @@ The application follows an **MVC-inspired architecture** adapted for server-side
 │  │              Route Handlers (index.js)                │  │
 │  │                                                        │  │
 │  │  - Authentication Routes (login, logout)             │  │
-│  │  - View Routes (home, dashboard, lessons, calendar)  │  │
+│  │  - View Routes (home, lessons, calendar)             │  │
 │  │  - API Routes (CRUD operations)                      │  │
 │  │  - Admin Routes (admin panel, staff panel)           │  │
 │  └──────────────────────────────────────────────────────┘  │
@@ -807,7 +805,6 @@ The system supports two separate authentication contexts:
 
 **Protected Routes:**
 - `/home` - Home dashboard
-- `/dashboard` - Extended dashboard
 - `/lessons` - Lesson management
 - `/calendar` - Calendar view
 - `/staffPanel` - Staff panel (STAFF role only)
@@ -1100,7 +1097,7 @@ Default admin account (created via Java API):
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | `/` | Homepage (redirects to login or dashboard) |
+| GET | `/` | Homepage (redirects to login or home) |
 | GET | `/login` | Tutor login page |
 | POST | `/login` | Tutor authentication |
 | GET | `/adminLogin` | Admin login page |
@@ -1114,7 +1111,6 @@ Default admin account (created via Java API):
 |--------|-------|-------------|
 | GET | `/logout` | Destroy tutor session and redirect to login |
 | GET | `/home` | Home dashboard (today's tasks, lessons, prenotations) |
-| GET | `/dashboard` | Extended dashboard view |
 | GET | `/lessons` | Lesson management interface |
 | GET | `/calendar` | Calendar view with notes |
 

@@ -118,12 +118,12 @@ const hasRole = (...roles) => {
  * @param {Object} req - Express request object with session
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
- * @returns Redirects to /dashboard if authenticated, otherwise calls next()
+ * @returns Redirects to /home if authenticated, otherwise calls next()
  */
 const isGuest = (req, res, next) => {
     // Check if user is already authenticated
     if (req.session && req.session.userId) {
-        return res.redirect('/dashboard'); // Already logged in, redirect to dashboard
+        return res.redirect('/home'); // Already logged in, redirect to dashboard
     }
     next(); // Not authenticated, proceed to guest page (login/register)
 };
