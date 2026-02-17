@@ -15,10 +15,21 @@
 	<description>REST API to manage data</description>
 	<url/>
 	<licenses>
-		<license/>
+		<license>
+			<name>MIT License</name>
+			<url>https://opensource.org/licenses/MIT</url>
+		</license>
 	</licenses>
 	<developers>
-		<developer/>
+		<developer>
+			<name>Matteo Schintu</name>
+			<id>skenny</id>
+			<email>skenny.dev@gmail.com</email>
+			<organization>Team Tutorly</organization>
+			<roles>
+				<role>Lead Developer</role>
+			</roles>
+		</developer>
 	</developers>
 	<scm>
 		<connection/>

@@ -1687,15 +1687,15 @@ pm2 save
 
 ## License
 
-This project is owned by **Tutorly Team**. All rights reserved.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
 ## Contacts
 
 For questions or support:
-- **Team:** Tutorly Development Team
-- **Email:** support@tutorly.app
+- **Email**: skenny.dev@gamil.con
+- **Team**: Tutorly Development Team (Skenny)
 - **Backend Documentation:** [../Java/backend-api/README.md](../Java/backend-api/README.md)
 
 ---

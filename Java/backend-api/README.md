@@ -1480,15 +1480,15 @@ docker run -p 8443:8443 tutorly-backend
 
 ## License
 
-This project is owned by **Tutorly Team**. All rights reserved.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
 ## Contacts
 
 For questions or support:
-- **Team:** Tutorly Development Team
-- **Email:** support@tutorly.app
+- **Email**: skenny.dev@gamil.con
+- **Team**: Tutorly Development Team (Skenny)
 - **Documentation:** [GUI-README.md](GUI-README.md)
 
 ---
