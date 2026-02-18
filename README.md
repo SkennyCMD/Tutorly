@@ -35,13 +35,14 @@ Tutorly follows a **three-tier** architecture with separation between user inter
 ┌─────────────────────────────────────────────────────────────────┐
 │                    PRESENTATION LAYER                            │
 │                   Node.js Express Frontend                       │
-│                         (Port 3000)                              │
+│                    (Port 3000 HTTP / 3443 HTTPS)                 │
 │                                                                   │
 │  • Session-based authentication                                 │
 │  • EJS page rendering                                           │
 │  • Middleware management (auth, logging)                        │
 │  • Static files (CSS, JavaScript, images)                       │
 │  • Excel report generation                                      │
+│  • SSL/TLS support (self-signed certificates for dev)           │
 └────────────────────────┬────────────────────────────────────────┘
                          │ HTTPS + API Key
                          ▼
@@ -127,6 +128,7 @@ User-friendly web interface that handles authentication, sessions and presents d
 - ✅ **Excel export** for reports and statistics
 - ✅ **Advanced logging** with colors and timestamps
 - ✅ **Middleware chain** for authentication and authorization
+- ✅ **HTTPS support** with self-signed certificates for local development
 
 **Main pages**:
 - **Login/Admin Login**: Dual authentication for tutors and admins
@@ -143,8 +145,10 @@ User-friendly web interface that handles authentication, sessions and presents d
 - bcrypt 6.0.0
 - express-session 1.18.2
 - ExcelJS 4.4.0
+- Native HTTPS module for SSL/TLS
 
 📚 **Detailed documentation**: [Nodejs/README.md](Nodejs/README.md)
+📚 **HTTPS Setup Guide**: [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md)
 
 ---
 
@@ -297,6 +301,7 @@ Tutors with **STAFF** role have additional features:
 | bcrypt | 6.0.0 | Password hashing |
 | express-session | 1.18.2 | Session management |
 | ExcelJS | 4.4.0 | Excel generation |
+| HTTPS Module | Native | SSL/TLS support |
 
 ### Database
 | Technology | Version | Usage |
@@ -304,11 +309,14 @@ Tutors with **STAFF** role have additional features:
 | PostgreSQL | 12+ | Relational database |
 
 ### Security
-- **HTTPS/SSL**: Encrypted communication
-- **API Key**: API request authentication
+- **HTTPS/SSL**: Encrypted communication on both layers
+  - Backend: Java Spring Boot with SSL (port 8443)
+  - Frontend: Node.js with optional HTTPS (port 3443)
+- **Self-Signed Certificates**: For local development (script included)
+- **API Key**: API request authentication between frontend and backend
 - **bcrypt**: Password hashing (10 rounds)
-- **Session-based auth**: httpOnly cookies
-- **Role-based access**: Authorization control
+- **Session-based auth**: httpOnly and secure cookies
+- **Role-based access (RBAC)**: Authorization control with roles
 
 ---
 
@@ -395,6 +403,7 @@ npm install
 
 #### 6. Start Node.js Frontend
 
+**Option A: HTTP Mode (default)**
 ```bash
 # Production
 npm start
@@ -404,6 +413,26 @@ npm run dev
 ```
 
 Frontend will be available at: `http://localhost:3000`
+
+**Option B: HTTPS Mode (with self-signed certificates)**
+```bash
+# Generate SSL certificates (first time only)
+npm run generate-cert
+
+# Start with HTTPS
+npm run https
+
+# Or development with HTTPS and auto-reload
+npm run dev:https
+```
+
+Frontend will be available at:
+- **HTTPS**: `https://localhost:3443` (self-signed certificate)
+- **HTTP**: `http://localhost:3000` (redirects to HTTPS)
+
+⚠️ **Note**: Browser will show security warning for self-signed certificates. Click "Advanced" → "Proceed to localhost" to continue.
+
+📚 **For detailed HTTPS setup**: See [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md)
 
 #### 7. Access the System
 
@@ -484,6 +513,7 @@ Each component has its own detailed documentation:
 | **Java Backend API** | [Java/backend-api/README.md](Java/backend-api/README.md) | Architecture, API endpoints, configuration |
 | **Java GUI** | [Java/backend-api/GUI-README.md](Java/backend-api/GUI-README.md) | Graphical interface for server management |
 | **Node.js Frontend** | [Nodejs/README.md](Nodejs/README.md) | Architecture, routes, authentication, middleware |
+| **HTTPS Setup** | [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md) | SSL/TLS configuration for local development |
 
 ---
 
@@ -502,8 +532,35 @@ Each component has its own detailed documentation:
 
 ### Communication
 - **HTTPS/SSL**: Encrypted communication between frontend and backend
+  - **Backend (Java)**: Always HTTPS on port 8443
+  - **Frontend (Node.js)**: Optional HTTPS on port 3443 (HTTP on port 3000)
 - **API Key header**: X-API-Key for every API request
-- **Certificate-based**: Self-signed certificate support in development
+- **Self-Signed Certificates**: Supported for local development
+  - Automatic generation script included (`npm run generate-cert`)
+  - Valid for 365 days
+  - Browser security warnings expected (click "Advanced" → "Proceed")
+  - **Not for production use** - use trusted CA certificates in production
+
+### SSL Certificate Setup (Development)
+
+**Quick Setup for HTTPS:**
+
+```bash
+# Navigate to Node.js directory
+cd Nodejs
+
+# Generate self-signed certificates
+npm run generate-cert
+
+# Start server in HTTPS mode
+npm run https
+```
+
+**Access:**
+- HTTPS: `https://localhost:3443`
+- HTTP: `http://localhost:3000` (redirects to HTTPS)
+
+📚 **Detailed HTTPS guide**: [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md)
 
 ### Best Practices
 - ✅ Never store passwords in plain text

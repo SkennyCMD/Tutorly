@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "https": "USE_HTTPS=true node src/index.js",
+    "dev:https": "USE_HTTPS=true nodemon src/index.js",
+    "generate-cert": "bash generate-ssl-cert.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

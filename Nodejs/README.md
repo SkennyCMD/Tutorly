@@ -118,6 +118,7 @@ User Browser ←→ Express Server ←→ Java API ←→ PostgreSQL
 
 ### Backend Integration
 - **HTTPS Module** - Native Node.js HTTPS client for API communication
+- **SSL/TLS Support** - Self-signed certificates for local HTTPS development
 - **Java Backend API** - RESTful API (Spring Boot on port 8443)
 - **API Key Authentication** - X-API-Key header-based authentication
 
@@ -184,13 +185,21 @@ Nodejs/
 │       ├── modalShared.js          # Shared modal utilities
 │       └── 404.js                  # Error page interactions
 │
+├── ssl/                            # SSL certificates (gitignored)
+│   ├── private-key.pem             # Private key for HTTPS
+│   ├── certificate.pem             # Self-signed certificate
+│   └── README.md                   # SSL certificate documentation
+│
 ├── migrations/                     # Database migration scripts
 │   ├── hashExistingPasswords.js    # Migrate plain-text passwords to bcrypt
 │   └── README.md                   # Migration documentation
 │
 ├── admin_login_attempts.txt        # Admin login attempt log file
+├── generate-ssl-cert.sh            # Script to generate SSL certificates
 ├── package.json                    # Node.js dependencies and scripts
+├── .env.example                    # Environment variables template
 ├── .gitignore                      # Git ignore rules
+├── HTTPS_SETUP.md                  # HTTPS configuration guide
 └── README.md                       # This file
 ```
 
@@ -1052,7 +1061,61 @@ npm start
 npm run dev
 ```
 
-**Server will be available at:** `http://localhost:3000`
+#### HTTPS Mode (with self-signed certificates):
+```bash
+# Generate SSL certificates (first time only)
+npm run generate-cert
+
+# Start server in HTTPS mode
+npm run https
+
+# Development with HTTPS and auto-reload
+npm run dev:https
+```
+
+**Default URLs:**
+- **HTTP:** `http://localhost:3000`
+- **HTTPS:** `https://localhost:3443` (with self-signed certificate)
+
+📚 **For detailed HTTPS setup instructions, see:** [HTTPS_SETUP.md](HTTPS_SETUP.md)
+
+### HTTPS Configuration
+
+The server supports HTTPS with self-signed certificates for local development.
+
+**Environment Variables:**
+
+```bash
+# Enable HTTPS mode
+USE_HTTPS=true
+
+# Configure ports
+PORT=3000          # HTTP port (redirects to HTTPS when USE_HTTPS=true)
+HTTPS_PORT=3443    # HTTPS port
+
+# SSL certificate paths (relative to Nodejs directory)
+SSL_KEY_PATH=./ssl/private-key.pem
+SSL_CERT_PATH=./ssl/certificate.pem
+```
+
+**Quick Setup:**
+
+```bash
+# 1. Generate certificates
+npm run generate-cert
+
+# 2. Start HTTPS server
+USE_HTTPS=true npm start
+# or simply:
+npm run https
+```
+
+**Browser Access:**
+- Open `https://localhost:3443`
+- Accept security warning (expected for self-signed certificates)
+- Click "Advanced" → "Proceed to localhost"
+
+⚠️ **Note:** Self-signed certificates are for development only. For production, use certificates from a trusted Certificate Authority (Let's Encrypt, DigiCert, etc.).
 
 ### First-Time Setup
 

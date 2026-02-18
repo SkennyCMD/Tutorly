@@ -19,6 +19,7 @@ const session = require('express-session');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 
 // Excel generation utilities
@@ -52,7 +53,11 @@ const {
 const { 
     JAVA_API_URL, 
     JAVA_API_KEY, 
-    PORT, 
+    PORT,
+    HTTPS_PORT,
+    USE_HTTPS,
+    SSL_KEY_PATH,
+    SSL_CERT_PATH,
     TUTOR_SESSION_SECRET, 
     ADMIN_SESSION_SECRET,
     TUTOR_SESSION_DURATION,
@@ -84,7 +89,8 @@ const sessionMiddleware = session({
     cookie: {
         maxAge: TUTOR_SESSION_DURATION, // 30 days - longer duration for tutors
         httpOnly: true,                  // Prevent XSS attacks
-        secure: false                    // Set to true in production with HTTPS
+        secure: USE_HTTPS,               // Enable secure cookies only with HTTPS
+        sameSite: 'strict'               // CSRF protection
     }
 });
 
@@ -1666,11 +1672,70 @@ app.use((req, res) => {
 // !!! SERVER INITIALIZATION !!!
 
 /**
- * Start the Express server
- * Listens on the configured PORT (default: 3000)
+ * Function to load SSL certificates for HTTPS
+ * Returns null if certificates are not found or cannot be loaded
  */
-app.listen(PORT, () => {
-    console.log(`Tutorly server running at http://localhost:${PORT}`);
-});
+function loadSSLCertificates() {
+    try {
+        const keyPath = path.join(__dirname, '..', SSL_KEY_PATH);
+        const certPath = path.join(__dirname, '..', SSL_CERT_PATH);
+
+        // Check if certificate files exist
+        if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+            logError('SSL certificates not found!');
+            logInfo('Run: npm run generate-cert to create self-signed certificates');
+            return null;
+        }
+
+        return {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath)
+        };
+    } catch (error) {
+        logError(`Error loading SSL certificates: ${error.message}`);
+        return null;
+    }
+}
+
+/**
+ * Start the server with HTTPS support if enabled
+ * Falls back to HTTP if HTTPS is not configured or certificates are missing
+ */
+if (USE_HTTPS) {
+    const sslOptions = loadSSLCertificates();
+    
+    if (sslOptions) {
+        // Create HTTPS server
+        const httpsServer = https.createServer(sslOptions, app);
+        httpsServer.listen(HTTPS_PORT, () => {
+            logSuccess(`HTTPS Server running on https://localhost:${HTTPS_PORT}`);
+            logWarning('Using self-signed certificate: browser will show security warning');
+            logInfo('Click "Advanced" → "Proceed to localhost" to continue');
+        });
+
+        // Create HTTP server for redirect to HTTPS
+        const httpApp = express();
+        httpApp.use((req, res) => {
+            const redirectUrl = `https://${req.headers.host.split(':')[0]}:${HTTPS_PORT}${req.url}`;
+            res.redirect(301, redirectUrl);
+        });
+        
+        const httpServer = http.createServer(httpApp);
+        httpServer.listen(PORT, () => {
+            logInfo(`HTTP Server (port ${PORT}) redirecting to HTTPS`);
+        });
+    } else {
+        // Fallback to HTTP if certificates are not available
+        logWarning('Falling back to HTTP (SSL certificates not available)');
+        app.listen(PORT, () => {
+            console.log(`Tutorly server running at http://localhost:${PORT}`);
+        });
+    }
+} else {
+    // Start HTTP server only (development mode)
+    app.listen(PORT, () => {
+        console.log(`Tutorly server running at http://localhost:${PORT}`);
+    });
+}
 
 module.exports = app;

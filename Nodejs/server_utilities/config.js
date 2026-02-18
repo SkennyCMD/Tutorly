@@ -43,10 +43,30 @@ module.exports = {
     
     
     /**
-     * Express server port
+     * Express server port (HTTP)
      * Defaults to 3000 if PORT environment variable is not set
      */
     PORT: process.env.PORT || 3000,
+    
+    /**
+     * HTTPS server port
+     * Defaults to 3443 if HTTPS_PORT environment variable is not set
+     */
+    HTTPS_PORT: process.env.HTTPS_PORT || 3443,
+    
+    /**
+     * Enable HTTPS mode
+     * Set to 'true' to enable HTTPS with self-signed certificates
+     * Requires SSL certificates in ssl/ directory
+     */
+    USE_HTTPS: process.env.USE_HTTPS === 'true' || false,
+    
+    /**
+     * SSL Certificate paths
+     * Paths relative to project root for SSL certificate files
+     */
+    SSL_KEY_PATH: process.env.SSL_KEY_PATH || './ssl/private-key.pem',
+    SSL_CERT_PATH: process.env.SSL_CERT_PATH || './ssl/certificate.pem',
     
     
     // Session Configuration

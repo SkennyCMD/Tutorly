@@ -15,6 +15,13 @@ yarn-debug.log*
 yarn-error.log*
 admin_login_attempts.txt
 
+# SSL Certificates (never commit these!)
+ssl/
+*.pem
+*.key
+*.crt
+*.csr
+
 # Runtime data
 pids/
 *.pid
