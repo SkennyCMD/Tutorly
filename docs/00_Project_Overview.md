@@ -451,17 +451,6 @@ Open browser and go to: `http://localhost:3000`
 ```
 Tutorly/
 │
-├── docs/                           # 📚 Complete Documentation (all components)
-│   ├── README.md                   # Documentation index
-│   ├── 00_Project_Overview.md     # Project overview and architecture
-│   ├── 01_Java_Backend_API.md     # Backend API documentation
-│   ├── 02_Java_GUI_Launcher.md    # GUI launcher documentation
-│   ├── 03_Nodejs_Frontend.md      # Frontend server documentation
-│   ├── 04_HTTPS_Setup_Guide.md    # HTTPS configuration guide
-│   ├── 05_Service_Modules.md      # Service utilities documentation
-│   ├── 06_Database_Migrations.md  # Database migration scripts
-│   └── 07_SSL_Certificates.md     # SSL certificates guide
-│
 ├── Java/                           # Backend API
 │   └── backend-api/
 │       ├── src/
@@ -491,8 +480,7 @@ Tutorly/
 │   │   ├── passwordService.js      # Password hashing
 │   │   ├── logger.js               # Logging
 │   │   ├── excel.js                # Excel reports
-│   │   ├── config.js               # Configuration
-│   │   └── README.md               # Service modules documentation
+│   │   └── config.js               # Configuration
 │   ├── views/                      # EJS templates
 │   │   ├── login.ejs
 │   │   ├── adminLogin.ejs
@@ -504,16 +492,8 @@ Tutorly/
 │   ├── public/                     # Static files
 │   │   ├── css/                    # Stylesheets
 │   │   └── js/                     # Client JavaScript
-│   ├── ssl/                        # SSL certificates (gitignored)
-│   │   ├── private-key.pem         # Private key
-│   │   ├── certificate.pem         # Self-signed certificate
-│   │   └── README.md               # SSL documentation
-│   ├── migrations/                 # Database migrations
-│   │   ├── hashExistingPasswords.js
-│   │   └── README.md               # Migration documentation
-│   ├── generate-ssl-cert.sh        # SSL certificate generator
+│   ├── migrations/                 # DB migrations
 │   ├── package.json                # npm dependencies
-│   ├── HTTPS_SETUP.md              # HTTPS setup guide
 │   └── README.md                   # Frontend documentation
 │
 ├── Database/                       # Database scripts
@@ -526,26 +506,7 @@ Tutorly/
 
 ## 📚 Complete Documentation
 
-### 📁 Centralized Documentation
-
-**All project documentation is available in the [docs/](docs/) directory** for easy access and navigation.
-
-👉 **[View Complete Documentation Index](docs/README.md)**
-
-The documentation is organized by component and includes:
-- Project overview and architecture
-- Java backend API documentation
-- Node.js frontend documentation
-- HTTPS setup guide
-- Service modules reference
-- Database migrations
-- SSL certificates guide
-
----
-
-### Individual Component Documentation
-
-Each component also has its own detailed documentation in its directory:
+Each component has its own detailed documentation:
 
 | Component | Documentation | Description |
 |------------|---------------|-------------|
@@ -553,9 +514,6 @@ Each component also has its own detailed documentation in its directory:
 | **Java GUI** | [Java/backend-api/GUI-README.md](Java/backend-api/GUI-README.md) | Graphical interface for server management |
 | **Node.js Frontend** | [Nodejs/README.md](Nodejs/README.md) | Architecture, routes, authentication, middleware |
 | **HTTPS Setup** | [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md) | SSL/TLS configuration for local development |
-| **Service Modules** | [Nodejs/server_utilities/README.md](Nodejs/server_utilities/README.md) | Authentication, API client, logging services |
-| **Database Migrations** | [Nodejs/migrations/README.md](Nodejs/migrations/README.md) | Password hashing migration scripts |
-| **SSL Certificates** | [Nodejs/ssl/README.md](Nodejs/ssl/README.md) | Certificate generation and management |
 
 ---
 
