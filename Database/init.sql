@@ -1,0 +1,204 @@
+CREATE TABLE admin (
+	id SERIAL PRIMARY KEY,
+	mail VARCHAR(255) NOT NULL UNIQUE,
+	password VARCHAR(256) NOT NULL,
+	username VARCHAR(256) NOT NULL UNIQUE,
+	CONSTRAINT mail_format CHECK (
+		mail ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+	)
+);
+
+CREATE TABLE tutor (
+	id SERIAL PRIMARY KEY,
+	username VARCHAR(256) NOT NULL UNIQUE,
+	password VARCHAR(256) NOT NULL,
+	status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+	role VARCHAR(20) NOT NULL DEFAULT 'GENERIC',
+	CHECK (status IN ('ACTIVE', 'BLOCKED', 'DISCONTINUED')),
+	CHECK (role IN ('GENERIC', 'STAFF'))
+);
+
+CREATE TABLE admin_creates_tutor (
+	id_admin INTEGER NOT NULL,
+	id_tutor INTEGER NOT NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (id_admin, id_tutor),
+	FOREIGN KEY (id_admin) REFERENCES admin(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	FOREIGN KEY (id_tutor) REFERENCES tutor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+);
+
+CREATE TABLE calendar_note (
+	id SERIAL PRIMARY KEY,
+	description TEXT,
+	start_time TIMESTAMP NOT NULL,
+	end_time TIMESTAMP NOT NULL,
+	id_creator INTEGER NOT NULL,
+	FOREIGN KEY (id_creator) REFERENCES tutor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+);
+
+CREATE TABLE has (
+	id_calendar_note INTEGER NOT NULL,
+	id_tutor INTEGER NOT NULL,
+	PRIMARY KEY (id_calendar_note, id_tutor),
+	FOREIGN KEY (id_calendar_note) REFERENCES calendar_note(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	FOREIGN KEY (id_tutor) REFERENCES tutor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+);
+
+CREATE TABLE student (
+	id SERIAL PRIMARY KEY,
+	name VARCHAR(255) NOT NULL,
+	surname VARCHAR(255) NOT NULL,
+	class VARCHAR(50),
+	description TEXT,
+	status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+	CHECK (status IN ('ACTIVE', 'BLOCKED', 'WARNED'))
+);
+
+CREATE TABLE prenotation (
+	id SERIAL PRIMARY KEY,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	flag BOOLEAN NOT NULL DEFAULT FALSE,
+	start_time TIMESTAMP NOT NULL,
+	end_time TIMESTAMP NOT NULL,
+	id_student INTEGER NOT NULL,
+	id_tutor INTEGER NOT NULL,
+	id_creator INTEGER NOT NULL,
+	FOREIGN KEY (id_student) REFERENCES student(id)
+		ON DELETE CASCADE,
+	FOREIGN KEY (id_tutor) REFERENCES tutor(id)
+		ON DELETE CASCADE,
+	FOREIGN KEY (id_creator) REFERENCES tutor(id)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE lesson (
+	id SERIAL PRIMARY KEY,
+	description TEXT,
+	start_time TIMESTAMP NOT NULL,
+	end_time TIMESTAMP NOT NULL,
+	id_tutor INTEGER NOT NULL,
+	id_student INTEGER NOT NULL,
+	FOREIGN KEY (id_tutor) REFERENCES tutor(id)
+		ON DELETE CASCADE,
+	FOREIGN KEY (id_student) REFERENCES student(id)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE test (
+	id SERIAL PRIMARY KEY,
+	day DATE NOT NULL,
+	description TEXT,
+	mark INTEGER CHECK (mark BETWEEN 0 AND 30),
+	id_tutor INTEGER NOT NULL,
+	id_student INTEGER NOT NULL,
+	FOREIGN KEY (id_tutor) REFERENCES tutor(id)
+		ON DELETE CASCADE,
+	FOREIGN KEY (id_student) REFERENCES student(id)
+		ON DELETE CASCADE
+);
+
+
+
+-- test data
+
+INSERT INTO admin (mail, password, username) VALUES
+('admin1@mail.com', '$2b$10$NnkI8ffBKd1JLmPrfFCTyuwOBKQzwCw1uKYD/UYFdpQ1LayHqHaki', 'admin1'),
+('admin2@mail.com', 'pass2', 'admin2'),
+('admin3@mail.com', 'pass3', 'admin3'),
+('admin4@mail.com', 'pass4', 'admin4'),
+('admin5@mail.com', 'pass5', 'admin5'),
+('admin6@mail.com', 'pass6', 'admin6'),
+('admin7@mail.com', 'pass7', 'admin7'),
+('admin8@mail.com', 'pass8', 'admin8'),
+('admin9@mail.com', 'pass9', 'admin9'),
+('admin10@mail.com', 'pass10', 'admin10');
+
+INSERT INTO tutor (username, password, status, role) VALUES
+('tutor1', '$2b$10$NnkI8ffBKd1JLmPrfFCTyuwOBKQzwCw1uKYD/UYFdpQ1LayHqHaki', 'ACTIVE', 'GENERIC'),
+('tutor2', 'pass2', 'ACTIVE', 'GENERIC'),
+('tutor3', 'pass3', 'ACTIVE', 'STAFF'),
+('tutor4', 'pass4', 'BLOCKED', 'GENERIC'),
+('tutor5', 'pass5', 'ACTIVE', 'STAFF'),
+('tutor6', 'pass6', 'ACTIVE', 'GENERIC'),
+('tutor7', 'pass7', 'DISCONTINUED', 'GENERIC'),
+('tutor8', 'pass8', 'ACTIVE', 'STAFF'),
+('tutor9', 'pass9', 'ACTIVE', 'GENERIC'),
+('tutor10', 'pass10', 'ACTIVE', 'GENERIC');
+
+INSERT INTO admin_creates_tutor (id_admin, id_tutor) VALUES
+(1,1),(1,2),(2,3),(2,4),(3,5),
+(4,6),(5,7),(6,8),(7,9),(8,10);
+
+INSERT INTO calendar_note (description, start_time, end_time, id_creator) VALUES
+('Meeting 1','2025-01-10 09:00','2025-01-10 10:00',1),
+('Meeting 2','2025-01-11 10:00','2025-01-11 11:00',2),
+('Meeting 3','2025-01-12 11:00','2025-01-12 12:00',3),
+('Meeting 4','2025-01-13 09:00','2025-01-13 10:00',4),
+('Meeting 5','2025-01-14 10:00','2025-01-14 11:00',5),
+('Meeting 6','2025-01-15 11:00','2025-01-15 12:00',6),
+('Meeting 7','2025-01-16 09:00','2025-01-16 10:00',7),
+('Meeting 8','2025-01-17 10:00','2025-01-17 11:00',8),
+('Meeting 9','2025-01-18 11:00','2025-01-18 12:00',9),
+('Meeting 10','2025-01-19 09:00','2025-01-19 10:00',10);
+
+INSERT INTO has (id_calendar_note, id_tutor) VALUES
+(1,1),(2,2),(3,3),(4,4),(5,5),
+(6,6),(7,7),(8,8),(9,9),(10,10);
+
+INSERT INTO student (name, surname, class, description, status) VALUES
+('Mario','Rossi','3A','Good student','ACTIVE'),
+('Luigi','Bianchi','3B','Needs help','WARNED'),
+('Anna','Verdi','2A','Excellent','ACTIVE'),
+('Paolo','Neri','1C','Lazy','BLOCKED'),
+('Sara','Blu','2B','Motivated','ACTIVE'),
+('Luca','Gialli','3C','Average','ACTIVE'),
+('Elena','Rosa','1A','Shy','ACTIVE'),
+('Marco','Viola','2C','Distracted','WARNED'),
+('Giulia','Marrone','3A','Focused','ACTIVE'),
+('Davide','Grigi','1B','New','ACTIVE');
+
+INSERT INTO prenotation (start_time, end_time, id_student, id_tutor, id_creator) VALUES
+('2025-02-01 09:00','2025-02-01 10:00',1,1,1),
+('2025-02-02 10:00','2025-02-02 11:00',2,2,2),
+('2025-02-03 11:00','2025-02-03 12:00',3,3,3),
+('2025-02-04 09:00','2025-02-04 10:00',4,4,4),
+('2025-02-05 10:00','2025-02-05 11:00',5,5,5),
+('2025-02-06 11:00','2025-02-06 12:00',6,6,6),
+('2025-02-07 09:00','2025-02-07 10:00',7,7,7),
+('2025-02-08 10:00','2025-02-08 11:00',8,8,8),
+('2025-02-09 11:00','2025-02-09 12:00',9,9,9),
+('2025-02-10 09:00','2025-02-10 10:00',10,10,10);
+
+INSERT INTO lesson (description, start_time, end_time, id_tutor, id_student) VALUES
+('Math','2025-03-01 09:00','2025-03-01 10:00',1,1),
+('Physics','2025-03-02 10:00','2025-03-02 11:00',2,2),
+('Chemistry','2025-03-03 11:00','2025-03-03 12:00',3,3),
+('Biology','2025-03-04 09:00','2025-03-04 10:00',4,4),
+('History','2025-03-05 10:00','2025-03-05 11:00',5,5),
+('Geography','2025-03-06 11:00','2025-03-06 12:00',6,6),
+('English','2025-03-07 09:00','2025-03-07 10:00',7,7),
+('Italian','2025-03-08 10:00','2025-03-08 11:00',8,8),
+('Art','2025-03-09 11:00','2025-03-09 12:00',9,9),
+('Music','2025-03-10 09:00','2025-03-10 10:00',10,10);
+
+INSERT INTO test (day, description, mark, id_tutor, id_student) VALUES
+('2025-04-01','Math test',28,1,1),
+('2025-04-02','Physics test',25,2,2),
+('2025-04-03','Chemistry test',30,3,3),
+('2025-04-04','Biology test',22,4,4),
+('2025-04-05','History test',27,5,5),
+('2025-04-06','Geography test',24,6,6),
+('2025-04-07','English test',29,7,7),
+('2025-04-08','Italian test',26,8,8),
+('2025-04-09','Art test',30,9,9),
+('2025-04-10','Music test',23,10,10);
