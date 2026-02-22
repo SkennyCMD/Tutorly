@@ -4,11 +4,7 @@ on:
   push:
     tags:
       - 'v*'
-
-env:
-  REGISTRY: ghcr.io
-  BACKEND_IMAGE: ${{ github.repository_owner }}/tutorly-backend
-  FRONTEND_IMAGE: ${{ github.repository_owner }}/tutorly-frontend
+      
 env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: gabrielegroppo/tutorly-backend
