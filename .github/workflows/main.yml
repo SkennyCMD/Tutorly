@@ -9,7 +9,10 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ${{ github.repository_owner }}/tutorly-backend
   FRONTEND_IMAGE: ${{ github.repository_owner }}/tutorly-frontend
-
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: gabrielegroppo/tutorly-backend
+  FRONTEND_IMAGE: gabrielegroppo/tutorly-frontend
 jobs:
   build-and-scan-backend:
     name: Backend Build & Trivy Scan
@@ -39,7 +42,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ./Java/backend-api
-          load: true # Necessario per fare lo scan con Trivy prima del push
+          load: true
           tags: ${{ env.BACKEND_IMAGE }}:${{ github.ref_name }}
 
       - name: Esegui Scansione Sicurezza Trivy (Backend)
@@ -47,13 +50,13 @@ jobs:
         with:
           image-ref: '${{ env.BACKEND_IMAGE }}:${{ github.ref_name }}'
           format: 'table'
-          exit-code: '1' # Fa fallire la pipeline se trova vulnerabilità
+          exit-code: '1'
           ignore-unfixed: true
           vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH' # Blocca solo per vulnerabilità critiche o alte
+          severity: 'CRITICAL,HIGH'
 
       - name: Login al Container Registry (GHCR)
-        if: success() # Esegue il login solo se Trivy ha successo
+        if: success()
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
