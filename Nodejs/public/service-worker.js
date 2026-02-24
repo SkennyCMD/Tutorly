@@ -74,7 +74,8 @@ self.addEventListener('fetch', (event) => {
                 }
                 return response;
             })
-            .catch(() => {
+            .catch((error) => {
+                console.error("Fetch failed; returning offline page instead. Error:", error);
                 // Network failed, try cache
                 return caches.match(event.request).then((cachedResponse) => {
                     if (cachedResponse) {
@@ -82,7 +83,14 @@ self.addEventListener('fetch', (event) => {
                     }
                     // If navigation request and no cache, show offline page
                     if (event.request.mode === 'navigate') {
-                        return caches.match('/offline.html');
+                        return caches.match('/offline.html').then((offlineResponse) => {
+                            // Ensure we never return null/undefined for navigation requests 
+                            // to prevent PWA breakout on self-signed certs
+                            return offlineResponse || new Response(
+                                '<html><body><h1>Offline</h1><p>Check your connection and try again.</p></body></html>',
+                                { headers: { 'Content-Type': 'text/html' } }
+                            );
+                        });
                     }
                     return null;
                 });
