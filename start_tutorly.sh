@@ -70,10 +70,17 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # Ensure SSL certificates exist for HTTPS
-if [ ! -f "ssl/certificate.pem" ] || [ ! -f "ssl/private-key.pem" ]; then
-    echo "SSL certificates not found. Generating self-signed certificates..."
-    chmod +x generate-ssl-cert.sh
-    ./generate-ssl-cert.sh
+if [ ! -f "certs/localhost.pem" ] || [ ! -f "certs/localhost-key.pem" ]; then
+    echo "SSL certificates not found. Generating trusted certificates using mkcert..."
+    if command -v mkcert >/dev/null 2>&1; then
+        mkdir -p certs
+        mkcert -key-file certs/localhost-key.pem -cert-file certs/localhost.pem localhost 127.0.0.1 ::1
+    else
+        echo "WARNING: mkcert is not installed. Please install mkcert to avoid PWA issues."
+        echo "Falling back to openssl self-signed certificates..."
+        mkdir -p certs
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/localhost-key.pem -out certs/localhost.pem -subj "/CN=localhost"
+    fi
 fi
 
 # Enable HTTPS
