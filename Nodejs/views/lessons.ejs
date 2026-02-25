@@ -504,10 +504,10 @@ Features:
   <!-- Server-side data injection: students, lessons, prenotations, and total lesson count -->
   <script>
     // Pass server-rendered data to JavaScript for client-side rendering and statistics
-    window.allStudents = <% - JSON.stringify(students) %>;
-    window.initialLessons = <% - JSON.stringify(lessons) %>;
+    window.allStudents = <%- JSON.stringify(students) %>;
+    window.initialLessons = <%- JSON.stringify(lessons) %>;
     window.totalLessonsCount = <%= totalLessons %>;
-    window.initialPrenotations = <% - JSON.stringify(prenotations) %>;
+    window.initialPrenotations = <%- JSON.stringify(prenotations) %>;
   </script>
   <script src="/js/modalShared.js"></script>
   <script src="/js/lessonsScript.js"></script>
