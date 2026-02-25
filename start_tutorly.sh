@@ -32,7 +32,8 @@ echo "========================================"
 echo "[0/3] Checking ports..."
 check_and_free_port 5432 "PostgreSQL"
 check_and_free_port 8443 "Java Backend"
-check_and_free_port 3000 "Node Frontend"
+check_and_free_port 3000 "Node Frontend (HTTP)"
+check_and_free_port 3443 "Node Frontend (HTTPS)"
 
 
 # 1. Start Database
@@ -68,6 +69,23 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
+# Ensure SSL certificates exist for HTTPS
+if [ ! -f "certs/localhost.pem" ] || [ ! -f "certs/localhost-key.pem" ]; then
+    echo "SSL certificates not found. Generating trusted certificates using mkcert..."
+    if command -v mkcert >/dev/null 2>&1; then
+        mkdir -p certs
+        mkcert -key-file certs/localhost-key.pem -cert-file certs/localhost.pem localhost 127.0.0.1 ::1
+    else
+        echo "WARNING: mkcert is not installed. Please install mkcert to avoid PWA issues."
+        echo "Falling back to openssl self-signed certificates..."
+        mkdir -p certs
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout certs/localhost-key.pem -out certs/localhost.pem -subj "/CN=localhost"
+    fi
+fi
+
+# Enable HTTPS
+export USE_HTTPS=true
+
 # Run in background
 npm start &
 FRONTEND_PID=$!
@@ -77,7 +95,7 @@ cd ..
 echo "========================================"
 echo "   All services launched!"
 echo "   Backend: https://localhost:8443"
-echo "   Frontend: http://localhost:3000"
+echo "   Frontend: https://localhost:3443 (HTTP: http://localhost:3000)"
 echo "========================================"
 echo "Press Ctrl+C to stop all services."
 

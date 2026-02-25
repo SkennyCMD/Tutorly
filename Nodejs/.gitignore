@@ -17,6 +17,7 @@ admin_login_attempts.txt
 
 # SSL Certificates (never commit these!)
 ssl/
+certs/
 *.pem
 *.key
 *.crt
