@@ -460,7 +460,7 @@ Tutorly/
 │   ├── 04_HTTPS_Setup_Guide.md    # HTTPS configuration guide
 │   ├── 05_Service_Modules.md      # Service utilities documentation
 │   ├── 06_Database_Migrations.md  # Database migration scripts
-│   └── 07_SSL_Certificates.md     # SSL certificates guide
+│   └── 07_Database_Configuration.md # Database setup and schema
 │
 ├── Java/                           # Backend API
 │   └── backend-api/

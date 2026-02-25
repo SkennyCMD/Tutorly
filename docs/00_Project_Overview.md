@@ -25,18 +25,18 @@ Tutorly follows a **three-tier** architecture with separation between user inter
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         CLIENT LAYER                             │
-│                    (Browser - User Interface)                    │
-│                                                                   │
+│                         CLIENT LAYER                            │
+│                    (Browser - User Interface)                   │
+│                                                                 │
 │  Technologies: HTML5, CSS3, JavaScript (Vanilla), EJS Templates │
 └────────────────────────┬────────────────────────────────────────┘
                          │ HTTP/HTTPS
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER                            │
-│                   Node.js Express Frontend                       │
-│                    (Port 3000 HTTP / 3443 HTTPS)                 │
-│                                                                   │
+│                    PRESENTATION LAYER                           │
+│                   Node.js Express Frontend                      │
+│                 (Port 3000 HTTP / 3443 HTTPS)                   │
+│                                                                 │
 │  • Session-based authentication                                 │
 │  • EJS page rendering                                           │
 │  • Middleware management (auth, logging)                        │
@@ -47,10 +47,10 @@ Tutorly follows a **three-tier** architecture with separation between user inter
                          │ HTTPS + API Key
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                     BUSINESS LOGIC LAYER                         │
-│                   Java Spring Boot Backend                       │
-│                         (Port 8443)                              │
-│                                                                   │
+│                     BUSINESS LOGIC LAYER                        │
+│                   Java Spring Boot Backend                      │
+│                         (Port 8443)                             │
+│                                                                 │
 │  • REST API (50+ endpoints)                                     │
 │  • Business logic validation                                    │
 │  • JPA/Hibernate ORM                                            │
@@ -60,10 +60,10 @@ Tutorly follows a **three-tier** architecture with separation between user inter
                          │ JDBC
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                       DATA LAYER                                 │
-│                    PostgreSQL Database                           │
-│                                                                   │
-│  • Relational tables (tutors, students, lessons, etc.)         │
+│                       DATA LAYER                                │
+│                    PostgreSQL Database                          │
+│                                                                 │
+│  • Relational tables (tutors, students, lessons, etc.)          │
 │  • Foreign keys and constraints                                 │
 │  • Performance indexes                                          │
 │  • Automatic backup                                             │
@@ -148,7 +148,7 @@ User-friendly web interface that handles authentication, sessions and presents d
 - Native HTTPS module for SSL/TLS
 
 📚 **Detailed documentation**: [Nodejs/README.md](Nodejs/README.md)
-📚 **HTTPS Setup Guide**: [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md)
+📚 **HTTPS Setup Guide**: [04_HTTPS_Setup_Guide.md](Nodejs/HTTPS_SETUP.md)
 
 ---
 
@@ -156,39 +156,9 @@ User-friendly web interface that handles authentication, sessions and presents d
 
 PostgreSQL relational database for data persistence.
 
-**Main schema**:
+**Entity Relationship Model**:
 
-```
-┌──────────────┐        ┌──────────────┐        ┌──────────────┐
-│    Tutors    │        │   Students   │        │    Admins    │
-├──────────────┤        ├──────────────┤        ├──────────────┤
-│ id (PK)      │        │ id (PK)      │        │ id (PK)      │
-│ name         │───┐    │ name         │───┐    │ username     │
-│ email        │   │    │ email        │   │    │ password     │
-│ username     │   │    │ phone        │   │    │ email        │
-│ password     │   │    │ class        │   │    └──────────────┘
-│ role         │   │    │ ...          │   │
-│ status       │   │    └──────────────┘   │
-└──────────────┘   │                       │
-                   │    ┌──────────────┐   │
-                   │    │   Lessons    │   │
-                   │    ├──────────────┤   │
-                   └───→│ tutor_id(FK) │   │
-                        │ student_id   │←──┘
-                        │ start_time   │
-                        │ end_time     │
-                        │ description  │
-                        └──────────────┘
-                             │
-                             │
-                        ┌────┴─────────┐
-                        │              │
-                   ┌────▼────┐   ┌─────▼─────┐
-                   │Prenotat.│   │CalendarNot│
-                   ├─────────┤   ├───────────┤
-                   │ ...     │   │ ...       │
-                   └─────────┘   └───────────┘
-```
+![Database's ER Model](TUTORLY_Normal.png)
 
 **Features**:
 - Foreign key relationships between tables
@@ -196,6 +166,8 @@ PostgreSQL relational database for data persistence.
 - Constraints for data integrity
 - Timezone support for dates/times
 - Auto-increment for IDs
+
+📚 **Complete database documentation**: [07_Database_Configuration.md](07_Database_Configuration.md)
 
 ---
 
@@ -239,6 +211,11 @@ PostgreSQL relational database for data persistence.
 - Confirm or reject bookings
 - Create new bookings for students
 
+#### 📊 Complete Reports (Only for STAFF tutor)
+- Access to all reports from all tutors
+- Global center statistics
+- Custom exports
+
 ---
 
 ### For Administrators
@@ -246,7 +223,6 @@ PostgreSQL relational database for data persistence.
 #### 👥 Tutor Management
 - **View all tutors**: Complete list with status
 - **Create new tutor**: Add tutors with credentials
-- **Edit tutor**: Update information and roles
 - **Block/Unblock account**: Account status management (ACTIVE/BLOCKED)
 - **Delete tutor**: Permanent removal (with confirmation)
 - **Assign roles**: STAFF (advanced) or GENERIC (basic)
@@ -254,12 +230,6 @@ PostgreSQL relational database for data persistence.
 #### 👨‍🎓 Student Management (Admin)
 - Full access to all students
 - Edit and delete without restrictions
-- Global view of lesson history
-
-#### 📊 Complete Reports
-- Access to all reports from all tutors
-- Global center statistics
-- Custom exports
 
 #### 🔐 Security
 - Separate login with admin credentials
@@ -283,30 +253,30 @@ Tutors with **STAFF** role have additional features:
 ## 🛠️ Technology Stack
 
 ### Backend
-| Technology | Version | Usage |
-|------------|----------|-------|
-| Java | 21 | Main language |
-| Spring Boot | 3.4.1 | Application framework |
-| Spring Data JPA | 3.4.1 | ORM and repositories |
-| Hibernate | 6.4+ | Object-Relational Mapping |
-| PostgreSQL Driver | Latest | Database connection |
-| Maven | 3.8+ | Build and dependency management |
+| Technology        | Version  | Usage                           |
+|-------------------|----------|---------------------------------|
+| Java              | 21       | Main language                   |
+| Spring Boot       | 3.4.1    | Application framework           |
+| Spring Data JPA   | 3.4.1    | ORM and repositories            |
+| Hibernate         | 6.4+     | Object-Relational Mapping       |
+| PostgreSQL Driver | Latest   | Database connection             |
+| Maven             | 3.8+     | Build and dependency management |
 
 ### Frontend
-| Technology | Version | Usage |
-|------------|----------|-------|
-| Node.js | 18+ | JavaScript runtime |
-| Express.js | 4.18.2 | Web framework |
-| EJS | 3.1.10 | Template engine |
-| bcrypt | 6.0.0 | Password hashing |
-| express-session | 1.18.2 | Session management |
-| ExcelJS | 4.4.0 | Excel generation |
-| HTTPS Module | Native | SSL/TLS support |
+| Technology      | Version  | Usage              |
+|-----------------|----------|--------------------|
+| Node.js         | 18+      | JavaScript runtime |
+| Express.js      | 4.18.2   | Web framework      |
+| EJS             | 3.1.10   | Template engine    |
+| bcrypt          | 6.0.0    | Password hashing   |
+| express-session | 1.18.2   | Session management |
+| ExcelJS         | 4.4.0    | Excel generation   |
+| HTTPS Module    | Native   | SSL/TLS support    |
 
 ### Database
-| Technology | Version | Usage |
-|------------|----------|-------|
-| PostgreSQL | 12+ | Relational database |
+| Technology | Version  | Usage               |
+|------------|----------|---------------------|
+| PostgreSQL | 12+      | Relational database |
 
 ### Security
 - **HTTPS/SSL**: Encrypted communication on both layers
@@ -358,35 +328,68 @@ CREATE DATABASE tutorly_db;
 
 ```bash
 cd Java/backend-api
-
-# Copy and edit application.properties (if needed)
-nano src/main/resources/application.properties
-
-# Update database credentials:
-# spring.datasource.url=jdbc:postgresql://localhost:5432/tutorly_db
-# spring.datasource.username=postgres
-# spring.datasource.password=your_password
 ```
+
+📚 **For detailed backend configuration** (application.properties, database credentials, SSL setup):  
+See [01_Java_Backend_API.md - Application Properties Configuration](01_Java_Backend_API.md#3-application-properties-configuration)
 
 #### 4. Start Java Backend
+**OPTION A: VIA BASH WITH MAVEN WRAPPER**
 
-**Option A: From command line**
+LINUX/MAC:
 ```bash
+cd path/to/Tutorly/Java/backend-api
 ./mvnw spring-boot:run
+ ```       
+WINDOWS:
+```bash
+cd C:\path\to\Tutorly\Java\backend-api
+mvnw.cmd spring-boot:run
+```
+**OPTION B: VIA BASH WITH MAVEN WRAPPER**
+
+LINUX/MAC:
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+/mvnw spring-boot:run
+```     
+WINDOWS:
+```bash
+set JAVA_HOME=C:\Program Files\Java\jdk-21
+mvnw.cmd spring-boot:run
+```
+**OPTION C: VIA BASH WITH MAVEN INSTALLED GLOBALLY**
+
+ON EVERY SYSTEM:
+```bash
+cd /home/skenny/Documents/GitHub/Tutorly/Java/backend-api
+mvn spring-boot:run
+```  
+**OPTION D: BUILD JAR and EXECUTE**
+
+ON EVERY SYSTEM:
+```bash
+./mvnw clean package
+java -jar target/backend-api-0.0.1-SNAPSHOT.jar
 ```
 
-**Option B: With GUI (recommended for development)**
-```bash
-# Linux/Mac
-./run-gui.sh
+**OPTION E: EXECUTE SERVER WITH GUI:**
 
-# Windows
+LINUX/MAC:
+```bash
+cd /path/to/Tutorly/Java/backend-api
+./run-gui.sh
+```
+WINDOWS:
+```bash
+cd C:\path\to\Tutorly\Java\backend-api
 run-gui.bat
 ```
 
+
 Backend will be available at: `https://localhost:8443`
 
-📚 **GUI Documentation**: [Java/backend-api/GUI-README.md](Java/backend-api/GUI-README.md)
+📚 **GUI Documentation**: [Java/backend-api/GUI-README.md](02_Java_GUI_Launcher.md)
 
 #### 5. Configure Node.js Frontend
 
@@ -432,7 +435,7 @@ Frontend will be available at:
 
 ⚠️ **Note**: Browser will show security warning for self-signed certificates. Click "Advanced" → "Proceed to localhost" to continue.
 
-📚 **For detailed HTTPS setup**: See [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md)
+📚 **For detailed HTTPS setup**: See [Nodejs/04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md)
 
 #### 7. Access the System
 
@@ -510,10 +513,13 @@ Each component has its own detailed documentation:
 
 | Component | Documentation | Description |
 |------------|---------------|-------------|
-| **Java Backend API** | [Java/backend-api/README.md](Java/backend-api/README.md) | Architecture, API endpoints, configuration |
-| **Java GUI** | [Java/backend-api/GUI-README.md](Java/backend-api/GUI-README.md) | Graphical interface for server management |
-| **Node.js Frontend** | [Nodejs/README.md](Nodejs/README.md) | Architecture, routes, authentication, middleware |
-| **HTTPS Setup** | [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md) | SSL/TLS configuration for local development |
+| **Java Backend API** | [01_Java_Backend_API.md](01_Java_Backend_API.md) | Architecture, API endpoints, configuration |
+| **Java GUI** | [02_Java_GUI_Laungher.md](02_Java_GUI_Laungher.md) | Graphical interface for server management |
+| **Node.js Frontend** | [03_Nodejs_Frontend.md](03_Nodejs_Frontend.md) | Architecture, routes, authentication, middleware |
+| **HTTPS Setup** | [04_HTTPS_Setup_Guide.md](4_HTTPS_Setup_Guide.md) | SSL/TLS configuration for local development |
+| **Service Modules** | [05_Service_Modules.md](05_Service_Modules.md) | Node.js utility modules documentation |
+| **Database Migrations** | [06_Database_Migrations.md](06_Database_Migrations.md) | Password hashing and data migration scripts |
+| **Database Configuration** | [07_Database_Configuration.md](07_Database_Configuration.md) | PostgreSQL setup, schema, and ER model |
 
 ---
 
@@ -540,27 +546,6 @@ Each component has its own detailed documentation:
   - Valid for 365 days
   - Browser security warnings expected (click "Advanced" → "Proceed")
   - **Not for production use** - use trusted CA certificates in production
-
-### SSL Certificate Setup (Development)
-
-**Quick Setup for HTTPS:**
-
-```bash
-# Navigate to Node.js directory
-cd Nodejs
-
-# Generate self-signed certificates
-npm run generate-cert
-
-# Start server in HTTPS mode
-npm run https
-```
-
-**Access:**
-- HTTPS: `https://localhost:3443`
-- HTTP: `http://localhost:3000` (redirects to HTTPS)
-
-📚 **Detailed HTTPS guide**: [Nodejs/HTTPS_SETUP.md](Nodejs/HTTPS_SETUP.md)
 
 ### Best Practices
 - ✅ Never store passwords in plain text
@@ -674,11 +659,12 @@ Contributions, issues and feature requests are welcome!
 
 ### How to contribute:
 
-1. **Fork the project**
-2. **Create a feature branch** (`git checkout -b feature/AmazingFeature`)
-3. **Commit your changes** (`git commit -m 'Add some AmazingFeature'`)
-4. **Push to the branch** (`git push origin feature/AmazingFeature`)
-5. **Open a Pull Request**
+1. **Open an Issue**
+2. **Fork the project**
+3. **Create a feature branch** (`git checkout -b feature/AmazingFeature`)
+4. **Commit your changes** (`git commit -m 'Add some AmazingFeature'`)
+5. **Push to the branch** (`git push origin feature/AmazingFeature`)
+6. **Open a Pull Request**
 
 ### Code Style
 

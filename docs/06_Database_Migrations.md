@@ -1,6 +1,6 @@
 # Database Migrations
 
-This folder contains migration scripts for database schema and data transformations.
+This file explain how to mirgate the database.
 
 ## Available Migrations
 
@@ -108,3 +108,6 @@ async function migrate() {
 
 migrate();
 ```
+---
+
+**Last Updated**: February 25, 2026  

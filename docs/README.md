@@ -31,7 +31,12 @@ This directory contains all the documentation for the Tutorly project, organized
 | **[04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md)** | Complete guide for setting up HTTPS with self-signed certificates for local development | Nodejs/HTTPS_SETUP.md |
 | **[05_Service_Modules.md](05_Service_Modules.md)** | Documentation for Node.js service modules (authentication, API client, logging, etc.) | Nodejs/server_utilities/README.md |
 | **[06_Database_Migrations.md](06_Database_Migrations.md)** | Database migration scripts documentation (password hashing migration) | Nodejs/migrations/README.md |
-| **[07_SSL_Certificates.md](07_SSL_Certificates.md)** | SSL certificates documentation for HTTPS development | Nodejs/ssl/README.md |
+
+### Database Documentation
+
+| Document | Description | Original Location |
+|----------|-------------|-------------------|
+| **[07_Database_Configuration.md](07_Database_Configuration.md)** | Complete PostgreSQL database configuration guide with ER model, schema, setup, and migrations | Database/README.md |
 
 ---
 
@@ -87,46 +92,18 @@ This directory contains all the documentation for the Tutorly project, organized
 ### Development Tools
 - **GUI Launcher**: [02_Java_GUI_Launcher.md](02_Java_GUI_Launcher.md)
 - **Service Modules**: [05_Service_Modules.md](05_Service_Modules.md)
-- **SSL Certificates**: [07_SSL_Certificates.md](07_SSL_Certificates.md)
+- **SSL Certificates**: [04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md)
 
 ### Database
-- **Database Schema**: [01_Java_Backend_API.md](01_Java_Backend_API.md#database-schema)
+- **Database Configuration & Schema**: [07_Database_Configuration.md](07_Database_Configuration.md)
+- **Entity Relationships**: [07_Database_Configuration.md](07_Database_Configuration.md#entity-relationship-model)
+- **Installation & Setup**: [07_Database_Configuration.md](07_Database_Configuration.md#installation-and-setup)
 - **Migrations**: [06_Database_Migrations.md](06_Database_Migrations.md)
 
 ### Troubleshooting
 - **Common Issues**: [00_Project_Overview.md](00_Project_Overview.md#troubleshooting)
 - **HTTPS Issues**: [04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md#troubleshooting)
 - **GUI Issues**: [02_Java_GUI_Launcher.md](02_Java_GUI_Launcher.md#troubleshooting)
-
----
-
-## 🔧 Technology Stack Reference
-
-### Backend
-- Java 21
-- Spring Boot 3.4.1
-- Spring Data JPA
-- Hibernate 6.4+
-- PostgreSQL
-- Maven 3.8+
-
-### Frontend
-- Node.js 18+
-- Express.js 4.18.2
-- EJS 3.1.10
-- bcrypt 6.0.0
-- express-session 1.18.2
-- ExcelJS 4.4.0
-
-### Database
-- PostgreSQL 12+
-
-### Security
-- HTTPS/SSL (self-signed for dev, CA-signed for production)
-- bcrypt password hashing (10 rounds)
-- API Key authentication
-- Session-based authentication
-- Role-Based Access Control (RBAC)
 
 ---
 

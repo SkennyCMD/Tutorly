@@ -226,41 +226,41 @@ Click **"Stop Server"** button to:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                      GUI Startup                         │
+│                      GUI Startup                        │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Load launcher-config.properties (if exists)              │
-│ - Database settings                                      │
-│ - Server settings                                        │
-│ - SSL configuration                                      │
+│ Load launcher-config.properties (if exists)             │
+│ - Database settings                                     │
+│ - Server settings                                       │
+│ - SSL configuration                                     │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│            Populate GUI Form Fields                      │
+│            Populate GUI Form Fields                     │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│           User Edits Configuration                       │
+│           User Edits Configuration                      │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│        User Clicks "Save Configuration"                  │
+│        User Clicks "Save Configuration"                 │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│  Write to launcher-config.properties                     │
-│  Write to application.properties                         │
+│  Write to launcher-config.properties                    │
+│  Write to application.properties                        │
 └────────────────────┬────────────────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────┐
-│    Configuration Ready for Next Launch                   │
+│    Configuration Ready for Next Launch                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -335,34 +335,34 @@ api.security.key=MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              ServerLauncherGUI (Main Class)              │
-│                                                          │
+│              ServerLauncherGUI (Main Class)             │
+│                                                         │
 │  ┌────────────────────────────────────────────────────┐ │
-│  │           Configuration Panel (JPanel)              │ │
-│  │                                                      │ │
+│  │           Configuration Panel (JPanel)             │ │
+│  │                                                    │ │
 │  │  ┌───────────────────────────────────────────────┐ │ │
-│  │  │   Database Configuration (JTextField)          │ │ │
+│  │  │   Database Configuration (JTextField)         │ │ │
 │  │  │   - Host, Port, Name, Username, Password      │ │ │
 │  │  └───────────────────────────────────────────────┘ │ │
-│  │                                                      │ │
+│  │                                                    │ │
 │  │  ┌───────────────────────────────────────────────┐ │ │
 │  │  │   Server Configuration (JTextField, JCheckBox)│ │ │
 │  │  │   - Port, SSL Toggle, Keystore, API Key       │ │ │
 │  │  └───────────────────────────────────────────────┘ │ │
-│  │                                                      │ │
+│  │                                                    │ │
 │  │  ┌───────────────────────────────────────────────┐ │ │
-│  │  │   Action Buttons (JButton)                     │ │ │
+│  │  │   Action Buttons (JButton)                    │ │ │
 │  │  │   - Save Config, Start Server, Stop Server    │ │ │
 │  │  └───────────────────────────────────────────────┘ │ │
 │  └────────────────────────────────────────────────────┘ │
-│                                                          │
+│                                                         │
 │  ┌────────────────────────────────────────────────────┐ │
-│  │           Log Panel (JScrollPane)                   │ │
-│  │                                                      │ │
+│  │           Log Panel (JScrollPane)                  │ │
+│  │                                                    │ │
 │  │  ┌───────────────────────────────────────────────┐ │ │
-│  │  │   JTextArea (Non-editable)                     │ │ │
-│  │  │   - Real-time server logs                      │ │ │
-│  │  │   - Auto-scroll enabled                        │ │ │
+│  │  │   JTextArea (Non-editable)                    │ │ │
+│  │  │   - Real-time server logs                     │ │ │
+│  │  │   - Auto-scroll enabled                       │ │ │
 │  │  └───────────────────────────────────────────────┘ │ │
 │  └────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────┘
@@ -696,25 +696,10 @@ java -jar target/backend-api-1.0.0.jar com.tutorly.app.backend_api.gui.ServerLau
 
 ## Additional Resources
 
-- **Main API Documentation**: [README.md](README.md)
-- **Backend API Endpoints**: See main README for full API reference
+- **Backend API Endpoints**: [01_Java_Backend_API.md](01_Java_Backend_API.md)
 - **Spring Boot Documentation**: https://spring.io/projects/spring-boot
 - **PostgreSQL Documentation**: https://www.postgresql.org/docs/
 
 ---
 
-## License
-
-This project is owned by **Tutorly Team**. All rights reserved.
-
----
-
-## Support
-
-For questions or issues:
-- **Team**: Tutorly Development Team
-- **Email**: support@tutorly.app
-
----
-
-**Last updated:** February 16, 2026
+**Last updated:** February 25, 2026

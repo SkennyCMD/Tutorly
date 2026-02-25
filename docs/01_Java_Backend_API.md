@@ -8,7 +8,6 @@
 - [Architectural Pattern](#architectural-pattern)
 - [Main Components](#main-components)
 - [Request Flow](#request-flow)
-- [Security](#security)
 - [Setup and Configuration](#setup-and-configuration)
 - [API Endpoints](#api-endpoints)
 
@@ -34,56 +33,56 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    CLIENT APPLICATIONS                       │
-│            (Node.js Frontend, API Consumers)                 │
+│                    CLIENT APPLICATIONS                      │
+│            (Node.js Frontend, API Consumers)                │
 └───────────────────────┬─────────────────────────────────────┘
                         │ HTTPS + API Key
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    SPRING BOOT APPLICATION                   │
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              CONFIG LAYER                             │  │
-│  │  - ApiKeyInterceptor (Authentication)                │  │
-│  │  - WebConfig (CORS, Interceptors)                    │  │
-│  │  - HttpsRedirectConfig (SSL)                         │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                        │                                     │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              CONTROLLER LAYER                         │  │
-│  │  - StudentController    - TutorController            │  │
-│  │  - LessonController     - PrenotationController      │  │
-│  │  - AdminController      - TestController             │  │
-│  │  - CalendarNoteController                            │  │
-│  └────────────────────┬─────────────────────────────────┘  │
-│                        │                                     │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              SERVICE LAYER (Business Logic)           │  │
-│  │  - StudentService       - TutorService               │  │
-│  │  - LessonService        - PrenotationService         │  │
-│  │  - AdminService         - TestService                │  │
-│  │  - CalendarNoteService                               │  │
-│  └────────────────────┬─────────────────────────────────┘  │
-│                        │                                     │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              REPOSITORY LAYER (Data Access)           │  │
-│  │  - StudentRepository    - TutorRepository            │  │
-│  │  - LessonRepository     - PrenotationRepository      │  │
-│  │  - AdminRepository      - TestRepository             │  │
-│  │  - CalendarNoteRepository                            │  │
-│  └────────────────────┬─────────────────────────────────┘  │
-│                        │                                     │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              ENTITY LAYER (Domain Model)              │  │
-│  │  @Entity Classes with JPA annotations                │  │
-│  └────────────────────┬─────────────────────────────────┘  │
-│                        │                                     │
-└────────────────────────┼─────────────────────────────────────┘
+│                    SPRING BOOT APPLICATION                  │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              CONFIG LAYER                            │   │
+│  │  - ApiKeyInterceptor (Authentication)                │   │
+│  │  - WebConfig (CORS, Interceptors)                    │   │
+│  │  - HttpsRedirectConfig (SSL)                         │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                        │                                    │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              CONTROLLER LAYER                        │   │
+│  │  - StudentController    - TutorController            │   │
+│  │  - LessonController     - PrenotationController      │   │
+│  │  - AdminController      - TestController             │   │
+│  │  - CalendarNoteController                            │   │
+│  └────────────────────┬─────────────────────────────────┘   │
+│                       │                                     │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              SERVICE LAYER (Business Logic)          │   │
+│  │  - StudentService       - TutorService               │   │
+│  │  - LessonService        - PrenotationService         │   │
+│  │  - AdminService         - TestService                │   │
+│  │  - CalendarNoteService                               │   │
+│  └────────────────────┬─────────────────────────────────┘   │
+│                       │                                     │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              REPOSITORY LAYER (Data Access)          │   │
+│  │  - StudentRepository    - TutorRepository            │   │
+│  │  - LessonRepository     - PrenotationRepository      │   │
+│  │  - AdminRepository      - TestRepository             │   │
+│  │  - CalendarNoteRepository                            │   │
+│  └────────────────────┬─────────────────────────────────┘   │
+│                       │                                     │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              ENTITY LAYER (Domain Model)             │   │
+│  │  @Entity Classes with JPA annotations                │   │
+│  └────────────────────┬─────────────────────────────────┘   │
+│                       │                                     │
+└───────────────────────┼─────────────────────────────────────┘
                         │ JDBC/Hibernate
                         ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    POSTGRESQL DATABASE                       │
-│                      (tutorly_db)                            │
+│                    POSTGRESQL DATABASE                      │
+│                      (tutorly_db)                           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -146,10 +145,10 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 │ -end   │  │ -flag     │  │ -date     │  │      │  │ -endTime     │
 │ -tutor ├──┤ -student  │  │ -tutor    ├──┘      │  │ -creator     │
 │ -student  │ -tutor    │  │ -student  │         │  │ -tutors      │
-└────┬──┘  │ -creator  │  └────┬──────┘         │  └──────────────┘
-     │     └───────────┘       │                │
-     │                         │                │
-     │         ┌───────────────┴────────────────┘
+└────┬───┘  │ -creator  │  └────┬──────┘         │  └──────────────┘
+     │      └───────────┘       │                │
+     │                          │                │
+     │         ┌────────────────┴────────────────┘
      │         │
      ▼         ▼
 ┌─────────────────┐
@@ -167,10 +166,6 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 │ -tests          │
 └─────────────────┘
 ```
-
-### Entity Relationships
-
-![ER MODEL](TUTORLY_Normal.png)
 
 #### 1. **Admin → Tutor** (Many-to-Many with associative entity)
 - An admin can create multiple tutors
@@ -205,6 +200,9 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 - A tutor can have many calendar notes
 - A note can be associated with multiple tutors
 - A tutor (creator) creates the note
+
+📚 **For complete database documentation** (installation, configuration, migrations):  
+See [07_Database_Configuration.md](07_Database_Configuration.md)
 
 ---
 
@@ -767,6 +765,9 @@ mvn clean install
 
 # Run
 mvn spring-boot:run
+
+# In case those commands doasn't work use the following command before calling them:
+set JAVA_HOME=C:\Program Files\Java\jdk-21
 ```
 
 #### Option B: GUI Launcher
@@ -1067,117 +1068,6 @@ curl -k -X GET "$BASE_URL/tutors" \
 
 ---
 
-## Best Practices
-
-### 1. **Dependency Injection**
-Always use `@Autowired` on constructors (preferred) or fields:
-
-```java
-@Service
-public class StudentService {
-    
-    private final StudentRepository studentRepository;
-    
-    @Autowired  // Opzionale da Spring 4.3+
-    public StudentService(StudentRepository studentRepository) {
-        this.studentRepository = studentRepository;
-    }
-}
-```
-
-### 2. **Transaction Management**
-Use `@Transactional` for operations that modify data:
-
-```java
-@Service
-public class LessonService {
-    
-    @Transactional
-    public Lesson createLessonWithValidation(LessonCreateDTO dto) {
-        // Multiple operations are guaranteed atomic
-        Tutor tutor = tutorRepository.findById(dto.getTutorId())
-            .orElseThrow(() -> new ResourceNotFoundException("Tutor not found"));
-        
-        Student student = studentRepository.findById(dto.getStudentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
-        
-        Lesson lesson = new Lesson(/* ... */);
-        return lessonRepository.save(lesson);
-    }
-}
-```
-
-### 3. **Input Validation**
-Use Bean Validation (JSR-380):
-
-```java
-public class StudentCreateDTO {
-    
-    @NotBlank(message = "Name is required")
-    @Size(min = 2, max = 50)
-    private String name;
-    
-    @Email(message = "Email should be valid")
-    private String email;
-    
-    // ...
-}
-```
-
-In the controller:
-
-```java
-@PostMapping
-public ResponseEntity<Student> createStudent(
-        @Valid @RequestBody StudentCreateDTO dto) {
-    // ...
-}
-```
-
-### 4. **Exception Handling**
-Create a `@ControllerAdvice` to handle errors globally:
-
-```java
-@ControllerAdvice
-public class GlobalExceptionHandler {
-    
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(
-            ResourceNotFoundException ex) {
-        ErrorResponse error = new ErrorResponse(
-            HttpStatus.NOT_FOUND.value(),
-            ex.getMessage(),
-            LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-}
-```
-
-### 5. **Logging**
-Use SLF4J with Logback:
-
-```java
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-@Service
-public class StudentService {
-    
-    private static final Logger logger = 
-        LoggerFactory.getLogger(StudentService.class);
-    
-    public Student saveStudent(Student student) {
-        logger.info("Creating new student: {}", student.getName());
-        Student saved = studentRepository.save(student);
-        logger.debug("Student saved with ID: {}", saved.getId());
-        return saved;
-    }
-}
-```
-
----
-
 ## Troubleshooting
 
 ### Problem: Server won't start
@@ -1447,50 +1337,6 @@ mvn clean package -DskipTests
 java -jar target/backend-api-0.0.1-SNAPSHOT.jar
 ```
 
-### Docker (optional)
-
-Create `Dockerfile`:
-
-```dockerfile
-FROM eclipse-temurin:21-jre
-WORKDIR /app
-COPY target/backend-api-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8443
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-Build e run:
-```bash
-docker build -t tutorly-backend .
-docker run -p 8443:8443 tutorly-backend
-```
-
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create feature branch: `git checkout -b feature/new-feature`
-3. Commit changes: `git commit -m 'Add new feature'`
-4. Push to branch: `git push origin feature/new-feature`
-5. Open Pull Request
-
----
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## Contacts
-
-For questions or support:
-- **Email**: skenny.dev@gmail.com
-- **Team**: Tutorly Development Team (Skenny)
-- **Documentation:** [GUI-README.md](GUI-README.md)
-
 ---
 
 ## Changelog
@@ -1504,4 +1350,4 @@ For questions or support:
 
 ---
 
-**Last updated:** February 16, 2026
+**Last updated:** February 25, 2026

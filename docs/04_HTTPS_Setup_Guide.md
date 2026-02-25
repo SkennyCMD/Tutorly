@@ -139,7 +139,7 @@ openssl s_client -connect localhost:3443 -showcerts
 
 ```
 Nodejs/
-├── ssl/                          # SSL certificates directory
+├── ssl/                         # SSL certificates directory
 │   ├── private-key.pem          # Private key (gitignored)
 │   └── certificate.pem          # Public certificate (gitignored)
 ├── generate-ssl-cert.sh         # Certificate generation script
@@ -983,5 +983,4 @@ Before starting development with HTTPS:
 
 ---
 
-**Last Updated**: February 18, 2026  
-**Version**: 1.0.0
+**Last Updated**: February 25, 2026  
