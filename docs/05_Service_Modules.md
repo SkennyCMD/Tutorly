@@ -1,6 +1,30 @@
-# Server Utilities
+# Service Modules - Technical Documentation
 
 This file contains a list of all the utility modules in Nodejs/server_utilities organized by functionality, separating business logic from the main server file.
+
+---
+
+**Document**: 05_Service_Modules.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.0.0  
+**Author**: Tutorly Development Team  
+
+---
+
+## 📋 Table of Contents
+- [File Structure](#file-structure)
+  - [config.js](#configjs)
+  - [authService.js](#authservicejs)
+  - [authMiddleware.js](#authmiddlewarejs)
+  - [javaApiService.js](#javaapiservicejs)
+  - [passwordService.js](#passwordservicejs)
+  - [userService.js](#userservicejs)
+  - [logger.js](#loggerjs)
+  - [excel.js](#exceljs)
+- [Best Practices](#best-practices)
+- [Maintenance](#maintenance)
+
+---
 
 ## File Structure
 
@@ -452,6 +476,16 @@ User management service (if present).
    ```
 
 7. **Logging**: Authentication attempts are automatically logged with colored output for better visibility
+
+---
+
+**Navigation**  
+⬅️ **Previous**: [04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md) | **Next**: [06_Database_Migrations.md](06_Database_Migrations.md) ➡️  
+🏠 **Home**: [Documentation Index](README.md)
+
+---
+
+**Last Updated**: February 25, 2026
 
 ## Maintenance
 

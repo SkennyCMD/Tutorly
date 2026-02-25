@@ -4,6 +4,34 @@
 
 ---
 
+**Document**: 00_Project_Overview.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.0.0  
+**Author**: Tutorly Development Team  
+
+---
+
+## 📋 Table of Contents
+
+- [Project Overview](#project-overview)
+- [System Architecture](#system-architecture)
+- [Main Components](#main-components)
+- [Main Features](#main-features)
+- [Technology Stack](#technology-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Complete Documentation](#complete-documentation)
+- [Security](#security)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
+- [License](#license)
+- [Team](#team)
+- [Contacts](#contacts)
+
+---
+
 ## 📖 Project Overview
 
 Tutorly is a full-stack web application designed to simplify tutoring activity management. The system offers an intuitive interface for tutors and administrators, allowing you to:
@@ -111,7 +139,7 @@ The heart of the system is a robust RESTful API built with Spring Boot 3.4.1 and
 - PostgreSQL Driver
 - Maven
 
-📚 **Detailed documentation**: [Java/backend-api/README.md](Java/backend-api/README.md)
+📚 **Detailed documentation**: [01_Java_Backend_API.md](01_Java_Backend_API.md)
 
 ---
 
@@ -147,8 +175,8 @@ User-friendly web interface that handles authentication, sessions and presents d
 - ExcelJS 4.4.0
 - Native HTTPS module for SSL/TLS
 
-📚 **Detailed documentation**: [Nodejs/README.md](Nodejs/README.md)
-📚 **HTTPS Setup Guide**: [04_HTTPS_Setup_Guide.md](Nodejs/HTTPS_SETUP.md)
+📚 **Detailed documentation**: [03_Nodejs_Frontend.md](03_Nodejs_Frontend.md)
+📚 **HTTPS Setup Guide**: [04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md)
 
 ---
 
@@ -389,7 +417,7 @@ run-gui.bat
 
 Backend will be available at: `https://localhost:8443`
 
-📚 **GUI Documentation**: [Java/backend-api/GUI-README.md](02_Java_GUI_Launcher.md)
+📚 **GUI Documentation**: [02_Java_GUI_Launcher.md](02_Java_GUI_Launcher.md)
 
 #### 5. Configure Node.js Frontend
 
@@ -435,7 +463,7 @@ Frontend will be available at:
 
 ⚠️ **Note**: Browser will show security warning for self-signed certificates. Click "Advanced" → "Proceed to localhost" to continue.
 
-📚 **For detailed HTTPS setup**: See [Nodejs/04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md)
+📚 **For detailed HTTPS setup**: See [04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md)
 
 #### 7. Access the System
 
@@ -514,9 +542,9 @@ Each component has its own detailed documentation:
 | Component | Documentation | Description |
 |------------|---------------|-------------|
 | **Java Backend API** | [01_Java_Backend_API.md](01_Java_Backend_API.md) | Architecture, API endpoints, configuration |
-| **Java GUI** | [02_Java_GUI_Laungher.md](02_Java_GUI_Laungher.md) | Graphical interface for server management |
+| **Java GUI** | [02_Java_GUI_Launcher.md](02_Java_GUI_Launcher.md) | Graphical interface for server management |
 | **Node.js Frontend** | [03_Nodejs_Frontend.md](03_Nodejs_Frontend.md) | Architecture, routes, authentication, middleware |
-| **HTTPS Setup** | [04_HTTPS_Setup_Guide.md](4_HTTPS_Setup_Guide.md) | SSL/TLS configuration for local development |
+| **HTTPS Setup** | [04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md) | SSL/TLS configuration for local development |
 | **Service Modules** | [05_Service_Modules.md](05_Service_Modules.md) | Node.js utility modules documentation |
 | **Database Migrations** | [06_Database_Migrations.md](06_Database_Migrations.md) | Password hashing and data migration scripts |
 | **Database Configuration** | [07_Database_Configuration.md](07_Database_Configuration.md) | PostgreSQL setup, schema, and ER model |
@@ -589,23 +617,24 @@ npm test
 
 ## 🐛 Troubleshooting
 
-### Backend won't start
+### Port Already in Use
 
-**Symptom**: `Error: Port 8443 already in use`
+**Symptom**: `Error: Port XXXX already in use` (8443, 3000, 3443, etc.)
 
 **Solution**:
 ```bash
 # Linux/Mac
-lsof -ti:8443 | xargs kill -9
+lsof -ti:PORT | xargs kill -9
+# Example: lsof -ti:8443 | xargs kill -9
 
 # Windows
-netstat -ano | findstr :8443
+netstat -ano | findstr :PORT
 taskkill /PID <PID> /F
 ```
 
 ---
 
-### Frontend can't connect to backend
+### Frontend Can't Connect to Backend
 
 **Symptom**: `Error: connect ECONNREFUSED`
 
@@ -617,7 +646,7 @@ taskkill /PID <PID> /F
 
 ---
 
-### Database connection error
+### Database Connection Error
 
 **Symptom**: `Connection refused` or `Authentication failed`
 
@@ -642,14 +671,47 @@ taskkill /PID <PID> /F
 
 ---
 
-### Sessions don't persist
+### Sessions Don't Persist
 
-**Symptom**: User gets logged out on every system refresh
+**Symptom**: User gets logged out on every page refresh
 
 **Solution**:
 - Verify `server_utilities/config.js`: `TUTOR_SESSION_SECRET` must be set
+- Check cookie settings match HTTP/HTTPS mode (secure flag)
 - For production, use a persistent session store (Redis)
 - Check that cookies are enabled in the browser
+
+---
+
+### SSL Certificate Errors
+
+**Symptom**: `SSL handshake failed` or `unable to find valid certification path`
+
+**Solution**:
+- **Development**: Use `-k` flag with curl for testing: `curl -k https://...`
+- **Self-signed certs**: Browser will show warnings - click "Advanced" → "Proceed"
+- **Java backend**: Verify `keystore.p12` is in `src/main/resources/`
+- **Node.js frontend**: Regenerate certificates: `npm run generate-cert`
+- **Production**: Use CA-signed certificates (Let's Encrypt, etc.)
+
+---
+
+### API Authentication Failures
+
+**Symptom**: `401 Unauthorized` or API key errors
+
+**Solution**:
+1. Verify API keys match between frontend and backend
+2. Check `X-API-Key` header is being sent with requests
+3. Frontend: `JAVA_API_KEY` in `config.js`
+4. Backend: `api.security.keys` in `application.properties`
+
+---
+
+> **📚 For component-specific troubleshooting**, see:
+> - [Backend Issues](01_Java_Backend_API.md#troubleshooting)
+> - [Frontend Issues](03_Nodejs_Frontend.md#troubleshooting)
+> - [HTTPS Issues](04_HTTPS_Setup_Guide.md#troubleshooting)
 
 ---
 
@@ -733,6 +795,8 @@ This project is an excellent example of:
 
 ---
 
-**Last updated**: February 17, 2026
+---
 
-**Version**: 1.0.0
+**Navigation**  
+**Next**: [01_Java_Backend_API.md](01_Java_Backend_API.md) ➡️  
+🏠 **Home**: [Documentation Index](README.md)

@@ -4,6 +4,13 @@ This document provides comprehensive information about the Tutorly database stru
 
 ---
 
+**Document**: 07_Database_Configuration.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.0.0  
+**Author**: Tutorly Development Team  
+
+---
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
@@ -824,10 +831,11 @@ ORDER BY pg_total_relation_size(tablename::regclass) DESC;
 - **Password Migration**: [06_Database_Migrations.md](06_Database_Migrations.md)
 - **Project Overview**: [00_Project_Overview.md](00_Project_Overview.md)
 
-### Tools
-- **pgAdmin**: [https://www.pgadmin.org/](https://www.pgadmin.org/) - GUI for PostgreSQL
-- **DBeaver**: [https://dbeaver.io/](https://dbeaver.io/) - Universal database tool
-- **TablePlus**: [https://tableplus.com/](https://tableplus.com/) - Modern database client
+---
+
+**Navigation**  
+⬅️ **Previous**: [06_Database_Migrations.md](06_Database_Migrations.md)  
+🏠 **Home**: [Documentation Index](README.md)
 
 ---
 

@@ -1,6 +1,15 @@
 # Database Migrations
 
-This file explain how to mirgate the database.
+This file explain how to migrate the database.
+
+---
+
+**Document**: 06_Database_Migrations.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.0.0  
+**Author**: Tutorly Development Team  
+
+---
 
 ## Available Migrations
 
@@ -108,6 +117,12 @@ async function migrate() {
 
 migrate();
 ```
+---
+
+**Navigation**  
+⬅️ **Previous**: [05_Service_Modules.md](05_Service_Modules.md) | **Next**: [07_Database_Configuration.md](07_Database_Configuration.md) ➡️  
+🏠 **Home**: [Documentation Index](README.md)
+
 ---
 
 **Last Updated**: February 25, 2026  

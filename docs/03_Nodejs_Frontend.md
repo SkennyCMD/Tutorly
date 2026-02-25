@@ -1,7 +1,17 @@
 # Tutorly Frontend Server - Technical Documentation
 
-## Table of Contents
+---
+
+**Document**: 03_Nodejs_Frontend.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.3.0  
+**Author**: Tutorly Development Team  
+
+---
+
+## 📋 Table of Contents
 - [Overview](#overview)
+- [Quick Reference](#quick-reference)
 - [System Architecture](#system-architecture)
 - [Technology Stack](#technology-stack)
 - [Application Structure](#application-structure)
@@ -33,17 +43,99 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 
 ---
 
+## ⚡ Quick Reference
+
+### Common Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm start` | Start server (HTTP on port 3000) |
+| `npm run https` | Start server with HTTPS (port 3443) |
+| `npm run dev` | Start with auto-reload (HTTP) |
+| `npm run dev:https` | Start with auto-reload (HTTPS) |
+| `npm test` | Run tests |
+| `npm run generate-cert` | Generate self-signed SSL certificates |
+
+### Key Routes
+
+| Route | Method | Description | Authentication |
+|-------|--------|-------------|----------------|
+| `/` | GET | Home page (redirects to /login or /home) | - |
+| `/login` | GET | Tutor login page | Public |
+| `/login` | POST | Process tutor login | Public |
+| `/adminLogin` | GET | Admin login page | Public |
+| `/adminLogin` | POST | Process admin login | Public |
+| `/home` | GET | Dashboard | Tutor/Admin |
+| `/lessons` | GET | Lessons management | Tutor/Admin |
+| `/calendar` | GET | Calendar view | Tutor/Admin |
+| `/admin` | GET | Admin panel | Admin only |
+| `/staffPanel` | GET | Staff management | Staff/Admin |
+| `/logout` | GET | Logout | Tutor/Admin |
+
+### API Routes (Internal)
+
+| Route | Method | Description | Access |
+|-------|--------|-------------|--------|
+| `/api/students` | GET | Fetch all students | Authenticated |
+| `/api/tutors` | GET | Fetch all tutors | Authenticated |
+| `/api/lessons/new` | POST | Create new lesson | Authenticated |
+| `/api/lessons/delete/:id` | DELETE | Delete lesson | Staff/Admin |
+| `/api/export/lessons` | GET | Export lessons to Excel | Authenticated |
+
+### Configuration Files
+
+| File | Purpose | Location |
+|------|---------|----------|
+| `package.json` | Dependencies and scripts | Root directory |
+| `config.js` | App configuration | `server_utilities/` |
+| `.env` | Environment variables (if used) | Root directory |
+| `ssl/certificate.pem` | SSL certificate | `ssl/` directory |
+| `ssl/private-key.pem` | SSL private key | `ssl/` directory |
+
+### Default Ports
+
+- **HTTP**: 3000 (redirects to HTTPS if enabled)
+- **HTTPS**: 3443
+- **Java API**: 8443 (backend connection)
+
+### Session Configuration
+
+| User Type | Session Duration | Secret Location |
+|-----------|-----------------|-----------------|
+| Tutor | 30 days | `TUTOR_SESSION_SECRET` in config.js |
+| Admin | 1 hour | `ADMIN_SESSION_SECRET` in config.js |
+
+### Quick Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Cannot connect to backend | Verify Java API is running on port 8443 |
+| Session expires immediately | Check session configuration in config.js |
+| SSL certificate error | Regenerate certificates with `npm run generate-cert` |
+| Port 3000/3443 in use | Change PORT in config.js or kill existing process |
+| Login fails | Check bcrypt password hashing, verify user exists in DB |
+
+### Environment Variables
+
+```bash
+# Optional environment configuration
+NODE_ENV=development       # or 'production'
+PORT=3000                  # HTTP port
+HTTPS_PORT=3443           # HTTPS port
+USE_HTTPS=true            # Enable HTTPS
+```
+
+---
+
 ## System Architecture
 
-### High-Level Architecture
+> **📖 For the complete system architecture**, see [00_Project_Overview.md - System Architecture](00_Project_Overview.md#system-architecture)
+
+### Node.js Express Server Internal Architecture
+
+This section details the internal structure of the Node.js frontend component:
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                         WEB BROWSER                            │
-│                    (Client - User Interface)                   │
-└────────────────────┬───────────────────────────────────────────┘
-                     │ HTTP/HTTPS
-                     ▼
 ┌────────────────────────────────────────────────────────────────┐
 │                  NODE.JS EXPRESS SERVER                        │
 │                  (Frontend/Middle Tier)                        │
@@ -77,17 +169,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 └───────────────────┼────────────────────────────────────────────┘
                     │ HTTPS + API Key
                     ▼
-┌────────────────────────────────────────────────────────────────┐
-│                  JAVA SPRING BOOT API                          │
-│                  (Backend - Data Layer)                        │
-│                  Port 8443                                     │
-└────────────────────┬───────────────────────────────────────────┘
-                     │ JDBC
-                     ▼
-┌────────────────────────────────────────────────────────────────┐
-│                  POSTGRESQL DATABASE                           │
-│                  (tutorly_db)                                  │
-└────────────────────────────────────────────────────────────────┘
+              Java Backend API (Port 8443)
 ```
 
 ### Component Interaction Flow
@@ -107,30 +189,28 @@ User Browser ←→ Express Server ←→ Java API ←→ PostgreSQL
 
 ## Technology Stack
 
-### Frontend Server (Node.js)
-- **Node.js** - JavaScript runtime environment
-- **Express.js 4.18.2** - Web application framework
-- **EJS 3.1.10** - Embedded JavaScript templating
-- **express-session 1.18.2** - Session management middleware
-- **bcrypt 6.0.0** - Password hashing and verification
-- **ExcelJS 4.4.0** - Excel report generation
-- **nodemon 3.0.1** - Development auto-reload (dev dependency)
+> **📖 For the complete technology stack overview**, see [00_Project_Overview.md - Technology Stack](00_Project_Overview.md#technology-stack)
 
-### Backend Integration
-- **HTTPS Module** - Native Node.js HTTPS client for API communication
-- **SSL/TLS Support** - Self-signed certificates for local HTTPS development
-- **Java Backend API** - RESTful API (Spring Boot on port 8443)
+### Node.js Frontend Specific Technologies
+
+**Core:**
+- **Node.js 18+** - JavaScript runtime (LTS recommended)  
+- **Express.js 4.18.2** - Web application framework  
+- **EJS 3.1.10** - Templating engine
+
+**Authentication & Security:**
+- **bcrypt 6.0.0** - Password hashing  
+- **express-session 1.18.2** - Session management  
 - **API Key Authentication** - X-API-Key header-based authentication
 
-### Client-Side
-- **Vanilla JavaScript** - Interactive DOM manipulation
-- **CSS3** - Modern responsive styling
-- **Fetch API** - Asynchronous HTTP requests
+**Utilities:**
+- **ExcelJS 4.4.0** - Excel report generation  
+- **Native HTTPS Module** - SSL/TLS support  
+- **Vanilla JavaScript** - Client-side interactivity
 
-### Development Tools
-- **npm** - Package manager
-- **Git** - Version control
-- **nodemon** - Auto-restart during development
+**Development:**
+- **npm** - Package manager  
+- **nodemon 3.0.1** - Auto-restart during development
 
 ---
 
@@ -734,7 +814,9 @@ try {
 
 ## Setup and Configuration
 
-### Prerequisites
+> **📖 For complete system prerequisites**, see [00_Project_Overview.md - Prerequisites](00_Project_Overview.md#prerequisites)
+
+### Component-Specific Requirements
 
 - **Node.js 18+** (LTS recommended)
 - **npm 9+** (comes with Node.js)
@@ -1304,35 +1386,11 @@ try {
 
 ## Troubleshooting
 
-### Problem: Server won't start
+> **📖 For common issues**, see [00_Project_Overview.md - Troubleshooting](00_Project_Overview.md#troubleshooting)
 
-**Symptoms:**
-```
-Error: listen EADDRINUSE: address already in use :::3000
-```
+### Frontend-Specific Issues
 
-**Solution:**
-- Check if another process is using port 3000
-- Kill the process: `lsof -ti:3000 | xargs kill -9`
-- Or change PORT in `config.js`
-
----
-
-### Problem: Cannot connect to Java API
-
-**Symptoms:**
-```
-Error: connect ECONNREFUSED 127.0.0.1:8443
-```
-
-**Solution:**
-- Verify Java backend is running
-- Check `JAVA_API_URL` in `config.js`
-- Test connectivity: `curl -k https://localhost:8443/api/tutors -H "X-API-Key: ..."`
-
----
-
-### Problem: Login fails with "Username or password incorrect"
+#### Problem: Login fails with "Username or password incorrect"
 
 **Symptoms:**
 User cannot login even with correct credentials
@@ -1345,19 +1403,7 @@ User cannot login even with correct credentials
 
 ---
 
-### Problem: Session not persisting
-
-**Symptoms:**
-User logged out on page refresh
-
-**Solution:**
-- Verify session secret is set in `config.js`
-- Check cookie settings (httpOnly, maxAge)
-- For production, use persistent session store (Redis)
-
----
-
-### Problem: Excel export fails
+#### Problem: Excel export fails
 
 **Symptoms:**
 ```
@@ -1368,6 +1414,7 @@ Error: Cannot read property 'length' of undefined
 - Ensure lessons data is being fetched correctly
 - Verify student/tutor data exists for all lessons
 - Check ExcelJS version compatibility
+- Verify Java backend API is accessible
 
 ---
 
@@ -1474,6 +1521,12 @@ pm2 save
 - ✅ Admin and staff panels
 - ✅ Comprehensive logging system
 - ✅ Java Backend API integration
+
+---
+
+**Navigation**  
+⬅️ **Previous**: [02_Java_GUI_Launcher.md](02_Java_GUI_Launcher.md) | **Next**: [04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md) ➡️  
+🏠 **Home**: [Documentation Index](README.md)
 
 ---
 

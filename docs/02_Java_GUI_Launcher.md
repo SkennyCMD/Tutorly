@@ -4,7 +4,14 @@
 
 ---
 
-## Table of Contents
+**Document**: 02_Java_GUI_Launcher.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.1.0  
+**Author**: Tutorly Development Team  
+
+---
+
+## 📋 Table of Contents
 - [Overview](#overview)
 - [Features](#features)
 - [System Requirements](#system-requirements)
@@ -71,10 +78,13 @@ The **Tutorly API Server Manager** is a Java Swing-based desktop application tha
 
 ## System Requirements
 
-### Prerequisites
+> **📖 For complete system prerequisites**, see [00_Project_Overview.md - Prerequisites](00_Project_Overview.md#prerequisites)
+
+### GUI-Specific Requirements
+
 - **Java 21** or higher (JDK required for compilation)
 - **Maven 3.8+** (included via Maven Wrapper)
-- **PostgreSQL 12+** (must be running if connecting to database)
+- **PostgreSQL 12+** (must be running when connecting to database)
 - **Operating System**: Windows, Linux, or macOS
 
 ### Optional
@@ -699,6 +709,12 @@ java -jar target/backend-api-1.0.0.jar com.tutorly.app.backend_api.gui.ServerLau
 - **Backend API Endpoints**: [01_Java_Backend_API.md](01_Java_Backend_API.md)
 - **Spring Boot Documentation**: https://spring.io/projects/spring-boot
 - **PostgreSQL Documentation**: https://www.postgresql.org/docs/
+
+---
+
+**Navigation**  
+⬅️ **Previous**: [01_Java_Backend_API.md](01_Java_Backend_API.md) | **Next**: [03_Nodejs_Frontend.md](03_Nodejs_Frontend.md) ➡️  
+🏠 **Home**: [Documentation Index](README.md)
 
 ---
 

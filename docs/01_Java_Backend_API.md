@@ -1,7 +1,17 @@
 # Tutorly Backend API - Technical Documentation
 
-## Table of Contents
+---
+
+**Document**: 01_Java_Backend_API.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.2.0  
+**Author**: Tutorly Development Team  
+
+---
+
+## 📋 Table of Contents
 - [Overview](#overview)
+- [Quick Reference](#quick-reference)
 - [System Architecture](#system-architecture)
 - [Technology Stack](#technology-stack)
 - [Data Model](#data-model)
@@ -27,17 +37,68 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 
 ---
 
+## ⚡ Quick Reference
+
+### Common Commands
+
+| Command | Description |
+|---------|-------------|
+| `mvn spring-boot:run` | Start backend server (development) |
+| `mvn clean package` | Build JAR file for production |
+| `mvn test` | Run all tests |
+| `./run-gui.sh` | Start GUI launcher (Linux/Mac) |
+| `run-gui.bat` | Start GUI launcher (Windows) |
+| `./test-api.sh` | Test API endpoints |
+
+### Key Endpoints
+
+| Endpoint | Method | Description | Authentication |
+|----------|--------|-------------|----------------|
+| `/api/students` | GET | List all students | API Key |
+| `/api/students/{id}` | GET | Get student by ID | API Key |
+| `/api/students` | POST | Create new student | API Key |
+| `/api/students/{id}` | PUT | Update student | API Key |
+| `/api/students/{id}` | DELETE | Delete student | API Key |
+| `/api/tutors` | GET | List all tutors | API Key |
+| `/api/lessons` | GET | List all lessons | API Key |
+| `/api/lessons` | POST | Create new lesson | API Key |
+| `/api/prenotations` | GET | List bookings | API Key |
+| `/api/calendar-notes` | GET | List calendar notes | API Key |
+
+### Configuration Files
+
+| File | Purpose | Location |
+|------|---------|----------|
+| `application.properties` | Main configuration | `src/main/resources/` |
+| `pom.xml` | Maven dependencies | Root directory |
+| `launcher-config.properties` | GUI configuration | `src/main/java/` |
+| `keystore.p12` | SSL certificate | `src/main/resources/` |
+
+### Default Ports
+
+- **HTTPS**: 8443 (production and development)
+- **Database**: 5432 (PostgreSQL default)
+
+### Quick Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Port 8443 already in use | Change `server.port` in application.properties or kill process |
+| Database connection failed | Verify PostgreSQL is running and credentials are correct |
+| API key invalid | Check `X-API-Key` header matches configured key |
+| SSL certificate error | Regenerate keystore or use HTTP in development |
+
+---
+
 ## System Architecture
 
-### Architectural Diagram
+> **📖 For the complete system architecture**, see [00_Project_Overview.md - System Architecture](00_Project_Overview.md#system-architecture)
+
+### Spring Boot Application Internal Architecture
+
+This section details the internal structure of the Java backend component:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    CLIENT APPLICATIONS                      │
-│            (Node.js Frontend, API Consumers)                │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ HTTPS + API Key
-                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    SPRING BOOT APPLICATION                  │
 │                                                             │
@@ -80,33 +141,30 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 └───────────────────────┼─────────────────────────────────────┘
                         │ JDBC/Hibernate
                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    POSTGRESQL DATABASE                      │
-│                      (tutorly_db)                           │
-└─────────────────────────────────────────────────────────────┘
+                 PostgreSQL Database
 ```
 
 ---
 
 ## Technology Stack
 
-### Backend
-- **Java 21** - Programming language
-- **Spring Boot 4.0.1** - Application framework
-- **Spring Data JPA** - Persistence abstraction
-- **Hibernate** - ORM (Object-Relational Mapping)
+> **📖 For the complete technology stack overview**, see [00_Project_Overview.md - Technology Stack](00_Project_Overview.md#technology-stack)
+
+### Java Backend Specific Technologies
+
+**Core:**
+- **Java 21** - Programming language  
+- **Spring Boot 3.4.1** - Application framework  
+- **Spring Data JPA** - Persistence abstraction  
+- **Hibernate** - ORM (Object-Relational Mapping)  
 - **Maven** - Build tool and dependency management
 
-### Database
-- **PostgreSQL** - Relational database
-- **JDBC PostgreSQL Driver** - Database connectivity
-
-### Security
-- **API Key Authentication** - Authentication via HTTP headers
-- **SSL/TLS (HTTPS)** - Encrypted communication
+**Security:**
+- **API Key Authentication** - Authentication via HTTP headers  
+- **SSL/TLS (HTTPS)** - Encrypted communication  
 - **Keystore PKCS12** - Certificate management
 
-### Management
+**UI:**
 - **Swing GUI** - Graphical interface for server configuration
 
 ---
@@ -702,12 +760,13 @@ registry.addMapping("/**")
 
 ## Setup and Configuration
 
-### Prerequisites
+> **📖 For complete system prerequisites**, see [00_Project_Overview.md - Prerequisites](00_Project_Overview.md#prerequisites)
 
-- **Java 21** or higher
-- **Maven 3.8+**
-- **PostgreSQL 12+**
-- **Git**
+### Component-Specific Requirements
+
+- **Java 21** or higher (JDK required)
+- **Maven 3.8+** (included via Maven Wrapper)
+- **PostgreSQL 12+** running and accessible
 
 ### 1. Clone Repository
 
@@ -1070,22 +1129,11 @@ curl -k -X GET "$BASE_URL/tutors" \
 
 ## Troubleshooting
 
-### Problem: Server won't start
+> **📖 For common issues**, see [00_Project_Overview.md - Troubleshooting](00_Project_Overview.md#troubleshooting)
 
-**Symptoms:**
-```
-Error creating bean with name 'dataSource'
-Failed to configure a DataSource
-```
+### Backend-Specific Issues
 
-**Solution:**
-- Verify PostgreSQL is running
-- Check credentials in `application.properties`
-- Test connection: `psql -U tutorly_admin -d tutorly_db -h localhost`
-
----
-
-### Problem: 401 Unauthorized
+#### Problem: 401 Unauthorized
 
 **Symptoms:**
 ```
@@ -1095,25 +1143,11 @@ HTTP 401 Unauthorized
 **Solution:**
 - Verify `X-API-Key` header in the request
 - Check that the key is in `api.security.keys` in `application.properties`
+- Test with curl: `curl -k https://localhost:8443/api/tutors -H "X-API-Key: your-key"`
 
 ---
 
-### Problem: SSL/HTTPS Error
-
-**Symptoms:**
-```
-SSL handshake failed
-unable to find valid certification path
-```
-
-**Solution:**
-- Use `-k` flag with curl for testing: `curl -k https://...`
-- For Java clients, import certificate into truststore
-- Verify that `keystore.p12` is in `src/main/resources/`
-
----
-
-### Problem: Circular Reference in JSON
+#### Problem: Circular Reference in JSON
 
 **Symptoms:**
 ```
@@ -1347,6 +1381,12 @@ java -jar target/backend-api-0.0.1-SNAPSHOT.jar
 - ✅ GUI for server management
 - ✅ HTTPS/SSL support
 - ✅ PostgreSQL integration
+
+---
+
+**Navigation**  
+⬅️ **Previous**: [00_Project_Overview.md](00_Project_Overview.md) | **Next**: [02_Java_GUI_Launcher.md](02_Java_GUI_Launcher.md) ➡️  
+🏠 **Home**: [Documentation Index](README.md)
 
 ---
 

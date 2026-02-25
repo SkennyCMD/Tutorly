@@ -4,6 +4,29 @@ This guide explains how to enable HTTPS on the Node.js server for local developm
 
 ---
 
+**Document**: 04_HTTPS_Setup_Guide.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.0.0  
+**Author**: Tutorly Development Team  
+
+---
+
+## 📋 Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Testing HTTPS](#testing-https)
+- [Project Structure](#project-structure)
+- [Security Notes](#security-notes)
+- [Troubleshooting](#troubleshooting)
+- [Additional Resources](#additional-resources)
+- [Summary](#summary)
+- [Production Setup with CA-Signed Certificates](#production-setup-with-ca-signed-certificates)
+- [Checklist](#checklist)
+
+---
+
 ## 📋 Prerequisites
 
 - **OpenSSL** installed on your system
@@ -190,7 +213,11 @@ For production, use certificates from a trusted Certificate Authority:
 
 ## 🛠️ Troubleshooting
 
-### Certificate Not Found Error
+> **📖 For common issues**, see [00_Project_Overview.md - Troubleshooting](00_Project_Overview.md#troubleshooting)
+
+### HTTPS-Specific Issues
+
+#### Certificate Not Found Error
 
 **Problem**: `SSL certificates not found!`
 
@@ -200,7 +227,9 @@ cd Nodejs
 npm run generate-cert
 ```
 
-### OpenSSL Not Found
+---
+
+#### OpenSSL Not Found
 
 **Problem**: `openssl: command not found`
 
@@ -216,38 +245,17 @@ brew install openssl
 # Download from: https://slproweb.com/products/Win32OpenSSL.html
 ```
 
-### Browser Still Shows HTTP
+---
 
-**Problem**: Browser doesn't redirect to HTTPS
+#### Browser Doesn't Redirect to HTTPS
+
+**Problem**: Browser still shows HTTP
 
 **Solution**: 
 1. Check `USE_HTTPS=true` in `.env` or environment
 2. Restart the server
 3. Clear browser cache
 4. Try `https://localhost:3443` directly
-
-### Port Already in Use
-
-**Problem**: `Error: Port 3443 already in use`
-
-**Solution**:
-```bash
-# Linux/macOS
-lsof -ti:3443 | xargs kill -9
-
-# Windows
-netstat -ano | findstr :3443
-taskkill /PID <PID> /F
-```
-
-### Session Cookies Not Working
-
-**Problem**: User gets logged out frequently
-
-**Solution**: 
-- If using HTTPS, ensure `secure: true` in session config
-- If using HTTP, ensure `secure: false` in session config
-- Clear browser cookies and try again
 
 ---
 
@@ -980,6 +988,12 @@ Before starting development with HTTPS:
 - [ ] Started server with `npm run https`
 - [ ] Accessed `https://localhost:3443` and accepted security warning
 - [ ] Verified session cookies are working
+
+---
+
+**Navigation**  
+⬅️ **Previous**: [03_Nodejs_Frontend.md](03_Nodejs_Frontend.md) | **Next**: [05_Service_Modules.md](05_Service_Modules.md) ➡️  
+🏠 **Home**: [Documentation Index](README.md)
 
 ---
 

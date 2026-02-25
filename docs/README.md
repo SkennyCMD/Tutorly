@@ -4,6 +4,24 @@ This directory contains all the documentation for the Tutorly project, organized
 
 ---
 
+**Document**: README.md  
+**Last Updated**: February 25, 2026  
+**Version**: 1.1.0  
+**Maintained by**: Tutorly Development Team  
+
+---
+
+## 📋 Table of Contents
+
+- [Documentation Structure](#documentation-structure)
+- [Quick Start Guide](#quick-start-guide)
+- [Documentation by Topic](#documentation-by-topic)
+- [Documentation Maintenance](#documentation-maintenance)
+- [Contributing](#contributing)
+- [Support](#support)
+
+---
+
 ## 📚 Documentation Structure
 
 ### General Documentation
@@ -37,6 +55,25 @@ This directory contains all the documentation for the Tutorly project, organized
 | Document | Description | Original Location |
 |----------|-------------|-------------------|
 | **[07_Database_Configuration.md](07_Database_Configuration.md)** | Complete PostgreSQL database configuration guide with ER model, schema, setup, and migrations | Database/README.md |
+
+---
+
+### Development & Operations
+
+| Document | Description | Original Location |
+|----------|-------------|-------------------|
+| **[08_Testing_Guide.md](08_Testing_Guide.md)** | Comprehensive testing guide including unit, integration, and E2E testing strategies | New |
+| **[09_Deployment_Guide.md](09_Deployment_Guide.md)** | Production deployment guide with server setup, SSL configuration, and monitoring | New |
+| **[10_Contributing_Guide.md](10_Contributing_Guide.md)** | Guidelines for contributing to the project including code style and PR process | New |
+
+---
+
+### Reference Documentation
+
+| Document | Description | Original Location |
+|----------|-------------|-------------------|
+| **[11_Glossary.md](11_Glossary.md)** | Technical terms, acronyms, and definitions used in the project | New |
+| **[CHANGELOG.md](../CHANGELOG.md)** | Project version history and release notes | Root directory |
 
 ---
 
@@ -100,6 +137,32 @@ This directory contains all the documentation for the Tutorly project, organized
 - **Installation & Setup**: [07_Database_Configuration.md](07_Database_Configuration.md#installation-and-setup)
 - **Migrations**: [06_Database_Migrations.md](06_Database_Migrations.md)
 
+### Testing & Quality
+- **Testing Strategy**: [08_Testing_Guide.md](08_Testing_Guide.md#testing-strategy)
+- **Unit Testing**: [08_Testing_Guide.md](08_Testing_Guide.md#java-backend-testing)
+- **Integration Testing**: [08_Testing_Guide.md](08_Testing_Guide.md#integration-testing)
+- **E2E Testing**: [08_Testing_Guide.md](08_Testing_Guide.md#end-to-end-testing)
+- **Test Coverage**: [08_Testing_Guide.md](08_Testing_Guide.md#test-coverage)
+
+### Deployment & Production
+- **Deployment Guide**: [09_Deployment_Guide.md](09_Deployment_Guide.md)
+- **Server Setup**: [09_Deployment_Guide.md](09_Deployment_Guide.md#production-environment-setup)
+- **SSL Configuration**: [09_Deployment_Guide.md](09_Deployment_Guide.md#ssltls-configuration)
+- **Monitoring**: [09_Deployment_Guide.md](09_Deployment_Guide.md#monitoring-and-logging)
+- **Backup Strategy**: [09_Deployment_Guide.md](09_Deployment_Guide.md#backup-and-recovery)
+
+### Contributing
+- **How to Contribute**: [10_Contributing_Guide.md](10_Contributing_Guide.md)
+- **Code Style Guidelines**: [10_Contributing_Guide.md](10_Contributing_Guide.md#code-style-guidelines)
+- **Pull Request Process**: [10_Contributing_Guide.md](10_Contributing_Guide.md#pull-request-process)
+- **Testing Requirements**: [10_Contributing_Guide.md](10_Contributing_Guide.md#testing-requirements)
+
+### Reference
+- **Glossary**: [11_Glossary.md](11_Glossary.md)
+- **Changelog**: [CHANGELOG.md](../CHANGELOG.md)
+- **Quick Reference (Backend)**: [01_Java_Backend_API.md](01_Java_Backend_API.md#quick-reference)
+- **Quick Reference (Frontend)**: [03_Nodejs_Frontend.md](03_Nodejs_Frontend.md#quick-reference)
+
 ### Troubleshooting
 - **Common Issues**: [00_Project_Overview.md](00_Project_Overview.md#troubleshooting)
 - **HTTPS Issues**: [04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md#troubleshooting)
@@ -151,5 +214,5 @@ For questions or support:
 
 ---
 
-**Last Updated**: February 18, 2026  
-**Version**: 1.0.0
+**Last Updated**: February 25, 2026  
+**Version**: 1.1.0
