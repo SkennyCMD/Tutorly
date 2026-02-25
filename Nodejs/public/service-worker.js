@@ -64,8 +64,8 @@ self.addEventListener('fetch', (event) => {
         fetch(event.request)
             .then((response) => {
                 // Determine if we should cache this response
-                // Cache successful GET requests for navigation or API
-                if (event.request.method === 'GET' && response.status === 200) {
+                // Cache successful GET requests for navigation or API, filtering out non-HTTP schemes (like chrome-extension://)
+                if (event.request.method === 'GET' && response.status === 200 && event.request.url.startsWith('http')) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, responseClone);
