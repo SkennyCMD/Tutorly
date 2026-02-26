@@ -116,7 +116,7 @@ This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.t
 **Matteo Schintu (Skenny)**
 
 - Email: skenny.dev@gmail.com
-- GitHub: [@Skenny](https://github.com/Skenny)
+- GitHub: [@SkennyCMD](https://github.com/SkennyCMD)
 
 ---
 
