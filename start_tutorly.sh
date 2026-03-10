@@ -32,7 +32,8 @@ echo "========================================"
 echo "[0/3] Checking ports..."
 check_and_free_port 5432 "PostgreSQL"
 check_and_free_port 8443 "Java Backend"
-check_and_free_port 3000 "Node Frontend"
+check_and_free_port 3000 "Node Frontend (HTTP)"
+check_and_free_port 3443 "Node Frontend (HTTPS)"
 
 
 # 1. Start Database
@@ -68,6 +69,16 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
+# Ensure SSL certificates exist for HTTPS
+if [ ! -f "ssl/certificate.pem" ] || [ ! -f "ssl/private-key.pem" ]; then
+    echo "SSL certificates not found. Generating self-signed certificates..."
+    chmod +x generate-ssl-cert.sh
+    ./generate-ssl-cert.sh
+fi
+
+# Enable HTTPS
+export USE_HTTPS=true
+
 # Run in background
 npm start &
 FRONTEND_PID=$!
@@ -77,7 +88,7 @@ cd ..
 echo "========================================"
 echo "   All services launched!"
 echo "   Backend: https://localhost:8443"
-echo "   Frontend: http://localhost:3000"
+echo "   Frontend: https://localhost:3443 (HTTP: http://localhost:3000)"
 echo "========================================"
 echo "Press Ctrl+C to stop all services."
 
