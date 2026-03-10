@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTasks();
   loadLessons();
   setupEventListeners();
-  
+
   // Initialize modal with page reload callback to refresh server-rendered data
   initializeModal(() => {
     window.location.reload();
@@ -135,28 +135,28 @@ function updateCurrentDate() {
 function renderCalendar() {
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   document.getElementById('calendarMonth').textContent = `${monthNames[calendarDate.getMonth()]} ${calendarDate.getFullYear()}`;
-  
+
   const firstDay = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1);
   const lastDay = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0);
   const startDay = (firstDay.getDay() + 6) % 7;
-  
+
   let html = '';
-  
+
   // Empty cells for days before month starts (e.g., if month starts on Wednesday)
   for (let i = 0; i < startDay; i++) {
     html += '<span class="py-1.5"></span>';
   }
-  
+
   // Days of the month (1 to last day)
   for (let day = 1; day <= lastDay.getDate(); day++) {
-    const isToday = day === currentDate.getDate() && 
-                    calendarDate.getMonth() === currentDate.getMonth() && 
-                    calendarDate.getFullYear() === currentDate.getFullYear();
-    
+    const isToday = day === currentDate.getDate() &&
+      calendarDate.getMonth() === currentDate.getMonth() &&
+      calendarDate.getFullYear() === currentDate.getFullYear();
+
     // Highlight today with primary color, others with hover effect
     html += `<span class="py-1.5 rounded-lg cursor-pointer transition-colors ${isToday ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-secondary text-foreground'}">${day}</span>`;
   }
-  
+
   document.getElementById('calendarDays').innerHTML = html;
 }
 
@@ -174,19 +174,19 @@ function renderCalendar() {
  */
 function renderTasks() {
   const container = document.getElementById('tasksList');
-  
+
   // Show empty state if no tasks
   if (tasks.length === 0) {
     container.innerHTML = '<p class="text-sm text-muted-foreground py-2">There are no tasks for today</p>';
     return;
   }
-  
+
   // Render each task with bullet point and time range
   container.innerHTML = tasks.map(task => {
     const startTime = task.startTime ? new Date(task.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
     const endTime = task.endTime ? new Date(task.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
     const timeRange = startTime && endTime ? `${startTime} - ${endTime}` : '';
-    
+
     return `
       <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-secondary transition-colors">
         <span class="text-primary mt-1">•</span>
@@ -222,10 +222,10 @@ function renderLessons() {
   const mobileList = document.getElementById('lessonsMobileList');
   const emptyState = document.getElementById('emptyLessons');
   const countEl = document.getElementById('lessonCount');
-  
+
   // Update lesson count display
   countEl.textContent = `${lessons.length} lesson${lessons.length !== 1 ? 's' : ''}`;
-  
+
   // Show empty state if no lessons
   if (lessons.length === 0) {
     tableBody.innerHTML = '';
@@ -233,9 +233,9 @@ function renderLessons() {
     emptyState.classList.remove('hidden');
     return;
   }
-  
+
   emptyState.classList.add('hidden');
-  
+
   // Desktop table view - full details in table rows
   tableBody.innerHTML = lessons.map(lesson => `
     <tr class="group">
@@ -256,7 +256,7 @@ function renderLessons() {
       </td>
     </tr>
   `).join('');
-  
+
   // Mobile list view - card layout with avatars and compact info
   mobileList.innerHTML = lessons.map(lesson => `
     <div class="flex items-center justify-between p-4 bg-secondary rounded-xl">
@@ -295,34 +295,34 @@ function setupEventListeners() {
   const closeMenu = document.getElementById('closeMenu');
   const mobileMenu = document.getElementById('mobileMenu');
   const menuOverlay = document.getElementById('menuOverlay');
-  
+
   // Open mobile menu
   menuToggle.addEventListener('click', () => {
     mobileMenu.classList.add('open');
     menuOverlay.classList.remove('hidden');
   });
-  
+
   // Close mobile menu function
   const closeMenuFn = () => {
     mobileMenu.classList.remove('open');
     menuOverlay.classList.add('hidden');
   };
-  
+
   closeMenu.addEventListener('click', closeMenuFn);
   menuOverlay.addEventListener('click', closeMenuFn);
-  
+
   // Calendar navigation - previous month
   document.getElementById('prevMonth').addEventListener('click', () => {
     calendarDate.setMonth(calendarDate.getMonth() - 1);
     renderCalendar();
   });
-  
+
   // Calendar navigation - next month
   document.getElementById('nextMonth').addEventListener('click', () => {
     calendarDate.setMonth(calendarDate.getMonth() + 1);
     renderCalendar();
   });
-  
+
   // Add student form submission
   document.getElementById('addStudentForm').addEventListener('submit', handleAddStudentSubmit);
 }
@@ -358,15 +358,16 @@ function closeAddStudentModal() {
  */
 async function handleAddStudentSubmit(e) {
   e.preventDefault();
-  
+
   const name = document.getElementById('studentName').value;
   const surname = document.getElementById('studentSurname').value;
   const studentClass = document.getElementById('studentClass').value;
   const description = document.getElementById('studentDescription').value;
-  
+
   try {
     const response = await fetch('/api/students', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -377,12 +378,12 @@ async function handleAddStudentSubmit(e) {
         description
       })
     });
-    
+
     if (response.ok) {
       const newStudent = await response.json();
       alert('Student added successfully!');
       closeAddStudentModal();
-      
+
       // Reload page to refresh student list and other data
       window.location.reload();
     } else {

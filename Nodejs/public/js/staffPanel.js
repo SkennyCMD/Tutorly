@@ -153,19 +153,19 @@ function addRecentDownload(filename, category) {
 function renderRecentDownloads() {
     const container = document.getElementById('recentDownloads');
     if (recentDownloads.length === 0) {
-    container.innerHTML = '<p class="text-sm text-muted-foreground text-center py-4">No recent downloads</p>';
-    return;
+        container.innerHTML = '<p class="text-sm text-muted-foreground text-center py-4">No recent downloads</p>';
+        return;
     }
-    
+
     // Map category to color scheme for visual distinction
     container.innerHTML = recentDownloads.map(dl => {
-    const colors = {
-        tutor: { bg: 'bg-primary/20', text: 'text-primary' },       // Teal for tutor reports
-        student: { bg: 'bg-amber-500/20', text: 'text-amber-500' }, // Amber for student reports
-        single: { bg: 'bg-sky-500/20', text: 'text-sky-500' }       // Sky blue for single tutor reports
-    };
-    const c = colors[dl.category] || colors.tutor;
-    return `
+        const colors = {
+            tutor: { bg: 'bg-primary/20', text: 'text-primary' },       // Teal for tutor reports
+            student: { bg: 'bg-amber-500/20', text: 'text-amber-500' }, // Amber for student reports
+            single: { bg: 'bg-sky-500/20', text: 'text-sky-500' }       // Sky blue for single tutor reports
+        };
+        const c = colors[dl.category] || colors.tutor;
+        return `
         <div class="flex items-center justify-between p-3 bg-secondary rounded-lg mb-2">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 ${c.bg} rounded-lg flex items-center justify-center">
@@ -197,15 +197,15 @@ const selectedTutorNameEl = document.getElementById('selectedTutorName');
 tutorInput.addEventListener('input', function () {
     const query = this.value.trim().toLowerCase();
     if (query.length === 0) {
-    closeDropdown();
-    return;
+        closeDropdown();
+        return;
     }
     // Filter tutors by name (case-insensitive partial match)
     const results = tutors.filter(t => t.name.toLowerCase().includes(query));
     if (results.length === 0) {
-    tutorDropdown.innerHTML = '<div class="px-4 py-3 text-muted-foreground text-sm">No tutors found</div>';
+        tutorDropdown.innerHTML = '<div class="px-4 py-3 text-muted-foreground text-sm">No tutors found</div>';
     } else {
-    tutorDropdown.innerHTML = results.map(t => `
+        tutorDropdown.innerHTML = results.map(t => `
         <div class="flex items-center gap-3 px-4 py-3 cursor-pointer rounded-lg hover:bg-muted transition-colors" onclick="selectTutor(${t.id})">
         <div class="w-8 h-8 bg-sky-500/20 rounded-full flex items-center justify-center flex-shrink-0">
             <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +224,7 @@ tutorInput.addEventListener('input', function () {
 // Re-open dropdown on focus if there's a search query
 tutorInput.addEventListener('focus', function () {
     if (this.value.trim().length > 0) {
-    this.dispatchEvent(new Event('input')); // Re-trigger search
+        this.dispatchEvent(new Event('input')); // Re-trigger search
     }
 });
 
@@ -286,7 +286,7 @@ function closeDropdown() {
 // Close dropdown when clicking outside the search wrapper
 document.addEventListener('click', function (e) {
     if (!document.getElementById('tutorSearchWrapper').contains(e.target)) {
-    closeDropdown();
+        closeDropdown();
     }
 });
 
@@ -317,18 +317,18 @@ function monthLabel(monthStr) {
  */
 function generateAllTutorsData(month) {
     return tutors.map(t => {
-    const mHours = Math.floor(Math.random() * 20) + 5;
-    const sHours = Math.floor(Math.random() * 15) + 3;
-    const uHours = Math.floor(Math.random() * 10) + 1;
-    return {
-        'Tutor Name': t.name,
-        'Subject': t.subject,
-        'Class M (hours)': mHours,
-        'Class S (hours)': sHours,
-        'Class U (hours)': uHours,
-        'Total Hours': mHours + sHours + uHours,
-        'Month': monthLabel(month)
-    };
+        const mHours = Math.floor(Math.random() * 20) + 5;
+        const sHours = Math.floor(Math.random() * 15) + 3;
+        const uHours = Math.floor(Math.random() * 10) + 1;
+        return {
+            'Tutor Name': t.name,
+            'Subject': t.subject,
+            'Class M (hours)': mHours,
+            'Class S (hours)': sHours,
+            'Class U (hours)': uHours,
+            'Total Hours': mHours + sHours + uHours,
+            'Month': monthLabel(month)
+        };
     });
 }
 
@@ -340,22 +340,22 @@ function generateAllTutorsData(month) {
  */
 function generateAllStudentsData(month) {
     const students = [
-    'Mario Rossi', 'Giulia Bianchi', 'Luca Verdi', 'Anna Neri',
-    'Marco Gialli', 'Sara Greco', 'Davide Mazza', 'Francesca Fontana',
-    'Alessandro Barbieri', 'Valentina Costa', 'Simone Leone', 'Martina Moretti'
+        'Mario Rossi', 'Giulia Bianchi', 'Luca Verdi', 'Anna Neri',
+        'Marco Gialli', 'Sara Greco', 'Davide Mazza', 'Francesca Fontana',
+        'Alessandro Barbieri', 'Valentina Costa', 'Simone Leone', 'Martina Moretti'
     ];
     return students.map(s => {
-    const mHours = Math.floor(Math.random() * 12) + 1;
-    const sHours = Math.floor(Math.random() * 10) + 1;
-    const uHours = Math.floor(Math.random() * 6);
-    return {
-        'Student Name': s,
-        'Class M (hours)': mHours,
-        'Class S (hours)': sHours,
-        'Class U (hours)': uHours,
-        'Total Hours': mHours + sHours + uHours,
-        'Month': monthLabel(month)
-    };
+        const mHours = Math.floor(Math.random() * 12) + 1;
+        const sHours = Math.floor(Math.random() * 10) + 1;
+        const uHours = Math.floor(Math.random() * 6);
+        return {
+            'Student Name': s,
+            'Class M (hours)': mHours,
+            'Class S (hours)': sHours,
+            'Class U (hours)': uHours,
+            'Total Hours': mHours + sHours + uHours,
+            'Month': monthLabel(month)
+        };
     });
 }
 
@@ -372,32 +372,32 @@ function generateSingleTutorData(tutor) {
     const classes = ['M', 'S', 'U'];
     const rows = [];
     for (let m = 0; m < 6; m++) {
-    const date = new Date();
-    date.setMonth(date.getMonth() - m);
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const count = Math.floor(Math.random() * 10) + 8;
-    for (let i = 0; i < count; i++) {
-        const day = Math.floor(Math.random() * daysInMonth) + 1;
-        const startHour = Math.floor(Math.random() * 8) + 9;
-        const duration = Math.random() > 0.5 ? 1 : 1.5;
-        rows.push({
-        'Tutor': tutor.name,
-        'Subject': tutor.subject,
-        'Date': `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`,
-        'Student': students[Math.floor(Math.random() * students.length)],
-        'Class Type': classes[Math.floor(Math.random() * classes.length)],
-        'Start Time': `${startHour.toString().padStart(2, '0')}:00`,
-        'End Time': `${Math.floor(startHour + duration).toString().padStart(2, '0')}:${duration % 1 ? '30' : '00'}`,
-        'Duration (hours)': duration
-        });
-    }
+        const date = new Date();
+        date.setMonth(date.getMonth() - m);
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const count = Math.floor(Math.random() * 10) + 8;
+        for (let i = 0; i < count; i++) {
+            const day = Math.floor(Math.random() * daysInMonth) + 1;
+            const startHour = Math.floor(Math.random() * 8) + 9;
+            const duration = Math.random() > 0.5 ? 1 : 1.5;
+            rows.push({
+                'Tutor': tutor.name,
+                'Subject': tutor.subject,
+                'Date': `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`,
+                'Student': students[Math.floor(Math.random() * students.length)],
+                'Class Type': classes[Math.floor(Math.random() * classes.length)],
+                'Start Time': `${startHour.toString().padStart(2, '0')}:00`,
+                'End Time': `${Math.floor(startHour + duration).toString().padStart(2, '0')}:${duration % 1 ? '30' : '00'}`,
+                'Duration (hours)': duration
+            });
+        }
     }
     return rows.sort((a, b) => {
-    const [dA, mA, yA] = a.Date.split('/');
-    const [dB, mB, yB] = b.Date.split('/');
-    return new Date(yB, mB - 1, dB) - new Date(yA, mA - 1, dA);
+        const [dA, mA, yA] = a.Date.split('/');
+        const [dB, mB, yB] = b.Date.split('/');
+        return new Date(yB, mB - 1, dB) - new Date(yA, mA - 1, dA);
     });
 }
 
@@ -418,7 +418,7 @@ function downloadXLSX(data, filename) {
     const ws = XLSX.utils.json_to_sheet(data);
     // Auto-size columns based on content and header length
     const colWidths = Object.keys(data[0]).map(key => ({
-    wch: Math.max(key.length, ...data.map(row => String(row[key]).length)) + 2
+        wch: Math.max(key.length, ...data.map(row => String(row[key]).length)) + 2
     }));
     ws['!cols'] = colWidths;
     const wb = XLSX.utils.book_new();
@@ -443,22 +443,22 @@ function downloadXLSX(data, filename) {
  */
 async function downloadAllTutorsHours() {
     const month = document.getElementById('tutorAllMonth').value;
-    if (!month) { 
-        showToast('Please select a month'); 
-        return; 
+    if (!month) {
+        showToast('Please select a month');
+        return;
     }
-    
+
     try {
         showToast('Generating report...');
-        
+
         // Call the server endpoint to generate Excel
-        const response = await fetch(`/api/reports/lessons-by-month?month=${month}`);
-        
+        const response = await fetch(`/api/reports/lessons-by-month?month=${month}`, { credentials: 'same-origin' });
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Failed to generate report');
         }
-        
+
         // Extract filename from Content-Disposition header if present
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = 'lessons_report.xlsx';
@@ -468,7 +468,7 @@ async function downloadAllTutorsHours() {
                 filename = matches[1];
             }
         }
-        
+
         // Convert response to blob and download
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -479,7 +479,7 @@ async function downloadAllTutorsHours() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         addRecentDownload(filename, 'tutor');
         showToast(`Downloaded: ${filename}`);
     } catch (error) {
@@ -500,22 +500,22 @@ async function downloadAllTutorsHours() {
  */
 async function downloadAllStudentsHours() {
     const month = document.getElementById('studentAllMonth').value;
-    if (!month) { 
-        showToast('Please select a month'); 
-        return; 
+    if (!month) {
+        showToast('Please select a month');
+        return;
     }
-    
+
     try {
         showToast('Generating report...');
-        
+
         // Call the server endpoint to generate Excel
-        const response = await fetch(`/api/reports/lessons-by-student?month=${month}`);
-        
+        const response = await fetch(`/api/reports/lessons-by-student?month=${month}`, { credentials: 'same-origin' });
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Failed to generate report');
         }
-        
+
         // Get the filename from Content-Disposition header
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = 'students_report.xlsx';
@@ -525,7 +525,7 @@ async function downloadAllStudentsHours() {
                 filename = matches[1];
             }
         }
-        
+
         // Convert response to blob and download
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -536,7 +536,7 @@ async function downloadAllStudentsHours() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         addRecentDownload(filename, 'student');
         showToast(`Downloaded: ${filename}`);
     } catch (error) {
@@ -557,22 +557,22 @@ async function downloadAllStudentsHours() {
  */
 async function downloadTutorMonthlyStats() {
     const year = document.getElementById('tutorStatsYear').value;
-    if (!year) { 
-        showToast('Please select a year'); 
-        return; 
+    if (!year) {
+        showToast('Please select a year');
+        return;
     }
-    
+
     try {
         showToast('Generating statistics report...');
-        
+
         // Call the server endpoint to generate Excel
-        const response = await fetch(`/api/reports/tutors-monthly-stats?year=${year}`);
-        
+        const response = await fetch(`/api/reports/tutors-monthly-stats?year=${year}`, { credentials: 'same-origin' });
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Failed to generate report');
         }
-        
+
         // Get the filename from Content-Disposition header
         const contentDisposition = response.headers.get('Content-Disposition');
         let filename = `Tutors_Monthly_Report_${year}.xlsx`;
@@ -582,7 +582,7 @@ async function downloadTutorMonthlyStats() {
                 filename = matches[1];
             }
         }
-        
+
         // Convert response to blob and download
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -593,7 +593,7 @@ async function downloadTutorMonthlyStats() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        
+
         addRecentDownload(filename, 'tutor');
         showToast(`Downloaded: ${filename}`);
     } catch (error) {
@@ -612,8 +612,8 @@ async function downloadTutorMonthlyStats() {
  */
 function downloadSingleTutorHours() {
     if (!selectedTutor) {
-    showToast('Please select a tutor first');
-    return;
+        showToast('Please select a tutor first');
+        return;
     }
     const data = generateSingleTutorData(selectedTutor);
     const safeName = selectedTutor.name.replace(/\s+/g, '_');
