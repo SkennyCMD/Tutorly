@@ -69,7 +69,7 @@ function fetchFromJavaAPI(path, method = 'GET', data = null) {
     return new Promise((resolve, reject) => {
         // Stringify request body if data is provided
         const postData = data ? JSON.stringify(data) : null;
-        
+
         // Configure HTTPS request options
         const options = {
             hostname: 'localhost',
@@ -133,7 +133,7 @@ function fetchFromJavaAPI(path, method = 'GET', data = null) {
         if (postData) {
             req.write(postData);
         }
-        
+
         // Send the request
         req.end();
     });
@@ -201,7 +201,7 @@ function fetchCalendarNotesByTutor(tutorId) {
  * // Returns notes for September 2024
  */
 function fetchCalendarNotesByDateRange(startTime, endTime) {
-    return fetchFromJavaAPI(`/api/calendar-notes/date-range?startTime=${startTime}&endTime=${endTime}`, 'GET')
+    return fetchFromJavaAPI(`/api/calendar-notes/date-range?start=${startTime}&end=${endTime}`, 'GET')
         .then(data => data || [])
         .catch(error => {
             console.error('Error fetching calendar notes:', error);
