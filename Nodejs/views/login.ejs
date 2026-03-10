@@ -19,6 +19,7 @@ Features:
 <html lang="en">
 <!-- HEAD: Page Configuration -->
 <!-- Tailwind CSS with custom light theme, Google Fonts (Inter), and login-specific styles -->
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,17 +50,20 @@ Features:
       }
     }
   </script>
+  <%- include('partials/pwa-setup') %>
 </head>
+
 <body class="font-sans bg-background min-h-screen flex flex-col">
-  
+
   <!-- HEADER: Top Navigation -->
   <!-- Logo and navigation link to become a tutor -->
   <header class="w-full py-4 px-6 md:px-12">
     <div class="max-w-7xl mx-auto flex items-center justify-between">
       <a href="#" class="flex items-center gap-2">
-        <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-          <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+        <svg class="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+          <path d="M6 12v5c3 3 9 3 12 0v-5" />
         </svg>
         <span class="text-xl font-bold text-foreground">Tutorly</span>
       </a>
@@ -85,58 +89,43 @@ Features:
           <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
             <%= error %>
           </div>
-        <% } %>
+          <% } %>
 
-        <!-- Login Form: Username, password, remember me, and submit button -->
-        <form action="/login" method="POST" class="space-y-5">
-          <!-- Username Field: Tutor username input -->
-          <div>
-            <label for="email" class="block text-sm font-medium text-foreground mb-2">Email address</label>
-            <input 
-              type="text" 
-              id="username" 
-              name="username" 
-              placeholder="username"
-              class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              required
-            >
-          </div>
+            <!-- Login Form: Username, password, remember me, and submit button -->
+            <form action="/login" method="POST" class="space-y-5">
+              <!-- Username Field: Tutor username input -->
+              <div>
+                <label for="email" class="block text-sm font-medium text-foreground mb-2">Email address</label>
+                <input type="text" id="username" name="username" placeholder="username"
+                  class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  required>
+              </div>
 
-          <!-- Password Field: Secure password input with forgot password link -->
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <label for="password" class="block text-sm font-medium text-foreground">Password</label>
-              <a href="#" class="text-sm text-primary hover:text-primary-hover transition-colors">Forgot password?</a>
-            </div>
-            <input 
-              type="password" 
-              id="password" 
-              name="password" 
-              placeholder="••••••••"
-              class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              required
-            >
-          </div>
+              <!-- Password Field: Secure password input with forgot password link -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label for="password" class="block text-sm font-medium text-foreground">Password</label>
+                  <a href="#" class="text-sm text-primary hover:text-primary-hover transition-colors">Forgot
+                    password?</a>
+                </div>
+                <input type="password" id="password" name="password" placeholder="••••••••"
+                  class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  required>
+              </div>
 
-          <!-- Remember Me Checkbox: Keep user logged in for 30 days -->
-          <div class="flex items-center gap-2">
-            <input 
-              type="checkbox" 
-              id="remember" 
-              name="remember"
-              class="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
-            >
-            <label for="remember" class="text-sm text-muted cursor-pointer">Remember me for 30 days</label>
-          </div>
+              <!-- Remember Me Checkbox: Keep user logged in for 30 days -->
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="remember" name="remember"
+                  class="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer">
+                <label for="remember" class="text-sm text-muted cursor-pointer">Remember me for 30 days</label>
+              </div>
 
-          <!-- Submit Button: Sign in to Tutorly platform -->
-          <button 
-            type="submit"
-            class="w-full py-3 px-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all"
-          >
-            Sign in
-          </button>
-        </form>
+              <!-- Submit Button: Sign in to Tutorly platform -->
+              <button type="submit"
+                class="w-full py-3 px-4 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all">
+                Sign in
+              </button>
+            </form>
 
       </div>
 
@@ -157,4 +146,5 @@ Features:
   </footer>
 
 </body>
+
 </html>

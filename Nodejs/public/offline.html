@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Tutorly</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#0a0a0a',
+                        foreground: '#fafafa',
+                        card: '#141414',
+                        muted: '#262626',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-foreground h-screen flex flex-col items-center justify-center text-center p-6">
+    <div class="bg-card p-8 rounded-xl border border-muted max-w-md w-full">
+        <svg class="w-16 h-16 text-muted-foreground mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+        </svg>
+        <h1 class="text-2xl font-bold mb-2">You are offline</h1>
+        <p class="text-muted-foreground mb-6">It seems you lost your internet connection. Check your network and try again.</p>
+        <button onclick="window.location.reload()" class="bg-foreground text-background font-medium py-2 px-6 rounded-lg hover:opacity-90 transition">
+            Retry Connection
+        </button>
+    </div>
+</body>
+</html>

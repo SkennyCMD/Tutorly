@@ -20,6 +20,7 @@ Features:
 <html lang="en">
 <!-- HEAD: Page Configuration -->
 <!-- Tailwind CSS configuration with custom dark theme and calendar-specific colors -->
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,21 +54,24 @@ Features:
     }
   </script>
   <link rel="stylesheet" href="/css/calendar.css">
+  <%- include('partials/pwa-setup') %>
 </head>
+
 <body class="bg-background text-foreground min-h-screen">
-  
+
   <!-- HEADER: Top Navigation Bar -->
   <!-- Logo, navigation links, action buttons (Add Prenotation/Note), and logout -->
   <header class="bg-card border-b border-border sticky top-0 z-40">
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
-        
+
         <!-- Logo with link to home/dashboard -->
         <a href="/home" class="flex items-center gap-2">
           <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
             </svg>
           </div>
           <span class="text-xl font-bold text-foreground">Tutorly</span>
@@ -79,31 +83,35 @@ Features:
           <a href="/calendar" class="text-foreground font-medium">Calendar</a>
           <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors">My Lessons</a>
           <!-- STAFF role-based link to Staff Panel -->
-          <% if (user && user.role === 'STAFF') { %>
+          <% if (user && user.role==='STAFF' ) { %>
             <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors">Staff Panel</a>
-          <% } %>
+            <% } %>
         </nav>
 
         <!-- Action Buttons: Add Prenotation, Add Note, Logout (Desktop only) -->
         <div class="hidden md:flex items-center gap-3">
-          <button id="addLessonBtn" class="inline-flex items-center gap-2 bg-lesson text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-lesson/90 transition-colors">
+          <button id="addLessonBtn"
+            class="inline-flex items-center gap-2 bg-lesson text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-lesson/90 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
             Prenotation
           </button>
-          <button id="addNoteBtn" class="inline-flex items-center gap-2 bg-note text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-note/90 transition-colors">
+          <button id="addNoteBtn"
+            class="inline-flex items-center gap-2 bg-note text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-note/90 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
             Note
           </button>
           <!-- Logout form button -->
           <div class="hidden md:flex items-center">
             <form action="/logout" method="POST" class="inline">
-              <button type="submit" class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
+              <button type="submit"
+                class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
                 <span class="text-sm font-medium">Logout</span>
               </button>
@@ -114,7 +122,7 @@ Features:
         <!-- Mobile menu toggle button -->
         <button id="menuToggle" class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       </div>
@@ -126,72 +134,85 @@ Features:
   <div id="menuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
   <!-- Mobile Sidebar: Navigation links, action buttons, and logout -->
-  <aside id="mobileMenu" class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
+  <aside id="mobileMenu"
+    class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
     <div class="p-4 border-b border-border flex items-center justify-between">
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
           <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
           </svg>
         </div>
         <span class="text-lg font-bold text-foreground">Tutorly</span>
       </div>
       <button id="closeMenu" class="p-2 rounded-lg hover:bg-secondary transition-colors">
         <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
     </div>
     <nav class="p-4 flex flex-col gap-2">
-      <a href="/home" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+      <a href="/home"
+        class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
         Dashboard
       </a>
       <a href="/calendar" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
         Calendar
       </a>
-      <a href="/lessons" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+      <a href="/lessons"
+        class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
         </svg>
         My Lessons
       </a>
       <!-- STAFF role-based link in mobile menu -->
-      <% if (user && user.role === 'STAFF') { %>
-        <a href="/staffPanel" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+      <% if (user && user.role==='STAFF' ) { %>
+        <a href="/staffPanel"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
           Staff Panel
         </a>
-      <% } %>
+        <% } %>
     </nav>
-    
+
     <!-- Mobile Action Buttons: Add Lesson, Add Note, Logout -->
     <div class="p-4 border-t border-border mt-auto">
       <div class="flex flex-col gap-2">
-        <button onclick="openLessonModal()" class="flex items-center justify-center gap-2 bg-lesson text-white px-4 py-2.5 rounded-lg font-medium">
+        <button onclick="openLessonModal()"
+          class="flex items-center justify-center gap-2 bg-lesson text-white px-4 py-2.5 rounded-lg font-medium">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           Add Lesson
         </button>
-        <button onclick="openNoteModal()" class="flex items-center justify-center gap-2 bg-note text-white px-4 py-2.5 rounded-lg font-medium">
+        <button onclick="openNoteModal()"
+          class="flex items-center justify-center gap-2 bg-note text-white px-4 py-2.5 rounded-lg font-medium">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
           Add Note
         </button>
         <form action="/logout" method="POST" class="mt-2">
-          <button type="submit" class="w-full flex items-center justify-center gap-2 border border-destructive text-destructive px-4 py-2.5 rounded-lg font-medium hover:bg-destructive hover:text-white transition-colors">
+          <button type="submit"
+            class="w-full flex items-center justify-center gap-2 border border-destructive text-destructive px-4 py-2.5 rounded-lg font-medium hover:bg-destructive hover:text-white transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
             Logout
           </button>
@@ -202,29 +223,30 @@ Features:
 
   <!-- MAIN CONTENT: Calendar Display -->
   <main class="flex flex-col h-[calc(100vh-64px)]">
-    
+
     <!-- Calendar Header: Today button, week navigation, date label, and event legend -->
     <div class="bg-card border-b border-border px-4 sm:px-6 py-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-4">
-          <button id="todayBtn" class="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors">
+          <button id="todayBtn"
+            class="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors">
             Today
           </button>
           <div class="flex items-center gap-1">
             <button id="prevWeek" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
               <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <button id="nextWeek" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
               <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
           <h2 id="currentWeekLabel" class="text-lg font-semibold text-foreground"></h2>
         </div>
-        
+
         <!-- Color legend for event types (Prenotation = blue, Note = orange) -->
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
@@ -241,7 +263,7 @@ Features:
 
     <!-- Calendar View: Desktop week grid and mobile day view -->
     <div class="flex-1 overflow-auto custom-scrollbar">
-      
+
       <!-- Desktop Week View: 7-day grid with time slots from 8:00 to 22:00 -->
       <div id="weekView" class="hidden md:block min-w-[800px]">
         <!-- Day Headers: Column headers for each day of the week -->
@@ -251,7 +273,7 @@ Features:
             <!-- Day headers will be rendered here -->
           </div>
         </div>
-        
+
         <!-- Time Grid: Hourly rows with event blocks positioned by time -->
         <div class="calendar-grid" id="timeGrid">
           <!-- Time slots and events will be rendered here -->
@@ -264,7 +286,7 @@ Features:
         <div class="flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
           <button id="prevDay" class="p-2 rounded-lg hover:bg-secondary transition-colors">
             <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div class="text-center">
@@ -273,11 +295,11 @@ Features:
           </div>
           <button id="nextDay" class="p-2 rounded-lg hover:bg-secondary transition-colors">
             <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </button>
         </div>
-        
+
         <!-- Mobile Time Grid: Single-column time slots for selected day -->
         <div id="mobileTimeGrid" class="calendar-grid">
           <!-- Mobile time slots will be rendered here -->
@@ -290,35 +312,40 @@ Features:
   <!-- Add Lesson Modal: Form to create new prenotation with student selection and time -->
   <div id="addLessonModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeLessonModal()"></div>
-    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+    <div
+      class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-semibold text-foreground">Add New Prenotation</h2>
         <button onclick="closeLessonModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      
+
       <!-- Form with student search/select, date/time pickers, and tutor assignment -->
       <form id="lessonForm" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
-          <input type="text" id="studentSearch" placeholder="Search by name..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" autocomplete="off">
+          <input type="text" id="studentSearch" placeholder="Search by name..."
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            autocomplete="off">
         </div>
 
         <!-- Student selection dropdown with option to add new student -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-medium text-foreground">Select Student</label>
-            <button type="button" onclick="openAddStudentModal()" class="text-xs text-primary hover:underline flex items-center gap-1">
+            <button type="button" onclick="openAddStudentModal()"
+              class="text-xs text-primary hover:underline flex items-center gap-1">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
               Add New Student
             </button>
           </div>
-          <select id="studentSelect" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <select id="studentSelect" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">-- Select a student --</option>
           </select>
         </div>
@@ -326,18 +353,21 @@ Features:
         <!-- Date picker for lesson -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
-          <input type="date" id="lessonDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <input type="date" id="lessonDate" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <!-- Start and End time pickers (15-minute intervals) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
-            <input type="time" id="lessonStartTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <input type="time" id="lessonStartTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
-            <input type="time" id="lessonEndTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <input type="time" id="lessonEndTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
         </div>
 
@@ -345,16 +375,21 @@ Features:
         <div id="lessonAssignToSection">
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-medium text-foreground">Assign To</label>
-            <button type="button" onclick="assignLessonToMyself()" class="text-xs text-primary hover:underline">Assign to myself</button>
+            <button type="button" onclick="assignLessonToMyself()" class="text-xs text-primary hover:underline">Assign
+              to myself</button>
           </div>
-          <div id="lessonTutorsContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
+          <div id="lessonTutorsContainer"
+            class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
             <!-- Tutor checkboxes will be loaded dynamically from server data -->
           </div>
         </div>
 
         <div class="flex gap-3 pt-4">
-          <button type="button" onclick="closeLessonModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
-          <button type="submit" class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors">Add Prenotation</button>
+          <button type="button" onclick="closeLessonModal()"
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit"
+            class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors">Add
+            Prenotation</button>
         </div>
       </form>
     </div>
@@ -363,39 +398,44 @@ Features:
   <!-- Add Note Modal: Form to create new calendar note with description and time -->
   <div id="addNoteModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeNoteModal()"></div>
-    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+    <div
+      class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-semibold text-foreground">Add New Note</h2>
         <button onclick="closeNoteModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      
+
       <!-- Form with description, date/time pickers, and tutor assignment -->
       <form id="noteForm" class="space-y-4">
         <!-- Note description textarea -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
-          <textarea id="noteDescription" required placeholder="Enter note description..." rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
+          <textarea id="noteDescription" required placeholder="Enter note description..." rows="3"
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
         <!-- Date picker for note -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
-          <input type="date" id="noteDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <input type="date" id="noteDate" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <!-- Start and End time pickers (15-minute intervals) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
-            <input type="time" id="noteStartTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <input type="time" id="noteStartTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
-            <input type="time" id="noteEndTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <input type="time" id="noteEndTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
         </div>
 
@@ -403,16 +443,21 @@ Features:
         <div id="assignToSection">
           <div class="flex items-center justify-between mb-1.5">
             <label class="block text-sm font-medium text-foreground">Assign To</label>
-            <button type="button" onclick="assignToMyself()" class="text-xs text-primary hover:underline">Assign to myself</button>
+            <button type="button" onclick="assignToMyself()" class="text-xs text-primary hover:underline">Assign to
+              myself</button>
           </div>
-          <div id="assigneesContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
+          <div id="assigneesContainer"
+            class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
             <!-- Tutor checkboxes will be loaded dynamically from server data -->
           </div>
         </div>
 
         <div class="flex gap-3 pt-4">
-          <button type="button" onclick="closeNoteModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
-          <button type="submit" class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors">Add Note</button>
+          <button type="button" onclick="closeNoteModal()"
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit"
+            class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors">Add
+            Note</button>
         </div>
       </form>
     </div>
@@ -426,27 +471,30 @@ Features:
         <h2 class="text-xl font-semibold text-foreground">Add New Student</h2>
         <button onclick="closeAddStudentModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      
+
       <!-- Form with first name, last name, class selection, and optional description -->
       <form id="addStudentForm" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">First Name</label>
-          <input type="text" id="studentName" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <input type="text" id="studentName" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Last Name</label>
-          <input type="text" id="studentSurname" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <input type="text" id="studentSurname" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <!-- Class selection: M (Media/Middle School), S (Superiore/High School), U (Università/University) -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Class</label>
-          <select id="studentClass" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <select id="studentClass" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">-- Select class --</option>
             <option value="M">M (Media)</option>
             <option value="S">S (Superiore)</option>
@@ -456,12 +504,16 @@ Features:
 
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Description (Optional)</label>
-          <textarea id="studentDescription" rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
+          <textarea id="studentDescription" rows="3"
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
         <div class="flex gap-3 pt-4">
-          <button type="button" onclick="closeAddStudentModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
-          <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add Student</button>
+          <button type="button" onclick="closeAddStudentModal()"
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit"
+            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add
+            Student</button>
         </div>
       </form>
     </div>
@@ -470,62 +522,73 @@ Features:
   <!-- Edit Prenotation Modal: Form to modify existing lesson or delete it -->
   <div id="editPrenotationModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeEditPrenotationModal()"></div>
-    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+    <div
+      class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-semibold text-foreground">Edit Prenotation</h2>
         <button onclick="closeEditPrenotationModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      
+
       <!-- Form with hidden ID field, student search/select, date/time pickers, tutor assignment, and delete option -->
       <form id="editPrenotationForm" class="space-y-4">
         <input type="hidden" id="editPrenotationId">
-        
+
         <!-- Student search field with autocomplete filtering -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
-          <input type="text" id="editStudentSearch" placeholder="Search by name..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" autocomplete="off">
+          <input type="text" id="editStudentSearch" placeholder="Search by name..."
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            autocomplete="off">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Select Student</label>
-          <select id="editStudentSelect" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <select id="editStudentSelect" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <option value="">-- Select a student --</option>
           </select>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
-          <input type="date" id="editPrenotationDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <input type="date" id="editPrenotationDate" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
-            <input type="time" id="editPrenotationStartTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <input type="time" id="editPrenotationStartTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
-            <input type="time" id="editPrenotationEndTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <input type="time" id="editPrenotationEndTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
         </div>
 
         <!-- Tutor assignment section for editing -->
         <div id="editPrenotationAssignToSection">
           <label class="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
-          <div id="editPrenotationTutorsContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
+          <div id="editPrenotationTutorsContainer"
+            class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
             <!-- Tutor checkboxes will be loaded dynamically -->
           </div>
         </div>
 
         <!-- Action buttons: Delete, Cancel, Update -->
         <div class="flex gap-3 pt-4">
-          <button type="button" onclick="deletePrenotation()" class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
-          <button type="button" onclick="closeEditPrenotationModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
-          <button type="submit" class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors">Update</button>
+          <button type="button" onclick="deletePrenotation()"
+            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
+          <button type="button" onclick="closeEditPrenotationModal()"
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit"
+            class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors">Update</button>
         </div>
       </form>
     </div>
@@ -534,55 +597,64 @@ Features:
   <!-- Edit Note Modal: Form to modify existing note or delete it -->
   <div id="editNoteModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeEditNoteModal()"></div>
-    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+    <div
+      class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-semibold text-foreground">Edit Note</h2>
         <button onclick="closeEditNoteModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      
+
       <!-- Form with hidden ID field, description, date/time pickers, tutor assignment, and delete option -->
       <form id="editNoteForm" class="space-y-4">
         <input type="hidden" id="editNoteId">
-        
+
         <!-- Note description textarea -->
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
-          <textarea id="editNoteDescription" required placeholder="Enter note description..." rows="3" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
+          <textarea id="editNoteDescription" required placeholder="Enter note description..." rows="3"
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
-          <input type="date" id="editNoteDate" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <input type="date" id="editNoteDate" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
-            <input type="time" id="editNoteStartTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <input type="time" id="editNoteStartTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
-            <input type="time" id="editNoteEndTime" required step="900" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <input type="time" id="editNoteEndTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
         </div>
 
         <!-- Tutor assignment section for editing -->
         <div id="editNoteAssignToSection">
           <label class="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
-          <div id="editNoteAssigneesContainer" class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
+          <div id="editNoteAssigneesContainer"
+            class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
             <!-- Tutor checkboxes will be loaded dynamically -->
           </div>
         </div>
 
         <!-- Action buttons: Delete, Cancel, Update -->
         <div class="flex gap-3 pt-4">
-          <button type="button" onclick="deleteNote()" class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
-          <button type="button" onclick="closeEditNoteModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
-          <button type="submit" class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors">Update</button>
+          <button type="button" onclick="deleteNote()"
+            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
+          <button type="button" onclick="closeEditNoteModal()"
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit"
+            class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors">Update</button>
         </div>
       </form>
     </div>
@@ -593,10 +665,10 @@ Features:
   <script>
     // Pass server-side data to JavaScript for client-side rendering
     window.serverData = {
-      prenotations: <%- JSON.stringify(prenotations) %>,
-      calendarNotes: <%- JSON.stringify(calendarNotes) %>,
-      students: <%- JSON.stringify(students) %>,
-      tutors: <%- JSON.stringify(tutors) %>,
+      prenotations: <% - JSON.stringify(prenotations) %>,
+      calendarNotes: <% - JSON.stringify(calendarNotes) %>,
+      students: <% - JSON.stringify(students) %>,
+      tutors: <% - JSON.stringify(tutors) %>,
       currentUserId: <%= userId %>,
       userRole: '<%= user.role %>'
     };
@@ -604,4 +676,5 @@ Features:
   <!-- JavaScript for calendar rendering, event management, and modal interactions -->
   <script src="/js/calendarScript.js"></script>
 </body>
+
 </html>
