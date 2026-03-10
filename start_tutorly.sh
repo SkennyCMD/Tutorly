@@ -54,8 +54,14 @@ echo "[2/3] Starting Java Backend..."
 cd Java/backend-api
 # Check if mvnw is executable
 chmod +x mvnw
-# Run in background
-./mvnw spring-boot:run &
+# Build the application if the JAR does not exist
+if [ ! -f "target/backend-api-0.0.1-SNAPSHOT.jar" ]; then
+    echo "Building backend JAR... (this may take a minute)"
+    ./mvnw clean package -DskipTests
+fi
+
+# Run the compiled JAR in background with memory limits to prevent OOM killer (exit 137)
+java -Xmx512m -jar target/backend-api-0.0.1-SNAPSHOT.jar &
 BACKEND_PID=$!
 echo "Backend starting with PID $BACKEND_PID"
 cd ../..
