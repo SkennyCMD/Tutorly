@@ -2,7 +2,6 @@ const CACHE_NAME = 'tutorly-cache-v1-' + new Date().toISOString().split('T')[0];
 const STATIC_ASSETS = [
     '/css/home.css',
     '/js/homeScript.js',
-    '/js/itemDetailsModal.js',
     '/js/modalShared.js',
     '/icons/icon.svg',
     '/offline.html',
