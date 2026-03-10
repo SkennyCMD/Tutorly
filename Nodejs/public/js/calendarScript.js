@@ -84,13 +84,13 @@ if (window.serverData && window.serverData.prenotations) {
   window.serverData.prenotations.forEach(prenotation => {
     const startDate = parseAsLocalDate(prenotation.startTime);
     const endDate = parseAsLocalDate(prenotation.endTime);
-    
+
     // Format date in local timezone to avoid timezone shifts
     const year = startDate.getFullYear();
     const month = String(startDate.getMonth() + 1).padStart(2, '0');
     const day = String(startDate.getDate()).padStart(2, '0');
     const localDateStr = `${year}-${month}-${day}`;
-    
+
     events.push({
       id: prenotation.id,
       type: 'lesson',
@@ -119,13 +119,13 @@ if (window.serverData && window.serverData.calendarNotes) {
   window.serverData.calendarNotes.forEach(note => {
     const startDate = parseAsLocalDate(note.startTime);
     const endDate = parseAsLocalDate(note.endTime);
-    
+
     // Format date in local timezone to avoid timezone shifts
     const year = startDate.getFullYear();
     const month = String(startDate.getMonth() + 1).padStart(2, '0');
     const day = String(startDate.getDate()).padStart(2, '0');
     const localDateStr = `${year}-${month}-${day}`;
-    
+
     events.push({
       id: note.id,
       type: 'note',
@@ -278,11 +278,11 @@ async function loadTutors() {
 function updateAssigneesContainer(tutors) {
   const container = document.getElementById('assigneesContainer');
   if (!container) return;
-  
+
   const currentUserId = window.serverData?.currentUserId;
   const userRole = window.serverData?.userRole;
   const isStaff = userRole === 'STAFF';
-  
+
   // Color classes for tutor avatars
   const colors = [
     'bg-primary/20 text-primary',
@@ -293,25 +293,25 @@ function updateAssigneesContainer(tutors) {
     'bg-orange-500/20 text-orange-400',
     'bg-teal-500/20 text-teal-400'
   ];
-  
+
   container.innerHTML = '';
-  
+
   // STAFF sees all tutors, regular users see only themselves
   const filteredTutors = isStaff ? tutors : tutors.filter(t => t.id === currentUserId);
-  
+
   if (filteredTutors.length === 0) {
     container.innerHTML = '<p class="text-sm text-muted p-3">No tutors available to assign.</p>';
     return;
   }
-  
+
   filteredTutors.forEach((tutor, index) => {
     const colorClass = colors[index % colors.length];
     const initials = (tutor.name?.substring(0, 1) || '') + (tutor.surname?.substring(0, 1) || '');
     const displayName = tutor.username + (tutor.id === currentUserId ? ' (You)' : '');
-    
+
     const label = document.createElement('label');
     label.className = 'checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors';
-    
+
     label.innerHTML = `
       <input type="checkbox" name="assignees" value="${tutor.id}" class="w-4 h-4 rounded border-border bg-background accent-primary">
       <div class="flex items-center gap-2">
@@ -321,7 +321,7 @@ function updateAssigneesContainer(tutors) {
         <span class="text-sm text-foreground">${displayName}</span>
       </div>
     `;
-    
+
     container.appendChild(label);
   });
 }
@@ -334,7 +334,7 @@ function updateAssigneesContainer(tutors) {
 function updateStudentDropdown() {
   const select = document.getElementById('studentSelect');
   select.innerHTML = '<option value="">-- Select a student --</option>';
-  
+
   filteredStudents.forEach(student => {
     const option = document.createElement('option');
     option.value = student.id;
@@ -357,13 +357,13 @@ function updateStudentDropdown() {
 function filterStudents(searchTerm) {
   const term = searchTerm.toLowerCase();
   const select = document.getElementById('studentSelect');
-  
+
   filteredStudents = allStudents.filter(student => {
     const fullName = `${student.name} ${student.surname}`.toLowerCase();
     return fullName.includes(term);
   });
   updateStudentDropdown();
-  
+
   // Auto-open dropdown and show multiple options when typing
   if (term.length > 0 && filteredStudents.length > 0) {
     select.size = Math.min(filteredStudents.length + 1, 8); // Show up to 8 options
@@ -402,9 +402,9 @@ function renderWeekView() {
 function renderWeekHeader() {
   const endOfWeek = new Date(currentWeekStart);
   endOfWeek.setDate(endOfWeek.getDate() + 6);
-  
+
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  
+
   let label = '';
   if (currentWeekStart.getMonth() === endOfWeek.getMonth()) {
     label = `${months[currentWeekStart.getMonth()]} ${currentWeekStart.getDate()} - ${endOfWeek.getDate()}, ${currentWeekStart.getFullYear()}`;
@@ -413,7 +413,7 @@ function renderWeekHeader() {
   } else {
     label = `${months[currentWeekStart.getMonth()]} ${currentWeekStart.getDate()}, ${currentWeekStart.getFullYear()} - ${months[endOfWeek.getMonth()]} ${endOfWeek.getDate()}, ${endOfWeek.getFullYear()}`;
   }
-  
+
   document.getElementById('currentWeekLabel').textContent = label;
 }
 
@@ -426,14 +426,14 @@ function renderDayHeaders() {
   const container = document.getElementById('dayHeaders');
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const today = new Date();
-  
+
   let html = '';
   for (let i = 0; i < 7; i++) {
     const date = new Date(currentWeekStart);
     date.setDate(date.getDate() + i);
-    
+
     const isToday = date.toDateString() === today.toDateString();
-    
+
     html += `
       <div class="p-2 text-center border-l border-border">
         <span class="text-xs text-muted-foreground">${days[i]}</span>
@@ -443,7 +443,7 @@ function renderDayHeaders() {
       </div>
     `;
   }
-  
+
   container.innerHTML = html;
 }
 
@@ -456,7 +456,7 @@ function renderDayHeaders() {
 function renderTimeGrid() {
   const container = document.getElementById('timeGrid');
   let html = '';
-  
+
   // Time column + 7 day columns
   for (let hour = 0; hour < 24; hour++) {
     // Time label
@@ -465,19 +465,19 @@ function renderTimeGrid() {
         <span class="text-xs text-muted-foreground">${hour.toString().padStart(2, '0')}:00</span>
       </div>
     `;
-    
+
     // Day columns
     for (let day = 0; day < 7; day++) {
       const date = new Date(currentWeekStart);
       date.setDate(date.getDate() + day);
       const dateStr = formatDate(date);
-      
+
       html += `<div class="day-column time-slot relative" data-date="${dateStr}" data-hour="${hour}"></div>`;
     }
   }
-  
+
   container.innerHTML = html;
-  
+
   // Render events on the grid after grid is created
   renderEventsOnGrid();
 }
@@ -498,7 +498,7 @@ function renderTimeGrid() {
 function renderEventsOnGrid() {
   // Clear existing events from previous render
   document.querySelectorAll('.event').forEach(el => el.remove());
-  
+
   /**
    * Check if two events overlap in time.
    * 
@@ -508,15 +508,15 @@ function renderEventsOnGrid() {
    */
   function eventsOverlap(event1, event2) {
     if (event1.date !== event2.date) return false;
-    
+
     const start1 = parseInt(event1.startTime.replace(':', ''));
     const end1 = parseInt(event1.endTime.replace(':', ''));
     const start2 = parseInt(event2.startTime.replace(':', ''));
     const end2 = parseInt(event2.endTime.replace(':', ''));
-    
+
     return start1 < end2 && start2 < end1;
   }
-  
+
   // Group overlapping events
   const eventGroups = [];
   events.forEach(event => {
@@ -532,18 +532,18 @@ function renderEventsOnGrid() {
       eventGroups.push([event]);
     }
   });
-  
+
   events.forEach(event => {
     const startHour = parseInt(event.startTime.split(':')[0]);
     const startMinutes = parseInt(event.startTime.split(':')[1]);
     const endHour = parseInt(event.endTime.split(':')[0]);
     const endMinutes = parseInt(event.endTime.split(':')[1]);
-    
+
     // Calculate height based on duration (60px per hour)
     const duration = (endHour * 60 + endMinutes) - (startHour * 60 + startMinutes);
     const heightPx = (duration / 60) * 60;
     const topOffset = (startMinutes / 60) * 60;
-    
+
     // Find the group this event belongs to
     let overlappingGroup = [];
     for (let group of eventGroups) {
@@ -552,16 +552,16 @@ function renderEventsOnGrid() {
         break;
       }
     }
-    
+
     const eventIndex = overlappingGroup.indexOf(event);
     const totalOverlapping = overlappingGroup.length;
-    
+
     // Calculate width and left position to show overlapping events side-by-side
     const widthPercent = totalOverlapping > 1 ? (100 / totalOverlapping) - 1 : 98;
     const leftPercent = totalOverlapping > 1 ? eventIndex * (100 / totalOverlapping) : 1;
-    
+
     const cell = document.querySelector(`.day-column[data-date="${event.date}"][data-hour="${startHour}"]`);
-    
+
     if (cell) {
       // Create event element with calculated position and size
       const eventEl = document.createElement('div');
@@ -573,7 +573,7 @@ function renderEventsOnGrid() {
       eventEl.style.left = `${leftPercent}%`;
       eventEl.style.right = 'auto';
       eventEl.style.cursor = 'pointer';
-      
+
       // Add click handler based on event type
       const eventId = event.id;
       const eventType = event.type;
@@ -591,12 +591,12 @@ function renderEventsOnGrid() {
           openEditNoteModal(eventId);
         });
       }
-      
+
       if (event.type === 'lesson') {
         const currentUserId = window.serverData?.currentUserId;
         const isStaff = window.serverData?.userRole === 'STAFF';
         const showTutor = isStaff && event.tutorId !== currentUserId;
-        
+
         eventEl.innerHTML = `
           <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
           <div class="opacity-75 truncate">${event.classType} · ${event.startTime}</div>
@@ -608,7 +608,7 @@ function renderEventsOnGrid() {
           <div class="opacity-75 truncate">${event.startTime}</div>
         `;
       }
-      
+
       cell.appendChild(eventEl);
     }
   });
@@ -626,10 +626,10 @@ function renderEventsOnGrid() {
 function renderMobileDayView() {
   const dateLabel = document.getElementById('mobileDateLabel');
   const dayLabel = document.getElementById('mobileDayLabel');
-  
+
   dateLabel.textContent = formatDateDisplay(currentMobileDate);
   dayLabel.textContent = getDayName(currentMobileDate);
-  
+
   renderMobileTimeGrid();
 }
 
@@ -641,9 +641,9 @@ function renderMobileDayView() {
 function renderMobileTimeGrid() {
   const container = document.getElementById('mobileTimeGrid');
   const dateStr = formatDate(currentMobileDate);
-  
+
   let html = '';
-  
+
   for (let hour = 0; hour < 24; hour++) {
     html += `
       <div class="time-slot flex items-start justify-end pr-2 pt-1">
@@ -652,9 +652,9 @@ function renderMobileTimeGrid() {
       <div class="day-column time-slot relative" data-date="${dateStr}" data-hour="${hour}" data-mobile="true"></div>
     `;
   }
-  
+
   container.innerHTML = html;
-  
+
   // Render events for the mobile view
   renderMobileEvents();
 }
@@ -668,7 +668,7 @@ function renderMobileTimeGrid() {
 function renderMobileEvents() {
   const dateStr = formatDate(currentMobileDate);
   const dayEvents = events.filter(e => e.date === dateStr);
-  
+
   /**
    * Check if two events overlap in time (mobile version).
    * 
@@ -681,10 +681,10 @@ function renderMobileEvents() {
     const end1 = parseInt(event1.endTime.replace(':', ''));
     const start2 = parseInt(event2.startTime.replace(':', ''));
     const end2 = parseInt(event2.endTime.replace(':', ''));
-    
+
     return start1 < end2 && start2 < end1;
   }
-  
+
   // Group overlapping events
   const eventGroups = [];
   dayEvents.forEach(event => {
@@ -700,17 +700,17 @@ function renderMobileEvents() {
       eventGroups.push([event]);
     }
   });
-  
+
   dayEvents.forEach(event => {
     const startHour = parseInt(event.startTime.split(':')[0]);
     const startMinutes = parseInt(event.startTime.split(':')[1]);
     const endHour = parseInt(event.endTime.split(':')[0]);
     const endMinutes = parseInt(event.endTime.split(':')[1]);
-    
+
     const duration = (endHour * 60 + endMinutes) - (startHour * 60 + startMinutes);
     const heightPx = (duration / 60) * 60;
     const topOffset = (startMinutes / 60) * 60;
-    
+
     // Find the group this event belongs to
     let overlappingGroup = [];
     for (let group of eventGroups) {
@@ -719,15 +719,15 @@ function renderMobileEvents() {
         break;
       }
     }
-    
+
     const eventIndex = overlappingGroup.indexOf(event);
     const totalOverlapping = overlappingGroup.length;
-    
+
     const widthPercent = totalOverlapping > 1 ? (100 / totalOverlapping) - 1 : 98;
     const leftPercent = totalOverlapping > 1 ? eventIndex * (100 / totalOverlapping) : 1;
-    
+
     const cell = document.querySelector(`.day-column[data-date="${dateStr}"][data-hour="${startHour}"][data-mobile="true"]`);
-    
+
     if (cell) {
       const eventEl = document.createElement('div');
       eventEl.className = `event event-${event.type}`;
@@ -738,7 +738,7 @@ function renderMobileEvents() {
       eventEl.style.left = `${leftPercent}%`;
       eventEl.style.right = 'auto';
       eventEl.style.cursor = 'pointer';
-      
+
       // Add click handler based on event type
       const eventId = event.id;
       const eventType = event.type;
@@ -753,12 +753,12 @@ function renderMobileEvents() {
           openEditNoteModal(eventId);
         });
       }
-      
+
       if (event.type === 'lesson') {
         const currentUserId = window.serverData?.currentUserId;
         const isStaff = window.serverData?.userRole === 'STAFF';
         const showTutor = isStaff && event.tutorId !== currentUserId;
-        
+
         eventEl.innerHTML = `
           <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
           <div class="opacity-75 truncate">${event.classType} · ${event.startTime} - ${event.endTime}</div>
@@ -770,7 +770,7 @@ function renderMobileEvents() {
           <div class="opacity-75 truncate">${event.startTime} - ${event.endTime}</div>
         `;
       }
-      
+
       cell.appendChild(eventEl);
     }
   });
@@ -796,48 +796,48 @@ function setupEventListeners() {
     document.getElementById('mobileMenu').classList.add('open');
     document.getElementById('menuOverlay').classList.remove('hidden');
   });
-  
+
   document.getElementById('closeMenu').addEventListener('click', closeMenu);
   document.getElementById('menuOverlay').addEventListener('click', closeMenu);
-  
+
   // Week navigation
   document.getElementById('prevWeek').addEventListener('click', () => {
     currentWeekStart.setDate(currentWeekStart.getDate() - 7);
     renderWeekView();
   });
-  
+
   document.getElementById('nextWeek').addEventListener('click', () => {
     currentWeekStart.setDate(currentWeekStart.getDate() + 7);
     renderWeekView();
   });
-  
+
   document.getElementById('todayBtn').addEventListener('click', () => {
     currentWeekStart = getWeekStart(new Date());
     currentMobileDate = new Date();
     renderWeekView();
     renderMobileDayView();
   });
-  
+
   // Mobile day navigation
   document.getElementById('prevDay').addEventListener('click', () => {
     currentMobileDate.setDate(currentMobileDate.getDate() - 1);
     renderMobileDayView();
   });
-  
+
   document.getElementById('nextDay').addEventListener('click', () => {
     currentMobileDate.setDate(currentMobileDate.getDate() + 1);
     renderMobileDayView();
   });
-  
+
   // Modal buttons
   document.getElementById('addLessonBtn').addEventListener('click', openLessonModal);
   document.getElementById('addNoteBtn').addEventListener('click', openNoteModal);
-  
+
   // Forms
   document.getElementById('lessonForm').addEventListener('submit', handleLessonSubmit);
   document.getElementById('noteForm').addEventListener('submit', handleNoteSubmit);
   document.getElementById('addStudentForm').addEventListener('submit', handleAddStudentSubmit);
-  
+
   // Student search - real-time filtering
   document.getElementById('studentSearch').addEventListener('input', (e) => {
     filterStudents(e.target.value);
@@ -845,8 +845,8 @@ function setupEventListeners() {
 }
 
 // Edit student search filter - updates edit modal dropdown
-document.getElementById('editStudentSearch').addEventListener('input', function(e) {
-filterEditStudents(e.target.value);
+document.getElementById('editStudentSearch').addEventListener('input', function (e) {
+  filterEditStudents(e.target.value);
 });
 
 /**
@@ -877,21 +877,21 @@ function openLessonModal() {
   // Reset dropdown to normal size
   document.getElementById('studentSelect').size = 1;
   closeMenu();
-  
+
   // Auto-assign to current user
   const currentUserId = window.serverData?.currentUserId;
   const userRole = window.serverData?.userRole;
   const isStaff = userRole === 'STAFF';
-  
+
   // Hide "Assign To" section if not STAFF
   const lessonAssignToSection = document.getElementById('lessonAssignToSection');
   if (lessonAssignToSection) {
     lessonAssignToSection.style.display = isStaff ? 'block' : 'none';
   }
-  
+
   // Populate tutors in lesson modal
   populateLessonTutors();
-  
+
   // Auto-check current user's checkbox
   setTimeout(() => {
     if (currentUserId) {
@@ -926,18 +926,18 @@ function closeLessonModal() {
 function openNoteModal() {
   document.getElementById('addNoteModal').classList.add('open');
   closeMenu();
-  
+
   // Auto-assign to current user
   const currentUserId = window.serverData?.currentUserId;
   const userRole = window.serverData?.userRole;
   const isStaff = userRole === 'STAFF';
-  
+
   // Hide "Assign To" section if not STAFF
   const assignToSection = document.getElementById('assignToSection');
   if (assignToSection) {
     assignToSection.style.display = isStaff ? 'block' : 'none';
   }
-  
+
   // Auto-check current user's checkbox
   setTimeout(() => {
     if (currentUserId) {
@@ -987,15 +987,16 @@ function closeAddStudentModal() {
  */
 async function handleAddStudentSubmit(e) {
   e.preventDefault();
-  
+
   const name = document.getElementById('studentName').value;
   const surname = document.getElementById('studentSurname').value;
   const studentClass = document.getElementById('studentClass').value;
   const description = document.getElementById('studentDescription').value;
-  
+
   try {
     const response = await fetch('/api/students', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -1006,17 +1007,17 @@ async function handleAddStudentSubmit(e) {
         description
       })
     });
-    
+
     if (response.ok) {
       const newStudent = await response.json();
       alert('Student added successfully!');
       closeAddStudentModal();
-      
+
       // Add to students list
       allStudents.push(newStudent);
       filteredStudents.push(newStudent);
       updateStudentDropdown();
-      
+
       // Auto-select the new student
       document.getElementById('studentSelect').value = newStudent.id;
     } else {
@@ -1038,10 +1039,10 @@ async function handleAddStudentSubmit(e) {
 function populateLessonTutors() {
   const container = document.getElementById('lessonTutorsContainer');
   if (!container) return;
-  
+
   const tutors = window.serverData?.tutors || [];
   const currentUserId = window.serverData?.currentUserId;
-  
+
   const colors = [
     'bg-primary/20 text-primary',
     'bg-blue-500/20 text-blue-400',
@@ -1051,22 +1052,22 @@ function populateLessonTutors() {
     'bg-orange-500/20 text-orange-400',
     'bg-teal-500/20 text-teal-400'
   ];
-  
+
   container.innerHTML = '';
-  
+
   if (tutors.length === 0) {
     container.innerHTML = '<p class="text-sm text-muted p-3">No tutors available.</p>';
     return;
   }
-  
+
   tutors.forEach((tutor, index) => {
     const colorClass = colors[index % colors.length];
     const initials = (tutor.name?.substring(0, 1) || '') + (tutor.surname?.substring(0, 1) || '');
     const displayName = tutor.username + (tutor.id === currentUserId ? ' (You)' : '');
-    
+
     const label = document.createElement('label');
     label.className = 'checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors';
-    
+
     label.innerHTML = `
       <input type="radio" name="lessonTutors" value="${tutor.id}" class="w-4 h-4 rounded border-border bg-background accent-primary">
       <div class="flex items-center gap-2">
@@ -1076,7 +1077,7 @@ function populateLessonTutors() {
         <span class="text-sm text-foreground">${displayName}</span>
       </div>
     `;
-    
+
     container.appendChild(label);
   });
 }
@@ -1089,7 +1090,7 @@ function populateLessonTutors() {
 function assignLessonToMyself() {
   const currentUserId = window.serverData?.currentUserId;
   if (!currentUserId) return;
-  
+
   const myselfRadio = document.querySelector(`input[name="lessonTutors"][value="${currentUserId}"]`);
   if (myselfRadio) {
     myselfRadio.checked = true;
@@ -1104,7 +1105,7 @@ function assignLessonToMyself() {
 function assignToMyself() {
   const currentUserId = window.serverData?.currentUserId;
   if (!currentUserId) return;
-  
+
   const myselfCheckbox = document.querySelector(`input[name="assignees"][value="${currentUserId}"]`);
   if (myselfCheckbox) {
     myselfCheckbox.checked = true;
@@ -1123,60 +1124,61 @@ function assignToMyself() {
  */
 async function handleLessonSubmit(e) {
   e.preventDefault();
-  
+
   const studentId = document.getElementById('studentSelect').value;
   const lessonDate = document.getElementById('lessonDate').value;
   const startTime = document.getElementById('lessonStartTime').value;
   const endTime = document.getElementById('lessonEndTime').value;
-  
+
   if (!studentId) {
     alert('Please select a student');
     return;
   }
-  
+
   if (!startTime || !endTime) {
     alert('Please enter start and end times');
     return;
   }
-  
+
   // Get selected tutor (for STAFF users)
   const selectedTutorRadio = document.querySelector('input[name="lessonTutors"]:checked');
   let assignedTutorId = selectedTutorRadio ? parseInt(selectedTutorRadio.value) : null;
-  
+
   // If no tutor selected, default to current user
   if (!assignedTutorId) {
     assignedTutorId = window.serverData?.currentUserId;
   }
-  
+
   // Prepare datetime with the selected date
   const [year, month, day] = lessonDate.split('-');
   const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
   const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
-  
+
   const payload = {
     studentId,
     startTime: startDateTime,
     endTime: endDateTime
   };
-  
+
   // Add tutorId if different from current user
   if (assignedTutorId && assignedTutorId !== window.serverData?.currentUserId) {
     payload.tutorId = assignedTutorId;
   }
-  
+
   try {
     const response = await fetch('/api/prenotations', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
-    
+
     if (response.ok) {
       alert('Prenotation created successfully!');
       closeLessonModal();
-      
+
       // Reload page to refresh server-rendered data
       window.location.reload();
     } else {
@@ -1201,26 +1203,26 @@ async function handleLessonSubmit(e) {
  */
 async function handleNoteSubmit(e) {
   e.preventDefault();
-  
+
   const description = document.getElementById('noteDescription').value;
   const noteDate = document.getElementById('noteDate').value;
   const startTime = document.getElementById('noteStartTime').value;
   const endTime = document.getElementById('noteEndTime').value;
-  
+
   if (!description) {
     alert('Please enter a description');
     return;
   }
-  
+
   if (!startTime || !endTime) {
     alert('Please enter start and end times');
     return;
   }
-  
+
   // Get selected assignee tutor IDs
   const assigneeCheckboxes = document.querySelectorAll('input[name="assignees"]:checked');
   let tutorIds = Array.from(assigneeCheckboxes).map(cb => parseInt(cb.value));
-  
+
   // If no tutors selected (non-STAFF users), default to current user
   if (tutorIds.length === 0) {
     const currentUserId = window.serverData?.currentUserId;
@@ -1228,15 +1230,16 @@ async function handleNoteSubmit(e) {
       tutorIds = [currentUserId];
     }
   }
-  
+
   // Prepare datetime with the selected date
   const [year, month, day] = noteDate.split('-');
   const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
   const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
-  
+
   try {
     const response = await fetch('/api/calendar-notes', {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -1247,11 +1250,11 @@ async function handleNoteSubmit(e) {
         tutorIds: tutorIds
       })
     });
-    
+
     if (response.ok) {
       alert('Calendar note created successfully!');
       closeNoteModal();
-      
+
       // Reload page to refresh server-rendered data
       window.location.reload();
     } else {
@@ -1276,7 +1279,7 @@ async function handleNoteSubmit(e) {
  * 
  * @param {number} prenotationId - ID of prenotation to edit
  */
-window.openEditPrenotationModal = function(prenotationId) {
+window.openEditPrenotationModal = function (prenotationId) {
   console.log('[PRENOTATION] Opening modal for ID:', prenotationId);
   console.log('[PRENOTATION] Available prenotations:', window.serverData.prenotations);
   const prenotation = window.serverData.prenotations.find(p => p.id === prenotationId);
@@ -1295,15 +1298,15 @@ window.openEditPrenotationModal = function(prenotationId) {
     return;
   }
   editPrenotationIdElement.value = prenotation.id;
-  
+
   console.log('[PRENOTATION] Step 2: Setting student');
   // Set student
   const studentId = prenotation.student?.id || prenotation.studentId;
   console.log('[PRENOTATION] Student ID:', studentId);
-  
+
   console.log('[PRENOTATION] Step 3: Updating student dropdown');
   updateEditStudentDropdown('');
-  
+
   // Select the student after populating the dropdown
   const studentSelect = document.getElementById('editStudentSelect');
   studentSelect.value = studentId;
@@ -1322,14 +1325,14 @@ window.openEditPrenotationModal = function(prenotationId) {
   if (window.serverData.userRole === 'STAFF') {
     console.log('[PRENOTATION] User is STAFF, populating tutors');
     assignToSection.style.display = 'block';
-    
+
     const container = document.getElementById('editPrenotationTutorsContainer');
     container.innerHTML = '';
-    
+
     const assignedTutorId = prenotation.tutor?.id || prenotation.tutorId;
-    
+
     console.log('[PRENOTATION] Sample tutor object:', window.serverData.tutors[0]);
-    
+
     window.serverData.tutors.forEach(tutor => {
       const isAssigned = assignedTutorId === tutor.id;
       const radioDiv = document.createElement('div');
@@ -1367,10 +1370,10 @@ window.openEditPrenotationModal = function(prenotationId) {
 /**
  * Close edit prenotation modal and reset form.
  */
-window.closeEditPrenotationModal = function() {
+window.closeEditPrenotationModal = function () {
   document.getElementById('editPrenotationModal').classList.remove('open');
   document.getElementById('editPrenotationForm').reset();
-  
+
   // Reset student select size
   const select = document.getElementById('editStudentSelect');
   select.size = 1;
@@ -1381,14 +1384,15 @@ window.closeEditPrenotationModal = function() {
  * 
  * Shows confirm dialog and reloads page on success.
  */
-window.deletePrenotation = async function() {
+window.deletePrenotation = async function () {
   if (!confirm('Are you sure you want to delete this prenotation?')) return;
 
   const prenotationId = document.getElementById('editPrenotationId').value;
 
   try {
     const response = await fetch(`/api/prenotations/${prenotationId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      credentials: 'same-origin'
     });
 
     if (response.ok) {
@@ -1412,7 +1416,7 @@ window.deletePrenotation = async function() {
  * For STAFF: can change assigned tutor.
  * Reloads page on success.
  */
-document.getElementById('editPrenotationForm').addEventListener('submit', async function(e) {
+document.getElementById('editPrenotationForm').addEventListener('submit', async function (e) {
   e.preventDefault();
 
   const prenotationId = document.getElementById('editPrenotationId').value;
@@ -1447,6 +1451,7 @@ document.getElementById('editPrenotationForm').addEventListener('submit', async 
   try {
     const response = await fetch(`/api/prenotations/${prenotationId}`, {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -1509,7 +1514,7 @@ function filterEditStudents(searchTerm) {
 function updateEditStudentDropdown(searchTerm) {
   const select = document.getElementById('editStudentSelect');
   select.innerHTML = '<option value="">-- Select Student --</option>';
-  
+
   const students = window.serverData.students || [];
   const filteredStudents = students.filter(student => {
     const studentClass = student.studentClass || student.class || '';
@@ -1543,7 +1548,7 @@ function updateEditStudentDropdown(searchTerm) {
  * 
  * @param {number} noteId - ID of note to edit
  */
-window.openEditNoteModal = async function(noteId) {
+window.openEditNoteModal = async function (noteId) {
   console.log('[NOTE] Opening modal for ID:', noteId);
   const note = window.serverData.calendarNotes.find(n => n.id === noteId);
   console.log('[NOTE] Found in local data:', note);
@@ -1555,19 +1560,19 @@ window.openEditNoteModal = async function(noteId) {
   // Fetch full note details from server to get tutors list
   console.log('[NOTE] Fetching full details from server...');
   try {
-    const response = await fetch(`/api/calendar-notes/${noteId}`);
+    const response = await fetch(`/api/calendar-notes/${noteId}`, { credentials: 'same-origin' });
     if (!response.ok) {
       throw new Error('Failed to fetch note details');
     }
     const fullNote = await response.json();
     console.log('[NOTE] Full note from server:', fullNote);
     console.log('[NOTE] Tutors array:', fullNote.tutors);
-    
+
     // Check if current user is the creator
     const currentUserId = window.serverData.currentUserId;
     const creatorId = fullNote.creator?.id;
     console.log('[NOTE] Current user ID:', currentUserId, 'Creator ID:', creatorId);
-    
+
     if (creatorId && creatorId !== currentUserId) {
       alert('Only the creator can edit this note');
       return;
@@ -1588,14 +1593,14 @@ window.openEditNoteModal = async function(noteId) {
     const assignToSection = document.getElementById('editNoteAssignToSection');
     if (window.serverData.userRole === 'STAFF') {
       assignToSection.style.display = 'block';
-      
+
       const container = document.getElementById('editNoteAssigneesContainer');
       container.innerHTML = '';
-      
+
       // Get assigned tutor IDs from full note details
       const assignedTutorIds = fullNote.tutors ? fullNote.tutors.map(t => t.id) : [];
       console.log('[NOTE] Assigned tutor IDs:', assignedTutorIds);
-      
+
       window.serverData.tutors.forEach(tutor => {
         const isAssigned = assignedTutorIds.includes(tutor.id);
         const checkboxDiv = document.createElement('div');
@@ -1626,7 +1631,7 @@ window.openEditNoteModal = async function(noteId) {
 /**
  * Close edit note modal and reset form.
  */
-window.closeEditNoteModal = function() {
+window.closeEditNoteModal = function () {
   document.getElementById('editNoteModal').classList.remove('open');
   document.getElementById('editNoteForm').reset();
 };
@@ -1636,14 +1641,15 @@ window.closeEditNoteModal = function() {
  * 
  * Shows confirm dialog and reloads page on success.
  */
-window.deleteNote = async function() {
+window.deleteNote = async function () {
   if (!confirm('Are you sure you want to delete this note?')) return;
 
   const noteId = document.getElementById('editNoteId').value;
 
   try {
     const response = await fetch(`/api/calendar-notes/${noteId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      credentials: 'same-origin'
     });
 
     if (response.ok) {
@@ -1668,7 +1674,7 @@ window.deleteNote = async function() {
  * For regular users: keeps current user as assignee.
  * Reloads page on success.
  */
-document.getElementById('editNoteForm').addEventListener('submit', async function(e) {
+document.getElementById('editNoteForm').addEventListener('submit', async function (e) {
   e.preventDefault();
 
   const noteId = document.getElementById('editNoteId').value;
@@ -1692,7 +1698,7 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
   if (window.serverData.userRole === 'STAFF') {
     const assigneeCheckboxes = document.querySelectorAll('input[name="editAssignees"]:checked');
     tutorIds = Array.from(assigneeCheckboxes).map(cb => parseInt(cb.value));
-    
+
     // If no tutors selected, default to current user
     if (tutorIds.length === 0) {
       tutorIds = [window.serverData.currentUserId];
@@ -1709,6 +1715,7 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
   try {
     const response = await fetch(`/api/calendar-notes/${noteId}`, {
       method: 'PUT',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json'
       },

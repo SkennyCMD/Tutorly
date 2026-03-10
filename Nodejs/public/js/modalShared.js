@@ -72,15 +72,15 @@ async function loadStudents() {
 function updateStudentDropdown() {
   const select = document.getElementById('studentSelect');
   if (!select) return;
-  
+
   // Reset dropdown with default option
   select.innerHTML = '<option value="">-- Select a student --</option>';
-  
+
   // Add each filtered student as an option
   filteredStudents.forEach(student => {
     const option = document.createElement('option');
     option.value = student.id;
-    
+
     // Format display text: Name Surname (Class) - Description
     let displayText = `${student.name} ${student.surname} (${student.studentClass})`;
     if (student.description && student.description.trim() !== '') {
@@ -102,14 +102,14 @@ function updateStudentDropdown() {
 function filterStudents(searchTerm) {
   const term = searchTerm.toLowerCase();
   const select = document.getElementById('studentSelect');
-  
+
   // Filter students by name matching
   filteredStudents = allStudents.filter(student => {
     const fullName = `${student.name} ${student.surname}`.toLowerCase();
     return fullName.includes(term);
   });
   updateStudentDropdown();
-  
+
   // Auto-expand dropdown to show multiple matches when typing
   if (select && term.length > 0 && filteredStudents.length > 0) {
     select.size = Math.min(filteredStudents.length + 1, 8); // Show up to 8 options
@@ -134,23 +134,23 @@ function filterStudents(searchTerm) {
 function openModal() {
   const modal = document.getElementById('addLessonModal');
   if (!modal) return;
-  
+
   // Show modal and lock body scroll
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
-  
+
   // Reset search input when opening modal
   const searchInput = document.getElementById('studentSearch');
   if (searchInput) {
     searchInput.value = '';
   }
-  
+
   // Reset dropdown to normal size
   const select = document.getElementById('studentSelect');
   if (select) {
     select.size = 1;
   }
-  
+
   // Set date to today by default
   const dateInput = document.getElementById('lessonDate');
   if (dateInput) {
@@ -158,7 +158,7 @@ function openModal() {
     const today = new Date().toISOString().split('T')[0];
     dateInput.value = today;
   }
-  
+
   // Reset student filter to show all
   filteredStudents = allStudents;
   updateStudentDropdown();
@@ -174,11 +174,11 @@ function openModal() {
 function closeModal() {
   const modal = document.getElementById('addLessonModal');
   if (!modal) return;
-  
+
   // Hide modal and restore body scroll
   modal.classList.remove('open');
   document.body.style.overflow = '';
-  
+
   // Reset dropdown to normal size
   const select = document.getElementById('studentSelect');
   if (select) {
@@ -211,37 +211,38 @@ function setupStudentSearch() {
 function setupLessonForm(onSuccess) {
   const form = document.getElementById('lessonForm');
   if (!form) return;
-  
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     // Extract form values
     const studentId = document.getElementById('studentSelect').value;
     const description = document.getElementById('description').value;
     const lessonDate = document.getElementById('lessonDate').value;
     const startTime = document.getElementById('startTime').value;
     const endTime = document.getElementById('endTime').value;
-    
+
     // Validate required fields
     if (!studentId) {
       alert('Please select a student');
       return;
     }
-    
+
     if (!lessonDate) {
       alert('Please select a date');
       return;
     }
-    
+
     if (!startTime || !endTime) {
       alert('Please enter start and end times');
       return;
     }
-    
+
     try {
       // Send lesson creation request to backend
       const response = await fetch('/api/lessons', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -253,12 +254,12 @@ function setupLessonForm(onSuccess) {
           endTime
         })
       });
-      
+
       if (response.ok) {
         console.log('Lesson created successfully!');
         closeModal();
         e.target.reset();
-        
+
         // Call the success callback if provided (e.g., page reload, data refresh)
         if (typeof onSuccess === 'function') {
           await onSuccess();

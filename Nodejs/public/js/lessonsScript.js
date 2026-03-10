@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadLessons();
     loadPrenotations();
     setupEventListeners();
-    
+
     // Initialize modal with page reload callback
     initializeModal(() => {
         window.location.reload();
@@ -106,7 +106,7 @@ async function loadLessons() {
         // Get lessons from window.initialLessons
         const lessonsData = window.initialLessons || [];
         totalLessonsCount = window.totalLessonsCount || 0;
-        
+
         // Transform data to match display format
         lessons = lessonsData.map(lesson => ({
             id: lesson.id,
@@ -118,12 +118,12 @@ async function loadLessons() {
             endTime: new Date(lesson.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
             status: determineStatus(lesson.startTime, lesson.endTime)
         }));
-        
+
         loadedLessonsCount = lessons.length;
-        
+
         // Use same data for statistics calculation
         allLessonsForStats = [...lessons];
-        
+
         renderStatistics();
         renderLessons();
         renderBookedLessons();
@@ -145,7 +145,7 @@ async function loadPrenotations() {
     try {
         // Get prenotations from window.initialPrenotations
         const data = window.initialPrenotations || [];
-        
+
         // Transform data to match display format
         prenotations = data.map(prenotation => ({
             id: prenotation.id,
@@ -177,7 +177,7 @@ function determineStatus(startTime, endTime) {
     const now = new Date();
     const start = new Date(startTime);
     const end = new Date(endTime);
-    
+
     if (end < now) {
         return 'completed';
     } else if (start > now) {
@@ -203,8 +203,8 @@ function determineStatus(startTime, endTime) {
 function setupEventListeners() {
     // Mobile menu toggle
     document.getElementById('menuToggle').addEventListener('click', () => {
-    document.getElementById('mobileMenu').classList.add('open');
-    document.getElementById('menuOverlay').classList.remove('hidden');
+        document.getElementById('mobileMenu').classList.add('open');
+        document.getElementById('menuOverlay').classList.remove('hidden');
     });
 
     document.getElementById('closeMenu').addEventListener('click', closeMobileMenu);
@@ -212,33 +212,33 @@ function setupEventListeners() {
 
     // Stats month navigation - previous month
     document.getElementById('prevStatsMonth').addEventListener('click', () => {
-    statsDate.setMonth(statsDate.getMonth() - 1);
-    updateStatsMonth();
-    renderStatistics();
+        statsDate.setMonth(statsDate.getMonth() - 1);
+        updateStatsMonth();
+        renderStatistics();
     });
 
     // Stats month navigation - next month
     document.getElementById('nextStatsMonth').addEventListener('click', () => {
-    statsDate.setMonth(statsDate.getMonth() + 1);
-    updateStatsMonth();
-    renderStatistics();
+        statsDate.setMonth(statsDate.getMonth() + 1);
+        updateStatsMonth();
+        renderStatistics();
     });
 
     // Search input - desktop (filters by student name)
     document.getElementById('searchInput').addEventListener('input', (e) => {
-    searchTerm = e.target.value.toLowerCase();
-    renderStatistics();
-    renderLessons();
+        searchTerm = e.target.value.toLowerCase();
+        renderStatistics();
+        renderLessons();
     });
 
     // Search input - mobile (syncs with desktop search)
     document.getElementById('searchInputMobile').addEventListener('input', (e) => {
-    searchTerm = e.target.value.toLowerCase();
-    document.getElementById('searchInput').value = e.target.value;
-    renderStatistics();
-    renderLessons();
+        searchTerm = e.target.value.toLowerCase();
+        document.getElementById('searchInput').value = e.target.value;
+        renderStatistics();
+        renderLessons();
     });
-    
+
     // Add student form submission
     document.getElementById('addStudentForm').addEventListener('submit', handleAddStudentSubmit);
 }
@@ -283,16 +283,16 @@ function renderStatistics() {
 
     // Filter lessons by month/year, completed status, and search term
     const monthLessons = allLessonsForStats.filter(l => {
-    const lessonDate = new Date(l.date);
-    const matchesDate = lessonDate.getMonth() === month && lessonDate.getFullYear() === year && l.status === 'completed';
-    
-    // If search term exists, filter by student name
-    if (searchTerm) {
-        const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
-        return matchesDate && fullName.includes(searchTerm);
-    }
-    
-    return matchesDate;
+        const lessonDate = new Date(l.date);
+        const matchesDate = lessonDate.getMonth() === month && lessonDate.getFullYear() === year && l.status === 'completed';
+
+        // If search term exists, filter by student name
+        if (searchTerm) {
+            const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
+            return matchesDate && fullName.includes(searchTerm);
+        }
+
+        return matchesDate;
     });
 
     // Initialize duration counters (in minutes)
@@ -303,16 +303,16 @@ function renderStatistics() {
 
     // Calculate durations for each lesson
     monthLessons.forEach(lesson => {
-    const start = lesson.startTime.split(':').map(Number);
-    const end = lesson.endTime.split(':').map(Number);
-    const duration = (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]);
-    
-    totalMinutes += duration;
-    
-    // Add to class-specific counter
-    if (lesson.classType === 'M') minutesM += duration;
-    else if (lesson.classType === 'S') minutesS += duration;
-    else if (lesson.classType === 'U') minutesU += duration;
+        const start = lesson.startTime.split(':').map(Number);
+        const end = lesson.endTime.split(':').map(Number);
+        const duration = (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]);
+
+        totalMinutes += duration;
+
+        // Add to class-specific counter
+        if (lesson.classType === 'M') minutesM += duration;
+        else if (lesson.classType === 'S') minutesS += duration;
+        else if (lesson.classType === 'U') minutesU += duration;
     });
 
     // Update statistics display
@@ -357,12 +357,12 @@ function renderLessons() {
 
     // Filter completed lessons by search term
     let filteredLessons = lessons
-    .filter(l => l.status === 'completed')
-    .filter(l => {
-        if (!searchTerm) return true;
-        const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
-        return fullName.includes(searchTerm);
-    });
+        .filter(l => l.status === 'completed')
+        .filter(l => {
+            if (!searchTerm) return true;
+            const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
+            return fullName.includes(searchTerm);
+        });
 
     // Calculate total from all lessons for accurate count
     const totalCompletedWithSearch = allLessonsForStats
@@ -377,25 +377,25 @@ function renderLessons() {
 
     // Show empty state if no lessons
     if (filteredLessons.length === 0) {
-    container.innerHTML = '';
-    emptyState.classList.remove('hidden');
-    return;
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
     }
 
     emptyState.classList.add('hidden');
 
     // Render each lesson card
     const lessonsHTML = filteredLessons.map(lesson => {
-    const classColors = {
-        'M': 'bg-blue-500/20 text-blue-400',
-        'S': 'bg-green-500/20 text-green-400',
-        'U': 'bg-purple-500/20 text-purple-400'
-    };
+        const classColors = {
+            'M': 'bg-blue-500/20 text-blue-400',
+            'S': 'bg-green-500/20 text-green-400',
+            'U': 'bg-purple-500/20 text-purple-400'
+        };
 
-    const date = new Date(lesson.date);
-    const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const date = new Date(lesson.date);
+        const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-    return `
+        return `
         <div class="flex items-center justify-between p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors">
         <div class="flex items-center gap-4">
             <div class="w-10 h-10 ${classColors[lesson.classType].split(' ')[0]} rounded-lg flex items-center justify-center">
@@ -417,7 +417,7 @@ function renderLessons() {
     // Add load more button if there are more lessons available on server
     const completedLoaded = lessons.filter(l => l.status === 'completed').length;
     const completedTotal = allLessonsForStats.filter(l => l.status === 'completed').length;
-    
+
     if (loadedLessonsCount < totalLessonsCount) {
         lessonsHTML += `
             <div class="text-center py-4">
@@ -463,7 +463,7 @@ function renderBookedLessons() {
 
     // Get today's date (YYYY-MM-DD format)
     const today = new Date().toISOString().split('T')[0];
-    
+
     // Filter and sort today's prenotations by start time (earliest first)
     const todayPrenotations = prenotations
         .filter(prenotation => prenotation.date === today)
@@ -477,30 +477,30 @@ function renderBookedLessons() {
 
     // Show empty state if no bookings today
     if (todayPrenotations.length === 0) {
-    container.innerHTML = '';
-    emptyState.classList.remove('hidden');
-    return;
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
     }
 
     emptyState.classList.add('hidden');
 
     // Render each prenotation card
     container.innerHTML = todayPrenotations.map(prenotation => {
-    const classColors = {
-        'M': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-        'S': 'bg-green-500/20 text-green-400 border-green-500/30',
-        'U': 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-    };
+        const classColors = {
+            'M': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+            'S': 'bg-green-500/20 text-green-400 border-green-500/30',
+            'U': 'bg-purple-500/20 text-purple-400 border-purple-500/30'
+        };
 
-    const date = new Date(prenotation.date);
-    const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    
-    // Add confirmation status badge
-    const statusBadge = prenotation.confirmed 
-        ? '<span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary ml-2">Confirmed</span>'
-        : '<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">Pending</span>';
+        const date = new Date(prenotation.date);
+        const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-    return `
+        // Add confirmation status badge
+        const statusBadge = prenotation.confirmed
+            ? '<span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary ml-2">Confirmed</span>'
+            : '<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">Pending</span>';
+
+        return `
         <div class="p-3 border border-border rounded-lg hover:border-primary/50 transition-colors">
         <div class="flex items-center justify-between mb-2">
             <div class="flex items-center">
@@ -582,15 +582,16 @@ function closeAddStudentModal() {
  */
 async function handleAddStudentSubmit(e) {
     e.preventDefault();
-    
+
     const name = document.getElementById('studentName').value;
     const surname = document.getElementById('studentSurname').value;
     const studentClass = document.getElementById('studentClass').value;
     const description = document.getElementById('studentDescription').value;
-    
+
     try {
         const response = await fetch('/api/students', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -601,12 +602,12 @@ async function handleAddStudentSubmit(e) {
                 description
             })
         });
-        
+
         if (response.ok) {
             const newStudent = await response.json();
             alert('Student added successfully!');
             closeAddStudentModal();
-            
+
             // Reload page to refresh student list and other data
             window.location.reload();
         } else {
