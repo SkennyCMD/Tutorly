@@ -665,10 +665,10 @@ Features:
   <script>
     // Pass server-side data to JavaScript for client-side rendering
     window.serverData = {
-      prenotations: <% - JSON.stringify(prenotations) %>,
-      calendarNotes: <% - JSON.stringify(calendarNotes) %>,
-      students: <% - JSON.stringify(students) %>,
-      tutors: <% - JSON.stringify(tutors) %>,
+      prenotations: <%- JSON.stringify(prenotations) %>,
+      calendarNotes: <%- JSON.stringify(calendarNotes) %>,
+      students: <%- JSON.stringify(students) %>,
+      tutors: <%- JSON.stringify(tutors) %>,
       currentUserId: <%= userId %>,
       userRole: '<%= user.role %>'
     };

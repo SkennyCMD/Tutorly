@@ -439,9 +439,9 @@ Features:
   <!-- Server-side data injection: tasks, lessons, and students for client-side rendering -->
   <script>
     // Pass server-rendered data to JavaScript for dynamic rendering
-    window.initialTasks = <% - JSON.stringify(tasks) %>;
-    window.initialLessons = <% - JSON.stringify(lessons) %>;
-    window.allStudents = <% - JSON.stringify(students) %>;
+    window.initialTasks = <%- JSON.stringify(tasks) %>;
+    window.initialLessons = <%- JSON.stringify(lessons) %>;
+    window.allStudents = <%- JSON.stringify(students) %>;
   </script>
   <script src="/js/modalShared.js"></script>
   <script src="/js/homeScript.js"></script>

@@ -331,7 +331,7 @@ Features:
   <!-- Server-side tutors data injection for Excel report generation -->
   <script>
     // Pass server-rendered tutors data to JavaScript for report generation
-    window.allTutors = <% - JSON.stringify(tutors) %>;
+    window.allTutors = <%- JSON.stringify(tutors) %>;
   </script>
   <!-- JavaScript for staff panel functionality (Excel generation, downloads, toast notifications) -->
   <script src="/js/staffPanel.js"></script>
