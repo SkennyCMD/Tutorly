@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: tutorly_db
+    environment:
+      POSTGRES_DB: tutorly_db
+      POSTGRES_USER: tutorly_admin
+      POSTGRES_PASSWORD: tutorly1234?
+    ports:
+      - "5432:5432"
+    volumes:
+      # Mount the initialization script to automatically create schemata and seed data
+      - ./Database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Persist data volume (optional but recommended for development)
+      # - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U tutorly_admin -d tutorly_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+# volumes:
+#   pgdata:

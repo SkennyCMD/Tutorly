@@ -35,7 +35,7 @@
 document.getElementById('togglePw').addEventListener('click', () => {
     const input = document.getElementById('adminPassword');
     const icon = document.getElementById('pwEye');
-    
+
     if (input.type === 'password') {
         // Show password - change to eye-off icon
         input.type = 'text';
@@ -71,7 +71,7 @@ document.getElementById('togglePw').addEventListener('click', () => {
  */
 document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     // Get form elements
     const errorDiv = document.getElementById('loginError');
     const errorText = document.getElementById('errorText');
@@ -81,7 +81,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
 
     // Hide any previous error messages
     errorDiv.classList.add('hidden');
-    
+
     // Disable button and show loading spinner
     btn.disabled = true;
     btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Verifying...';
@@ -90,6 +90,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
         // Send login request to backend
         const response = await fetch('/adminLogin', {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/json'
             },
@@ -104,7 +105,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
             const data = await response.json();
             errorDiv.classList.remove('hidden');
             errorText.textContent = data.error || 'Invalid admin credentials';
-            
+
             // Reset button to allow retry
             btn.disabled = false;
             btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> Sign in as Admin';
@@ -114,7 +115,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async (e) =
         console.error('Login error:', error);
         errorDiv.classList.remove('hidden');
         errorText.textContent = 'An error occurred. Please try again.';
-        
+
         // Reset button to allow retry
         btn.disabled = false;
         btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> Sign in as Admin';
