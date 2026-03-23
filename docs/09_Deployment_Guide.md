@@ -68,7 +68,7 @@ This guide covers the complete deployment process for the Tutorly application in
 
 ### Code Preparation
 
-- [ ] All tests passing (`mvn test` and `npm test`)
+- [ ] All Java tests passing (`./mvnw test`)
 - [ ] Code reviewed and merged to `main` branch
 - [ ] Version numbers updated in `pom.xml` and `package.json`
 - [ ] CHANGELOG.md updated with release notes
@@ -221,8 +221,8 @@ psql -U tutorly_prod -d tutorly_db_prod < tutorly_backup.sql
 ```bash
 cd Java/backend-api
 
-# Build with Maven
-mvn clean package -DskipTests
+# Build with Maven Wrapper
+./mvnw clean package -DskipTests
 
 # JAR file will be in target/
 ls -lh target/*.jar
@@ -693,7 +693,7 @@ jobs:
       - name: Build Backend
         run: |
           cd Java/backend-api
-          mvn clean package -DskipTests
+          ./mvnw clean package -DskipTests
       
       - name: Deploy to Server
         uses: appleboy/scp-action@master

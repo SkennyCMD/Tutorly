@@ -1234,9 +1234,7 @@ backend-api/
 ├── run-gui.bat                                   # Launch script (Windows)
 ├── test-api.sh                                   # API testing script
 ├── launcher-config.properties                    # GUI config
-├── README.md                                     # This file
-├── HELP.md                                       # Spring Boot help
-└── GUI-README.md                                 # GUI documentation
+└── HELP.md                                       # Spring Boot help
 ```
 
 ---

@@ -26,54 +26,55 @@ This directory contains all the documentation for the Tutorly project, organized
 
 ### General Documentation
 
-| Document | Description | Original Location |
-|----------|-------------|-------------------|
-| **[00_Project_Overview.md](00_Project_Overview.md)** | Complete project overview, architecture, features, installation guide | Root README.md |
+| Document | Description |
+|----------|-------------|
+| **[00_Project_Overview.md](00_Project_Overview.md)** | Complete project overview, architecture, features, installation guide |
 
 ---
 
 ### Java Backend Documentation
 
-| Document | Description | Original Location |
-|----------|-------------|-------------------|
-| **[01_Java_Backend_API.md](01_Java_Backend_API.md)** | Java Spring Boot backend API documentation with architecture, endpoints, and configuration | Java/backend-api/README.md |
-| **[02_Java_GUI_Launcher.md](02_Java_GUI_Launcher.md)** | GUI launcher documentation for managing the Java backend server | Java/backend-api/GUI-README.md |
+| Document | Description |
+|----------|-------------|
+| **[01_Java_Backend_API.md](01_Java_Backend_API.md)** | Java Spring Boot backend API documentation with architecture, endpoints, and configuration |
+| **[02_Java_GUI_Launcher.md](02_Java_GUI_Launcher.md)** | GUI launcher documentation for managing the Java backend server |
 
 ---
 
 ### Node.js Frontend Documentation
 
-| Document | Description | Original Location |
-|----------|-------------|-------------------|
-| **[03_Nodejs_Frontend.md](03_Nodejs_Frontend.md)** | Node.js Express frontend server documentation with routes, authentication, and services | Nodejs/README.md |
-| **[04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md)** | Complete guide for setting up HTTPS with self-signed certificates for local development | Nodejs/HTTPS_SETUP.md |
-| **[05_Service_Modules.md](05_Service_Modules.md)** | Documentation for Node.js service modules (authentication, API client, logging, etc.) | Nodejs/server_utilities/README.md |
-| **[06_Database_Migrations.md](06_Database_Migrations.md)** | Database migration scripts documentation (password hashing migration) | Nodejs/migrations/README.md |
+| Document | Description |
+|----------|-------------|
+| **[03_Nodejs_Frontend.md](03_Nodejs_Frontend.md)** | Node.js Express frontend server documentation with routes, authentication, and services |
+| **[04_HTTPS_Setup_Guide.md](04_HTTPS_Setup_Guide.md)** | Complete guide for setting up HTTPS with self-signed certificates for local development |
+| **[05_Service_Modules.md](05_Service_Modules.md)** | Documentation for Node.js service modules (authentication, API client, logging, etc.) |
+| **[06_Database_Migrations.md](06_Database_Migrations.md)** | Database migration scripts documentation (password hashing migration) |
+| **[12_PWA_Guide.md](12_PWA_Guide.md)** | Complete guide on the Progressive Web App architecture, service worker, and caching strategies. |
 
 ### Database Documentation
 
-| Document | Description | Original Location |
-|----------|-------------|-------------------|
-| **[07_Database_Configuration.md](07_Database_Configuration.md)** | Complete PostgreSQL database configuration guide with ER model, schema, setup, and migrations | Database/README.md |
+| Document | Description |
+|----------|-------------|
+| **[07_Database_Configuration.md](07_Database_Configuration.md)** | Complete PostgreSQL database configuration guide with ER model, schema, setup, and migrations |
 
 ---
 
 ### Development & Operations
 
-| Document | Description | Original Location |
-|----------|-------------|-------------------|
-| **[08_Testing_Guide.md](08_Testing_Guide.md)** | Comprehensive testing guide including unit, integration, and E2E testing strategies | New |
-| **[09_Deployment_Guide.md](09_Deployment_Guide.md)** | Production deployment guide with server setup, SSL configuration, and monitoring | New |
-| **[10_Contributing_Guide.md](10_Contributing_Guide.md)** | Guidelines for contributing to the project including code style and PR process | New |
+| Document | Description |
+|----------|-------------|
+| **[08_Testing_Guide.md](08_Testing_Guide.md)** | Comprehensive testing guide including unit, integration, and E2E testing strategies |
+| **[09_Deployment_Guide.md](09_Deployment_Guide.md)** | Production deployment guide with server setup, SSL configuration, and monitoring |
+| **[10_Contributing_Guide.md](10_Contributing_Guide.md)** | Guidelines for contributing to the project including code style and PR process |
 
 ---
 
 ### Reference Documentation
 
-| Document | Description | Original Location |
-|----------|-------------|-------------------|
-| **[11_Glossary.md](11_Glossary.md)** | Technical terms, acronyms, and definitions used in the project | New |
-| **[CHANGELOG.md](../CHANGELOG.md)** | Project version history and release notes | Root directory |
+| Document | Description |
+|----------|-------------|
+| **[11_Glossary.md](11_Glossary.md)** | Technical terms, acronyms, and definitions used in the project |
+| **[CHANGELOG.md](../CHANGELOG.md)** | Project version history and release notes |
 
 ---
 
@@ -172,31 +173,14 @@ This directory contains all the documentation for the Tutorly project, organized
 
 ## 📝 Documentation Maintenance
 
-### Original Locations
-
-All documentation files in this directory are **copies** of the original files. The original files remain in their respective locations:
-
-- **Root README**: `/README.md`
-- **Java Backend**: `/Java/backend-api/README.md`
-- **Java GUI**: `/Java/backend-api/GUI-README.md`
-- **Node.js Frontend**: `/Nodejs/README.md`
-- **HTTPS Setup**: `/Nodejs/HTTPS_SETUP.md`
-- **Service Modules**: `/Nodejs/server_utilities/README.md`
-- **Migrations**: `/Nodejs/migrations/README.md`
-- **SSL Certificates**: `/Nodejs/ssl/README.md`
+All documentation for the Tutorly project is centralized in this `docs/` directory. This is the single source of truth for the project's documentation.
 
 ### Updating Documentation
 
-When updating documentation:
-1. **Edit the original file** in its component directory
-2. **Copy the updated file** to this `docs/` directory with the appropriate name
-3. Maintain the numbering prefix for easy sorting
-
-Example:
-```bash
-# After editing Java/backend-api/README.md
-cp Java/backend-api/README.md docs/01_Java_Backend_API.md
-```
+When updating or adding new documentation:
+1. **Edit the file directly** in this `docs/` directory.
+2. Maintain the numbering prefix (`00_`, `01_`, etc.) if creating a new file for easy sorting.
+3. Remember to update the index in this `README.md` and in `00_Project_Overview.md`.
 
 ---
 

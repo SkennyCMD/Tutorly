@@ -91,7 +91,7 @@ When creating a new migration script:
 1. Create a new file in this folder with a descriptive name (e.g., `addNewField.js`)
 2. Add a detailed comment block explaining what it does
 3. Include safety checks and rollback instructions
-4. Document it in this README
+4. Document it in this guide
 5. Test on a development database first
 6. Always recommend backing up before running
 

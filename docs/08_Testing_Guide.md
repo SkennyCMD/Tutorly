@@ -226,13 +226,13 @@ class StudentControllerTest {
 ```bash
 # Run all tests
 cd Java/backend-api
-mvn test
+./mvnw test
 
 # Run specific test class
-mvn test -Dtest=StudentServiceTest
+./mvnw test -Dtest=StudentServiceTest
 
 # Run tests with coverage report
-mvn test jacoco:report
+./mvnw test jacoco:report
 
 # View coverage report
 open target/site/jacoco/index.html
@@ -386,18 +386,20 @@ describe('Authentication Routes', () => {
 
 ### Running Tests
 
+> **Note**: Frontend testing is currently a Work In Progress (WIP). The following commands outline the planned implementation.
+
 ```bash
-# Run all tests
-npm test
+# Run all tests (WIP - not yet implemented)
+# npm test
 
-# Run with coverage
-npm run test:coverage
+# Run with coverage (WIP)
+# npm run test:coverage
 
-# Run in watch mode
-npm run test:watch
+# Run in watch mode (WIP)
+# npm run test:watch
 
-# Run specific test file
-npm test -- passwordService.test.js
+# Run specific test file (WIP)
+# npm test -- passwordService.test.js
 ```
 
 ---
@@ -611,7 +613,8 @@ test.describe('Login Flow', () => {
 #### Java (JaCoCo)
 
 ```bash
-mvn test jacoco:report
+cd Java/backend-api
+./mvnw test jacoco:report
 open target/site/jacoco/index.html
 ```
 
@@ -664,7 +667,7 @@ jobs:
       - name: Run Backend Tests
         run: |
           cd Java/backend-api
-          mvn test
+          ./mvnw test
           
   frontend-tests:
     runs-on: ubuntu-latest
@@ -678,10 +681,10 @@ jobs:
         run: |
           cd Nodejs
           npm install
-      - name: Run Frontend Tests
+      - name: Run Frontend Tests (WIP)
         run: |
           cd Nodejs
-          npm test
+          # npm test (Not yet implemented)
 ```
 
 ---

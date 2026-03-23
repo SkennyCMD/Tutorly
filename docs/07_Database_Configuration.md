@@ -92,7 +92,7 @@ The following diagram illustrates the complete database structure with all entit
 
 **Role Values**:
 - `STAFF` - Full access (manage students, view all lessons, export reports)
-- `NORMAL` - Limited access (own lessons only)
+- `GENERIC` - Limited access (own lessons only)
 
 ---
 
@@ -104,7 +104,7 @@ The following diagram illustrates the complete database structure with all entit
 | `tutor_id` | BIGINT | FK → Tutor(id) | Created tutor |
 | `timestamp` | TIMESTAMP | NOT NULL | Creation date/time |
 
-**Purpose**: Track which admin created each tutor account and when.
+**Purpose**: Track which admin created each tutor account and when. (*Note: While the ER diagram suggests a (1,1) cardinality, the backend implements this as a join table to allow auditing creation history*).
 
 **Composite Primary Key**: (`admin_id`, `tutor_id`)
 
@@ -149,20 +149,19 @@ The following diagram illustrates the complete database structure with all entit
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique booking ID |
+| `created_at` | TIMESTAMP | NOT NULL | Booking creation timestamp |
 | `start_time` | TIMESTAMP | NOT NULL | Scheduled start time |
 | `end_time` | TIMESTAMP | NOT NULL | Scheduled end time |
-| `flag` | VARCHAR(20) | NOT NULL | Booking status |
+| `flag` | BOOLEAN | NOT NULL | Booking status (false = pending, true = confirmed) |
 | `student_id` | BIGINT | FK → Student(id), NOT NULL | Student booking the lesson |
-| `tutor_id` | BIGINT | FK → Tutor(id) | Assigned tutor |
+| `tutor_id` | BIGINT | FK → Tutor(id), NOT NULL | Assigned tutor |
 | `creator_id` | BIGINT | FK → Tutor(id) | Tutor who created the booking |
 
 **Purpose**: Manage lesson reservations and scheduling.
 
 **Flag Values**:
-- `PENDING` - Awaiting confirmation
-- `CONFIRMED` - Approved and scheduled
-- `CANCELLED` - Cancelled by user
-- `COMPLETED` - Lesson finished (can convert to Lesson)
+- `false` - Pending, awaiting approval or unconfirmed
+- `true` - Confirmed, approved, or completed
 
 ---
 
@@ -171,9 +170,9 @@ The following diagram illustrates the complete database structure with all entit
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique test ID |
-| `test_type` | VARCHAR(50) | NOT NULL | Type of assessment |
-| `grade` | VARCHAR(10) | | Grade/score received |
-| `date` | DATE | NOT NULL | Test date |
+| `description` | TEXT | | Description of the test content or subject |
+| `mark` | INTEGER | | Test score or grade received |
+| `day` | DATE | NOT NULL | Test date |
 | `tutor_id` | BIGINT | FK → Tutor(id), NOT NULL | Tutor who administered the test |
 | `student_id` | BIGINT | FK → Student(id), NOT NULL | Student who took the test |
 
@@ -188,7 +187,7 @@ The following diagram illustrates the complete database structure with all entit
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique note ID |
 | `description` | TEXT | NOT NULL | Note content/task description |
 | `start_time` | TIMESTAMP | NOT NULL | Note/event start time |
-| `end_time` | TIMESTAMP | | Optional end time (for time-blocks) |
+| `end_time` | TIMESTAMP | NOT NULL | Note/event end time |
 | `creator_id` | BIGINT | FK → Tutor(id), NOT NULL | Tutor who created the note |
 
 **Purpose**: Calendar reminders, tasks, and planning notes.

@@ -40,6 +40,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 - ✅ Comprehensive logging system with color-coded output
 - ✅ Responsive design with modern CSS
 - ✅ Client-side JavaScript for interactive features
+- ✅ **Progressive Web App (PWA)** capabilities, with service worker caching and offline resilience
 
 ---
 
@@ -232,8 +233,7 @@ Nodejs/
 │   ├── adminLogger.js              # Admin login attempt logging
 │   ├── userService.js              # User management utilities
 │   ├── excel.js                    # Excel report generation
-│   ├── config.js                   # Application configuration
-│   └── README.md                   # Service module documentation
+│   └── config.js                   # Application configuration
 │
 ├── views/                          # EJS templates (server-rendered HTML)
 │   ├── login.ejs                   # Tutor login page
@@ -267,20 +267,16 @@ Nodejs/
 │
 ├── ssl/                            # SSL certificates (gitignored)
 │   ├── private-key.pem             # Private key for HTTPS
-│   ├── certificate.pem             # Self-signed certificate
-│   └── README.md                   # SSL certificate documentation
+│   └── certificate.pem             # Self-signed certificate
 │
 ├── migrations/                     # Database migration scripts
-│   ├── hashExistingPasswords.js    # Migrate plain-text passwords to bcrypt
-│   └── README.md                   # Migration documentation
+│   └── hashExistingPasswords.js    # Migrate plain-text passwords to bcrypt
 │
 ├── admin_login_attempts.txt        # Admin login attempt log file
 ├── generate-ssl-cert.sh            # Script to generate SSL certificates
 ├── package.json                    # Node.js dependencies and scripts
 ├── .env.example                    # Environment variables template
-├── .gitignore                      # Git ignore rules
-├── HTTPS_SETUP.md                  # HTTPS configuration guide
-└── README.md                       # This file
+└── .gitignore                      # Git ignore rules
 ```
 
 ---

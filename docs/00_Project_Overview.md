@@ -128,6 +128,7 @@ The heart of the system is a robust RESTful API built with Spring Boot 3.4.1 and
 - `Student`: Students with class and information
 - `Lesson`: Lessons with tutor, student, schedules
 - `Prenotation`: Lesson bookings (confirmed/unconfirmed)
+- `Test`: Student assessments and exam results
 - `CalendarNote`: Notes and reminders for the calendar
 - `Admin`: System administrators
 
@@ -153,6 +154,7 @@ User-friendly web interface that handles authentication, sessions and presents d
 - ✅ **Password hashing** with bcrypt (10 salt rounds)
 - ✅ **Role-based access control** (RBAC)
 - ✅ **Server-side rendering** with EJS templates
+- ✅ **Progressive Web App (PWA)**: Offline fallback support and caching via service workers (`manifest.json`, `service-worker.js`).
 - ✅ **Excel export** for reports and statistics
 - ✅ **Advanced logging** with colors and timestamps
 - ✅ **Middleware chain** for authentication and authorization
@@ -374,12 +376,12 @@ WINDOWS:
 cd C:\path\to\Tutorly\Java\backend-api
 mvnw.cmd spring-boot:run
 ```
-**OPTION B: VIA BASH WITH MAVEN WRAPPER**
+**OPTION B: VIA BASH WITH MAVEN WRAPPER AND EXPLICIT JAVA_HOME**
 
 LINUX/MAC:
 ```bash
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
-/mvnw spring-boot:run
+./mvnw spring-boot:run
 ```     
 WINDOWS:
 ```bash
@@ -434,13 +436,13 @@ npm install
 
 #### 6. Start Node.js Frontend
 
-**Option A: HTTP Mode (default)**
+**Option A: HTTP Mode (development default)**
 ```bash
+# Standard Development (with auto-reload)
+npm run dev
+
 # Production
 npm start
-
-# Development (with auto-reload)
-npm run dev
 ```
 
 Frontend will be available at: `http://localhost:3000`
@@ -450,11 +452,11 @@ Frontend will be available at: `http://localhost:3000`
 # Generate SSL certificates (first time only)
 npm run generate-cert
 
-# Start with HTTPS
-npm run https
-
-# Or development with HTTPS and auto-reload
+# Development with HTTPS and auto-reload
 npm run dev:https
+
+# Production with HTTPS
+npm run https
 ```
 
 Frontend will be available at:
@@ -497,8 +499,6 @@ Tutorly/
 │       │       └── resources/
 │       │           └── application.properties
 │       ├── pom.xml                 # Maven dependencies
-│       ├── README.md               # Backend documentation
-│       ├── GUI-README.md           # GUI documentation
 │       └── run-gui.sh/bat          # GUI launcher scripts
 │
 ├── Nodejs/                         # Frontend Server
@@ -509,7 +509,9 @@ Tutorly/
 │   │   ├── authMiddleware.js       # Middleware
 │   │   ├── javaApiService.js       # API client
 │   │   ├── passwordService.js      # Password hashing
+│   │   ├── userService.js          # User operations
 │   │   ├── logger.js               # Logging
+│   │   ├── adminLogger.js          # Admin logging
 │   │   ├── excel.js                # Excel reports
 │   │   └── config.js               # Configuration
 │   ├── views/                      # EJS templates
@@ -524,13 +526,14 @@ Tutorly/
 │   │   ├── css/                    # Stylesheets
 │   │   └── js/                     # Client JavaScript
 │   ├── migrations/                 # DB migrations
-│   ├── package.json                # npm dependencies
-│   └── README.md                   # Frontend documentation
+│   └── package.json                # npm dependencies
 │
 ├── Database/                       # Database scripts
 │   └── POSTGRE_DB_CONFIG.TXT
 │
-└── README.md                       # This file
+└── docs/                           # Centralized documentation
+    ├── 00_Project_Overview.md      # This file
+    └── ...                         # Other doc files
 ```
 
 ---
@@ -548,6 +551,7 @@ Each component has its own detailed documentation:
 | **Service Modules** | [05_Service_Modules.md](05_Service_Modules.md) | Node.js utility modules documentation |
 | **Database Migrations** | [06_Database_Migrations.md](06_Database_Migrations.md) | Password hashing and data migration scripts |
 | **Database Configuration** | [07_Database_Configuration.md](07_Database_Configuration.md) | PostgreSQL setup, schema, and ER model |
+| **PWA Guide** | [12_PWA_Guide.md](12_PWA_Guide.md) | Documentation on Progressive Web App implementation |
 
 ---
 
@@ -601,16 +605,16 @@ cd Java/backend-api
 ./mvnw test jacoco:report
 ```
 
-### Frontend Testing
+### Frontend Testing (WIP)
 
 ```bash
 cd Nodejs
 
-# Add test framework (example: Jest)
+# Note: Tests are a Work In Progress.
+# You can add a testing framework (example: Jest):
 npm install --save-dev jest
 
-# Run tests
-npm test
+# Currently npm test will exit with an error.
 ```
 
 ---
@@ -733,6 +737,11 @@ Contributions, issues and feature requests are welcome!
 - **Java**: Follow standard Java conventions (Google Java Style)
 - **JavaScript**: Use ESLint (config included)
 - **Commits**: Use conventional commits (`feat:`, `fix:`, `docs:`, etc.)
+
+### Contributors
+
+We thank the following users for their fundamental contribution
+- Gorlix (Alessandro Gorla) -> for PWA support implementation
 
 ---
 

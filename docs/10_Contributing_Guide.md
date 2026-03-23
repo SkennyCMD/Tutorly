@@ -82,11 +82,11 @@ Before contributing, ensure you have:
 ```bash
 # Fork the repository on GitHub
 # Then clone your fork
-git clone https://github.com/YOUR-USERNAME/Tutorly.git
+git clone https://github.com/skennyCMD/Tutorly.git
 cd Tutorly
 
 # Add upstream remote
-git remote add upstream https://github.com/original-owner/Tutorly.git
+git remote add upstream https://github.com/skennyCMD/Tutorly.git
 
 # Verify remotes
 git remote -v
@@ -97,7 +97,7 @@ git remote -v
 ```bash
 # Java Backend
 cd Java/backend-api
-mvn clean install
+./mvnw clean install
 
 # Node.js Frontend
 cd ../../Nodejs
@@ -120,7 +120,7 @@ createdb tutorly_db
 ```bash
 # Terminal 1: Start Java Backend
 cd Java/backend-api
-mvn spring-boot:run
+./mvnw spring-boot:run
 
 # Terminal 2: Start Node.js Frontend
 cd Nodejs
@@ -205,11 +205,11 @@ git checkout -b feature/42-student-search-by-class
 ```bash
 # Run Java tests
 cd Java/backend-api
-mvn test
+./mvnw test
 
-# Run Node.js tests
-cd Nodejs
-npm test
+# Run Node.js tests (WIP - Not yet implemented)
+# cd Nodejs
+# npm test
 
 # Manual testing
 # Test the application thoroughly in your browser
@@ -842,16 +842,11 @@ git pull upstream main
 # Create feature branch
 git checkout -b feature/my-feature
 
-# Run all tests
-cd Java/backend-api && mvn test
-cd Nodejs && npm test
-
-# Check code style
-mvn checkstyle:check  # Java
-npm run lint          # Node.js
+# Run all backend tests
+cd Java/backend-api && ./mvnw test
 
 # Build for production
-mvn clean package     # Java
+Ok, ora creami cd Java/backend-api && ./mvnw clean package
 npm run build         # Node.js (if applicable)
 ```
 
