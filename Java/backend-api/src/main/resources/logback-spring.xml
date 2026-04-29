@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Use Spring Boot's default as a base -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    
+    <property name="LOG_FILE" value="logs/tutorly-api.log" />
+
+    <!-- Custom Console Pattern for Development -->
+    <!-- Timestamp , Coloured Level, Thread, TraceId, Tabular Fixed Width Logger with Abbreviated Package, Message, Compact Exception -->
+    <property name="CUSTOM_CONSOLE_PATTERN" value="%cyan(%d{HH:mm:ss.SSS}) %highlight(%-5level) %magenta([%15.15thread]) %cyan([traceId: %X{traceId:-N/A}]) %yellow(%-40.40logger{39}) : %msg%n%red(%xEx{short})" />
+
+    <!-- Console Appender for Development (Readable Text) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CUSTOM_CONSOLE_PATTERN}</pattern>
+            <charset>utf8</charset>
+        </encoder>
+    </appender>
+
+    <!-- Async Console Appender for JSON (Cloud/Prod Environments) -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+        </encoder>
+    </appender>
+
+    <!-- Rolling File Appender with JSON for Production logs storage -->
+    <appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/tutorly-api-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>traceId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+        </encoder>
+    </appender>
+
+    <!-- Async Wrapper for High Performance in Prod -->
+    <appender name="ASYNC_JSON_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- Queue size; increase if producing huge bursts of logs -->
+        <queueSize>512</queueSize>
+        <!-- Do not discard any logs (0 means keep all levels including TRACE/DEBUG) -->
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="ROLLING_FILE" />
+    </appender>
+    
+    <appender name="ASYNC_JSON_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <appender-ref ref="JSON_CONSOLE" />
+    </appender>
+
+    <!-- Dev Profile: Human Readable Console -->
+    <springProfile name="dev, default">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+        <logger name="com.tutorly.app.backend_api" level="DEBUG" />
+    </springProfile>
+
+    <!-- Prod Profile: High Performance JSON Logging -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_JSON_CONSOLE" />
+            <appender-ref ref="ASYNC_JSON_FILE" />
+        </root>
+    </springProfile>
+
+</configuration>

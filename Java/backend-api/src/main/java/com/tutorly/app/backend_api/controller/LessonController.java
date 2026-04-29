@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/lessons")
 @CrossOrigin(origins = "*")
+@Slf4j
 public class LessonController {
     
     @Autowired
@@ -183,14 +185,17 @@ public class LessonController {
     @PostMapping
     public ResponseEntity<?> createLesson(@RequestBody LessonCreateDTO lessonDTO) {
         try {
+            log.info("Attempting to create lesson for tutor {} and student {}", lessonDTO.getTutorId(), lessonDTO.getStudentId());
             // Fetch tutor and student by ID
             Optional<Tutor> tutorOpt = tutorService.getTutorById(lessonDTO.getTutorId());
             Optional<Student> studentOpt = studentService.getStudentById(lessonDTO.getStudentId());
             
             if (tutorOpt.isEmpty()) {
+                log.warn("Tutor not found with ID: {}", lessonDTO.getTutorId());
                 return ResponseEntity.badRequest().body("Tutor not found with ID: " + lessonDTO.getTutorId());
             }
             if (studentOpt.isEmpty()) {
+                log.warn("Student not found with ID: {}", lessonDTO.getStudentId());
                 return ResponseEntity.badRequest().body("Student not found with ID: " + lessonDTO.getStudentId());
             }
             
@@ -203,9 +208,10 @@ public class LessonController {
             lesson.setStudent(studentOpt.get());
             
             Lesson savedLesson = lessonService.saveLesson(lesson);
+            log.info("Successfully created lesson with ID {}", savedLesson.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(savedLesson);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error creating lesson: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Error creating lesson: " + e.getMessage());
         }

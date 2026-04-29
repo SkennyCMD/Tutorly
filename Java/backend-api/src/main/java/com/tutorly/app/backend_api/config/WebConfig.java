@@ -18,15 +18,23 @@ public class WebConfig implements WebMvcConfigurer {
     
     @Autowired
     private ApiKeyInterceptor apiKeyInterceptor;
+
+    @Autowired
+    private MdcInterceptor mdcInterceptor;
     
     /**
      * Register interceptors to handle incoming requests
      * 
      * Adds the API key interceptor to validate authentication on all /api/** endpoints.
      * All requests to /api/** must include a valid X-API-Key header.
+     * MdcInterceptor is added for traceId injection.
      */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // Register MDC Before anything else so traceId is available down the chain
+        registry.addInterceptor(mdcInterceptor)
+                .addPathPatterns("/**");
+
         registry.addInterceptor(apiKeyInterceptor)
                 .addPathPatterns("/api/**");
     }

@@ -4,7 +4,7 @@
 
 **Document**: 01_Java_Backend_API.md  
 **Last Updated**: February 25, 2026  
-**Version**: 1.2.0  
+**Version**: 1.1.0  
 **Author**: Tutorly Development Team  
 
 ---
@@ -14,6 +14,7 @@
 - [Quick Reference](#quick-reference)
 - [System Architecture](#system-architecture)
 - [Technology Stack](#technology-stack)
+- [Observability & Logging](#observability--logging)
 - [Data Model](#data-model)
 - [Architectural Pattern](#architectural-pattern)
 - [Main Components](#main-components)
@@ -166,6 +167,20 @@ This section details the internal structure of the Java backend component:
 
 **UI:**
 - **Swing GUI** - Graphical interface for server configuration
+
+---
+
+## Observability & Logging
+
+### Key Capabilities
+- **Aspect-Oriented Logging (AOP):** Methods in `@RestController` and `@Service` classes are automatically intercepted by `LoggingAspect.java` using AspectJ to seamlessly log inputs, outputs, and execution times without polluting the business code.
+- **Mapped Diagnostic Context (MDC):** Each HTTP Request receives a unique `traceId` inside the MDC (via `MdcInterceptor.java`), ensuring that asynchronous traces and multiple microservice hops can be correlated seamlessly using Grafana Loki or the ELK stack.
+- **Global Exception Handling:** Handled via `@RestControllerAdvice` in `GlobalExceptionHandler.java`. It prevents internal stack traces from leaking to the frontend while producing structured JSON error representations and logging the comprehensive crash stack internally via `.error()`.
+- **Logback Profiles:** 
+  - **Dev Profile:** Generates color-coded, rigidly tabular output in the CLI. The package names are abbreviated to save space and the exceptions are formatted compactly to highlight the real root cause directly.
+  - **Prod Profile:** Triggers `LogstashEncoder` output wrapped inside an `ch.qos.logback.classic.AsyncAppender`. It writes logs asynchronously in pure JSON format to prevent I/O disk bottlenecks on production servers.
+
+> **Note:** Hibernate SQL Debug logging is explicitly disabled by default in `application.properties` (`spring.jpa.properties.hibernate.format_sql=false`) to prevent console flooding.
 
 ---
 

@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.util.Properties;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Tutorly API Server Manager GUI
@@ -18,6 +19,7 @@ import java.util.Properties;
  * @author Tutorly Team
  * @version 1.0
  */
+@Slf4j
 public class ServerLauncherGUI extends JFrame {
     
     // Configuration file for storing last used settings
@@ -370,7 +372,7 @@ public class ServerLauncherGUI extends JFrame {
             
         } catch (Exception e) {
             appendToConsole("Error starting server: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Error starting server", e);
             JOptionPane.showMessageDialog(this, 
                 "Error starting server:\n" + e.getMessage(), 
                 "Error", 
@@ -454,7 +456,7 @@ public class ServerLauncherGUI extends JFrame {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to set system look and feel", e);
         }
         
         SwingUtilities.invokeLater(() -> new ServerLauncherGUI());
