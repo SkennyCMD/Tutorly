@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: February 25, 2026  
+**Last Updated**: April 29, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -32,7 +32,7 @@
 
 ---
 
-## 📖 Project Overview
+## Project Overview
 
 Tutorly is a full-stack web application designed to simplify tutoring activity management. The system offers an intuitive interface for tutors and administrators, allowing you to:
 
@@ -47,7 +47,7 @@ The system is designed for tutoring centers, private teachers, or educational or
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 Tutorly follows a **three-tier** architecture with separation between user interface, application logic, and data persistence:
 
@@ -108,7 +108,7 @@ Tutorly follows a **three-tier** architecture with separation between user inter
 
 ---
 
-## 🔧 Main Components
+## Main Components
 
 ### 1. **Backend API (Java Spring Boot)**
 
@@ -201,7 +201,7 @@ PostgreSQL relational database for data persistence.
 
 ---
 
-## ✨ Main Features
+## Main Features
 
 ### For Tutors
 
@@ -280,7 +280,7 @@ Tutors with **STAFF** role have additional features:
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Backend
 | Technology        | Version  | Usage                           |
@@ -320,7 +320,7 @@ Tutors with **STAFF** role have additional features:
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -479,7 +479,7 @@ Open browser and go to: `http://localhost:3000`
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Tutorly/
@@ -538,7 +538,7 @@ Tutorly/
 
 ---
 
-## 📚 Complete Documentation
+## Complete Documentation
 
 Each component has its own detailed documentation:
 
@@ -555,7 +555,7 @@ Each component has its own detailed documentation:
 
 ---
 
-## 🔐 Security
+## Security
 
 ### Authentication
 - **Password hashing**: Bcrypt with 10 salt rounds
@@ -588,7 +588,7 @@ Each component has its own detailed documentation:
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Backend Testing
 
@@ -619,7 +619,7 @@ npm install --save-dev jest
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Port Already in Use
 
@@ -719,7 +719,7 @@ taskkill /PID <PID> /F
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions, issues and feature requests are welcome!
 
@@ -745,7 +745,7 @@ We thank the following users for their fundamental contribution
 
 ---
 
-## 📝 Roadmap
+## Roadmap
 
 ### Version 1.1 (Next Release)
 - [ ] Implement email notifications
@@ -764,20 +764,20 @@ We thank the following users for their fundamental contribution
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 
 ---
 
-## 👥 Team
+## Team
 
 Developed by Matteo Schintu (Skenny)
 
 ---
 
-## 📧 Contacts
+## Contacts
 
 For questions, support or feedback:
 

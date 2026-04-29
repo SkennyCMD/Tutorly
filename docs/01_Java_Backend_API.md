@@ -3,8 +3,8 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: February 25, 2026  
-**Version**: 1.1.0  
+**Last Updated**: April 29, 2026  
+**Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
 ---
@@ -38,7 +38,7 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 
 ---
 
-## ⚡ Quick Reference
+## Quick Reference
 
 ### Common Commands
 

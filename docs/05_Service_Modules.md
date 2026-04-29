@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: February 25, 2026  
+**Last Updated**: April 29, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -28,7 +28,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 
 ## File Structure
 
-### 📋 `config.js`
+### `config.js`
 Centralized application configuration.
 - Java Backend API credentials
 - Server ports
@@ -46,7 +46,7 @@ Centralized application configuration.
 
 ---
 
-### 🔐 `authService.js`
+### `authService.js`
 Authentication services for tutors and administrators.
 
 **Role:** User authentication with bcrypt password verification
@@ -94,7 +94,7 @@ Authenticates an admin user with similar process.
 
 ---
 
-### 🔒 `passwordService.js`
+### `passwordService.js`
 Password security and authentication logging utilities.
 
 **Role:** Password hashing and verification with bcrypt
@@ -149,7 +149,7 @@ const isValid = await verifyPassword('mySecurePassword123', hashedPassword);
 
 ---
 
-### 🛡️ `authMiddleware.js`
+### `authMiddleware.js`
 Express middleware for authentication and authorization control.
 
 **Role:** Protect routes with authentication and authorization checks
@@ -232,7 +232,7 @@ app.get('/reports', isAuthenticated, isStaff, (req, res) => {
 
 ---
 
-### 🌐 `javaApiService.js`
+### `javaApiService.js`
 Service for interaction with the Java Backend API.
 
 **Role:** HTTP client for Java Backend API communication
@@ -315,7 +315,7 @@ const lessons = await fetchAllLessons();
 
 ---
 
-### 📝 `logger.js`
+### `logger.js`
 Centralized logging with color-coded console output.
 
 **Role:** Centralized logging with color-coded console output
@@ -356,7 +356,7 @@ app.use(requestLogger);
 
 ---
 
-### 📝 `adminLogger.js`
+### `adminLogger.js`
 Logging of administrator login attempts.
 
 **Exports:**
@@ -430,7 +430,7 @@ const result = await generateTutorMonthlyReport(
 
 ---
 
-### 📄 `userService.js`
+### `userService.js`
 User management service (if present).
 
 ---

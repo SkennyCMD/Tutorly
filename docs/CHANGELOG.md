@@ -20,176 +20,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.3.0] - 2026-02-25
+## [1.0.0] - 2026-04-29
 
 ### Added
-- **Documentation**: Complete documentation overhaul
-  - Added 08_Testing_Guide.md with comprehensive testing strategies
-  - Added 09_Deployment_Guide.md for production deployment
-  - Added 10_Contributing_Guide.md with contribution guidelines
-  - Added 11_Glossary.md with technical terms and acronyms
-  - Added CHANGELOG.md for tracking project changes
-- **Documentation**: Metadata headers with version, date, and author
-- **Documentation**: Navigation links (Previous/Next) in all documents
-- **Documentation**: Standardized Table of Contents across all files
-- **Documentation**: 07_Database_Configuration.md with complete DB schema
 
-### Changed
-- **Documentation**: Fixed typos in multiple documentation files
-- **Documentation**: Corrected broken internal links
-- **Documentation**: Updated all cross-references to point to docs/ directory
-- **Documentation**: Renamed "Server Utilities" to "Service Modules"
-- **Documentation**: Updated all documents to February 25, 2026
+**Backend Architecture (Spring Boot & PostgreSQL)**
+- Complete RESTful API architecture (Controller, Service, Repository, Entity layers).
+- Centralized Exception Handling (`@RestControllerAdvice`) for standardized JSON error responses.
+- Relational database schema with 8 entities (Users, Admins, Tutors, Students, Lessons, Prenotations, CalendarNotes, Tests).
+- Database auto-generation and schema mapping (`ddl-auto=update`).
+- Advanced Cloud-Ready Observability system using AspectJ (AOP) for automatic Controller/Service logging without boilerplate.
+- MDC (Mapped Diagnostic Context) distributed tracking via injected `traceId` for each HTTP request.
+- Logback configurable Profiles (Dev/Prod) with ANSI-colored, fixed-column, tabular CLI logs.
+- API Key Authentication via HTTP Interceptors for secure endpoint access.
+- Complete HTTPS/SSL Support activated natively via Self-Signed Certificates (`keystore.p12`).
+- Desktop Launcher Application (Java Swing) for quick database configuration and server booting with real-time log tailing.
 
-### Fixed
-- Documentation typo: "Laungher" → "Launcher"
-- Documentation typo: "mirgate" → "migrate"
-- Documentation link: Fixed inconsistent file paths
+**Frontend Web Application (Node.js, Express, EJS)**
+- Fully responsive Web interface using EJS server-side rendering.
+- Role-Based Access Control (RBAC) with dual authentication systems: Admin Panel and Tutor Staff Panel.
+- Progressive Web App (PWA) setup with Service Workers and custom manifest definitions for caching.
+- Secure Session Management with configurable durations.
+- Password Security Migration to bcrypt hashing.
+- Excel Report Generation logic for lessons, monthly statistics, and student reports.
+- Advanced CLI Logger (`logger.js`, `adminLogger.js`) featuring colored outputs and login attempt tracking (`admin_login_attempts.txt`).
+- Custom API Aggregation module (`javaApiService.js`) to seamlessly map frontend requests to the Java backend.
+- Local HTTPS Support setup for dual-layer secure development.
 
----
-
-## [1.2.0] - 2026-02-17
-
-### Added
-- **Backend**: Complete HTTPS/SSL support for Java backend
-- **Backend**: API Key authentication system
-- **Frontend**: HTTPS support with self-signed certificates for development
-- **Frontend**: Dual authentication system (Tutors and Admins)
-- **Frontend**: Color-coded logging system
-- **Database**: Password migration script (plain text → bcrypt)
-- **Documentation**: 04_HTTPS_Setup_Guide.md
-- **Documentation**: 05_Service_Modules.md
-- **Documentation**: 06_Database_Migrations.md
-
-### Changed
-- **Authentication**: Migrated from plain text to bcrypt password hashing
-- **Security**: Enhanced session management with configurable durations
-- **Frontend**: Improved error handling and user feedback
+**Documentation**
+- Comprehensive standardized documentation structure covering architecture, Database schema, PWA setup, and HTTPS config.
+- Centralized Glossary, Testing Guide, Deployment Guide, and Contribution Guidelines.
 
 ### Security
-- **CRITICAL**: All passwords now stored as bcrypt hashes
-- **Enhancement**: Added API key validation for backend requests
-- **Enhancement**: Implemented secure session management
-
----
-
-## [1.1.0] - 2026-02-01
-
-### Added
-- **Frontend**: Excel report generation for lessons
-- **Frontend**: Monthly statistics export
-- **Frontend**: Student report generation
-- **Backend**: CalendarNote entity for calendar management
-- **Backend**: Test entity for exam tracking
-- **Backend**: Complete CRUD operations for all entities
-- **GUI**: Desktop launcher application (Java Swing)
-- **GUI**: Real-time server logs in GUI
-- **GUI**: Configuration persistence
-
-### Changed
-- **Backend**: Improved error handling with centralized exception management
-- **Database**: Added indexes for better query performance
-- **Frontend**: Enhanced UI with responsive design elements
-
-### Fixed
-- **Backend**: Fixed foreign key constraint issues
-- **Frontend**: Resolved session timeout problems
-- **Database**: Fixed date format inconsistencies
-
----
-
-## [1.0.0] - 2026-01-15
-
-### Added
-- **Backend**: Java Spring Boot REST API with 50+ endpoints
-- **Backend**: JPA/Hibernate ORM integration
-- **Backend**: PostgreSQL database support
-- **Frontend**: Node.js Express web server
-- **Frontend**: EJS templating engine
-- **Frontend**: Session-based authentication
-- **Database**: Complete relational schema with 8 entities:
-  - Admin
-  - Tutor
-  - AdminCreatesTutor
-  - Student
-  - Lesson
-  - Prenotation
-  - Test
-  - CalendarNote
-- **Features**: Student management (CRUD operations)
-- **Features**: Tutor management with roles (STAFF, GENERIC)
-- **Features**: Lesson tracking and history
-- **Features**: Booking system (Prenotations)
-- **Features**: Calendar with notes
-- **Features**: Admin panel for system management
-- **Features**: Staff panel for tutor management
-- **Documentation**: Initial README files for all components
-
-### Security
-- Basic authentication system
-- Role-based access control (RBAC)
-- CORS configuration for API security
-
----
-
-## [0.5.0] - 2025-12-20 (Beta)
-
-### Added
-- **Prototype**: Basic Java backend with Spring Boot
-- **Prototype**: Simple Node.js frontend
-- **Prototype**: PostgreSQL database schema
-- **Features**: Basic student CRUD operations
-- **Features**: Tutor login functionality
-- **Features**: Simple lesson recording
-
-### Changed
-- Migrated from SQLite to PostgreSQL
-- Improved API endpoint structure
-
----
-
-## [0.1.0] - 2025-12-01 (Alpha)
-
-### Added
-- **Initial Commit**: Project structure
-- **Backend**: Basic Spring Boot setup
-- **Frontend**: Basic Express.js setup
-- **Database**: Initial entity definitions
-- **Documentation**: Basic README
-
----
-
-## Version History
-
-| Version | Release Date | Status | Key Features |
-|---------|-------------|--------|--------------|
-| 1.3.0 | 2026-02-25 | Current | Complete documentation, Testing & Deployment guides |
-| 1.2.0 | 2026-02-17 | Stable | HTTPS support, bcrypt authentication, Security enhancements |
-| 1.1.0 | 2026-02-01 | Stable | Excel reports, GUI launcher, Enhanced features |
-| 1.0.0 | 2026-01-15 | Stable | First production release, Complete features |
-| 0.5.0 | 2025-12-20 | Beta | Prototype with core functionality |
-| 0.1.0 | 2025-12-01 | Alpha | Initial development version |
+- All passwords cryptographically hashed using `bcrypt`.
+- API Key validation for all sensitive backend requests.
+- Secure session management and validation.
+- CORS configuration for API security restriction.
 
 ---
 
 ## Component Versions
 
-### Current (v1.3.0)
+### Current Stack (v1.0.0)
 
 | Component | Version | Technology |
 |-----------|---------|------------|
-| Java Backend | 1.2.0 | Spring Boot 3.4.1, Java 21 |
-| Node.js Frontend | 1.3.0 | Express.js 4.18.2, Node.js 18+ |
-| GUI Launcher | 1.1.0 | Java Swing, Java 21 |
-| Database | PostgreSQL 12+ | Relational Database |
+| Java Backend API | 1.0.0 | Spring Boot 3.4.1, Java 21 |
+| Node.js Frontend | 1.0.0 | Express.js 4.18.2, Node.js 18+ |
+| GUI Launcher | 1.0.0 | Java Swing, Java 21 |
+| Database | 1.0.0 | PostgreSQL 12+ |
 
-### Dependencies
+### Core Dependencies
 
 **Java Backend:**
 - Spring Boot 3.4.1
 - Spring Data JPA
 - Hibernate 6.x
 - PostgreSQL Driver 42.7.1
+- AspectJ (Weaver & Runtime) 1.9.21
 - Maven 3.8+
 
 **Node.js Frontend:**
@@ -199,8 +87,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - express-session 1.18.2
 - ExcelJS 4.4.0
 - Node.js 18.x+
-
----
 
 ## Migration Guides
 

@@ -5,7 +5,7 @@ This guide explains how to enable HTTPS on the Node.js server for local developm
 ---
 
 **Document**: 04_HTTPS_Setup_Guide.md  
-**Last Updated**: February 25, 2026  
+**Last Updated**: April 29, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -27,7 +27,7 @@ This guide explains how to enable HTTPS on the Node.js server for local developm
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **OpenSSL** installed on your system
   ```bash
@@ -47,7 +47,7 @@ This guide explains how to enable HTTPS on the Node.js server for local developm
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Generate SSL Certificates
 
@@ -85,7 +85,7 @@ The server will run on:
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -130,7 +130,7 @@ set USE_HTTPS=true && set HTTPS_PORT=3443 && node src/index.js
 
 ---
 
-## 🧪 Testing HTTPS
+## Testing HTTPS
 
 ### Test with curl
 
@@ -158,7 +158,7 @@ openssl s_client -connect localhost:3443 -showcerts
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Nodejs/
@@ -174,7 +174,7 @@ Nodejs/
 
 ---
 
-## 🔐 Security Notes
+## Security Notes
 
 ### For Development
 
@@ -211,7 +211,7 @@ For production, use certificates from a trusted Certificate Authority:
 
 ---
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 > **📖 For common issues**, see [00_Project_Overview.md - Troubleshooting](00_Project_Overview.md#troubleshooting)
 
@@ -259,7 +259,7 @@ brew install openssl
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 ### Using mkcert (No Browser Warnings!)
 
@@ -319,7 +319,7 @@ server {
 
 ---
 
-## 🎯 Summary
+## Summary
 
 | Command | Description |
 |---------|-------------|
@@ -335,7 +335,7 @@ server {
 
 ---
 
-## 🚀 Production Setup with CA-Signed Certificates
+## Production Setup with CA-Signed Certificates
 
 For production environments, you **must** use certificates issued by a trusted Certificate Authority (CA). Self-signed certificates will show browser warnings and are not suitable for public-facing websites.
 
@@ -977,7 +977,7 @@ sudo update-ca-trust
 
 ---
 
-## ✅ Checklist
+## Checklist
 
 Before starting development with HTTPS:
 

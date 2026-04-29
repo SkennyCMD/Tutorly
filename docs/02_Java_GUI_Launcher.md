@@ -5,8 +5,8 @@
 ---
 
 **Document**: 02_Java_GUI_Launcher.md  
-**Last Updated**: February 25, 2026  
-**Version**: 1.1.0  
+**Last Updated**: April 29, 2026  
+**Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
 ---
