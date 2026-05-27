@@ -81,6 +81,7 @@ The following diagram illustrates the complete database structure with all entit
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique tutor ID |
 | `username` | VARCHAR(100) | NOT NULL, UNIQUE | Login username |
 | `password` | VARCHAR(255) | NOT NULL | Bcrypt-hashed password |
+| `mail` | VARCHAR(256) | NULL | Tutor email address (optional) |
 | `status` | VARCHAR(20) | NOT NULL | Account status (ACTIVE/BLOCKED) |
 | `role` | VARCHAR(20) | NOT NULL | Role (STAFF/NORMAL) |
 

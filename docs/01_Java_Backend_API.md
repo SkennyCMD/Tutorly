@@ -195,8 +195,9 @@ This section details the internal structure of the Java backend component:
 │ -id          │    │    │ -id          │
 │ -mail        │    │    │ -username    │
 │ -password    │    │    │ -password    │
-│ -username    │    │    │ -status      │
-└──────────────┘    │    │ -role        │
+│ -username    │    │    │ -mail        │
+└──────────────┘    │    │ -status      │
+                    │    │ -role        │
                     │    └──────┬───────┘
                     │           │
       ┌─────────────┴────┐      │
