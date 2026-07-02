@@ -20,6 +20,18 @@
  *
  */
 
+const path = require('path');
+
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+const toNumber = (value, fallback) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const JAVA_API_HOST = process.env.JAVA_API_HOST || 'localhost';
+const JAVA_API_PORT = toNumber(process.env.JAVA_API_PORT, 8443);
+
 module.exports = {
 
     // Java Backend API Configuration
@@ -29,14 +41,16 @@ module.exports = {
      * Base URL for Java Spring Boot backend API
      * Uses HTTPS on port 8443 with self-signed certificate
      */
-    JAVA_API_URL: 'https://localhost:8443',
+    JAVA_API_HOST,
+    JAVA_API_PORT,
+    JAVA_API_URL: process.env.JAVA_API_URL || `https://${JAVA_API_HOST}:${JAVA_API_PORT}`,
 
     /**
      * API key for authenticating requests to Java backend
      * Sent in X-API-Key header for all API calls
      * WARNING: Change this value in production
      */
-    JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu',
+    JAVA_API_KEY: process.env.JAVA_API_KEY || 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu',
 
 
     // Server Configuration
@@ -46,13 +60,13 @@ module.exports = {
      * Express server port (HTTP)
      * Defaults to 3000 if PORT environment variable is not set
      */
-    PORT: process.env.PORT || 3000,
+    PORT: toNumber(process.env.PORT, 3000),
 
     /**
      * HTTPS server port
      * Defaults to 3443 if HTTPS_PORT environment variable is not set
      */
-    HTTPS_PORT: process.env.HTTPS_PORT || 3443,
+    HTTPS_PORT: toNumber(process.env.HTTPS_PORT, 3443),
 
     /**
      * Enable HTTPS mode
@@ -77,14 +91,14 @@ module.exports = {
      * Used by express-session to sign and verify session IDs
      * WARNING: Change this value in production
      */
-    TUTOR_SESSION_SECRET: 'tutorly-tutor-secret-key-change-in-production',
+    TUTOR_SESSION_SECRET: process.env.TUTOR_SESSION_SECRET || 'tutorly-tutor-secret-key-change-in-production',
 
     /**
      * Secret key for signing admin session cookies
      * Separate secret for admin sessions for additional security
      * WARNING: Change this value in production
      */
-    ADMIN_SESSION_SECRET: 'tutorly-admin-secret-key-change-in-production',
+    ADMIN_SESSION_SECRET: process.env.ADMIN_SESSION_SECRET || 'tutorly-admin-secret-key-change-in-production',
 
 
     // Session Duration Settings

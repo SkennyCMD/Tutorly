@@ -22,9 +22,25 @@
  */
 
 const https = require('https');
-const { JAVA_API_KEY } = require('./config');
+const { JAVA_API_HOST, JAVA_API_PORT, JAVA_API_KEY } = require('./config');
 const { verifyPassword, hashPassword } = require('./passwordService');
 const { fetchFromJavaAPI } = require('./javaApiService');
+
+
+function createJavaApiOptions(path, postData) {
+    return {
+        hostname: JAVA_API_HOST,
+        port: JAVA_API_PORT,
+        path,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+            'X-API-Key': JAVA_API_KEY
+        },
+        rejectUnauthorized: false
+    };
+}
 
 
 // Tutor Authentication
@@ -176,23 +192,12 @@ function authenticateTutorWithJavaAPI(username, password) {
         });
 
         console.log('Java API Call:', {
-            url: `https://localhost:8443/api/tutors/login`,
+            url: `https://${JAVA_API_HOST}:${JAVA_API_PORT}/api/tutors/login`,
             data: { username, password: '***' }  // Hide password in logs
         });
 
         // Configure HTTPS request to Java backend
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: '/api/tutors/login',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY  // API key for backend authentication
-            },
-            rejectUnauthorized: false  // Accept self-signed SSL certificate
-        };
+        const options = createJavaApiOptions('/api/tutors/login', postData);
 
         // Make HTTPS request to Java API
         const req = https.request(options, (res) => {
@@ -259,23 +264,12 @@ function authenticateAdminWithJavaAPI(username, password) {
         });
 
         console.log('Java API Call (Admin):', {
-            url: `https://localhost:8443/api/admins/login`,
+            url: `https://${JAVA_API_HOST}:${JAVA_API_PORT}/api/admins/login`,
             data: { username, password: '***' }  // Hide password in logs
         });
 
         // Configure HTTPS request for admin endpoint
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: '/api/admins/login',  // Admin-specific endpoint
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY  // API key for backend authentication
-            },
-            rejectUnauthorized: false  // Accept self-signed SSL certificate
-        };
+        const options = createJavaApiOptions('/api/admins/login', postData);
 
         // Make HTTPS request to Java API
         const req = https.request(options, (res) => {

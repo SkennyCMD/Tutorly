@@ -34,7 +34,7 @@
  */
 
 const https = require('https');
-const { JAVA_API_URL, JAVA_API_KEY } = require('./config');
+const { JAVA_API_HOST, JAVA_API_PORT, JAVA_API_KEY } = require('./config');
 
 
 // Core API Communication
@@ -72,8 +72,8 @@ function fetchFromJavaAPI(path, method = 'GET', data = null) {
 
         // Configure HTTPS request options
         const options = {
-            hostname: 'localhost',
-            port: 8443,                          // Java backend port
+            hostname: JAVA_API_HOST,
+            port: JAVA_API_PORT,                 // Java backend port
             path: path,
             method: method,
             headers: {

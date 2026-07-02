@@ -53,6 +53,8 @@ const {
 const { 
     JAVA_API_URL, 
     JAVA_API_KEY, 
+    JAVA_API_HOST,
+    JAVA_API_PORT,
     PORT,
     HTTPS_PORT,
     USE_HTTPS,
@@ -63,6 +65,26 @@ const {
     TUTOR_SESSION_DURATION,
     ADMIN_SESSION_DURATION
 } = require('../server_utilities/config');
+
+function createJavaApiRequestOptions(pathname, method = 'GET', body = null) {
+    const headers = {
+        'X-API-Key': JAVA_API_KEY
+    };
+
+    if (body) {
+        headers['Content-Type'] = 'application/json';
+        headers['Content-Length'] = Buffer.byteLength(body);
+    }
+
+    return {
+        hostname: JAVA_API_HOST,
+        port: JAVA_API_PORT,
+        path: pathname,
+        method,
+        headers,
+        rejectUnauthorized: false
+    };
+}
 
 //------------------------------------------------------------------------------------------------------
 // EXPRESS APP INITIALIZATION 
@@ -868,18 +890,7 @@ app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
         
         const postData = JSON.stringify(lessonData);
         
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: '/api/lessons',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
+        const options = createJavaApiRequestOptions('/api/lessons', 'POST', postData);
         
         const httpsReq = https.request(options, (httpsRes) => {
             let data = '';
@@ -974,18 +985,7 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) =>
         
         const postData = JSON.stringify(prenotationData);
         
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: '/api/prenotations/create',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
+        const options = createJavaApiRequestOptions('/api/prenotations/create', 'POST', postData);
         
         const httpsReq = https.request(options, (httpsRes) => {
             let data = '';
@@ -1052,18 +1052,7 @@ app.put('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res)
         
         const postData = JSON.stringify(prenotationData);
         
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: `/api/prenotations/${id}`,
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
+        const options = createJavaApiRequestOptions(`/api/prenotations/${id}`, 'PUT', postData);
         
         const httpsReq = https.request(options, (httpsRes) => {
             let data = '';
@@ -1112,16 +1101,7 @@ app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, r
         
         logInfo('Deleting prenotation', req, { id });
         
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: `/api/prenotations/${id}`,
-            method: 'DELETE',
-            headers: {
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
+        const options = createJavaApiRequestOptions(`/api/prenotations/${id}`, 'DELETE');
         
         const httpsReq = https.request(options, (httpsRes) => {
             let data = '';
@@ -1184,18 +1164,7 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, async (req, res) 
         
         const postData = JSON.stringify(calendarNoteData);
         
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: '/api/calendar-notes',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
+        const options = createJavaApiRequestOptions('/api/calendar-notes', 'POST', postData);
         
         const httpsReq = https.request(options, (httpsRes) => {
             let data = '';
@@ -1290,18 +1259,7 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
         
         const postData = JSON.stringify(calendarNoteData);
         
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: `/api/calendar-notes/${id}`,
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
+        const options = createJavaApiRequestOptions(`/api/calendar-notes/${id}`, 'PUT', postData);
         
         const httpsReq = https.request(options, (httpsRes) => {
             let data = '';
@@ -1359,16 +1317,7 @@ app.delete('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req,
         
         logInfo('Deleting calendar note', req, { id });
         
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: `/api/calendar-notes/${id}?userId=${currentUserId}`,
-            method: 'DELETE',
-            headers: {
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
+        const options = createJavaApiRequestOptions(`/api/calendar-notes/${id}?userId=${currentUserId}`, 'DELETE');
         
         const httpsReq = https.request(options, (httpsRes) => {
             let data = '';
@@ -1435,18 +1384,7 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
         
         const postData = JSON.stringify(studentData);
         
-        const options = {
-            hostname: 'localhost',
-            port: 8443,
-            path: '/api/students',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': Buffer.byteLength(postData),
-                'X-API-Key': JAVA_API_KEY
-            },
-            rejectUnauthorized: false
-        };
+        const options = createJavaApiRequestOptions('/api/students', 'POST', postData);
         
         const httpsReq = https.request(options, (httpsRes) => {
             let data = '';
