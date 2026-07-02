@@ -47,6 +47,9 @@ let prenotations = [];
 // Current month/year for statistics display
 let statsDate = new Date();
 
+// Toggle: include booked and in-progress lessons in monthly statistics
+let includeBookedInStats = true;
+
 // Search term for filtering lessons by student name
 let searchTerm = '';
 
@@ -281,10 +284,14 @@ function renderStatistics() {
     const month = statsDate.getMonth();
     const year = statsDate.getFullYear();
 
-    // Filter lessons by month/year, completed status, and search term
+    // Filter lessons by month/year, optionally include booked/in-progress, and search term
     const monthLessons = allLessonsForStats.filter(l => {
         const lessonDate = new Date(l.date);
-        const matchesDate = lessonDate.getMonth() === month && lessonDate.getFullYear() === year && l.status === 'completed';
+        const inMonth = lessonDate.getMonth() === month && lessonDate.getFullYear() === year;
+
+        // Determine whether to count this lesson for stats
+        const statusEligible = l.status === 'completed' || (includeBookedInStats && (l.status === 'booked' || l.status === 'in-progress'));
+        const matchesDate = inMonth && statusEligible;
 
         // If search term exists, filter by student name
         if (searchTerm) {
@@ -355,9 +362,12 @@ function renderLessons() {
     const emptyState = document.getElementById('emptyLessons');
     const countEl = document.getElementById('lessonsCount');
 
-    // Filter completed lessons by search term
+    // Filter lessons for history view (completed by default, optionally include booked/in-progress)
     let filteredLessons = lessons
-        .filter(l => l.status === 'completed')
+        .filter(l => {
+            const eligible = l.status === 'completed' || (includeBookedInStats && (l.status === 'booked' || l.status === 'in-progress'));
+            return eligible;
+        })
         .filter(l => {
             if (!searchTerm) return true;
             const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
@@ -365,15 +375,15 @@ function renderLessons() {
         });
 
     // Calculate total from all lessons for accurate count
-    const totalCompletedWithSearch = allLessonsForStats
-        .filter(l => l.status === 'completed')
+    const totalWithSearch = allLessonsForStats
+        .filter(l => l.status === 'completed' || (includeBookedInStats && (l.status === 'booked' || l.status === 'in-progress')))
         .filter(l => {
             if (!searchTerm) return true;
             const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
             return fullName.includes(searchTerm);
         }).length;
 
-    countEl.textContent = `${totalCompletedWithSearch} lesson${totalCompletedWithSearch !== 1 ? 's' : ''}`;
+    countEl.textContent = `${totalWithSearch} lesson${totalWithSearch !== 1 ? 's' : ''}`;
 
     // Show empty state if no lessons
     if (filteredLessons.length === 0) {
@@ -415,8 +425,8 @@ function renderLessons() {
     }).join('');
 
     // Add load more button if there are more lessons available on server
-    const completedLoaded = lessons.filter(l => l.status === 'completed').length;
-    const completedTotal = allLessonsForStats.filter(l => l.status === 'completed').length;
+    const completedLoaded = lessons.filter(l => l.status === 'completed' || (includeBookedInStats && (l.status === 'booked' || l.status === 'in-progress'))).length;
+    const completedTotal = allLessonsForStats.filter(l => l.status === 'completed' || (includeBookedInStats && (l.status === 'booked' || l.status === 'in-progress'))).length;
 
     if (loadedLessonsCount < totalLessonsCount) {
         lessonsHTML += `
