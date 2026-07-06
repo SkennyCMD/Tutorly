@@ -289,6 +289,23 @@ app.post('/login', tutorSession, async (req, res) => {
         req.session.username = username;
         req.session.role = authResult.tutorData.role.toLowerCase();
 
+        // Honor "Remember me" checkbox: if present, keep session for TUTOR_SESSION_DURATION,
+        // otherwise make it a browser-session cookie (expires when browser closes).
+        try {
+            const remember = req.body && req.body.remember;
+            if (remember) {
+                req.session.cookie.maxAge = TUTOR_SESSION_DURATION;
+                logInfo(`Tutor login with remember: ${username}`, req);
+            } else {
+                // session cookie (no persistent expiry)
+                req.session.cookie.maxAge = null;
+                logInfo(`Tutor login without remember: ${username}`, req);
+            }
+        } catch (e) {
+            // If anything goes wrong, fall back to default session settings
+            logWarning(`Could not apply remember-me for ${username}: ${e.message}`, req);
+        }
+
         logAuthAttempt('tutor', username, clientIp, true, authResult.passwordHash, authResult.dbHash);
         logSuccess(`Tutor login successful: ${username}`, req);
         res.redirect('/home');
