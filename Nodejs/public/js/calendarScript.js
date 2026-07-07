@@ -234,6 +234,21 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTutors();
 });
 
+/**
+ * Scroll the calendar container to the default start hour.
+ *
+ * Keeps the full day available while opening the view already focused on the
+ * morning instead of the top of the grid.
+ */
+function scrollCalendarToDefaultHour() {
+  const container = document.getElementById('calendarScrollContainer');
+  if (!container) return;
+
+  const defaultHour = 8;
+  const hourHeight = 60;
+  container.scrollTop = defaultHour * hourHeight;
+}
+
 
 // Data Loading
 
@@ -392,6 +407,7 @@ function renderWeekView() {
   renderWeekHeader();
   renderDayHeaders();
   renderTimeGrid();
+  requestAnimationFrame(scrollCalendarToDefaultHour);
 }
 
 /**
@@ -631,6 +647,7 @@ function renderMobileDayView() {
   dayLabel.textContent = getDayName(currentMobileDate);
 
   renderMobileTimeGrid();
+  requestAnimationFrame(scrollCalendarToDefaultHour);
 }
 
 /**
