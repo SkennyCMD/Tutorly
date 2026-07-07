@@ -19,6 +19,9 @@ body {
 }
 .modal-content {
     transform: scale(0.95);
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     transition: transform 0.2s ease;
 }
 .modal.open .modal-content {
