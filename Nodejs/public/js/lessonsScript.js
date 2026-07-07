@@ -372,6 +372,11 @@ function renderLessons() {
             if (!searchTerm) return true;
             const fullName = `${l.firstName} ${l.lastName}`.toLowerCase();
             return fullName.includes(searchTerm);
+        })
+        .sort((a, b) => {
+            const dateA = new Date(`${a.date}T${a.startTime}`);
+            const dateB = new Date(`${b.date}T${b.startTime}`);
+            return dateB - dateA;
         });
 
     // Calculate total from all lessons for accurate count
