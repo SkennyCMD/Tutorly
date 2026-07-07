@@ -35,6 +35,7 @@ const { hashPassword, logAuthAttempt } = require('../server_utilities/passwordSe
 
 // Logging utilities
 const { logError, logSuccess, logWarning, logInfo, requestLogger } = require('../server_utilities/logger');
+const FileSessionStore = require('../server_utilities/fileSessionStore');
 // Java API communication services
 const { 
     fetchFromJavaAPI,
@@ -103,9 +104,11 @@ app.use(express.static(path.join(__dirname, '../public')));
 // SESSION MANAGEMENT
 // Unified session configuration for both tutors and admins
 // Uses the same session store to allow proper username tracking in logs
+const sessionStore = new FileSessionStore(path.join(__dirname, '../data/session-store.json'));
 const sessionMiddleware = session({
     name: 'tutorly.sid',
     secret: TUTOR_SESSION_SECRET,
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -295,10 +298,12 @@ app.post('/login', tutorSession, async (req, res) => {
             const remember = req.body && req.body.remember;
             if (remember) {
                 req.session.cookie.maxAge = TUTOR_SESSION_DURATION;
+                req.session.cookie.expires = new Date(Date.now() + TUTOR_SESSION_DURATION);
                 logInfo(`Tutor login with remember: ${username}`, req);
             } else {
                 // session cookie (no persistent expiry)
                 req.session.cookie.maxAge = null;
+                req.session.cookie.expires = false;
                 logInfo(`Tutor login without remember: ${username}`, req);
             }
         } catch (e) {
@@ -308,7 +313,12 @@ app.post('/login', tutorSession, async (req, res) => {
 
         logAuthAttempt('tutor', username, clientIp, true, authResult.passwordHash, authResult.dbHash);
         logSuccess(`Tutor login successful: ${username}`, req);
-        res.redirect('/home');
+        req.session.save((saveError) => {
+            if (saveError) {
+                logWarning(`Could not save tutor session for ${username}: ${saveError.message}`, req);
+            }
+            res.redirect('/home');
+        });
     } catch (error) {
         logError(`Login error for tutor ${username}: ${error.message}`, req, { error: error.stack });
         logAuthAttempt('tutor', username, clientIp, false, null, null);

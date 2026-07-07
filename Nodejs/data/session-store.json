@@ -1,0 +1,15 @@
+{
+  "Ix8p7jd9KO0OQ6jAesJaAuVn233VYPIm": {
+    "cookie": {
+      "originalMaxAge": 2592000000,
+      "expires": "2026-08-06T15:00:29.085Z",
+      "secure": true,
+      "httpOnly": true,
+      "path": "/",
+      "sameSite": "strict"
+    },
+    "userId": 1,
+    "username": "tutor1",
+    "role": "generic"
+  }
+}
