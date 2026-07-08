@@ -247,16 +247,29 @@ Features:
           <h2 id="currentWeekLabel" class="text-lg font-semibold text-foreground"></h2>
         </div>
 
-        <!-- Color legend for event types (Prenotation = blue, Note = orange) -->
         <div class="flex items-center gap-4">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-sm bg-lesson"></span>
-            <span class="text-sm text-muted-foreground">Prenotation</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-sm bg-note"></span>
-            <span class="text-sm text-muted-foreground">Note</span>
-          </div>
+          <!-- Tutor filter (STAFF only): shows only the selected tutor's prenotations -->
+          <% if (user && user.role==='STAFF' ) { %>
+            <div class="flex items-center gap-2">
+              <label for="tutorFilter" class="text-sm text-muted-foreground">Tutor:</label>
+              <select id="tutorFilter"
+                class="px-2 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+                <option value="all">All Tutors</option>
+              </select>
+            </div>
+            <% } %>
+
+              <!-- Color legend for event types (Prenotation = blue, Note = orange) -->
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm bg-lesson"></span>
+                  <span class="text-sm text-muted-foreground">Prenotation</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm bg-note"></span>
+                  <span class="text-sm text-muted-foreground">Note</span>
+                </div>
+              </div>
         </div>
       </div>
     </div>

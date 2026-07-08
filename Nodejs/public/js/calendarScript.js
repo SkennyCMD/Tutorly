@@ -147,6 +147,9 @@ let currentWeekStart = getWeekStart(new Date());
 // Current date for mobile day view
 let currentMobileDate = new Date();
 
+// Tutor filter (STAFF only): 'all' shows every tutor's prenotations, otherwise a tutor ID
+let tutorFilterId = 'all';
+
 // Counter for generating new event IDs
 let eventIdCounter = events.length > 0 ? Math.max(...events.map(e => e.id)) + 1 : 1;
 
@@ -226,6 +229,7 @@ function getDayName(date) {
  * - Loads students and tutors
  */
 document.addEventListener('DOMContentLoaded', () => {
+  setupTutorFilter();
   renderWeekView();
   renderMobileDayView();
   setupEventListeners();
@@ -397,6 +401,48 @@ function setDefaultDates() {
 }
 
 
+// Tutor Filter (STAFF only)
+
+
+/**
+ * Populate the tutor filter dropdown (STAFF only) and wire up its change
+ * handler to re-render the calendar showing only the selected tutor's
+ * prenotations. Not present in the DOM for non-STAFF users.
+ */
+function setupTutorFilter() {
+  const select = document.getElementById('tutorFilter');
+  if (!select) return;
+
+  const tutors = window.serverData?.tutors || [];
+
+  select.innerHTML = '<option value="all">All Tutors</option>' +
+    tutors.map(tutor => `<option value="${tutor.id}">${tutor.username}</option>`).join('');
+
+  select.addEventListener('change', (e) => {
+    tutorFilterId = e.target.value;
+    renderWeekView();
+    renderMobileDayView();
+  });
+}
+
+/**
+ * Filter events for rendering based on the selected tutor (STAFF only).
+ *
+ * Only prenotations ('lesson' type events) are affected - calendar notes
+ * are always shown regardless of the tutor filter.
+ *
+ * @param {Array} eventsToFilter - Events to filter
+ * @returns {Array} Events visible under the current tutor filter
+ */
+function filterEventsByTutor(eventsToFilter) {
+  if (tutorFilterId === 'all') return eventsToFilter;
+
+  return eventsToFilter.filter(event =>
+    event.type !== 'lesson' || String(event.tutorId) === String(tutorFilterId)
+  );
+}
+
+
 // Week View Rendering (Desktop)
 
 
@@ -515,6 +561,9 @@ function renderEventsOnGrid() {
   // Clear existing events from previous render
   document.querySelectorAll('.event').forEach(el => el.remove());
 
+  // Apply the STAFF-only tutor filter (notes are unaffected, see filterEventsByTutor)
+  const visibleEvents = filterEventsByTutor(events);
+
   /**
    * Check if two events overlap in time.
    * 
@@ -535,7 +584,7 @@ function renderEventsOnGrid() {
 
   // Group overlapping events
   const eventGroups = [];
-  events.forEach(event => {
+  visibleEvents.forEach(event => {
     let addedToGroup = false;
     for (let group of eventGroups) {
       if (group.some(e => eventsOverlap(e, event))) {
@@ -549,7 +598,7 @@ function renderEventsOnGrid() {
     }
   });
 
-  events.forEach(event => {
+  visibleEvents.forEach(event => {
     const startHour = parseInt(event.startTime.split(':')[0]);
     const startMinutes = parseInt(event.startTime.split(':')[1]);
     const endHour = parseInt(event.endTime.split(':')[0]);
@@ -684,7 +733,8 @@ function renderMobileTimeGrid() {
  */
 function renderMobileEvents() {
   const dateStr = formatDate(currentMobileDate);
-  const dayEvents = events.filter(e => e.date === dateStr);
+  // Apply the STAFF-only tutor filter (notes are unaffected, see filterEventsByTutor)
+  const dayEvents = filterEventsByTutor(events.filter(e => e.date === dateStr));
 
   /**
    * Check if two events overlap in time (mobile version).

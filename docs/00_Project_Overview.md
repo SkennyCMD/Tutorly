@@ -278,6 +278,7 @@ Tutors with **STAFF** role have additional features:
 
 - **Staff Panel**: Dedicated panel with advanced functions
 - **Calendar note management**: Create notes visible to all
+- **Calendar tutor filter**: Filter the calendar view to show only a selected tutor's prenotations (notes remain always visible)
 - **Extended reports**: Access to reports from other tutors (if authorized)
 - **Advanced configurations**: System settings
 
@@ -754,7 +755,7 @@ We thank the following users for their fundamental contribution
 
 ### Sub-Version 1.1 (Next Release)
 - [x] Automation to add a lesson from a prenotation
-- [ ] Filter by tutor in calendar
+- [x] Filter by tutor in calendar
 - [ ] Edit a Lesson
 
 
