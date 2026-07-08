@@ -389,11 +389,14 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             
             return {
                 id: `lesson-${lesson.id}`,
+                lessonId: lesson.id,
+                studentId,
                 firstName: student?.name || 'Unknown',
                 lastName: student?.surname || '',
                 classType: student?.studentClass || 'N/A',
                 startTime: lesson.startTime,
                 endTime: lesson.endTime,
+                description: lesson.description || '',
                 type: 'lesson',
                 status: 'Done'
             };
@@ -637,6 +640,7 @@ app.get('/lessons', tutorSession, isAuthenticated, async (req, res) => {
             
             return {
                 id: lesson.id,
+                studentId,
                 firstName: student?.name || 'Unknown',
                 lastName: student?.surname || '',
                 classType: student?.studentClass || 'M',
@@ -1027,6 +1031,145 @@ app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
     } catch (error) {
         logError('Error creating lesson', req, { error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to create lesson' });
+    }
+});
+
+/**
+ * Update an existing lesson
+ * PUT /api/lessons/:id
+ * Body: { studentId, description, lessonDate, startTime, endTime }
+ * Same date/time format support as creation
+ */
+app.put('/api/lessons/:id', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { studentId, description, lessonDate, startTime, endTime } = req.body;
+        const tutorId = req.session.userId;
+
+        let startDateTime, endDateTime;
+
+        if (lessonDate) {
+            const [startHour, startMinute] = startTime.split(':');
+            const [endHour, endMinute] = endTime.split(':');
+
+            const startHourPadded = String(startHour).padStart(2, '0');
+            const startMinutePadded = String(startMinute).padStart(2, '0');
+            const endHourPadded = String(endHour).padStart(2, '0');
+            const endMinutePadded = String(endMinute).padStart(2, '0');
+
+            startDateTime = `${lessonDate}T${startHourPadded}:${startMinutePadded}:00`;
+            endDateTime = `${lessonDate}T${endHourPadded}:${endMinutePadded}:00`;
+        } else if (startTime.includes('T')) {
+            startDateTime = startTime;
+            endDateTime = endTime;
+        } else {
+            const today = new Date();
+            const [startHour, startMinute] = startTime.split(':');
+            const [endHour, endMinute] = endTime.split(':');
+
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const startHourPadded = String(startHour).padStart(2, '0');
+            const startMinutePadded = String(startMinute).padStart(2, '0');
+            const endHourPadded = String(endHour).padStart(2, '0');
+            const endMinutePadded = String(endMinute).padStart(2, '0');
+
+            startDateTime = `${year}-${month}-${day}T${startHourPadded}:${startMinutePadded}:00`;
+            endDateTime = `${year}-${month}-${day}T${endHourPadded}:${endMinutePadded}:00`;
+        }
+
+        const lessonData = {
+            description: description || '',
+            startTime: startDateTime,
+            endTime: endDateTime,
+            tutorId: parseInt(tutorId),
+            studentId: parseInt(studentId)
+        };
+
+        logInfo('Updating lesson', req, { id, studentId, tutorId });
+
+        const postData = JSON.stringify(lessonData);
+
+        const options = createJavaApiRequestOptions(`/api/lessons/${id}`, 'PUT', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    logSuccess('Lesson updated successfully', req, { id });
+                    try {
+                        const lesson = JSON.parse(data);
+                        res.json(lesson);
+                    } catch (e) {
+                        res.json({ success: true, message: 'Lesson updated' });
+                    }
+                } else {
+                    logError(`Error updating lesson, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to update lesson' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for lesson update', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to update lesson' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+
+    } catch (error) {
+        logError('Error updating lesson', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to update lesson' });
+    }
+});
+
+/**
+ * Delete a lesson
+ * DELETE /api/lessons/:id
+ */
+app.delete('/api/lessons/:id', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        logInfo('Deleting lesson', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/lessons/${id}`, 'DELETE');
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
+                    logSuccess('Lesson deleted successfully', req, { id });
+                    res.json({ success: true, message: 'Lesson deleted' });
+                } else {
+                    logError(`Error deleting lesson, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete lesson' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for lesson deletion', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to delete lesson' });
+        });
+
+        httpsReq.end();
+
+    } catch (error) {
+        logError('Error deleting lesson', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to delete lesson' });
     }
 });
 

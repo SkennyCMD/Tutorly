@@ -293,12 +293,11 @@ function renderLessons() {
   emptyState.classList.add('hidden');
 
   // Desktop table view - full details in table rows
-  // Prenotations are clickable: they open the Add Lesson modal pre-filled (see handlePrenotationClick)
-  tableBody.innerHTML = lessons.map(lesson => {
-    const isPrenotation = lesson.type === 'prenotation';
-    return `
-    <tr class="group${isPrenotation ? ' cursor-pointer hover:bg-secondary/50' : ''}"
-      ${isPrenotation ? `onclick="handlePrenotationClick('${lesson.id}')" title="Click to add this as a lesson"` : ''}>
+  // Every row is clickable: prenotations open the Add Lesson modal pre-filled,
+  // lessons open the Edit Lesson modal pre-filled (see handleTodayRowClick)
+  tableBody.innerHTML = lessons.map(lesson => `
+    <tr class="group cursor-pointer hover:bg-secondary/50"
+      onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? 'Click to add this as a lesson' : 'Click to edit this lesson'}">
       <td class="py-4">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-secondary rounded-full flex items-center justify-center">
@@ -315,15 +314,12 @@ function renderLessons() {
         ${lesson.status ? `<span class="text-xs px-2 py-1 rounded ${lesson.status === 'Done' ? 'bg-primary/10 text-primary' : lesson.status === 'Confirmed' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}">${lesson.status}</span>` : ''}
       </td>
     </tr>
-  `;
-  }).join('');
+  `).join('');
 
   // Mobile list view - card layout with avatars and compact info
-  mobileList.innerHTML = lessons.map(lesson => {
-    const isPrenotation = lesson.type === 'prenotation';
-    return `
-    <div class="flex items-center justify-between p-4 bg-secondary rounded-xl${isPrenotation ? ' cursor-pointer hover:bg-secondary/70' : ''}"
-      ${isPrenotation ? `onclick="handlePrenotationClick('${lesson.id}')" title="Click to add this as a lesson"` : ''}>
+  mobileList.innerHTML = lessons.map(lesson => `
+    <div class="flex items-center justify-between p-4 bg-secondary rounded-xl cursor-pointer hover:bg-secondary/70"
+      onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? 'Click to add this as a lesson' : 'Click to edit this lesson'}">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-card rounded-full flex items-center justify-center border border-border">
           <span class="text-sm font-medium text-foreground">${lesson.firstName[0]}${lesson.lastName ? lesson.lastName[0] : ''}</span>
@@ -338,34 +334,46 @@ function renderLessons() {
         ${lesson.status ? `<span class="text-xs px-2 py-1 rounded ${lesson.status === 'Done' ? 'bg-primary/10 text-primary' : lesson.status === 'Confirmed' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}">${lesson.status}</span>` : ''}
       </div>
     </div>
-  `;
-  }).join('');
+  `).join('');
 }
 
 /**
- * Handle a click on a prenotation row/card in Today's Lessons.
+ * Handle a click on a row/card in Today's Lessons.
  *
- * Opens the Add Lesson modal pre-filled with the prenotation's student,
- * date, and time, so it can be turned into a lesson with one click. The
- * source prenotation is deleted automatically once the lesson is created
- * (see setupLessonForm in modalShared.js).
+ * Dispatches based on entry type:
+ * - Prenotation: opens the Add Lesson modal pre-filled, so it can be turned
+ *   into a lesson with one click (source prenotation is deleted automatically
+ *   once the lesson is created - see setupLessonForm in modalShared.js).
+ * - Lesson: opens the Edit Lesson modal pre-filled, to update or delete it
+ *   (see openEditLessonModal in modalShared.js).
  *
- * @param {string} lessonId - The combined id (e.g. "prenotation-5") of the clicked row
+ * @param {string} lessonId - The combined id (e.g. "prenotation-5" or "lesson-12") of the clicked row
  */
-function handlePrenotationClick(lessonId) {
+function handleTodayRowClick(lessonId) {
   const entry = lessons.find(l => l.id === lessonId);
-  if (!entry || entry.type !== 'prenotation') return;
+  if (!entry) return;
 
   const formatTimeForInput = (isoString) =>
     new Date(isoString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-  openModalFromPrenotation({
-    prenotationId: entry.prenotationId,
-    studentId: entry.studentId,
-    date: entry.startTime.split('T')[0],
-    startTime: formatTimeForInput(entry.startTime),
-    endTime: formatTimeForInput(entry.endTime)
-  });
+  if (entry.type === 'prenotation') {
+    openModalFromPrenotation({
+      prenotationId: entry.prenotationId,
+      studentId: entry.studentId,
+      date: entry.startTime.split('T')[0],
+      startTime: formatTimeForInput(entry.startTime),
+      endTime: formatTimeForInput(entry.endTime)
+    });
+  } else {
+    openEditLessonModal({
+      lessonId: entry.lessonId,
+      studentId: entry.studentId,
+      description: entry.description,
+      date: entry.startTime.split('T')[0],
+      startTime: formatTimeForInput(entry.startTime),
+      endTime: formatTimeForInput(entry.endTime)
+    });
+  }
 }
 
 

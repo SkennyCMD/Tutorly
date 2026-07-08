@@ -113,6 +113,8 @@ async function loadLessons() {
         // Transform data to match display format
         lessons = lessonsData.map(lesson => ({
             id: lesson.id,
+            studentId: lesson.studentId,
+            description: lesson.description || '',
             firstName: lesson.firstName || 'Unknown',
             lastName: lesson.lastName || '',
             classType: lesson.classType || 'M',
@@ -520,7 +522,8 @@ function renderLessons() {
         const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
         return `
-        <div class="flex items-center justify-between p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors">
+        <div class="flex items-center justify-between p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors cursor-pointer"
+            onclick="handleLessonCardClick(${lesson.id})" title="Click to edit this lesson">
         <div class="flex items-center gap-4">
             <div class="w-10 h-10 ${classColors[lesson.classType].split(' ')[0]} rounded-lg flex items-center justify-center">
             <span class="text-sm font-bold ${classColors[lesson.classType].split(' ')[1]}">${lesson.classType}</span>
@@ -664,6 +667,29 @@ function handleBookedLessonClick(prenotationId) {
         date: prenotation.date,
         startTime: prenotation.startTime,
         endTime: prenotation.endTime
+    });
+}
+
+/**
+ * Handle a click on a lesson history card.
+ *
+ * Opens the Edit Lesson modal pre-filled with the lesson's student,
+ * description, date, and time, so it can be updated or deleted
+ * (see openEditLessonModal in modalShared.js).
+ *
+ * @param {number} lessonId - ID of the clicked lesson
+ */
+function handleLessonCardClick(lessonId) {
+    const lesson = lessons.find(l => l.id === lessonId);
+    if (!lesson) return;
+
+    openEditLessonModal({
+        lessonId: lesson.id,
+        studentId: lesson.studentId,
+        description: lesson.description,
+        date: lesson.date,
+        startTime: lesson.startTime,
+        endTime: lesson.endTime
     });
 }
 

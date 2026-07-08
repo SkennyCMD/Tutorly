@@ -802,7 +802,7 @@ GRANT ALL PRIVILEGES ON DATABASE tutorly_db TO tutorly_admin;
 
 ### 3. Application Properties Configuration
 
-Modify `src/main/resources/application.properties`:
+`src/main/resources/application.properties` is git-ignored (it holds local DB credentials and the API key), so it is **not present after cloning** and won't be recreated automatically if deleted - create it yourself with the values below before starting the backend:
 
 ```properties
 # Database Configuration

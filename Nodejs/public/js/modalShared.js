@@ -39,6 +39,10 @@ let filteredStudents = [];
 // so the source prenotation can be deleted once the lesson is successfully created
 let sourcePrenotationId = null;
 
+// ID of the lesson currently open in the Edit Lesson modal (via openEditLessonModal),
+// used to target the PUT/DELETE requests
+let editingLessonId = null;
+
 
 // Data Loading
 
@@ -353,6 +357,221 @@ function setupAddLessonButton() {
 }
 
 
+// Edit Lesson Modal
+
+
+/**
+ * Open the edit lesson modal, pre-filled with an existing lesson's details.
+ *
+ * @param {Object} lesson - Lesson data to edit
+ * @param {number} lesson.lessonId - ID of the lesson (used for update/delete requests)
+ * @param {number} lesson.studentId - Student to preselect
+ * @param {string} lesson.description - Lesson description
+ * @param {string} lesson.date - Lesson date (YYYY-MM-DD)
+ * @param {string} lesson.startTime - Start time (HH:mm)
+ * @param {string} lesson.endTime - End time (HH:mm)
+ */
+function openEditLessonModal(lesson) {
+  const modal = document.getElementById('editLessonModal');
+  if (!modal) return;
+
+  editingLessonId = lesson.lessonId;
+
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  const searchInput = document.getElementById('editLessonStudentSearch');
+  if (searchInput) searchInput.value = '';
+
+  updateEditLessonStudentDropdown('');
+
+  const select = document.getElementById('editLessonStudentSelect');
+  if (select) {
+    select.size = 1;
+    select.value = lesson.studentId;
+  }
+
+  const descriptionInput = document.getElementById('editLessonDescription');
+  if (descriptionInput) descriptionInput.value = lesson.description || '';
+
+  const dateInput = document.getElementById('editLessonDate');
+  if (dateInput) dateInput.value = lesson.date;
+
+  const startTimeInput = document.getElementById('editLessonStartTime');
+  if (startTimeInput) startTimeInput.value = lesson.startTime;
+
+  const endTimeInput = document.getElementById('editLessonEndTime');
+  if (endTimeInput) endTimeInput.value = lesson.endTime;
+}
+
+/**
+ * Close the edit lesson modal without saving any changes.
+ */
+function closeEditLessonModal() {
+  const modal = document.getElementById('editLessonModal');
+  if (!modal) return;
+
+  modal.classList.remove('open');
+  document.body.style.overflow = '';
+  editingLessonId = null;
+
+  const select = document.getElementById('editLessonStudentSelect');
+  if (select) select.size = 1;
+}
+
+/**
+ * Filter students in the edit lesson modal's dropdown based on search term.
+ *
+ * @param {string} searchTerm - Search query for student names
+ */
+function filterEditLessonStudents(searchTerm) {
+  updateEditLessonStudentDropdown(searchTerm.toLowerCase());
+}
+
+/**
+ * Rebuild the edit lesson modal's student dropdown, filtered by search term
+ * while preserving the currently selected student if it still matches.
+ *
+ * @param {string} searchTerm - Filter query (already lowercased)
+ */
+function updateEditLessonStudentDropdown(searchTerm) {
+  const select = document.getElementById('editLessonStudentSelect');
+  if (!select) return;
+
+  const currentValue = select.value;
+  const term = searchTerm || '';
+
+  select.innerHTML = '<option value="">-- Select a student --</option>';
+
+  const matches = allStudents.filter(student => {
+    const fullName = `${student.name} ${student.surname}`.toLowerCase();
+    return fullName.includes(term);
+  });
+
+  matches.forEach(student => {
+    const option = document.createElement('option');
+    option.value = student.id;
+    let displayText = `${student.name} ${student.surname} (${student.studentClass})`;
+    if (student.description && student.description.trim() !== '') {
+      displayText += ` - ${student.description}`;
+    }
+    option.textContent = displayText;
+    select.appendChild(option);
+  });
+
+  select.value = currentValue;
+  select.size = term.length > 0 && matches.length > 0 ? Math.min(matches.length + 1, 8) : 1;
+}
+
+/**
+ * Setup edit lesson modal's student search input listener.
+ */
+function setupEditLessonStudentSearch() {
+  const searchInput = document.getElementById('editLessonStudentSearch');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      filterEditLessonStudents(e.target.value);
+    });
+  }
+}
+
+/**
+ * Setup edit lesson form submission (Update button).
+ *
+ * @param {Function} onSuccess - Callback executed after a successful update
+ */
+function setupEditLessonForm(onSuccess) {
+  const form = document.getElementById('editLessonForm');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const studentId = document.getElementById('editLessonStudentSelect').value;
+    const description = document.getElementById('editLessonDescription').value;
+    const lessonDate = document.getElementById('editLessonDate').value;
+    const startTime = document.getElementById('editLessonStartTime').value;
+    const endTime = document.getElementById('editLessonEndTime').value;
+
+    if (!studentId) {
+      alert('Please select a student');
+      return;
+    }
+    if (!lessonDate) {
+      alert('Please select a date');
+      return;
+    }
+    if (!startTime || !endTime) {
+      alert('Please enter start and end times');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/lessons/${editingLessonId}`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ studentId, description, lessonDate, startTime, endTime })
+      });
+
+      if (response.ok) {
+        console.log('Lesson updated successfully!');
+        closeEditLessonModal();
+
+        if (typeof onSuccess === 'function') {
+          await onSuccess();
+        }
+      } else {
+        const error = await response.json();
+        alert('Failed to update lesson: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating lesson:', error);
+      alert('Failed to update lesson. Please try again.');
+    }
+  });
+}
+
+/**
+ * Setup the edit lesson modal's Delete button.
+ *
+ * @param {Function} onSuccess - Callback executed after a successful deletion
+ */
+function setupDeleteLessonButton(onSuccess) {
+  const deleteBtn = document.getElementById('deleteLessonBtn');
+  if (!deleteBtn) return;
+
+  deleteBtn.addEventListener('click', async () => {
+    if (!editingLessonId) return;
+    if (!confirm('Are you sure you want to delete this lesson? This cannot be undone.')) return;
+
+    try {
+      const response = await fetch(`/api/lessons/${editingLessonId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+
+      if (response.ok) {
+        console.log('Lesson deleted successfully!');
+        closeEditLessonModal();
+
+        if (typeof onSuccess === 'function') {
+          await onSuccess();
+        }
+      } else {
+        const error = await response.json();
+        alert('Failed to delete lesson: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error deleting lesson:', error);
+      alert('Failed to delete lesson. Please try again.');
+    }
+  });
+}
+
+
 // Initialization
 
 
@@ -366,10 +585,12 @@ function setupAddLessonButton() {
  * 2. Setup student search functionality
  * 3. Setup lesson form submission with callback
  * 4. Setup add lesson button listener
- * 
- * @param {Function} onSuccess - Callback function to execute after successful lesson creation
- *                                Typically used to reload page or refresh data
- * 
+ * 5. Setup edit lesson modal (student search, update form, delete button)
+ *
+ * @param {Function} onSuccess - Callback function to execute after successful lesson
+ *                                creation, update, or deletion. Typically used to
+ *                                reload page or refresh data
+ *
  * @example
  * // Initialize with page reload on success
  * initializeModal(() => {
@@ -381,4 +602,7 @@ function initializeModal(onSuccess) {
   setupStudentSearch();
   setupLessonForm(onSuccess);
   setupAddLessonButton();
+  setupEditLessonStudentSearch();
+  setupEditLessonForm(onSuccess);
+  setupDeleteLessonButton(onSuccess);
 }

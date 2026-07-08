@@ -214,8 +214,8 @@ PostgreSQL relational database for data persistence.
 
 #### 📚 Lesson Management
 - **Create lesson**: Select student, set times, add description
-- **Edit lesson**: Update times, student or details
-- **Delete lesson**: Cancel lessons no longer needed
+- **Edit lesson**: Click a lesson from the Home dashboard or My Lessons to open a pre-filled popup; update its student, description, date, or time, or cancel without saving
+- **Delete lesson**: Remove a lesson permanently from the same edit popup
 - **Filter lessons**: By date, student, tutor
 - **List view**: Complete table with all information, including each lesson's ID
 - **Monthly statistics**: Total and per-class (M/S/U) hours, with overlapping (concomitant) lessons counted once and cross-class overlaps credited to the higher-priority class
@@ -643,6 +643,16 @@ taskkill /PID <PID> /F
 
 ---
 
+### Java Backend Fails to Start (Missing application.properties)
+
+**Symptom**: `APPLICATION FAILED TO START` - `Failed to configure a DataSource: 'url' attribute is not specified and no embedded datasource could be configured` - `Failed to determine a suitable driver class`
+
+**Cause**: `Java/backend-api/src/main/resources/application.properties` is git-ignored (it holds local DB credentials and the API key) and is **not created automatically** - it must exist locally before the backend can start. If it's missing (e.g. after a fresh clone, or if it was accidentally deleted), Spring Boot has no datasource URL to connect with.
+
+**Solution**: Create `application.properties` with your local values - see [01_Java_Backend_API.md - Application Properties Configuration](01_Java_Backend_API.md#3-application-properties-configuration) for the full template (database credentials, SSL keystore, API key).
+
+---
+
 ### Frontend Can't Connect to Backend
 
 **Symptom**: `Error: connect ECONNREFUSED`
@@ -756,7 +766,7 @@ We thank the following users for their fundamental contribution
 ### Sub-Version 1.1 (Next Release)
 - [x] Automation to add a lesson from a prenotation
 - [x] Filter by tutor in calendar
-- [ ] Edit a Lesson
+- [x] Edit a Lesson
 
 
 ### Version 2.0

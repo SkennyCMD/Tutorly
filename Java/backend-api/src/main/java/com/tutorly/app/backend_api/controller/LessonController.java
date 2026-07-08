@@ -219,18 +219,41 @@ public class LessonController {
     
     /**
      * Update an existing lesson
-     * 
+     *
+     * Accepts the same flat-ID DTO shape as lesson creation (studentId/tutorId)
+     * rather than the raw entity, since Lesson's student/tutor fields are
+     * write-only via their related entities and aren't deserializable from
+     * plain IDs on the entity itself.
+     *
      * @param id The lesson ID to update
-     * @param lesson The updated lesson data
-     * @return Updated lesson if found, 404 Not Found otherwise
+     * @param dto The updated lesson data (description, startTime, endTime, tutorId, studentId)
+     * @return Updated lesson if found, 404 Not Found if lesson/tutor/student don't exist
      * @apiNote PUT /api/lessons/{id}
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Lesson> updateLesson(@PathVariable Long id, @RequestBody Lesson lesson) {
-        if (lessonService.getLessonById(id).isEmpty()) {
+    public ResponseEntity<?> updateLesson(@PathVariable Long id, @RequestBody LessonCreateDTO dto) {
+        Optional<Lesson> existingLesson = lessonService.getLessonById(id);
+        if (existingLesson.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        lesson.setId(id);
+
+        Optional<Tutor> tutor = tutorService.getTutorById(dto.getTutorId());
+        Optional<Student> student = studentService.getStudentById(dto.getStudentId());
+
+        if (tutor.isEmpty()) {
+            return ResponseEntity.badRequest().body("Tutor not found with ID: " + dto.getTutorId());
+        }
+        if (student.isEmpty()) {
+            return ResponseEntity.badRequest().body("Student not found with ID: " + dto.getStudentId());
+        }
+
+        Lesson lesson = existingLesson.get();
+        lesson.setDescription(dto.getDescription());
+        lesson.setStartTime(dto.getStartTime());
+        lesson.setEndTime(dto.getEndTime());
+        lesson.setTutor(tutor.get());
+        lesson.setStudent(student.get());
+
         return ResponseEntity.ok(lessonService.saveLesson(lesson));
     }
     
