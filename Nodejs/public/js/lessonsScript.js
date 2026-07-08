@@ -268,13 +268,18 @@ function updateStatsMonth() {
     document.getElementById('statsMonth').textContent = `${monthNames[statsDate.getMonth()]} ${statsDate.getFullYear()}`;
 }
 
+// Class level hierarchy used to resolve overlapping lessons of different
+// class types: the higher-priority class absorbs the overlapping time.
+const CLASS_PRIORITY = { M: 1, S: 2, U: 3 };
+
 /**
  * Render lesson statistics for the current month.
- * 
+ *
  * Calculates and displays:
- * - Total hours taught
- * - Hours by class type (M/S/U)
- * 
+ * - Total hours taught (overlapping/concomitant lessons counted once)
+ * - Hours by class type (M/S/U), with overlaps between different class
+ *   types credited only to the higher-priority class
+ *
  * Filters by:
  * - Selected month/year
  * - Only completed lessons
@@ -302,24 +307,18 @@ function renderStatistics() {
         return matchesDate;
     });
 
-    // Initialize duration counters (in minutes)
-    let totalMinutes = 0;
-    let minutesM = 0;
-    let minutesS = 0;
-    let minutesU = 0;
+    const { totalMinutes, minutesM, minutesS, minutesU, overlapMinutes, overlapFrom } = calculateOverlapAwareStats(monthLessons);
 
-    // Calculate durations for each lesson
-    monthLessons.forEach(lesson => {
-        const start = lesson.startTime.split(':').map(Number);
-        const end = lesson.endTime.split(':').map(Number);
-        const duration = (end[0] * 60 + end[1]) - (start[0] * 60 + start[1]);
-
-        totalMinutes += duration;
-
-        // Add to class-specific counter
-        if (lesson.classType === 'M') minutesM += duration;
-        else if (lesson.classType === 'S') minutesS += duration;
-        else if (lesson.classType === 'U') minutesU += duration;
+    // Same-class overlaps (e.g. two Middle School lessons overlapping each other) are already
+    // deduplicated in minutesM/S/U above, but aren't reported by overlapFrom (which only tracks
+    // overlap absorbed from a *lower* class). Compute each class's own overlap in isolation and
+    // fold it in under its own key, so e.g. hoursMOverlap also reflects M-with-M overlap.
+    ['M', 'S', 'U'].forEach(classType => {
+        const classLessons = monthLessons.filter(l => l.classType === classType);
+        const selfOverlapMinutes = calculateOverlapAwareStats(classLessons).overlapMinutes;
+        if (selfOverlapMinutes > 0) {
+            overlapFrom[classType][classType] = selfOverlapMinutes;
+        }
     });
 
     // Update statistics display
@@ -327,6 +326,115 @@ function renderStatistics() {
     document.getElementById('hoursM').textContent = formatHours(minutesM);
     document.getElementById('hoursS').textContent = formatHours(minutesS);
     document.getElementById('hoursU').textContent = formatHours(minutesU);
+
+    // Overlap indicators: total concomitant time absorbed into a single hour,
+    // and, per class, how much of its total was overlap - whether absorbed from a
+    // lower class or from another lesson of the same class type
+    document.getElementById('totalHoursOverlap').textContent = overlapMinutes > 0 ? `${formatHours(overlapMinutes)} overlapped` : '';
+    document.getElementById('hoursMOverlap').textContent = buildOverlapLabel(overlapFrom.M, 'M');
+    document.getElementById('hoursSOverlap').textContent = buildOverlapLabel(overlapFrom.S, 'S');
+    document.getElementById('hoursUOverlap').textContent = buildOverlapLabel(overlapFrom.U, 'U');
+}
+
+/**
+ * Calculate total and per-class taught minutes for a set of lessons,
+ * resolving overlapping (concomitant) lessons on the same day so that:
+ * - Overlapping time is only counted once towards the total.
+ * - Overlapping time between two different class types is credited only
+ *   to the higher-priority class (see CLASS_PRIORITY).
+ *
+ * @param {Array} lessons - Lessons to analyze (each with date, startTime, endTime, classType)
+ * @returns {{totalMinutes: number, minutesM: number, minutesS: number, minutesU: number, overlapMinutes: number, overlapFrom: Object}}
+ */
+function calculateOverlapAwareStats(lessons) {
+    const toMinutes = (time) => {
+        const [h, m] = time.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    // Group lessons by date, since only same-day lessons can overlap
+    const byDate = {};
+    lessons.forEach(lesson => {
+        (byDate[lesson.date] = byDate[lesson.date] || []).push(lesson);
+    });
+
+    let totalMinutes = 0;
+    let rawMinutes = 0;
+    const classMinutes = { M: 0, S: 0, U: 0 };
+    // overlapFrom[higherClass][lowerClass] = minutes credited to higherClass that overlapped with lowerClass
+    const overlapFrom = { M: {}, S: {}, U: {} };
+
+    Object.values(byDate).forEach(dayLessons => {
+        dayLessons.forEach(lesson => {
+            rawMinutes += toMinutes(lesson.endTime) - toMinutes(lesson.startTime);
+        });
+
+        // Split the day into non-overlapping segments using every start/end time as a boundary
+        const boundaries = new Set();
+        dayLessons.forEach(lesson => {
+            boundaries.add(toMinutes(lesson.startTime));
+            boundaries.add(toMinutes(lesson.endTime));
+        });
+        const sortedBoundaries = Array.from(boundaries).sort((a, b) => a - b);
+
+        for (let i = 0; i < sortedBoundaries.length - 1; i++) {
+            const segmentStart = sortedBoundaries[i];
+            const segmentEnd = sortedBoundaries[i + 1];
+            const segmentDuration = segmentEnd - segmentStart;
+            if (segmentDuration <= 0) continue;
+
+            // Class types with a lesson covering this segment
+            const activeClasses = [...new Set(
+                dayLessons
+                    .filter(lesson => toMinutes(lesson.startTime) <= segmentStart && toMinutes(lesson.endTime) >= segmentEnd)
+                    .map(lesson => lesson.classType)
+            )];
+
+            if (activeClasses.length === 0) continue;
+
+            // Segment is only counted once towards the total, no matter how many lessons cover it
+            totalMinutes += segmentDuration;
+
+            // Credit the segment to the highest-priority class active during it
+            const winner = activeClasses.reduce((best, classType) =>
+                (CLASS_PRIORITY[classType] || 0) > (CLASS_PRIORITY[best] || 0) ? classType : best, activeClasses[0]);
+            classMinutes[winner] = (classMinutes[winner] || 0) + segmentDuration;
+
+            // Record which lower-priority classes this segment overlapped with
+            activeClasses.forEach(classType => {
+                if (classType !== winner) {
+                    overlapFrom[winner][classType] = (overlapFrom[winner][classType] || 0) + segmentDuration;
+                }
+            });
+        }
+    });
+
+    return {
+        totalMinutes,
+        minutesM: classMinutes.M,
+        minutesS: classMinutes.S,
+        minutesU: classMinutes.U,
+        overlapMinutes: rawMinutes - totalMinutes,
+        overlapFrom
+    };
+}
+
+/**
+ * Build a short label describing overlapping hours absorbed into a class's
+ * total, whether from a lower-priority class (e.g. "1h overlapped (M)") or
+ * from another lesson of the same class type (e.g. "1h overlapped (same class)").
+ *
+ * @param {Object} overlapSources - Map of classType -> overlapping minutes (may include ownClass itself)
+ * @param {string} ownClass - The class type this label is being built for
+ * @returns {string} Label, or empty string if there is no overlap to report
+ */
+function buildOverlapLabel(overlapSources, ownClass) {
+    const entries = Object.entries(overlapSources).filter(([, minutes]) => minutes > 0);
+    if (entries.length === 0) return '';
+
+    const totalOverlapMinutes = entries.reduce((sum, [, minutes]) => sum + minutes, 0);
+    const sources = entries.map(([classType]) => classType === ownClass ? 'same class' : classType).join(', ');
+    return `${formatHours(totalOverlapMinutes)} overlapped (${sources})`;
 }
 
 /**

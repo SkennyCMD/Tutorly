@@ -265,6 +265,7 @@ Features:
           </div>
 
           <!-- Total Hours: Display total teaching hours for selected month -->
+          <!-- Overlapping (concomitant) lessons are counted once; the deduplicated amount is shown bottom-right -->
           <div class="bg-secondary rounded-lg p-4 mb-4">
             <div class="flex items-center justify-between">
               <span class="text-muted-foreground text-sm">Total Hours</span>
@@ -273,7 +274,10 @@ Features:
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <p id="totalHours" class="text-3xl font-bold text-foreground mt-2">0h</p>
+            <div class="flex items-end justify-between mt-2">
+              <p id="totalHours" class="text-3xl font-bold text-foreground">0h</p>
+              <span id="totalHoursOverlap" class="text-xs text-muted-foreground"></span>
+            </div>
           </div>
 
           <!-- Hours by Class: Breakdown of hours by student class level (M/S/U) -->
@@ -281,6 +285,7 @@ Features:
             <h3 class="text-sm font-medium text-muted-foreground">Hours by Class</h3>
 
             <!-- Middle School (M) hours -->
+            <!-- Overlap with a lower class type has no effect here (M is the lowest); hoursMOverlap stays empty -->
             <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
@@ -288,10 +293,14 @@ Features:
                 </div>
                 <span class="text-foreground">Middle School</span>
               </div>
-              <span id="hoursM" class="font-semibold text-foreground">0h</span>
+              <div class="flex flex-col items-end">
+                <span id="hoursM" class="font-semibold text-foreground">0h</span>
+                <span id="hoursMOverlap" class="text-xs text-muted-foreground"></span>
+              </div>
             </div>
 
             <!-- Senior High School (S) hours -->
+            <!-- Time overlapping with Middle School lessons is credited here; shown bottom-right -->
             <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -299,10 +308,14 @@ Features:
                 </div>
                 <span class="text-foreground">Senior High</span>
               </div>
-              <span id="hoursS" class="font-semibold text-foreground">0h</span>
+              <div class="flex flex-col items-end">
+                <span id="hoursS" class="font-semibold text-foreground">0h</span>
+                <span id="hoursSOverlap" class="text-xs text-muted-foreground"></span>
+              </div>
             </div>
 
             <!-- University (U) hours -->
+            <!-- Time overlapping with Middle School and/or Senior High lessons is credited here; shown bottom-right -->
             <div class="flex items-center justify-between p-3 bg-secondary rounded-lg">
               <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
@@ -310,7 +323,10 @@ Features:
                 </div>
                 <span class="text-foreground">University</span>
               </div>
-              <span id="hoursU" class="font-semibold text-foreground">0h</span>
+              <div class="flex flex-col items-end">
+                <span id="hoursU" class="font-semibold text-foreground">0h</span>
+                <span id="hoursUOverlap" class="text-xs text-muted-foreground"></span>
+              </div>
             </div>
           </div>
         </div>
