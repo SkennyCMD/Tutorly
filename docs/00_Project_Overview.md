@@ -242,6 +242,7 @@ PostgreSQL relational database for data persistence.
 - View received bookings
 - Confirm or reject bookings
 - Create new bookings for students
+- **Prenotation → Lesson automation**: Click a booked prenotation (from the Home dashboard or My Lessons) to open the Add Lesson form pre-filled with its student, date, and time; confirming creates the lesson and automatically deletes the source prenotation
 
 #### 📊 Complete Reports (Only for STAFF tutor)
 - Access to all reports from all tutors
@@ -752,7 +753,7 @@ We thank the following users for their fundamental contribution
 ## Roadmap
 
 ### Sub-Version 1.1 (Next Release)
-- [ ] Automation to add a lesson from a prenotation
+- [x] Automation to add a lesson from a prenotation
 - [ ] Filter by tutor in calendar
 - [ ] Edit a Lesson
 

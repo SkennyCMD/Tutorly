@@ -409,6 +409,8 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             
             return {
                 id: `prenotation-${prenotation.id}`,
+                prenotationId: prenotation.id,
+                studentId,
                 firstName: student?.name || 'Unknown',
                 lastName: student?.surname || '',
                 classType: student?.studentClass || 'N/A',
@@ -652,6 +654,7 @@ app.get('/lessons', tutorSession, isAuthenticated, async (req, res) => {
             
             return {
                 id: prenotation.id,
+                studentId,
                 firstName: student?.name || 'Unknown',
                 lastName: student?.surname || '',
                 classType: student?.studentClass || 'M',

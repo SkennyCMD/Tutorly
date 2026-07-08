@@ -152,6 +152,7 @@ async function loadPrenotations() {
         // Transform data to match display format
         prenotations = data.map(prenotation => ({
             id: prenotation.id,
+            studentId: prenotation.studentId,
             firstName: prenotation.firstName || 'Unknown',
             lastName: prenotation.lastName || '',
             classType: prenotation.classType || 'M',
@@ -625,7 +626,8 @@ function renderBookedLessons() {
             : '<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">Pending</span>';
 
         return `
-        <div class="p-3 border border-border rounded-lg hover:border-primary/50 transition-colors">
+        <div class="p-3 border border-border rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
+            onclick="handleBookedLessonClick(${prenotation.id})" title="Click to add this as a lesson">
         <div class="flex items-center justify-between mb-2">
             <div class="flex items-center">
             <span class="font-medium text-foreground text-sm">${prenotation.firstName} ${prenotation.lastName}</span>
@@ -640,6 +642,29 @@ function renderBookedLessons() {
         </div>
     `;
     }).join('');
+}
+
+/**
+ * Handle a click on a booked lesson (prenotation) card.
+ *
+ * Opens the Add Lesson modal pre-filled with the prenotation's student,
+ * date, and time, so it can be turned into a lesson with one click. The
+ * source prenotation is deleted automatically once the lesson is created
+ * (see setupLessonForm in modalShared.js).
+ *
+ * @param {number} prenotationId - ID of the clicked prenotation
+ */
+function handleBookedLessonClick(prenotationId) {
+    const prenotation = prenotations.find(p => p.id === prenotationId);
+    if (!prenotation) return;
+
+    openModalFromPrenotation({
+        prenotationId: prenotation.id,
+        studentId: prenotation.studentId,
+        date: prenotation.date,
+        startTime: prenotation.startTime,
+        endTime: prenotation.endTime
+    });
 }
 
 

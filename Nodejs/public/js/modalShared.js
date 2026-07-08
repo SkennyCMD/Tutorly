@@ -35,6 +35,10 @@ let allStudents = [];
 // Filtered students based on search term
 let filteredStudents = [];
 
+// ID of the prenotation this lesson is being created from (via openModalFromPrenotation),
+// so the source prenotation can be deleted once the lesson is successfully created
+let sourcePrenotationId = null;
+
 
 // Data Loading
 
@@ -135,6 +139,9 @@ function openModal() {
   const modal = document.getElementById('addLessonModal');
   if (!modal) return;
 
+  // Not opened from a prenotation unless openModalFromPrenotation() says otherwise right after this call
+  sourcePrenotationId = null;
+
   // Show modal and lock body scroll
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -165,8 +172,47 @@ function openModal() {
 }
 
 /**
+ * Open the add lesson modal pre-filled with a prenotation's details, so a
+ * booked lesson can be turned into a lesson record with one click.
+ *
+ * Once the lesson is successfully created, the source prenotation is
+ * deleted automatically (see setupLessonForm) to avoid a duplicate entry.
+ *
+ * @param {Object} prenotation - Prenotation data to prefill the form with
+ * @param {number} prenotation.prenotationId - ID of the source prenotation (deleted on success)
+ * @param {number} prenotation.studentId - Student to preselect
+ * @param {string} prenotation.date - Lesson date (YYYY-MM-DD)
+ * @param {string} prenotation.startTime - Start time (HH:mm)
+ * @param {string} prenotation.endTime - End time (HH:mm)
+ */
+function openModalFromPrenotation(prenotation) {
+  openModal();
+  sourcePrenotationId = prenotation.prenotationId ?? null;
+
+  const studentSelect = document.getElementById('studentSelect');
+  if (studentSelect && prenotation.studentId) {
+    studentSelect.value = prenotation.studentId;
+  }
+
+  const dateInput = document.getElementById('lessonDate');
+  if (dateInput && prenotation.date) {
+    dateInput.value = prenotation.date;
+  }
+
+  const startTimeInput = document.getElementById('startTime');
+  if (startTimeInput && prenotation.startTime) {
+    startTimeInput.value = prenotation.startTime;
+  }
+
+  const endTimeInput = document.getElementById('endTime');
+  if (endTimeInput && prenotation.endTime) {
+    endTimeInput.value = prenotation.endTime;
+  }
+}
+
+/**
  * Close the add lesson modal.
- * 
+ *
  * - Hides modal by removing 'open' class
  * - Unlocks body scroll
  * - Resets dropdown size
@@ -184,6 +230,9 @@ function closeModal() {
   if (select) {
     select.size = 1;
   }
+
+  // Cancelling clears any pending prenotation-to-lesson conversion
+  sourcePrenotationId = null;
 }
 
 
@@ -257,6 +306,22 @@ function setupLessonForm(onSuccess) {
 
       if (response.ok) {
         console.log('Lesson created successfully!');
+
+        // If this lesson was created from a prenotation, delete the source
+        // prenotation so it doesn't linger as a duplicate of the new lesson
+        if (sourcePrenotationId) {
+          try {
+            await fetch(`/api/prenotations/${sourcePrenotationId}`, {
+              method: 'DELETE',
+              credentials: 'same-origin'
+            });
+          } catch (error) {
+            console.error('Error deleting source prenotation:', error);
+          } finally {
+            sourcePrenotationId = null;
+          }
+        }
+
         closeModal();
         e.target.reset();
 
