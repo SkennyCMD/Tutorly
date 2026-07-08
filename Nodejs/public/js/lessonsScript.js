@@ -424,6 +424,7 @@ function renderLessons() {
         <div class="text-right">
             <p class="font-medium text-foreground">${formatTime(lesson.startTime)} - ${formatTime(lesson.endTime)}</p>
             <p class="text-sm text-muted-foreground">${calculateDuration(lesson.startTime, lesson.endTime)}</p>
+            <p class="text-xs text-muted-foreground/60">ID: ${lesson.id}</p>
         </div>
         </div>
     `;
