@@ -449,6 +449,77 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
 });
 
 /**
+ * Home dashboard mini calendar - event indicator dates
+ * GET /api/dashboard/calendar-events?month=YYYY-MM
+ * Returns the list of dates within the given month that have at least one
+ * lesson, prenotation, or task for the current tutor, so the mini calendar
+ * on the home page can render a dot under those days.
+ */
+app.get('/api/dashboard/calendar-events', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const tutorId = req.session.userId;
+        const tutorData = await fetchTutorData(tutorId);
+        const isStaff = tutorData && tutorData.role === 'STAFF';
+
+        const { month } = req.query; // Format: YYYY-MM (e.g., "2026-02")
+        if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+            return res.status(400).json({ error: 'Invalid month format. Use YYYY-MM (e.g., 2026-02)' });
+        }
+
+        const [year, monthNum] = month.split('-').map(Number);
+        const startOfMonth = new Date(year, monthNum - 1, 1, 0, 0, 0);
+        const endOfMonth = new Date(year, monthNum, 0, 23, 59, 59);
+        const startTime = startOfMonth.toISOString().slice(0, 19);
+        const endTime = endOfMonth.toISOString().slice(0, 19);
+
+        // Fetch tasks (calendar notes) for the month
+        let calendarNotes = [];
+        if (isStaff) {
+            calendarNotes = await fetchCalendarNotesByDateRange(startTime, endTime);
+        } else {
+            const allNotes = await fetchCalendarNotesByTutor(tutorId);
+            calendarNotes = allNotes.filter(note => {
+                const noteStart = new Date(note.startTime);
+                return noteStart >= startOfMonth && noteStart <= endOfMonth;
+            });
+        }
+
+        // Fetch lessons and prenotations for the tutor, filtered to the month
+        const [allLessons, allPrenotations] = await Promise.all([
+            fetchAllLessons(),
+            fetchAllPrenotations()
+        ]);
+
+        const isInMonth = (dateString) => {
+            const date = new Date(dateString);
+            return date >= startOfMonth && date <= endOfMonth;
+        };
+
+        const lessons = allLessons.filter(lesson => lesson.tutorId === tutorId && isInMonth(lesson.startTime));
+        const prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId && isInMonth(prenotation.startTime));
+
+        // Collect unique dates (YYYY-MM-DD) that have at least one event
+        const dateSet = new Set();
+        const addDate = (dateString) => {
+            const date = new Date(dateString);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            dateSet.add(`${y}-${m}-${d}`);
+        };
+
+        lessons.forEach(lesson => addDate(lesson.startTime));
+        prenotations.forEach(prenotation => addDate(prenotation.startTime));
+        calendarNotes.forEach(note => addDate(note.startTime));
+
+        res.json({ dates: Array.from(dateSet) });
+    } catch (error) {
+        logError('Error fetching dashboard calendar events', req, { month: req.query.month, error: error.message });
+        res.status(500).json({ error: 'Failed to fetch calendar events', dates: [] });
+    }
+});
+
+/**
  * Dashboard view
  * GET /dashboard - Display tutor dashboard
  */

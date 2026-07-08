@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls *)",
+      "Bash(node /tmp/claude-1000/-home-skenny-Documents-GitHub-Tutorly/91a96de2-a827-457a-8bb7-ec888a0d9566/scratchpad/verify-render.js)",
+      "Bash(node -e \"console.log\\(typeof fetch\\)\")",
+      "Bash(node /tmp/claude-1000/-home-skenny-Documents-GitHub-Tutorly/91a96de2-a827-457a-8bb7-ec888a0d9566/scratchpad/verify-render-e2e.js)",
+      "Bash(node -e ' *)",
+      "Bash(nohup node src/index.js)",
+      "Bash(echo \"exit:$?\")"
+    ]
+  }
+}

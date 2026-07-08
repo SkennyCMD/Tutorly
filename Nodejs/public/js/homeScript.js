@@ -43,6 +43,9 @@ let currentDate = new Date();
 // Calendar display date (can be navigated month-by-month)
 let calendarDate = new Date();
 
+// Guards against stale renders when the month is navigated quickly
+let calendarRenderToken = 0;
+
 
 // Initialization
 
@@ -125,14 +128,17 @@ function updateCurrentDate() {
 
 /**
  * Render calendar for the current calendarDate month.
- * 
+ *
  * Features:
  * - Shows full month grid (Mon-Sun)
  * - Highlights today with primary color
  * - Handles different month start days
  * - Empty cells before month starts
+ * - Renders immediately, then fetches event dots for the month
  */
-function renderCalendar() {
+async function renderCalendar() {
+  const token = ++calendarRenderToken;
+
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   document.getElementById('calendarMonth').textContent = `${monthNames[calendarDate.getMonth()]} ${calendarDate.getFullYear()}`;
 
@@ -140,6 +146,47 @@ function renderCalendar() {
   const lastDay = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0);
   const startDay = (firstDay.getDay() + 6) % 7;
 
+  // First pass: render immediately without event dots so month navigation feels instant
+  renderCalendarDays(firstDay, lastDay, startDay, new Set());
+
+  // Second pass: fetch which days have events this month and re-render with dots
+  const monthKey = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}`;
+  const eventDates = await fetchMonthEventDates(monthKey);
+
+  // Discard the result if the user has since navigated to a different month
+  if (token !== calendarRenderToken) return;
+
+  renderCalendarDays(firstDay, lastDay, startDay, eventDates);
+}
+
+/**
+ * Fetch the set of dates (YYYY-MM-DD) within a month that have at least
+ * one lesson, prenotation, or task, used to render event indicator dots.
+ *
+ * @param {string} monthKey - Month in YYYY-MM format
+ * @returns {Promise<Set<string>>} Set of dates with events
+ */
+async function fetchMonthEventDates(monthKey) {
+  try {
+    const response = await fetch(`/api/dashboard/calendar-events?month=${monthKey}`, { credentials: 'same-origin' });
+    if (!response.ok) return new Set();
+    const data = await response.json();
+    return new Set(data.dates || []);
+  } catch (error) {
+    console.error('Error loading calendar event dots:', error);
+    return new Set();
+  }
+}
+
+/**
+ * Render the calendar day grid into the DOM.
+ *
+ * @param {Date} firstDay - First day of the displayed month
+ * @param {Date} lastDay - Last day of the displayed month
+ * @param {number} startDay - Weekday index (Mon=0) the month starts on
+ * @param {Set<string>} eventDates - Dates (YYYY-MM-DD) that have events
+ */
+function renderCalendarDays(firstDay, lastDay, startDay, eventDates) {
   let html = '';
 
   // Empty cells for days before month starts (e.g., if month starts on Wednesday)
@@ -153,8 +200,17 @@ function renderCalendar() {
       calendarDate.getMonth() === currentDate.getMonth() &&
       calendarDate.getFullYear() === currentDate.getFullYear();
 
-    // Highlight today with primary color, others with hover effect
-    html += `<span class="py-1.5 rounded-lg cursor-pointer transition-colors ${isToday ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-secondary text-foreground'}">${day}</span>`;
+    const dateStr = `${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const hasEvent = eventDates.has(dateStr);
+    const dotColor = isToday ? 'bg-primary-foreground' : 'bg-primary';
+
+    // Highlight today with primary color, others with hover effect; dot indicates a scheduled event
+    html += `
+      <span class="relative flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg cursor-pointer transition-colors ${isToday ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-secondary text-foreground'}">
+        <span>${day}</span>
+        <span class="w-1 h-1 rounded-full ${hasEvent ? dotColor : 'bg-transparent'}"></span>
+      </span>
+    `;
   }
 
   document.getElementById('calendarDays').innerHTML = html;
