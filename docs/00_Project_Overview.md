@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: April 29, 2026  
+**Last Updated**: July 8, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -210,13 +210,15 @@ PostgreSQL relational database for data persistence.
 - Tasks and notes from calendar
 - Pending bookings
 - Quick actions for common operations
+- Mini calendar with month navigation and event-indicator dots on days with scheduled lessons, prenotations, or tasks
 
 #### 📚 Lesson Management
 - **Create lesson**: Select student, set times, add description
 - **Edit lesson**: Update times, student or details
 - **Delete lesson**: Cancel lessons no longer needed
 - **Filter lessons**: By date, student, tutor
-- **List view**: Complete table with all information
+- **List view**: Complete table with all information, including each lesson's ID
+- **Monthly statistics**: Total and per-class (M/S/U) hours, with overlapping (concomitant) lessons counted once and cross-class overlaps credited to the higher-priority class
 
 #### 👨‍🎓 Student Management
 - Student registry with name, email, phone
@@ -429,10 +431,11 @@ cd ../../Nodejs
 # Install dependencies
 npm install
 
-# Check configuration in server_utilities/config.js
-# JAVA_API_URL: 'https://localhost:8443'
-# JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu'
+# Copy the example environment file and fill in your values
+cp .env.example .env
 ```
+
+Runtime configuration (Java backend host/port, API key, session secrets, `PORT`) is loaded from `Nodejs/.env` via `dotenv` - see `server_utilities/config.js` for the full list of variables and their defaults. `.env` is git-ignored; use `.env.example` as the template for onboarding.
 
 #### 6. Start Node.js Frontend
 
@@ -677,12 +680,13 @@ taskkill /PID <PID> /F
 
 ### Sessions Don't Persist
 
-**Symptom**: User gets logged out on every page refresh
+**Symptom**: User gets logged out on every page refresh, browser restart, or server restart
 
 **Solution**:
-- Verify `server_utilities/config.js`: `TUTOR_SESSION_SECRET` must be set
+- Tutor sessions are already backed by a persistent file store (`server_utilities/fileSessionStore.js`, data in `Nodejs/data/session-store.json`) with a 30-day duration when "Remember me" is checked, so they survive server restarts - verify that file is writable and not being wiped between deploys
+- Verify `.env`: `TUTOR_SESSION_SECRET` must be set
 - Check cookie settings match HTTP/HTTPS mode (secure flag)
-- For production, use a persistent session store (Redis)
+- For multi-instance/horizontal scaling in production, move to a shared session store (e.g. Redis) instead of the file-based store, since the latter is local to a single instance
 - Check that cookies are enabled in the browser
 
 ---
@@ -747,20 +751,15 @@ We thank the following users for their fundamental contribution
 
 ## Roadmap
 
-### Version 1.1 (Next Release)
-- [ ] Implement email notifications
-- [ ] Dashboard analytics with charts
-- [ ] Google Calendar integration
-
-### Version 1.2
-- [ ] Student evaluation system
+### Sub-Version 1.1 (Next Release)
+- [ ] Automation to add a lesson from a prenotation
+- [ ] Filter by tutor in calendar
+- [ ] Edit a Lesson
 
 
 ### Version 2.0
-- [ ] Mobile app
-- [ ] Multi-tenant support
-- [ ] AI-powered scheduling
-- [ ] Public REST API with OpenAPI documentation
+- [ ] Student evaluation system
+
 
 ---
 
