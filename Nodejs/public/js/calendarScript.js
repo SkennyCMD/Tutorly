@@ -1008,16 +1008,16 @@ let dragOverlayEl = null;
 /**
  * Resolve the element under a mouse or touch event.
  *
- * Needed because touchmove keeps e.target pinned to whatever element the
- * gesture started on, unlike mousemove - elementFromPoint gives the element
- * actually under the finger right now.
+ * Needed because touchmove/touchend keep e.target pinned to whatever element
+ * the gesture started on - elementFromPoint gives the element actually under
+ * the finger right now (or at its last position, for touchend).
  *
  * @param {MouseEvent|TouchEvent} e
  * @returns {Element|null}
  */
 function getEventTargetElement(e) {
-  if (e.touches && e.touches.length > 0) {
-    const touch = e.touches[0];
+  const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+  if (touch) {
     return document.elementFromPoint(touch.clientX, touch.clientY);
   }
   return e.target;
@@ -1033,7 +1033,8 @@ function getEventTargetElement(e) {
  */
 function getSnappedMinutesFromEvent(e, cell) {
   const rect = cell.getBoundingClientRect();
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+  const clientY = touch ? touch.clientY : e.clientY;
   const offsetY = clientY - rect.top;
   const hour = parseInt(cell.dataset.hour, 10);
   const snappedMinuteInHour = Math.round(offsetY / SNAP_MINUTES) * SNAP_MINUTES;
@@ -1098,14 +1099,24 @@ function removeDragOverlay() {
   dragOverlayEl = null;
 }
 
+// Timestamp of the last real touch event, used to ignore the synthetic
+// mouse events (mousedown/mousemove/mouseup) browsers fire shortly after a
+// touch interaction - without this, a single tap on a touch device would
+// trigger both the touch flow and a duplicate mouse flow
+let lastTouchTime = 0;
+
 /**
- * Start a drag selection when pressing down on an empty part of the grid.
- * Clicks on an existing event block are ignored here (they have their own
- * click handler with e.stopPropagation()).
+ * Start a drag selection when pressing down (mouse) on an empty part of the
+ * grid. Clicks on an existing event block are ignored here (they have their
+ * own click handler with e.stopPropagation()). Touch uses a separate
+ * long-press-gated flow (see handleGridTouchStart) so a normal scroll swipe
+ * isn't hijacked into selecting a time range.
  *
- * @param {MouseEvent|TouchEvent} e
+ * @param {MouseEvent} e
  */
 function handleGridPointerDown(e) {
+  if (Date.now() - lastTouchTime < 500) return; // ignore synthetic mouse event after a real touch
+
   const target = getEventTargetElement(e);
   if (!target || target.closest('.event')) return;
 
@@ -1125,13 +1136,14 @@ function handleGridPointerDown(e) {
 }
 
 /**
- * Extend the drag selection as the pointer moves, snapping to 15 minutes.
+ * Extend the drag selection as the mouse moves, snapping to 15 minutes.
  * Movement outside the starting day's column is ignored (the selection
  * clamps to whichever time was last valid within that day).
  *
- * @param {MouseEvent|TouchEvent} e
+ * @param {MouseEvent} e
  */
 function handleGridPointerMove(e) {
+  if (Date.now() - lastTouchTime < 500) return;
   if (!dragSelection) return;
 
   const target = getEventTargetElement(e);
@@ -1173,6 +1185,120 @@ function handleGridPointerUp() {
   document.getElementById('slotChoiceModal').classList.add('open');
 }
 
+// How long a touch must be held, without much movement, before it commits to
+// drag-select mode. Below this, a touch is left alone so the browser's
+// normal scroll gesture isn't hijacked into selecting a time range.
+const TOUCH_LONG_PRESS_MS = 350;
+
+// Movement (px) beyond which a pending touch is treated as a scroll/swipe
+// rather than the start of a long-press
+const TOUCH_MOVE_CANCEL_PX = 10;
+
+// A touch that hasn't yet been resolved as a long-press (drag-select), a
+// scroll, or a tap. Null once resolved either way.
+// { cell, startX, startY, timer }
+let touchPending = null;
+
+/**
+ * Begin tracking a touch without committing to anything yet. Only after
+ * TOUCH_LONG_PRESS_MS has passed with little movement does this become a
+ * drag selection - a quick swipe is left alone so it can scroll normally,
+ * and a quick tap falls back to the default 1-hour slot in handleGridTouchEnd.
+ *
+ * @param {TouchEvent} e
+ */
+function handleGridTouchStart(e) {
+  lastTouchTime = Date.now();
+
+  const target = getEventTargetElement(e);
+  if (!target || target.closest('.event')) return;
+
+  const cell = target.closest('.day-column');
+  if (!cell || !cell.dataset.date) return;
+
+  const touch = e.touches[0];
+  touchPending = {
+    cell,
+    startX: touch.clientX,
+    startY: touch.clientY,
+    timer: setTimeout(() => {
+      const minutes = getSnappedMinutesFromEvent(e, cell);
+      dragSelection = {
+        date: cell.dataset.date,
+        mobile: cell.dataset.mobile === 'true',
+        startMinutes: minutes,
+        currentMinutes: minutes
+      };
+      renderDragOverlay();
+      touchPending = null;
+    }, TOUCH_LONG_PRESS_MS)
+  };
+  // No preventDefault yet - if this turns out to be a scroll, let it scroll
+}
+
+/**
+ * While a touch is still pending, cancel the long-press if the finger has
+ * moved enough to look like a scroll/swipe. Once committed to drag-select
+ * mode, extend the selection and block the page from scrolling underneath it.
+ *
+ * @param {TouchEvent} e
+ */
+function handleGridTouchMove(e) {
+  lastTouchTime = Date.now();
+
+  if (touchPending) {
+    const touch = e.touches[0];
+    const movedEnough =
+      Math.abs(touch.clientX - touchPending.startX) > TOUCH_MOVE_CANCEL_PX ||
+      Math.abs(touch.clientY - touchPending.startY) > TOUCH_MOVE_CANCEL_PX;
+    if (movedEnough) {
+      clearTimeout(touchPending.timer);
+      touchPending = null;
+    }
+    return; // don't interfere with scrolling while still deciding
+  }
+
+  if (!dragSelection) return;
+
+  const target = getEventTargetElement(e);
+  const mobileAttr = dragSelection.mobile ? '[data-mobile="true"]' : '';
+  const cell = target && target.closest(`.day-column[data-date="${dragSelection.date}"]${mobileAttr}`);
+  if (cell) {
+    dragSelection.currentMinutes = getSnappedMinutesFromEvent(e, cell);
+    renderDragOverlay();
+  }
+
+  // Actively drag-selecting: stop the page from scrolling under the gesture
+  if (e.cancelable) e.preventDefault();
+}
+
+/**
+ * Resolve the touch on release. If the long-press never committed (a quick
+ * tap or an already-cancelled scroll), treat it as a plain tap - a single
+ * point that handleGridPointerUp will default to a 1-hour slot.
+ *
+ * @param {TouchEvent} e
+ */
+function handleGridTouchEnd(e) {
+  lastTouchTime = Date.now();
+
+  if (touchPending) {
+    clearTimeout(touchPending.timer);
+    const cell = touchPending.cell;
+    touchPending = null;
+
+    const minutes = getSnappedMinutesFromEvent(e, cell);
+    dragSelection = {
+      date: cell.dataset.date,
+      mobile: cell.dataset.mobile === 'true',
+      startMinutes: minutes,
+      currentMinutes: minutes
+    };
+  }
+
+  handleGridPointerUp();
+}
+
 /**
  * Wire up mouse and touch listeners for drag-to-select on both the desktop
  * week grid and the mobile day grid. Uses event delegation on the (stable)
@@ -1186,13 +1312,16 @@ function setupGridDragSelection() {
   [timeGrid, mobileTimeGrid].forEach(container => {
     if (!container) return;
     container.addEventListener('mousedown', handleGridPointerDown);
-    container.addEventListener('touchstart', handleGridPointerDown, { passive: false });
+    // Passive: touchstart itself never blocks scrolling - the decision to
+    // take over the gesture happens later, in handleGridTouchMove
+    container.addEventListener('touchstart', handleGridTouchStart, { passive: true });
   });
 
   document.addEventListener('mousemove', handleGridPointerMove);
-  document.addEventListener('touchmove', handleGridPointerMove, { passive: false });
   document.addEventListener('mouseup', handleGridPointerUp);
-  document.addEventListener('touchend', handleGridPointerUp);
+
+  document.addEventListener('touchmove', handleGridTouchMove, { passive: false });
+  document.addEventListener('touchend', handleGridTouchEnd);
 }
 
 /**

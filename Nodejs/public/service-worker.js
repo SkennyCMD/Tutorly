@@ -1,4 +1,14 @@
-const CACHE_NAME = 'tutorly-cache-v1-' + new Date().toISOString().split('T')[0];
+// Bump this string (not a computed date - see below) whenever you need to force
+// every installed client to drop its old cache and re-fetch everything fresh.
+//
+// A previous version computed this from `new Date()` intending it to rotate
+// daily, but that never actually worked: the browser only re-installs a
+// service worker when the WORKER SCRIPT'S BYTES change, and this file's bytes
+// were identical every day (only the runtime-computed value differed) - so
+// the "daily" cache name was really fixed at whatever day the worker first
+// installed, and, combined with the stale-while-revalidate strategy below,
+// static assets could stay stale indefinitely on an already-visited device.
+const CACHE_NAME = 'tutorly-cache-v2';
 const STATIC_ASSETS = [
     '/css/home.css',
     '/js/homeScript.js',
@@ -34,7 +44,12 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Fetch Event: Network-First for API/HTML, Cache-First for static
+// Fetch Event: Network-First for everything (API/HTML/static), falling back
+// to cache only when offline. Static assets used to be served cache-first via
+// stale-while-revalidate, which could show months-old JS/CSS to a returning
+// visitor until a second reload happened to revalidate it - not acceptable
+// for an app under active development. Network-first still updates the
+// cache on every successful fetch, so offline support is unaffected.
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
@@ -43,18 +58,16 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Static Assets: Stale-While-Revalidate
+    // Static Assets: Network-First, cache updated on every successful fetch
     if (STATIC_ASSETS.some(asset => url.pathname.endsWith(asset))) {
         event.respondWith(
-            caches.open(CACHE_NAME).then((cache) => {
-                return cache.match(event.request).then((cachedResponse) => {
-                    const fetchPromise = fetch(event.request).then((networkResponse) => {
-                        cache.put(event.request, networkResponse.clone());
-                        return networkResponse;
-                    });
-                    return cachedResponse || fetchPromise;
-                });
-            })
+            fetch(event.request)
+                .then((networkResponse) => {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+                    return networkResponse;
+                })
+                .catch(() => caches.open(CACHE_NAME).then((cache) => cache.match(event.request)))
         );
         return;
     }
