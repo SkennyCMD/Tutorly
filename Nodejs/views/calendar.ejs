@@ -232,7 +232,9 @@ Features:
             class="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors">
             Today
           </button>
-          <div class="flex items-center gap-1">
+          <!-- Week navigation is only meaningful for the desktop week view; the mobile
+               day view has its own prevDay/nextDay controls, so hide this below md -->
+          <div class="hidden md:flex items-center gap-1">
             <button id="prevWeek" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
               <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -244,7 +246,7 @@ Features:
               </svg>
             </button>
           </div>
-          <h2 id="currentWeekLabel" class="text-lg font-semibold text-foreground"></h2>
+          <h2 id="currentWeekLabel" class="hidden md:block text-lg font-semibold text-foreground"></h2>
         </div>
 
         <div class="flex items-center gap-4">
@@ -295,22 +297,45 @@ Features:
 
       <!-- Mobile Day View: Single day with time slots and date navigation -->
       <div id="dayView" class="md:hidden">
-        <!-- Mobile Date Selector: Navigation arrows and current date display -->
-        <div class="flex items-center justify-between px-4 py-3 bg-card border-b border-border sticky top-0 z-20">
-          <button id="prevDay" class="p-2 rounded-lg hover:bg-secondary transition-colors">
-            <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <div class="text-center">
-            <p id="mobileDateLabel" class="font-semibold text-foreground"></p>
-            <p id="mobileDayLabel" class="text-sm text-muted-foreground"></p>
+        <!-- Sticky header: date navigation + quick actions stay pinned together while scrolling
+             (the grid auto-scrolls to 8:00 on open - without sticky, non-fixed content above the
+             grid would immediately scroll out of view) -->
+        <div class="sticky top-0 z-20 bg-card border-b border-border">
+          <!-- Mobile Date Selector: Navigation arrows and current date display -->
+          <div class="flex items-center justify-between px-4 py-3">
+            <button id="prevDay" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+              <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div class="text-center">
+              <p id="mobileDateLabel" class="font-semibold text-foreground"></p>
+              <p id="mobileDayLabel" class="text-sm text-muted-foreground"></p>
+            </div>
+            <button id="nextDay" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+              <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
-          <button id="nextDay" class="p-2 rounded-lg hover:bg-secondary transition-colors">
-            <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+
+          <!-- Mobile Quick Actions: Add Prenotation / Add Note, visible directly on the page -->
+          <div class="flex items-center gap-2 px-4 py-2 border-t border-border">
+            <button onclick="openLessonModal()"
+              class="flex-1 inline-flex items-center justify-center gap-2 bg-lesson text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-lesson/90 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Prenotation
+            </button>
+            <button onclick="openNoteModal()"
+              class="flex-1 inline-flex items-center justify-center gap-2 bg-note text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-note/90 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Note
+            </button>
+          </div>
         </div>
 
         <!-- Mobile Time Grid: Single-column time slots for selected day -->
@@ -322,6 +347,40 @@ Features:
   </main>
 
   <!-- MODALS: Add/Edit Dialogs -->
+  <!-- Slot Choice Modal: Ask whether a clicked calendar time slot should become a Prenotation or a Note -->
+  <div id="slotChoiceModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeSlotChoiceModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-sm p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-foreground">Add to Calendar</h2>
+        <button onclick="closeSlotChoiceModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <p class="text-sm text-muted-foreground mb-4">What would you like to add to this time slot?</p>
+
+      <div class="flex flex-col gap-3">
+        <button onclick="chooseSlotOption('lesson')"
+          class="w-full flex items-center justify-center gap-2 bg-lesson text-white px-4 py-3 rounded-lg font-medium hover:bg-lesson/90 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Prenotation
+        </button>
+        <button onclick="chooseSlotOption('note')"
+          class="w-full flex items-center justify-center gap-2 bg-note text-white px-4 py-3 rounded-lg font-medium hover:bg-note/90 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Note
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Lesson Modal: Form to create new prenotation with student selection and time -->
   <div id="addLessonModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/60" onclick="closeLessonModal()"></div>

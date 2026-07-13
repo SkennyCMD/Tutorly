@@ -141,14 +141,37 @@ if (window.serverData && window.serverData.calendarNotes) {
 console.log('Total events loaded:', events.length);
 console.log('Events:', events);
 
+/**
+ * Get the date the calendar should initially display.
+ *
+ * Reads a `?date=YYYY-MM-DD` query param, set when redirected here after
+ * creating a prenotation/note (see handleLessonSubmit/handleNoteSubmit),
+ * so the calendar opens on that date instead of always resetting to today.
+ *
+ * @returns {Date} Date to initialize the week/day view with
+ */
+function getInitialCalendarDate() {
+  const params = new URLSearchParams(window.location.search);
+  const dateParam = params.get('date');
+  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    const [year, month, day] = dateParam.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date();
+}
+
 // Current week start for desktop week view
-let currentWeekStart = getWeekStart(new Date());
+let currentWeekStart = getWeekStart(getInitialCalendarDate());
 
 // Current date for mobile day view
-let currentMobileDate = new Date();
+let currentMobileDate = getInitialCalendarDate();
 
 // Tutor filter (STAFF only): 'all' shows every tutor's prenotations, otherwise a tutor ID
 let tutorFilterId = 'all';
+
+// Date/start/end time of the grid slot last clicked, pending a Note vs Prenotation
+// choice from the slot chooser modal (see handleTimeSlotClick)
+let pendingSlot = null;
 
 // Counter for generating new event IDs
 let eventIdCounter = events.length > 0 ? Math.max(...events.map(e => e.id)) + 1 : 1;
@@ -236,6 +259,14 @@ document.addEventListener('DOMContentLoaded', () => {
   setDefaultDates();
   loadStudents();
   loadTutors();
+
+  // Drop the ?date= param now that it's been used to position the view, so a
+  // later manual refresh of this URL doesn't keep pinning the calendar to it
+  if (new URLSearchParams(window.location.search).has('date')) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('date');
+    window.history.replaceState({}, '', url);
+  }
 });
 
 /**
@@ -534,7 +565,7 @@ function renderTimeGrid() {
       date.setDate(date.getDate() + day);
       const dateStr = formatDate(date);
 
-      html += `<div class="day-column time-slot relative" data-date="${dateStr}" data-hour="${hour}"></div>`;
+      html += `<div class="day-column time-slot relative cursor-pointer" data-date="${dateStr}" data-hour="${hour}" onclick="handleTimeSlotClick('${dateStr}', ${hour})"></div>`;
     }
   }
 
@@ -715,7 +746,7 @@ function renderMobileTimeGrid() {
       <div class="time-slot flex items-start justify-end pr-2 pt-1">
         <span class="text-xs text-muted-foreground">${hour.toString().padStart(2, '0')}:00</span>
       </div>
-      <div class="day-column time-slot relative" data-date="${dateStr}" data-hour="${hour}" data-mobile="true"></div>
+      <div class="day-column time-slot relative cursor-pointer" data-date="${dateStr}" data-hour="${hour}" data-mobile="true" onclick="handleTimeSlotClick('${dateStr}', ${hour})"></div>
     `;
   }
 
@@ -925,17 +956,75 @@ function closeMenu() {
 }
 
 
+// Time Slot Chooser (click an empty grid cell to add a Prenotation or Note)
+
+
+/**
+ * Handle a click on an empty calendar grid cell.
+ *
+ * Stores the clicked date/hour as a one-hour slot and opens a small chooser
+ * asking whether to create a Prenotation or a Note. Clicks on an existing
+ * event block don't reach this handler (event elements call
+ * e.stopPropagation() in their own click listener).
+ *
+ * @param {string} dateStr - Date of the clicked cell (YYYY-MM-DD)
+ * @param {number} hour - Hour of the clicked cell (0-23)
+ */
+function handleTimeSlotClick(dateStr, hour) {
+  const endHour = (hour + 1) % 24;
+  pendingSlot = {
+    date: dateStr,
+    startTime: `${String(hour).padStart(2, '0')}:00`,
+    endTime: `${String(endHour).padStart(2, '0')}:00`
+  };
+
+  document.getElementById('slotChoiceModal').classList.add('open');
+}
+
+/**
+ * Close the slot chooser modal without creating anything.
+ */
+function closeSlotChoiceModal() {
+  document.getElementById('slotChoiceModal').classList.remove('open');
+  pendingSlot = null;
+}
+
+/**
+ * User picked Prenotation or Note from the slot chooser - close it and open
+ * the corresponding form pre-filled with the clicked slot's date/time.
+ *
+ * @param {'lesson'|'note'} type - Which form to open
+ */
+function chooseSlotOption(type) {
+  const slot = pendingSlot;
+  document.getElementById('slotChoiceModal').classList.remove('open');
+  pendingSlot = null;
+
+  if (!slot) return;
+
+  if (type === 'lesson') {
+    openLessonModal(slot);
+  } else {
+    openNoteModal(slot);
+  }
+}
+
+
 // Lesson Modal
 
 
 /**
  * Open lesson (prenotation) creation modal.
- * 
+ *
  * - Resets student search
  * - Shows tutor assignment for STAFF users
  * - Auto-assigns to current user
+ *
+ * @param {{date: string, startTime: string, endTime: string}} [prefill] - Optional
+ *   date/time to prefill the form with (e.g. from clicking a calendar time slot).
+ *   When omitted, the date/time fields keep whatever setDefaultDates() last set.
  */
-function openLessonModal() {
+function openLessonModal(prefill) {
   document.getElementById('addLessonModal').classList.add('open');
   // Reset search when opening modal
   document.getElementById('studentSearch').value = '';
@@ -944,6 +1033,12 @@ function openLessonModal() {
   // Reset dropdown to normal size
   document.getElementById('studentSelect').size = 1;
   closeMenu();
+
+  if (prefill) {
+    document.getElementById('lessonDate').value = prefill.date;
+    document.getElementById('lessonStartTime').value = prefill.startTime;
+    document.getElementById('lessonEndTime').value = prefill.endTime;
+  }
 
   // Auto-assign to current user
   const currentUserId = window.serverData?.currentUserId;
@@ -986,13 +1081,23 @@ function closeLessonModal() {
 
 /**
  * Open calendar note creation modal.
- * 
+ *
  * - Shows assignee selection for STAFF users
  * - Auto-assigns to current user
+ *
+ * @param {{date: string, startTime: string, endTime: string}} [prefill] - Optional
+ *   date/time to prefill the form with (e.g. from clicking a calendar time slot).
+ *   When omitted, the date/time fields keep whatever setDefaultDates() last set.
  */
-function openNoteModal() {
+function openNoteModal(prefill) {
   document.getElementById('addNoteModal').classList.add('open');
   closeMenu();
+
+  if (prefill) {
+    document.getElementById('noteDate').value = prefill.date;
+    document.getElementById('noteStartTime').value = prefill.startTime;
+    document.getElementById('noteEndTime').value = prefill.endTime;
+  }
 
   // Auto-assign to current user
   const currentUserId = window.serverData?.currentUserId;
@@ -1246,8 +1351,9 @@ async function handleLessonSubmit(e) {
       alert('Prenotation created successfully!');
       closeLessonModal();
 
-      // Reload page to refresh server-rendered data
-      window.location.reload();
+      // Reload the calendar showing the week the new prenotation was added to,
+      // instead of resetting back to the current week
+      window.location.href = `/calendar?date=${lessonDate}`;
     } else {
       const error = await response.json();
       alert('Failed to create prenotation: ' + (error.error || 'Unknown error'));
@@ -1322,8 +1428,9 @@ async function handleNoteSubmit(e) {
       alert('Calendar note created successfully!');
       closeNoteModal();
 
-      // Reload page to refresh server-rendered data
-      window.location.reload();
+      // Reload the calendar showing the day/week the new note was added to,
+      // instead of resetting back to the current week
+      window.location.href = `/calendar?date=${noteDate}`;
     } else {
       const error = await response.json();
       alert('Failed to create calendar note: ' + (error.error || 'Unknown error'));
