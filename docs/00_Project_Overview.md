@@ -228,7 +228,7 @@ PostgreSQL relational database for data persistence.
 
 #### 📅 Calendar
 - Weekly calendar view (desktop) and day view (mobile), with color-coding by event type (Prenotation/Note)
-- Click an empty time slot to choose Prenotation or Note, opening the matching form pre-filled with that slot's date and time
+- Click or drag on an empty time slot to choose Prenotation or Note, opening the matching form pre-filled with that time range; dragging snaps to 15-minute increments and works with touch as well as mouse
 - Multi-day notes: set a Start and End Date to create one continuous note spanning several days (e.g. a trip or conference), shown on every day it covers
 - After adding a prenotation or note, the calendar reopens on the day it was added to instead of resetting to the current week
 - Mobile: Add Prenotation/Add Note buttons visible directly on the page (no need to open the menu), redundant week-navigation controls hidden

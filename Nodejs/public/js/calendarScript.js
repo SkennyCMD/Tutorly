@@ -200,8 +200,8 @@ let currentMobileDate = getInitialCalendarDate();
 // Tutor filter (STAFF only): 'all' shows every tutor's prenotations, otherwise a tutor ID
 let tutorFilterId = 'all';
 
-// Date/start/end time of the grid slot last clicked, pending a Note vs Prenotation
-// choice from the slot chooser modal (see handleTimeSlotClick)
+// Date/start/end time of the grid slot last clicked or dragged, pending a Note
+// vs Prenotation choice from the slot chooser modal (see handleGridPointerUp)
 let pendingSlot = null;
 
 // Counter for generating new event IDs
@@ -287,6 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderWeekView();
   renderMobileDayView();
   setupEventListeners();
+  setupGridDragSelection();
   setDefaultDates();
   loadStudents();
   loadTutors();
@@ -597,7 +598,7 @@ function renderTimeGrid() {
       date.setDate(date.getDate() + day);
       const dateStr = formatDate(date);
 
-      html += `<div class="day-column time-slot relative cursor-pointer" data-date="${dateStr}" data-hour="${hour}" onclick="handleTimeSlotClick('${dateStr}', ${hour})"></div>`;
+      html += `<div class="day-column time-slot relative cursor-pointer" data-date="${dateStr}" data-hour="${hour}"></div>`;
     }
   }
 
@@ -778,7 +779,7 @@ function renderMobileTimeGrid() {
       <div class="time-slot flex items-start justify-end pr-2 pt-1">
         <span class="text-xs text-muted-foreground">${hour.toString().padStart(2, '0')}:00</span>
       </div>
-      <div class="day-column time-slot relative cursor-pointer" data-date="${dateStr}" data-hour="${hour}" data-mobile="true" onclick="handleTimeSlotClick('${dateStr}', ${hour})"></div>
+      <div class="day-column time-slot relative cursor-pointer" data-date="${dateStr}" data-hour="${hour}" data-mobile="true"></div>
     `;
   }
 
@@ -988,29 +989,210 @@ function closeMenu() {
 }
 
 
-// Time Slot Chooser (click an empty grid cell to add a Prenotation or Note)
+// Time Slot Chooser (click or drag on the grid to add a Prenotation or Note)
 
+
+// Snap drag selection to 15-minute increments (grid cells are 60px = 60 minutes tall)
+const SNAP_MINUTES = 15;
+
+// A drag shorter than this is treated as a plain click and defaults to a 1-hour slot
+const MIN_DRAG_MINUTES = 15;
+
+// Active drag-to-select state, or null when not dragging
+// { date, mobile, startMinutes, currentMinutes }
+let dragSelection = null;
+
+// The single overlay element showing the in-progress drag selection
+let dragOverlayEl = null;
 
 /**
- * Handle a click on an empty calendar grid cell.
+ * Resolve the element under a mouse or touch event.
  *
- * Stores the clicked date/hour as a one-hour slot and opens a small chooser
- * asking whether to create a Prenotation or a Note. Clicks on an existing
- * event block don't reach this handler (event elements call
- * e.stopPropagation() in their own click listener).
+ * Needed because touchmove keeps e.target pinned to whatever element the
+ * gesture started on, unlike mousemove - elementFromPoint gives the element
+ * actually under the finger right now.
  *
- * @param {string} dateStr - Date of the clicked cell (YYYY-MM-DD)
- * @param {number} hour - Hour of the clicked cell (0-23)
+ * @param {MouseEvent|TouchEvent} e
+ * @returns {Element|null}
  */
-function handleTimeSlotClick(dateStr, hour) {
-  const endHour = (hour + 1) % 24;
-  pendingSlot = {
-    date: dateStr,
-    startTime: `${String(hour).padStart(2, '0')}:00`,
-    endTime: `${String(endHour).padStart(2, '0')}:00`
-  };
+function getEventTargetElement(e) {
+  if (e.touches && e.touches.length > 0) {
+    const touch = e.touches[0];
+    return document.elementFromPoint(touch.clientX, touch.clientY);
+  }
+  return e.target;
+}
 
+/**
+ * Convert a mouse/touch event's vertical position within a grid cell into
+ * minutes-since-midnight, snapped to the nearest 15-minute mark.
+ *
+ * @param {MouseEvent|TouchEvent} e
+ * @param {Element} cell - The `.day-column[data-hour]` cell the pointer is over
+ * @returns {number} Minutes since midnight (0-1440), snapped to 15 minutes
+ */
+function getSnappedMinutesFromEvent(e, cell) {
+  const rect = cell.getBoundingClientRect();
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const offsetY = clientY - rect.top;
+  const hour = parseInt(cell.dataset.hour, 10);
+  const snappedMinuteInHour = Math.round(offsetY / SNAP_MINUTES) * SNAP_MINUTES;
+  return Math.max(0, Math.min(24 * 60, hour * 60 + snappedMinuteInHour));
+}
+
+/**
+ * Format minutes-since-midnight as an HH:mm string.
+ *
+ * @param {number} totalMinutes
+ * @returns {string}
+ */
+function formatMinutesAsTime(totalMinutes) {
+  const clamped = Math.max(0, Math.min(24 * 60 - 1, totalMinutes));
+  const hours = Math.floor(clamped / 60);
+  const minutes = clamped % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+/**
+ * Draw (or move) the semi-transparent overlay showing the current drag
+ * selection. Reuses the same absolute-positioning-within-the-start-hour-cell
+ * trick already used for multi-hour events (see renderEventsOnGrid), so it
+ * can visually overflow into the cells below without special-casing layout.
+ */
+function renderDragOverlay() {
+  if (!dragSelection) return;
+
+  const rangeStart = Math.min(dragSelection.startMinutes, dragSelection.currentMinutes);
+  const rangeEnd = Math.max(dragSelection.startMinutes, dragSelection.currentMinutes);
+  const displayEnd = Math.max(rangeEnd, rangeStart + SNAP_MINUTES);
+
+  const cellHour = Math.floor(rangeStart / 60);
+  const topWithinCell = rangeStart - cellHour * 60;
+
+  const container = document.getElementById(dragSelection.mobile ? 'mobileTimeGrid' : 'timeGrid');
+  if (!container) return;
+
+  const mobileAttr = dragSelection.mobile ? '[data-mobile="true"]' : '';
+  const cell = container.querySelector(`.day-column[data-date="${dragSelection.date}"][data-hour="${cellHour}"]${mobileAttr}`);
+  if (!cell) return;
+
+  if (!dragOverlayEl) {
+    dragOverlayEl = document.createElement('div');
+    dragOverlayEl.className = 'absolute left-0.5 right-0.5 rounded-md pointer-events-none bg-primary/25 border-2 border-primary z-20';
+  }
+  if (dragOverlayEl.parentElement !== cell) {
+    cell.appendChild(dragOverlayEl);
+  }
+
+  dragOverlayEl.style.top = `${topWithinCell}px`;
+  dragOverlayEl.style.height = `${displayEnd - rangeStart}px`;
+}
+
+/**
+ * Remove the drag selection overlay from the DOM, if present.
+ */
+function removeDragOverlay() {
+  if (dragOverlayEl && dragOverlayEl.parentElement) {
+    dragOverlayEl.parentElement.removeChild(dragOverlayEl);
+  }
+  dragOverlayEl = null;
+}
+
+/**
+ * Start a drag selection when pressing down on an empty part of the grid.
+ * Clicks on an existing event block are ignored here (they have their own
+ * click handler with e.stopPropagation()).
+ *
+ * @param {MouseEvent|TouchEvent} e
+ */
+function handleGridPointerDown(e) {
+  const target = getEventTargetElement(e);
+  if (!target || target.closest('.event')) return;
+
+  const cell = target.closest('.day-column');
+  if (!cell || !cell.dataset.date) return;
+
+  const minutes = getSnappedMinutesFromEvent(e, cell);
+  dragSelection = {
+    date: cell.dataset.date,
+    mobile: cell.dataset.mobile === 'true',
+    startMinutes: minutes,
+    currentMinutes: minutes
+  };
+  renderDragOverlay();
+
+  if (e.cancelable) e.preventDefault();
+}
+
+/**
+ * Extend the drag selection as the pointer moves, snapping to 15 minutes.
+ * Movement outside the starting day's column is ignored (the selection
+ * clamps to whichever time was last valid within that day).
+ *
+ * @param {MouseEvent|TouchEvent} e
+ */
+function handleGridPointerMove(e) {
+  if (!dragSelection) return;
+
+  const target = getEventTargetElement(e);
+  const mobileAttr = dragSelection.mobile ? '[data-mobile="true"]' : '';
+  const cell = target && target.closest(`.day-column[data-date="${dragSelection.date}"]${mobileAttr}`);
+  if (!cell) return;
+
+  dragSelection.currentMinutes = getSnappedMinutesFromEvent(e, cell);
+  renderDragOverlay();
+
+  if (e.cancelable) e.preventDefault();
+}
+
+/**
+ * Finish the drag selection and open the Prenotation/Note chooser.
+ *
+ * A drag shorter than MIN_DRAG_MINUTES (including a plain click with no
+ * movement) defaults to a 1-hour slot starting at the pressed point.
+ */
+function handleGridPointerUp() {
+  if (!dragSelection) return;
+
+  const { date } = dragSelection;
+  const rangeStart = Math.min(dragSelection.startMinutes, dragSelection.currentMinutes);
+  let rangeEnd = Math.max(dragSelection.startMinutes, dragSelection.currentMinutes);
+
+  if (rangeEnd - rangeStart < MIN_DRAG_MINUTES) {
+    rangeEnd = Math.min(24 * 60, rangeStart + 60);
+  }
+
+  removeDragOverlay();
+  dragSelection = null;
+
+  pendingSlot = {
+    date,
+    startTime: formatMinutesAsTime(rangeStart),
+    endTime: formatMinutesAsTime(rangeEnd)
+  };
   document.getElementById('slotChoiceModal').classList.add('open');
+}
+
+/**
+ * Wire up mouse and touch listeners for drag-to-select on both the desktop
+ * week grid and the mobile day grid. Uses event delegation on the (stable)
+ * grid containers plus document-level move/up listeners, since re-rendering
+ * the grid only replaces its children, not the containers themselves.
+ */
+function setupGridDragSelection() {
+  const timeGrid = document.getElementById('timeGrid');
+  const mobileTimeGrid = document.getElementById('mobileTimeGrid');
+
+  [timeGrid, mobileTimeGrid].forEach(container => {
+    if (!container) return;
+    container.addEventListener('mousedown', handleGridPointerDown);
+    container.addEventListener('touchstart', handleGridPointerDown, { passive: false });
+  });
+
+  document.addEventListener('mousemove', handleGridPointerMove);
+  document.addEventListener('touchmove', handleGridPointerMove, { passive: false });
+  document.addEventListener('mouseup', handleGridPointerUp);
+  document.addEventListener('touchend', handleGridPointerUp);
 }
 
 /**
