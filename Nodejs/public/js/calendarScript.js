@@ -107,9 +107,57 @@ if (window.serverData && window.serverData.prenotations) {
 }
 
 /**
+ * Build one grid event per day a note spans, so a continuous multi-day note
+ * (e.g. Mon 14:00 to Wed 10:00) renders on every day it covers instead of
+ * only appearing on its start day.
+ *
+ * - First day: from the note's actual start time to end of day
+ * - Full days in between (if any): all day (00:00-23:59)
+ * - Last day: from start of day to the note's actual end time
+ * - Single-day note: unchanged, just the actual start/end time
+ *
+ * All segments share the note's id/description, so editing or deleting from
+ * any day's segment still operates on the whole note.
+ *
+ * @param {Object} note - Raw calendar note from window.serverData.calendarNotes
+ * @returns {Array} One event object per day the note spans
+ */
+function buildNoteSegments(note) {
+  const startMoment = parseAsLocalDate(note.startTime);
+  const endMoment = parseAsLocalDate(note.endTime);
+
+  const startDay = new Date(startMoment.getFullYear(), startMoment.getMonth(), startMoment.getDate());
+  const endDay = new Date(endMoment.getFullYear(), endMoment.getMonth(), endMoment.getDate());
+
+  const segments = [];
+  const cursor = new Date(startDay);
+
+  while (cursor <= endDay) {
+    const isFirstDay = cursor.getTime() === startDay.getTime();
+    const isLastDay = cursor.getTime() === endDay.getTime();
+
+    segments.push({
+      id: note.id,
+      type: 'note',
+      description: note.description,
+      date: formatDate(cursor),
+      startTime: isFirstDay ? startMoment.toTimeString().slice(0, 5) : '00:00',
+      endTime: isLastDay ? endMoment.toTimeString().slice(0, 5) : '23:59',
+      isMultiDay: !(isFirstDay && isLastDay),
+      assignees: ['myself'] // Default assignees
+    });
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return segments;
+}
+
+/**
  * Convert server calendar notes to unified event format.
- * 
- * Each note becomes a 'note' type event with:
+ *
+ * Each note becomes one or more 'note' type events (one per day it spans -
+ * see buildNoteSegments) with:
  * - Description text
  * - Date and time range
  * - Assignees (tutors)
@@ -117,24 +165,7 @@ if (window.serverData && window.serverData.prenotations) {
 if (window.serverData && window.serverData.calendarNotes) {
   console.log('Converting', window.serverData.calendarNotes.length, 'calendar notes');
   window.serverData.calendarNotes.forEach(note => {
-    const startDate = parseAsLocalDate(note.startTime);
-    const endDate = parseAsLocalDate(note.endTime);
-
-    // Format date in local timezone to avoid timezone shifts
-    const year = startDate.getFullYear();
-    const month = String(startDate.getMonth() + 1).padStart(2, '0');
-    const day = String(startDate.getDate()).padStart(2, '0');
-    const localDateStr = `${year}-${month}-${day}`;
-
-    events.push({
-      id: note.id,
-      type: 'note',
-      description: note.description,
-      date: localDateStr,
-      startTime: startDate.toTimeString().slice(0, 5),
-      endTime: endDate.toTimeString().slice(0, 5),
-      assignees: ['myself'] // Default assignees
-    });
+    events.push(...buildNoteSegments(note));
   });
 }
 
@@ -428,7 +459,8 @@ function filterStudents(searchTerm) {
 function setDefaultDates() {
   const today = getTodayString();
   document.getElementById('lessonDate').value = today;
-  document.getElementById('noteDate').value = today;
+  document.getElementById('noteStartDate').value = today;
+  document.getElementById('noteEndDate').value = today;
 }
 
 
@@ -1094,7 +1126,8 @@ function openNoteModal(prefill) {
   closeMenu();
 
   if (prefill) {
-    document.getElementById('noteDate').value = prefill.date;
+    document.getElementById('noteStartDate').value = prefill.date;
+    document.getElementById('noteEndDate').value = prefill.date;
     document.getElementById('noteStartTime').value = prefill.startTime;
     document.getElementById('noteEndTime').value = prefill.endTime;
   }
@@ -1365,20 +1398,46 @@ async function handleLessonSubmit(e) {
 }
 
 /**
+ * Get the number of whole days a date range touches (inclusive), used to
+ * sanity-check a note's range before creating it.
+ *
+ * @param {string} startDateStr - Start date (YYYY-MM-DD)
+ * @param {string} endDateStr - End date (YYYY-MM-DD)
+ * @returns {number|null} Days spanned (1 for a single day), or null if end is before start
+ */
+function getDaySpan(startDateStr, endDateStr) {
+  const [sy, sm, sd] = startDateStr.split('-').map(Number);
+  const [ey, em, ed] = endDateStr.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+
+  if (end < start) return null;
+
+  return Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+// Safety cap on how many days a single note can span, to avoid an accidental
+// multi-year note from a typo'd end date
+const MAX_NOTE_RANGE_DAYS = 90;
+
+/**
  * Handle calendar note creation form submission.
- * 
- * Validates description and times.
- * For STAFF: assigns to selected tutors.
- * For regular users: assigns to current user only.
- * Reloads page on success to refresh data.
- * 
+ *
+ * Validates description, date range, and times, then creates a single
+ * continuous note running from Start Date + Start Time to End Date + End
+ * Time (use the same date in both fields for a single-day note). The note
+ * is rendered on every day it spans (see buildNoteSegments).
+ * For STAFF: assigns to selected tutors. For regular users: assigns to
+ * current user only. Redirects to the calendar on the note's start date.
+ *
  * @param {Event} e - Form submit event
  */
 async function handleNoteSubmit(e) {
   e.preventDefault();
 
   const description = document.getElementById('noteDescription').value;
-  const noteDate = document.getElementById('noteDate').value;
+  const noteStartDate = document.getElementById('noteStartDate').value;
+  const noteEndDate = document.getElementById('noteEndDate').value;
   const startTime = document.getElementById('noteStartTime').value;
   const endTime = document.getElementById('noteEndTime').value;
 
@@ -1387,8 +1446,34 @@ async function handleNoteSubmit(e) {
     return;
   }
 
+  if (!noteStartDate || !noteEndDate) {
+    alert('Please select a start and end date');
+    return;
+  }
+
   if (!startTime || !endTime) {
     alert('Please enter start and end times');
+    return;
+  }
+
+  const daySpan = getDaySpan(noteStartDate, noteEndDate);
+
+  if (daySpan === null) {
+    alert('End Date must be on or after Start Date');
+    return;
+  }
+
+  if (daySpan > MAX_NOTE_RANGE_DAYS) {
+    alert(`That range covers ${daySpan} days - please pick ${MAX_NOTE_RANGE_DAYS} days or fewer.`);
+    return;
+  }
+
+  // Compare the full start/end moments (not just the dates) so a same-day
+  // note can't end before it starts
+  const startMoment = new Date(`${noteStartDate}T${startTime}`);
+  const endMoment = new Date(`${noteEndDate}T${endTime}`);
+  if (endMoment <= startMoment) {
+    alert('End Date/Time must be after Start Date/Time');
     return;
   }
 
@@ -1404,10 +1489,9 @@ async function handleNoteSubmit(e) {
     }
   }
 
-  // Prepare datetime with the selected date
-  const [year, month, day] = noteDate.split('-');
-  const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
-  const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
+  // A single continuous note: starts at Start Date/Time, ends at End Date/Time
+  const startDateTime = `${noteStartDate}T${startTime}:00`;
+  const endDateTime = `${noteEndDate}T${endTime}:00`;
 
   try {
     const response = await fetch('/api/calendar-notes', {
@@ -1428,9 +1512,9 @@ async function handleNoteSubmit(e) {
       alert('Calendar note created successfully!');
       closeNoteModal();
 
-      // Reload the calendar showing the day/week the new note was added to,
-      // instead of resetting back to the current week
-      window.location.href = `/calendar?date=${noteDate}`;
+      // Reload the calendar showing the note's start date, instead of
+      // resetting back to the current week
+      window.location.href = `/calendar?date=${noteStartDate}`;
     } else {
       const error = await response.json();
       alert('Failed to create calendar note: ' + (error.error || 'Unknown error'));
@@ -1756,10 +1840,11 @@ window.openEditNoteModal = async function (noteId) {
     document.getElementById('editNoteId').value = fullNote.id;
     document.getElementById('editNoteDescription').value = fullNote.description;
 
-    // Set date and times
+    // Set date range and times (startDate/endDate may differ for a continuous multi-day note)
     const startDate = parseAsLocalDate(fullNote.startTime);
     const endDate = parseAsLocalDate(fullNote.endTime);
-    document.getElementById('editNoteDate').value = formatDateForInput(startDate);
+    document.getElementById('editNoteStartDate').value = formatDateForInput(startDate);
+    document.getElementById('editNoteEndDate').value = formatDateForInput(endDate);
     document.getElementById('editNoteStartTime').value = formatTimeForInput(startDate);
     document.getElementById('editNoteEndTime').value = formatTimeForInput(endDate);
 
@@ -1842,8 +1927,9 @@ window.deleteNote = async function () {
 
 /**
  * Handle edit note form submission.
- * 
- * Updates note with new data.
+ *
+ * Updates note with new data - a continuous note from Start Date/Time to
+ * End Date/Time, same as creation (see handleNoteSubmit).
  * For STAFF: can change assignees.
  * For regular users: keeps current user as assignee.
  * Reloads page on success.
@@ -1853,7 +1939,8 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
 
   const noteId = document.getElementById('editNoteId').value;
   const description = document.getElementById('editNoteDescription').value;
-  const noteDate = document.getElementById('editNoteDate').value;
+  const noteStartDate = document.getElementById('editNoteStartDate').value;
+  const noteEndDate = document.getElementById('editNoteEndDate').value;
   const startTime = document.getElementById('editNoteStartTime').value;
   const endTime = document.getElementById('editNoteEndTime').value;
 
@@ -1862,8 +1949,32 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
     return;
   }
 
+  if (!noteStartDate || !noteEndDate) {
+    alert('Please select a start and end date');
+    return;
+  }
+
   if (!startTime || !endTime) {
     alert('Please enter start and end times');
+    return;
+  }
+
+  const daySpan = getDaySpan(noteStartDate, noteEndDate);
+
+  if (daySpan === null) {
+    alert('End Date must be on or after Start Date');
+    return;
+  }
+
+  if (daySpan > MAX_NOTE_RANGE_DAYS) {
+    alert(`That range covers ${daySpan} days - please pick ${MAX_NOTE_RANGE_DAYS} days or fewer.`);
+    return;
+  }
+
+  const startMoment = new Date(`${noteStartDate}T${startTime}`);
+  const endMoment = new Date(`${noteEndDate}T${endTime}`);
+  if (endMoment <= startMoment) {
+    alert('End Date/Time must be after Start Date/Time');
     return;
   }
 
@@ -1882,9 +1993,8 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
     tutorIds = [window.serverData.currentUserId];
   }
 
-  const [year, month, day] = noteDate.split('-');
-  const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
-  const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
+  const startDateTime = `${noteStartDate}T${startTime}:00`;
+  const endDateTime = `${noteEndDate}T${endTime}:00`;
 
   try {
     const response = await fetch(`/api/calendar-notes/${noteId}`, {

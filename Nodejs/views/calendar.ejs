@@ -490,14 +490,23 @@ Features:
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
-        <!-- Date picker for note -->
-        <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
-          <input type="date" id="noteDate" required
-            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        <!-- Date range: creates the same note on every day from start to end (inclusive) -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Start Date</label>
+            <input type="date" id="noteStartDate" required
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">End Date</label>
+            <input type="date" id="noteEndDate" required
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
         </div>
+        <p class="text-xs text-muted-foreground -mt-2">Use the same date for a single-day note, or a range to create one continuous note spanning multiple days.</p>
 
-        <!-- Start and End time pickers (15-minute intervals) -->
+        <!-- Start Time applies on Start Date, End Time applies on End Date - together they
+             define one continuous note (e.g. Mon 14:00 to Wed 10:00 spans all three days) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
@@ -691,10 +700,19 @@ Features:
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
-        <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
-          <input type="date" id="editNoteDate" required
-            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        <!-- Date range: same date in both fields for a single-day note, or a range for
+             one continuous note spanning multiple days (see Add Note for details) -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Start Date</label>
+            <input type="date" id="editNoteStartDate" required
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">End Date</label>
+            <input type="date" id="editNoteEndDate" required
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-4">

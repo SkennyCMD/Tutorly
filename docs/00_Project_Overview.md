@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: July 8, 2026  
+**Last Updated**: July 9, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -210,7 +210,7 @@ PostgreSQL relational database for data persistence.
 - Tasks and notes from calendar
 - Pending bookings
 - Quick actions for common operations
-- Mini calendar with month navigation and event-indicator dots on days with scheduled lessons, prenotations, or tasks
+- Mini calendar with month navigation and event-indicator dots on days with scheduled lessons, prenotations, or tasks; click a day to open it on the Calendar page
 
 #### 📚 Lesson Management
 - **Create lesson**: Select student, set times, add description
@@ -227,11 +227,12 @@ PostgreSQL relational database for data persistence.
 - Quick student search
 
 #### 📅 Calendar
-- Monthly calendar view
-- Display of scheduled lessons
-- Daily notes and reminders
-- Month navigation
-- Color-coding by event type
+- Weekly calendar view (desktop) and day view (mobile), with color-coding by event type (Prenotation/Note)
+- Click an empty time slot to choose Prenotation or Note, opening the matching form pre-filled with that slot's date and time
+- Multi-day notes: set a Start and End Date to create one continuous note spanning several days (e.g. a trip or conference), shown on every day it covers
+- After adding a prenotation or note, the calendar reopens on the day it was added to instead of resetting to the current week
+- Mobile: Add Prenotation/Add Note buttons visible directly on the page (no need to open the menu), redundant week-navigation controls hidden
+- Home dashboard mini calendar: click a day to jump straight to it on the Calendar page
 
 #### 📊 Excel Reports
 - **Monthly lesson report**: All lessons of the month
