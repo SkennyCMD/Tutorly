@@ -206,7 +206,8 @@ function renderCalendarDays(firstDay, lastDay, startDay, eventDates) {
 
     // Highlight today with primary color, others with hover effect; dot indicates a scheduled event
     html += `
-      <span class="relative flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg cursor-pointer transition-colors ${isToday ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-secondary text-foreground'}">
+      <span class="relative flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-lg cursor-pointer transition-colors ${isToday ? 'bg-primary text-primary-foreground font-medium' : 'hover:bg-secondary text-foreground'}"
+        onclick="goToCalendarDay('${dateStr}')">
         <span>${day}</span>
         <span class="w-1 h-1 rounded-full ${hasEvent ? dotColor : 'bg-transparent'}"></span>
       </span>
@@ -214,6 +215,19 @@ function renderCalendarDays(firstDay, lastDay, startDay, eventDates) {
   }
 
   document.getElementById('calendarDays').innerHTML = html;
+}
+
+/**
+ * Navigate to the Calendar page positioned on the clicked mini calendar day.
+ *
+ * Reuses the same ?date= mechanism the calendar page already reads on load
+ * (see getInitialCalendarDate() in calendarScript.js) to open its week/day
+ * view on this date instead of the current week.
+ *
+ * @param {string} dateStr - Clicked date (YYYY-MM-DD)
+ */
+function goToCalendarDay(dateStr) {
+  window.location.href = `/calendar?date=${dateStr}`;
 }
 
 
