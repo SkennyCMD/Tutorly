@@ -1,0 +1,24 @@
+<script>
+    // Must run inline, before any stylesheet/Tailwind CDN paint, so the
+    // correct theme is applied on first frame (no flash of wrong theme).
+    // Defines window.__theme, the single set of primitives (get/set/preferred/apply)
+    // that this snippet, theme.js's toggleTheme(), and the OS-preference
+    // listener all reuse instead of duplicating DOM logic.
+    window.__theme = {
+        key: 'tutorly-theme',
+        get: function () {
+            try { return localStorage.getItem(this.key); } catch (e) { return null; }
+        },
+        set: function (theme) {
+            try { localStorage.setItem(this.key, theme); } catch (e) { /* storage unavailable */ }
+        },
+        preferred: function () {
+            return this.get() || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        },
+        apply: function (theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.style.colorScheme = theme;
+        }
+    };
+    window.__theme.apply(window.__theme.preferred());
+</script>

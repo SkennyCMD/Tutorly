@@ -8,7 +8,9 @@ body {
 .mobile-menu.open {
     transform: translateX(0);
 }
-input[type="month"]::-webkit-calendar-picker-indicator {
+/* The native picker icon is dark by default; invert it only in dark theme
+   where the icon would otherwise be invisible against a dark input. */
+:root[data-theme="dark"] input[type="month"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
 }
 .dropdown-list {
@@ -24,11 +26,11 @@ input[type="month"]::-webkit-calendar-picker-indicator {
     width: 6px;
 }
 .dropdown-list::-webkit-scrollbar-track {
-    background: #262626;
+    background: rgb(var(--color-secondary));
     border-radius: 3px;
 }
 .dropdown-list::-webkit-scrollbar-thumb {
-    background: #a1a1aa;
+    background: rgb(var(--color-muted-foreground));
     border-radius: 3px;
 }
 .toast {

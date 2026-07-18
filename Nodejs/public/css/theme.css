@@ -1,0 +1,72 @@
+/*
+ * Centralized theme tokens for Tutorly.
+ * Every page includes this file plus partials/theme-config.ejs (which maps
+ * these variables into Tailwind's color palette) and public/js/theme.js
+ * (which flips the [data-theme] attribute below). Change a color here once
+ * and it updates everywhere.
+ *
+ * Values are space-separated RGB triplets (no commas) so Tailwind's
+ * `rgb(var(--color-x) / <alpha-value>)` opacity modifiers (e.g. bg-primary/90)
+ * keep working.
+ */
+
+:root {
+    --color-background: 248 250 252;
+    --color-foreground: 15 23 42;
+    --color-card: 255 255 255;
+    --color-card-foreground: 15 23 42;
+    --color-primary: 13 148 136;
+    --color-primary-hover: 15 118 110;
+    --color-primary-foreground: 255 255 255;
+    --color-secondary: 241 245 249;
+    --color-secondary-foreground: 15 23 42;
+    --color-muted: 241 245 249;
+    --color-muted-foreground: 100 116 139;
+    --color-border: 226 232 240;
+    --color-ring: 13 148 136;
+    --color-destructive: 220 38 38;
+    --color-lesson: 37 99 235;
+    --color-note: 217 119 6;
+
+    color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+    --color-background: 10 10 10;
+    --color-foreground: 250 250 250;
+    --color-card: 20 20 20;
+    --color-card-foreground: 250 250 250;
+    --color-primary: 20 184 166;
+    --color-primary-hover: 13 148 136;
+    --color-primary-foreground: 10 10 10;
+    --color-secondary: 38 38 38;
+    --color-secondary-foreground: 250 250 250;
+    --color-muted: 38 38 38;
+    --color-muted-foreground: 161 161 170;
+    --color-border: 46 46 46;
+    --color-ring: 20 184 166;
+    --color-destructive: 239 68 68;
+    --color-lesson: 59 130 246;
+    --color-note: 245 158 11;
+
+    color-scheme: dark;
+}
+
+/* Smooth, non-jarring transition when switching themes */
+body {
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Sun/moon icon swap for .theme-toggle buttons (partials/theme-toggle*.ejs).
+   Default (light theme): show moon (click to go dark). */
+.theme-toggle .icon-sun {
+    display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+    display: block;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+    display: none;
+}

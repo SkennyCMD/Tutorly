@@ -25,30 +25,10 @@ Features:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tutorly - Dashboard</title>
+  <%- include('partials/theme-init') %>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: '#0a0a0a',
-            foreground: '#fafafa',
-            card: '#141414',
-            'card-foreground': '#fafafa',
-            primary: '#14b8a6',
-            'primary-foreground': '#0a0a0a',
-            secondary: '#262626',
-            'secondary-foreground': '#fafafa',
-            muted: '#262626',
-            'muted-foreground': '#a1a1aa',
-            border: '#2e2e2e',
-            ring: '#14b8a6',
-            destructive: '#ef4444',
-          }
-        }
-      }
-    }
-  </script>
+  <%- include('partials/theme-config') %>
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/home.css">
   <%- include('partials/pwa-setup') %>
 </head>
@@ -85,7 +65,8 @@ Features:
         </nav>
 
         <!-- Logout form button (Desktop) -->
-        <div class="hidden md:flex items-center">
+        <div class="hidden md:flex items-center gap-1">
+          <%- include('partials/theme-toggle') %>
           <form action="/logout" method="POST" class="inline">
             <button type="submit"
               class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
@@ -169,8 +150,9 @@ Features:
         </a>
         <% } %>
 
-          <!-- Logout button in mobile menu -->
-          <div class="mt-4 pt-4 border-t border-border">
+          <!-- Theme toggle and Logout in mobile menu -->
+          <div class="mt-4 pt-4 border-t border-border space-y-1">
+            <%- include('partials/theme-toggle-mobile') %>
             <form action="/logout" method="POST">
               <button type="submit"
                 class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-secondary transition-colors">
@@ -516,6 +498,7 @@ Features:
     window.initialLessons = <%- JSON.stringify(lessons) %>;
     window.allStudents = <%- JSON.stringify(students) %>;
   </script>
+  <script src="/js/theme.js"></script>
   <script src="/js/modalShared.js"></script>
   <script src="/js/homeScript.js"></script>
 </body>

@@ -18,36 +18,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tutorly - Admin Panel</title>
-  
+  <%- include('partials/theme-init') %>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Custom Tailwind configuration with dark theme colors -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: '#0a0a0a',
-            foreground: '#fafafa',
-            card: '#141414',
-            'card-foreground': '#fafafa',
-            primary: '#14b8a6',
-            'primary-foreground': '#0a0a0a',
-            secondary: '#262626',
-            'secondary-foreground': '#fafafa',
-            muted: '#262626',
-            'muted-foreground': '#a1a1aa',
-            border: '#2e2e2e',
-            ring: '#14b8a6',
-            destructive: '#ef4444',
-          }
-        }
-      }
-    }
-  </script>
-  
+  <%- include('partials/theme-config') %>
+
   <!-- Custom admin panel styles -->
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body class="bg-background text-foreground min-h-screen">
@@ -77,9 +55,10 @@
           <a href="reports.html" class="text-muted-foreground hover:text-foreground transition-colors">Reports</a> -->
         </nav>
 
-        <!-- Logout button (desktop only) -->
-        <div class="hidden md:flex items-center gap-4">
-          <a href="/adminLogout" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Logout</a>
+        <!-- Theme toggle and Logout button (desktop only) -->
+        <div class="hidden md:flex items-center gap-1">
+          <%- include('partials/theme-toggle') %>
+          <a href="/adminLogout" class="text-sm text-muted-foreground hover:text-foreground transition-colors px-2">Logout</a>
         </div>
 
         <!-- Mobile menu toggle button -->
@@ -141,8 +120,9 @@
         Reports
       </a> -->
       
-      <!-- Logout section (separated with border) -->
-      <div class="border-t border-border mt-2 pt-2">
+      <!-- Theme toggle and Logout section (separated with border) -->
+      <div class="border-t border-border mt-2 pt-2 space-y-1">
+        <%- include('partials/theme-toggle-mobile') %>
         <a href="/adminLogout" class="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-secondary transition-colors">
           Logout
         </a>
@@ -305,6 +285,7 @@
   <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
 
   <!-- JavaScript for admin panel functionality (API calls, form handling, etc.) -->
+  <script src="/js/theme.js"></script>
   <script src="/js/admin.js"></script>
 </body>
 </html>

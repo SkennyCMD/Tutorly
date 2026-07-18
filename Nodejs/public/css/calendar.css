@@ -38,7 +38,7 @@ body {
     }
     .time-slot {
       height: 60px;
-      border-bottom: 1px solid #2e2e2e;
+      border-bottom: 1px solid rgb(var(--color-border));
     }
     .event {
       position: absolute;
@@ -52,32 +52,32 @@ body {
       z-index: 10;
     }
     .event-lesson {
-      background-color: rgba(59, 130, 246, 0.2);
-      border-left: 3px solid #3b82f6;
-      color: #93c5fd;
+      background-color: rgb(var(--color-lesson) / 0.2);
+      border-left: 3px solid rgb(var(--color-lesson));
+      color: rgb(var(--color-lesson));
     }
     .event-note {
-      background-color: rgba(245, 158, 11, 0.2);
-      border-left: 3px solid #f59e0b;
-      color: #fcd34d;
+      background-color: rgb(var(--color-note) / 0.2);
+      border-left: 3px solid rgb(var(--color-note));
+      color: rgb(var(--color-note));
     }
     .day-column {
       position: relative;
-      border-left: 1px solid #2e2e2e;
+      border-left: 1px solid rgb(var(--color-border));
     }
     .custom-scrollbar::-webkit-scrollbar {
       width: 8px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: #141414;
+      background: rgb(var(--color-card));
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #2e2e2e;
+      background: rgb(var(--color-border));
       border-radius: 4px;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #3e3e3e;
+      background: rgb(var(--color-muted-foreground) / 0.5);
     }
     .checkbox-item:has(input:checked) {
-      background-color: #262626;
+      background-color: rgb(var(--color-secondary));
     }

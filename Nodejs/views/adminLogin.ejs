@@ -21,30 +21,10 @@ Features:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tutorly - Admin Login</title>
+  <%- include('partials/theme-init') %>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: '#0a0a0a',
-            foreground: '#fafafa',
-            card: '#141414',
-            'card-foreground': '#fafafa',
-            primary: '#14b8a6',
-            'primary-foreground': '#0a0a0a',
-            secondary: '#262626',
-            'secondary-foreground': '#fafafa',
-            muted: '#262626',
-            'muted-foreground': '#a1a1aa',
-            border: '#2e2e2e',
-            ring: '#14b8a6',
-            destructive: '#ef4444',
-          }
-        }
-      }
-    }
-  </script>
+  <%- include('partials/theme-config') %>
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/adminLogin.css">
 </head>
 <body class="bg-background text-foreground min-h-screen flex flex-col">
@@ -69,12 +49,15 @@ Features:
         </div>
         <span class="text-xl font-bold text-foreground">Tutorly</span>
       </a>
-      <a href="/home" class="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-        </svg>
-        Tutor Login
-      </a>
+      <div class="flex items-center gap-2">
+        <a href="/home" class="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Tutor Login
+        </a>
+        <%- include('partials/theme-toggle') %>
+      </div>
     </div>
   </header>
 
@@ -189,6 +172,7 @@ Features:
     </div>
   </footer>
 
+  <script src="/js/theme.js"></script>
   <!-- JavaScript for admin login functionality (form validation, password toggle, authentication) -->
   <script src="/js/adminLogin.js"></script>
 </body>

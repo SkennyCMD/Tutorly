@@ -1,0 +1,31 @@
+<script>
+    // Shared Tailwind color palette for every page. Colors are pulled from
+    // the CSS variables in /css/theme.css via rgb(var(...) / <alpha-value>)
+    // so that both the light/dark values AND Tailwind's opacity modifiers
+    // (e.g. bg-primary/90) keep working. Change a color once in theme.css,
+    // not in every view.
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    background: 'rgb(var(--color-background) / <alpha-value>)',
+                    foreground: 'rgb(var(--color-foreground) / <alpha-value>)',
+                    card: 'rgb(var(--color-card) / <alpha-value>)',
+                    'card-foreground': 'rgb(var(--color-card-foreground) / <alpha-value>)',
+                    primary: 'rgb(var(--color-primary) / <alpha-value>)',
+                    'primary-hover': 'rgb(var(--color-primary-hover) / <alpha-value>)',
+                    'primary-foreground': 'rgb(var(--color-primary-foreground) / <alpha-value>)',
+                    secondary: 'rgb(var(--color-secondary) / <alpha-value>)',
+                    'secondary-foreground': 'rgb(var(--color-secondary-foreground) / <alpha-value>)',
+                    muted: 'rgb(var(--color-muted) / <alpha-value>)',
+                    'muted-foreground': 'rgb(var(--color-muted-foreground) / <alpha-value>)',
+                    border: 'rgb(var(--color-border) / <alpha-value>)',
+                    ring: 'rgb(var(--color-ring) / <alpha-value>)',
+                    destructive: 'rgb(var(--color-destructive) / <alpha-value>)',
+                    lesson: 'rgb(var(--color-lesson) / <alpha-value>)',
+                    note: 'rgb(var(--color-note) / <alpha-value>)',
+                }
+            }
+        }
+    }
+</script>

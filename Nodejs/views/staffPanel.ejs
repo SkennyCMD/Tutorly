@@ -25,33 +25,12 @@ Features:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tutorly - Staff Management</title>
+  <%- include('partials/theme-init') %>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- XLSX library for generating Excel files client-side -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <!-- Tailwind configuration with custom dark theme colors -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: '#0a0a0a',
-            foreground: '#fafafa',
-            card: '#141414',
-            'card-foreground': '#fafafa',
-            primary: '#14b8a6',
-            'primary-foreground': '#0a0a0a',
-            secondary: '#262626',
-            'secondary-foreground': '#fafafa',
-            muted: '#262626',
-            'muted-foreground': '#a1a1aa',
-            border: '#2e2e2e',
-            ring: '#14b8a6',
-            destructive: '#ef4444',
-          }
-        }
-      }
-    }
-  </script>
+  <%- include('partials/theme-config') %>
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/staffPanel.css">
   <%- include('partials/pwa-setup') %>
 </head>
@@ -84,8 +63,9 @@ Features:
           <a href="#" class="text-foreground font-medium transition-colors">Staff</a>
         </nav>
 
-        <!-- Logout form button (Desktop) -->
-        <div class="hidden md:flex items-center">
+        <!-- Theme toggle and Logout form button (Desktop) -->
+        <div class="hidden md:flex items-center gap-1">
+          <%- include('partials/theme-toggle') %>
           <form action="/logout" method="POST" class="inline">
             <button type="submit"
               class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
@@ -165,8 +145,9 @@ Features:
         Staff
       </a>
 
-      <!-- Logout button in mobile menu -->
-      <div class="mt-4 pt-4 border-t border-border">
+      <!-- Theme toggle and Logout button in mobile menu -->
+      <div class="mt-4 pt-4 border-t border-border space-y-1">
+        <%- include('partials/theme-toggle-mobile') %>
         <form action="/logout" method="POST">
           <button type="submit"
             class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-secondary transition-colors">
@@ -334,6 +315,7 @@ Features:
     window.allTutors = <%- JSON.stringify(tutors) %>;
   </script>
   <!-- JavaScript for staff panel functionality (Excel generation, downloads, toast notifications) -->
+  <script src="/js/theme.js"></script>
   <script src="/js/staffPanel.js"></script>
 </body>
 

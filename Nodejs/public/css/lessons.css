@@ -31,9 +31,9 @@ body {
     width: 6px;
 }
 .scrollbar-thin::-webkit-scrollbar-track {
-    background: #141414;
+    background: rgb(var(--color-card));
 }
 .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #2e2e2e;
+    background: rgb(var(--color-border));
     border-radius: 3px;
 }

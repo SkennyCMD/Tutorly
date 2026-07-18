@@ -25,34 +25,10 @@ Features:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tutorly - Calendar</title>
+  <%- include('partials/theme-init') %>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            background: '#0a0a0a',
-            foreground: '#fafafa',
-            card: '#141414',
-            'card-foreground': '#fafafa',
-            primary: '#14b8a6',
-            'primary-foreground': '#0a0a0a',
-            secondary: '#262626',
-            'secondary-foreground': '#fafafa',
-            muted: '#262626',
-            'muted-foreground': '#a1a1aa',
-            border: '#2e2e2e',
-            ring: '#14b8a6',
-            destructive: '#ef4444',
-            lesson: '#3b82f6',
-            'lesson-light': '#3b82f6',
-            note: '#f59e0b',
-            'note-light': '#f59e0b',
-          }
-        }
-      }
-    }
-  </script>
+  <%- include('partials/theme-config') %>
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/calendar.css">
   <%- include('partials/pwa-setup') %>
 </head>
@@ -104,8 +80,9 @@ Features:
             </svg>
             Note
           </button>
-          <!-- Logout form button -->
-          <div class="hidden md:flex items-center">
+          <!-- Theme toggle and Logout form button -->
+          <div class="hidden md:flex items-center gap-1">
+            <%- include('partials/theme-toggle') %>
             <form action="/logout" method="POST" class="inline">
               <button type="submit"
                 class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
@@ -207,6 +184,7 @@ Features:
           </svg>
           Add Note
         </button>
+        <%- include('partials/theme-toggle-mobile') %>
         <form action="/logout" method="POST" class="mt-2">
           <button type="submit"
             class="w-full flex items-center justify-center gap-2 border border-destructive text-destructive px-4 py-2.5 rounded-lg font-medium hover:bg-destructive hover:text-white transition-colors">
@@ -763,6 +741,7 @@ Features:
       userRole: '<%= user.role %>'
     };
   </script>
+  <script src="/js/theme.js"></script>
   <!-- JavaScript for calendar rendering, event management, and modal interactions -->
   <script src="/js/calendarScript.js"></script>
 </body>

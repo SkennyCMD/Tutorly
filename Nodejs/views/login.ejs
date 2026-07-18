@@ -24,31 +24,17 @@ Features:
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login | Tutorly</title>
+  <%- include('partials/theme-init') %>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/login.css">
-  <!-- Tailwind configuration with light theme colors (teal primary, slate backgrounds) -->
+  <%- include('partials/theme-config') %>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
-          colors: {
-            primary: '#0D9488',
-            'primary-hover': '#0F766E',
-            background: '#F8FAFC',
-            foreground: '#0F172A',
-            muted: '#64748B',
-            border: '#E2E8F0',
-            card: '#FFFFFF',
-          }
-        }
-      }
-    }
+    // Login page also uses the Inter font, layered on top of the shared color config.
+    tailwind.config.theme.extend.fontFamily = { sans: ['Inter', 'sans-serif'] };
   </script>
   <%- include('partials/pwa-setup') %>
 </head>
@@ -67,9 +53,12 @@ Features:
         </svg>
         <span class="text-xl font-bold text-foreground">Tutorly</span>
       </a>
-      <nav class="hidden md:flex items-center gap-6">
-        <a href="#" class="text-muted hover:text-foreground transition-colors">Become a Tutor</a>
-      </nav>
+      <div class="flex items-center gap-4">
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="#" class="text-muted-foreground hover:text-foreground transition-colors">Become a Tutor</a>
+        </nav>
+        <%- include('partials/theme-toggle') %>
+      </div>
     </div>
   </header>
 
@@ -81,7 +70,7 @@ Features:
       <div class="bg-card rounded-2xl shadow-lg shadow-black/5 p-8 md:p-10">
         <div class="text-center mb-8">
           <h1 class="text-2xl md:text-3xl font-bold text-foreground mb-2">Welcome back</h1>
-          <p class="text-muted">Sign in to continue your learning journey</p>
+          <p class="text-muted-foreground">Sign in to continue your learning journey</p>
         </div>
 
         <!-- Error Message: Displayed when login fails (server-side validation) -->
@@ -97,7 +86,7 @@ Features:
               <div>
                 <label for="email" class="block text-sm font-medium text-foreground mb-2">Email address</label>
                 <input type="text" id="username" name="username" placeholder="username"
-                  class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   required>
               </div>
 
@@ -109,7 +98,7 @@ Features:
                     password?</a>
                 </div>
                 <input type="password" id="password" name="password" placeholder="••••••••"
-                  class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   required>
               </div>
 
@@ -117,7 +106,7 @@ Features:
               <div class="flex items-center gap-2">
                 <input type="checkbox" id="remember" name="remember"
                   class="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer">
-                <label for="remember" class="text-sm text-muted cursor-pointer">Remember me for 30 days</label>
+                <label for="remember" class="text-sm text-muted-foreground cursor-pointer">Remember me for 30 days</label>
               </div>
 
               <!-- Submit Button: Sign in to Tutorly platform -->
@@ -136,15 +125,16 @@ Features:
   <!-- Copyright notice and links to Privacy, Terms, and Help -->
   <footer class="py-6 px-6 border-t border-border">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-      <p class="text-sm text-muted">© 2026 Tutorly. All rights reserved.</p>
+      <p class="text-sm text-muted-foreground">© 2026 Tutorly. All rights reserved.</p>
       <div class="flex items-center gap-6">
-        <a href="#" class="text-sm text-muted hover:text-foreground transition-colors">Privacy</a>
-        <a href="#" class="text-sm text-muted hover:text-foreground transition-colors">Terms</a>
-        <a href="#" class="text-sm text-muted hover:text-foreground transition-colors">Help</a>
+        <a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
+        <a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Terms</a>
+        <a href="#" class="text-sm text-muted-foreground hover:text-foreground transition-colors">Help</a>
       </div>
     </div>
   </footer>
 
+  <script src="/js/theme.js"></script>
 </body>
 
 </html>
