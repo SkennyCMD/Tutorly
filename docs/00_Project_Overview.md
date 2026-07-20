@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: July 9, 2026  
+**Last Updated**: July 20, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -155,6 +155,7 @@ User-friendly web interface that handles authentication, sessions and presents d
 - ✅ **Role-based access control** (RBAC)
 - ✅ **Server-side rendering** with EJS templates
 - ✅ **Progressive Web App (PWA)**: Offline fallback support and caching via service workers (`manifest.json`, `service-worker.js`).
+- ✅ **Light/Dark Theme**: User-toggleable theme (sun/moon icon in every view) with the preference persisted in `localStorage` and synced to the OS `prefers-color-scheme` when no preference is set.
 - ✅ **Excel export** for reports and statistics
 - ✅ **Advanced logging** with colors and timestamps
 - ✅ **Middleware chain** for authentication and authorization
@@ -759,6 +760,7 @@ Contributions, issues and feature requests are welcome!
 
 We thank the following users for their fundamental contribution
 - Gorlix (Alessandro Gorla) -> for PWA support implementation
+- GabrieleGroppo (Gabriele Groppo) -> for dynamic light/dark theme implementation with toggle across all views
 
 ---
 

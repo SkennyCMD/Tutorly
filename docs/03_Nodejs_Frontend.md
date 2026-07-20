@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: April 29, 2026  
+**Last Updated**: July 20, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -243,7 +243,13 @@ Nodejs/
 │   ├── calendar.ejs                # Calendar view with notes
 │   ├── admin.ejs                   # Admin panel
 │   ├── staffPanel.ejs              # Staff panel (STAFF role only)
-│   └── 404.ejs                     # Error page
+│   ├── 404.ejs                     # Error page
+│   └── partials/                   # Shared EJS includes
+│       ├── pwa-setup.ejs           # PWA manifest/service-worker registration
+│       ├── theme-init.ejs          # Inline light/dark theme bootstrap (runs before first paint)
+│       ├── theme-config.ejs        # Maps theme.css variables into Tailwind's color palette
+│       ├── theme-toggle.ejs        # Icon-only theme toggle button (desktop headers)
+│       └── theme-toggle-mobile.ejs # Full-width theme toggle row (mobile menus)
 │
 ├── public/                         # Static files (client-side)
 │   ├── css/                        # Stylesheets
@@ -253,7 +259,8 @@ Nodejs/
 │   │   ├── lessons.css             # Lesson management styles
 │   │   ├── calendar.css            # Calendar view styles
 │   │   ├── admin.css               # Admin panel styles
-│   │   └── staffPanel.css          # Staff panel styles
+│   │   ├── staffPanel.css          # Staff panel styles
+│   │   └── theme.css               # Light/dark theme CSS variables (all pages)
 │   │
 │   └── js/                         # Client-side JavaScript
 │       ├── adminLogin.js           # Admin login form handling
@@ -263,6 +270,7 @@ Nodejs/
 │       ├── calendarScript.js       # Calendar interactions
 │       ├── staffPanel.js           # Staff panel functionality
 │       ├── modalShared.js          # Shared modal utilities
+│       ├── theme.js                # Theme toggle behavior (all pages)
 │       └── 404.js                  # Error page interactions
 │
 ├── ssl/                            # SSL certificates (gitignored)
@@ -1105,6 +1113,7 @@ Client-side JavaScript is organized by page/feature:
 | `calendarScript.js` | Calendar view (event handling, date navigation) |
 | `staffPanel.js` | Staff panel functionality |
 | `modalShared.js` | Shared modal utilities (open, close, populate) |
+| `theme.js` | Light/dark theme toggle and OS-preference syncing |
 | `404.js` | Error page interactions |
 
 ### Common Patterns
@@ -1172,6 +1181,26 @@ function addLessonToTable(lesson) {
     `;
 }
 ```
+
+---
+
+## Theming (Light/Dark Mode)
+
+Every page supports a light and dark theme, toggled by a sun/moon icon button included in each view's header (and, on mobile, in the slide-out menu).
+
+**Files:**
+- `public/css/theme.css` - Defines the `--color-*` CSS variables for both themes as `:root` (light) and `:root[data-theme="dark"]` overrides, plus the sun/moon icon-swap rules for `.theme-toggle` buttons.
+- `views/partials/theme-init.ejs` - Inlined at the top of `<head>` on every page, before any stylesheet/Tailwind CDN paint. Defines `window.__theme` (get/set/preferred/apply) and immediately applies the stored or OS-preferred theme, avoiding a flash of the wrong theme.
+- `views/partials/theme-config.ejs` - Maps the `theme.css` variables into Tailwind's `tailwind.config.theme.extend.colors` (e.g. `background`, `primary`, `border`) using `rgb(var(--color-x) / <alpha-value>)`, so Tailwind's opacity modifiers (`bg-primary/90`) keep working under both themes.
+- `public/js/theme.js` - Defines `window.toggleTheme()` (bound to every toggle button's `onclick`) and listens for `prefers-color-scheme` changes to keep following the OS theme live, unless the user has explicitly picked one.
+- `views/partials/theme-toggle.ejs` / `theme-toggle-mobile.ejs` - The toggle button markup for desktop headers and mobile menus respectively.
+
+**How it works:**
+1. The chosen theme is persisted in `localStorage` under the `tutorly-theme` key.
+2. If nothing is stored, the theme falls back to the browser's `prefers-color-scheme` and updates live if that OS setting changes.
+3. The active theme is reflected as `data-theme="light"|"dark"` on `<html>`, which both the CSS variables and Tailwind's generated classes key off of.
+
+To add theming to a new page, include `partials/theme-init.ejs` (early in `<head>`, before the Tailwind CDN `<script>` tag), link `css/theme.css`, then include `partials/theme-config.ejs` (right after the Tailwind CDN `<script>` tag, so it can extend `tailwind.config`), load `js/theme.js`, and drop in `partials/theme-toggle.ejs` (and `theme-toggle-mobile.ejs` if the page has a mobile menu).
 
 ---
 
