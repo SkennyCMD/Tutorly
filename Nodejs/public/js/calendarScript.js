@@ -1957,6 +1957,7 @@ window.deletePrenotation = async function () {
   if (!confirm('Are you sure you want to delete this prenotation?')) return;
 
   const prenotationId = document.getElementById('editPrenotationId').value;
+  const prenotationDate = document.getElementById('editPrenotationDate').value;
 
   try {
     const response = await fetch(`/api/prenotations/${prenotationId}`, {
@@ -1967,7 +1968,10 @@ window.deletePrenotation = async function () {
     if (response.ok) {
       alert('Prenotation deleted successfully!');
       closeEditPrenotationModal();
-      window.location.reload();
+
+      // Reload the calendar showing the day the deleted prenotation was on,
+      // instead of resetting back to the current week
+      window.location.href = `/calendar?date=${prenotationDate}`;
     } else {
       const error = await response.json();
       alert('Failed to delete prenotation: ' + (error.error || 'Unknown error'));
@@ -2035,7 +2039,10 @@ document.getElementById('editPrenotationForm').addEventListener('submit', async 
     if (response.ok) {
       alert('Prenotation updated successfully!');
       closeEditPrenotationModal();
-      window.location.reload();
+
+      // Reload the calendar showing the (possibly new) day the prenotation
+      // is now on, instead of resetting back to the current week
+      window.location.href = `/calendar?date=${prenotationDate}`;
     } else {
       const error = await response.json();
       alert('Failed to update prenotation: ' + (error.error || 'Unknown error'));
@@ -2215,6 +2222,7 @@ window.deleteNote = async function () {
   if (!confirm('Are you sure you want to delete this note?')) return;
 
   const noteId = document.getElementById('editNoteId').value;
+  const noteStartDate = document.getElementById('editNoteStartDate').value;
 
   try {
     const response = await fetch(`/api/calendar-notes/${noteId}`, {
@@ -2225,7 +2233,10 @@ window.deleteNote = async function () {
     if (response.ok) {
       alert('Note deleted successfully!');
       closeEditNoteModal();
-      window.location.reload();
+
+      // Reload the calendar showing the day the deleted note started on,
+      // instead of resetting back to the current week
+      window.location.href = `/calendar?date=${noteStartDate}`;
     } else {
       const error = await response.json();
       alert('Failed to delete note: ' + (error.error || 'Unknown error'));
@@ -2325,7 +2336,10 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
     if (response.ok) {
       alert('Note updated successfully!');
       closeEditNoteModal();
-      window.location.reload();
+
+      // Reload the calendar showing the (possibly new) day the note now
+      // starts on, instead of resetting back to the current week
+      window.location.href = `/calendar?date=${noteStartDate}`;
     } else {
       const error = await response.json();
       alert('Failed to update note: ' + (error.error || 'Unknown error'));
