@@ -36,6 +36,7 @@ const { hashPassword, logAuthAttempt } = require('../server_utilities/passwordSe
 // Logging utilities
 const { logError, logSuccess, logWarning, logInfo, requestLogger } = require('../server_utilities/logger');
 const FileSessionStore = require('../server_utilities/fileSessionStore');
+const { i18nMiddleware } = require('../server_utilities/i18n');
 // Java API communication services
 const { 
     fetchFromJavaAPI,
@@ -99,6 +100,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 // Serve static files (CSS, JS, images)
 app.use(express.static(path.join(__dirname, '../public')));
+// Detect the tutor's device language (Accept-Language header) and expose a
+// t() translation helper to every EJS template via res.locals
+app.use(i18nMiddleware);
 
 //------------------------------------------------------------------------------------------------------
 // SESSION MANAGEMENT
@@ -273,18 +277,18 @@ app.post('/login', tutorSession, async (req, res) => {
 
         if (authResult === null) {
             logAuthAttempt('tutor', username, clientIp, false, null, null);
-            return res.render('login', { error: 'Username or password incorrect' });
+            return res.render('login', { error: res.locals.t('login.errors.invalidCredentials') });
         }
 
         if (!authResult.tutorId) {
             // Check if account is blocked
             if (authResult.blocked) {
                 logAuthAttempt('tutor', username, clientIp, false, authResult.passwordHash, authResult.dbHash);
-                return res.render('login', { error: 'Account is blocked. Contact administrator.' });
+                return res.render('login', { error: res.locals.t('login.errors.accountBlocked') });
             }
             // Password incorrect - show both hashes for comparison
             logAuthAttempt('tutor', username, clientIp, false, authResult.passwordHash, authResult.dbHash);
-            return res.render('login', { error: 'Username or password incorrect' });
+            return res.render('login', { error: res.locals.t('login.errors.invalidCredentials') });
         }
 
         // Create session with tutor data
@@ -322,7 +326,7 @@ app.post('/login', tutorSession, async (req, res) => {
     } catch (error) {
         logError(`Login error for tutor ${username}: ${error.message}`, req, { error: error.stack });
         logAuthAttempt('tutor', username, clientIp, false, null, null);
-        res.render('login', { error: 'Error during login. Please ensure the Java server is running.' });
+        res.render('login', { error: res.locals.t('login.errors.serverError') });
     }
 });
 

@@ -17,14 +17,14 @@ Features:
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <!-- HEAD: Page Configuration -->
 <!-- Tailwind CSS, XLSX library for Excel generation, and custom dark theme -->
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tutorly - Staff Management</title>
+  <title>Tutorly - <%= t('staffPanel.pageTitle') %></title>
   <%- include('partials/theme-init') %>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- XLSX library for generating Excel files client-side -->
@@ -57,10 +57,10 @@ Features:
 
         <!-- Desktop Navigation: Dashboard, Calendar, My Lessons, Staff (active) -->
         <nav class="hidden md:flex items-center gap-6">
-          <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
-          <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors">Calendar</a>
-          <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors">My Lessons</a>
-          <a href="#" class="text-foreground font-medium transition-colors">Staff</a>
+          <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.dashboard') %></a>
+          <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.calendar') %></a>
+          <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.myLessons') %></a>
+          <a href="#" class="text-foreground font-medium transition-colors"><%= t('staffPanel.navLabel') %></a>
         </nav>
 
         <!-- Theme toggle and Logout form button (Desktop) -->
@@ -73,7 +73,7 @@ Features:
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span class="text-sm font-medium">Logout</span>
+              <span class="text-sm font-medium"><%= t('common.logout') %></span>
             </button>
           </form>
         </div>
@@ -119,7 +119,7 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
-        Dashboard
+        <%= t('common.dashboard') %>
       </a>
       <a href="/calendat"
         class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
@@ -127,7 +127,7 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        Calendar
+        <%= t('common.calendar') %>
       </a>
       <a href="/lessons"
         class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
@@ -135,14 +135,14 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
         </svg>
-        My Lessons
+        <%= t('common.myLessons') %>
       </a>
       <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
-        Staff
+        <%= t('staffPanel.navLabel') %>
       </a>
 
       <!-- Theme toggle and Logout button in mobile menu -->
@@ -155,7 +155,7 @@ Features:
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Logout
+            <%= t('common.logout') %>
           </button>
         </form>
       </div>
@@ -169,8 +169,8 @@ Features:
 
     <!-- Page Title and Description -->
     <div class="mb-8">
-      <h1 class="text-2xl sm:text-3xl font-bold text-foreground">Staff Management</h1>
-      <p class="text-muted-foreground mt-1">Download monthly reports for tutors and students</p>
+      <h1 class="text-2xl sm:text-3xl font-bold text-foreground"><%= t('staffPanel.pageTitle') %></h1>
+      <p class="text-muted-foreground mt-1"><%= t('staffPanel.subtitle') %></p>
     </div>
 
     <!-- Cards Grid: Three download options for different report types -->
@@ -187,14 +187,14 @@ Features:
             </svg>
           </div>
           <div>
-            <h2 class="text-lg font-semibold text-foreground">All Tutors Hours</h2>
-            <p class="text-sm text-muted-foreground">Monthly hours for every tutor</p>
+            <h2 class="text-lg font-semibold text-foreground"><%= t('staffPanel.allTutorsHours') %></h2>
+            <p class="text-sm text-muted-foreground"><%= t('staffPanel.allTutorsHoursDesc') %></p>
           </div>
         </div>
 
         <!-- Month selector input -->
         <div class="flex-1">
-          <label for="tutorAllMonth" class="block text-sm font-medium text-foreground mb-1.5">Select Month</label>
+          <label for="tutorAllMonth" class="block text-sm font-medium text-foreground mb-1.5"><%= t('staffPanel.selectMonth') %></label>
           <input type="month" id="tutorAllMonth"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
@@ -206,7 +206,7 @@ Features:
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Download Tutors Report
+          <%= t('staffPanel.downloadTutorsReport') %>
         </button>
       </div>
 
@@ -222,14 +222,14 @@ Features:
             </svg>
           </div>
           <div>
-            <h2 class="text-lg font-semibold text-foreground">All Students Hours</h2>
-            <p class="text-sm text-muted-foreground">Monthly hours for every student</p>
+            <h2 class="text-lg font-semibold text-foreground"><%= t('staffPanel.allStudentsHours') %></h2>
+            <p class="text-sm text-muted-foreground"><%= t('staffPanel.allStudentsHoursDesc') %></p>
           </div>
         </div>
 
         <!-- Month selector input -->
         <div class="flex-1">
-          <label for="studentAllMonth" class="block text-sm font-medium text-foreground mb-1.5">Select Month</label>
+          <label for="studentAllMonth" class="block text-sm font-medium text-foreground mb-1.5"><%= t('staffPanel.selectMonth') %></label>
           <input type="month" id="studentAllMonth"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
@@ -241,7 +241,7 @@ Features:
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Download Students Report
+          <%= t('staffPanel.downloadStudentsReport') %>
         </button>
       </div>
 
@@ -256,14 +256,14 @@ Features:
             </svg>
           </div>
           <div>
-            <h2 class="text-lg font-semibold text-foreground">Tutors Monthly Stats</h2>
-            <p class="text-sm text-muted-foreground">Monthly breakdown with U/M/S hours & overlaps</p>
+            <h2 class="text-lg font-semibold text-foreground"><%= t('staffPanel.tutorsMonthlyStats') %></h2>
+            <p class="text-sm text-muted-foreground"><%= t('staffPanel.tutorsMonthlyStatsDesc') %></p>
           </div>
         </div>
 
         <!-- Year selector input for annual statistics -->
         <div class="flex-1">
-          <label for="tutorStatsYear" class="block text-sm font-medium text-foreground mb-1.5">Select Year</label>
+          <label for="tutorStatsYear" class="block text-sm font-medium text-foreground mb-1.5"><%= t('staffPanel.selectYear') %></label>
           <input type="number" id="tutorStatsYear" min="2020" max="2030" value="2026"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
@@ -275,7 +275,7 @@ Features:
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          Download Tutors Stats
+          <%= t('staffPanel.downloadTutorsStats') %>
         </button>
       </div>
     </div>
@@ -287,11 +287,11 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h3 class="text-lg font-semibold text-foreground">Recent Downloads</h3>
+        <h3 class="text-lg font-semibold text-foreground"><%= t('staffPanel.recentDownloads') %></h3>
       </div>
       <div id="recentDownloads">
         <!-- Recent download items will be rendered dynamically by JavaScript -->
-        <p class="text-sm text-muted-foreground text-center py-4">No recent downloads</p>
+        <p class="text-sm text-muted-foreground text-center py-4"><%= t('staffPanel.noRecentDownloads') %></p>
       </div>
     </div>
   </main>
@@ -304,7 +304,7 @@ Features:
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
       </svg>
-      <span id="toastMessage">Download started!</span>
+      <span id="toastMessage"><%= t('staffPanel.downloadStarted') %></span>
     </div>
   </div>
 
@@ -313,9 +313,12 @@ Features:
   <script>
     // Pass server-rendered tutors data to JavaScript for report generation
     window.allTutors = <%- JSON.stringify(tutors) %>;
+    window.translations = <%- JSON.stringify(translations) %>;
+    window.lang = <%- JSON.stringify(lang) %>;
   </script>
   <!-- JavaScript for staff panel functionality (Excel generation, downloads, toast notifications) -->
   <script src="/js/theme.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/staffPanel.js"></script>
 </body>
 

@@ -268,7 +268,7 @@ function formatDate(date) {
  * @returns {string} Human-readable date string
  */
 function formatDateDisplay(date) {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = t('common.monthsShort');
   return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
 }
 
@@ -279,7 +279,7 @@ function formatDateDisplay(date) {
  * @returns {string} Day name (e.g., "Monday")
  */
 function getDayName(date) {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const days = t('common.daysFull');
   return days[date.getDay()];
 }
 
@@ -398,14 +398,14 @@ function updateAssigneesContainer(tutors) {
   const filteredTutors = isStaff ? tutors : tutors.filter(t => t.id === currentUserId);
 
   if (filteredTutors.length === 0) {
-    container.innerHTML = '<p class="text-sm text-muted p-3">No tutors available to assign.</p>';
+    container.innerHTML = `<p class="text-sm text-muted p-3">${t('common.noTutorsAvailableToAssign')}</p>`;
     return;
   }
 
   filteredTutors.forEach((tutor, index) => {
     const colorClass = colors[index % colors.length];
     const initials = (tutor.name?.substring(0, 1) || '') + (tutor.surname?.substring(0, 1) || '');
-    const displayName = tutor.username + (tutor.id === currentUserId ? ' (You)' : '');
+    const displayName = tutor.username + (tutor.id === currentUserId ? t('common.youSuffix') : '');
 
     const label = document.createElement('label');
     label.className = 'checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors';
@@ -495,7 +495,7 @@ function setupTutorFilter() {
 
   const tutors = window.serverData?.tutors || [];
 
-  select.innerHTML = '<option value="all">All Tutors</option>' +
+  select.innerHTML = `<option value="all">${t('calendar.allTutors')}</option>` +
     tutors.map(tutor => `<option value="${tutor.id}">${tutor.username}</option>`).join('');
 
   select.addEventListener('change', (e) => {
@@ -546,7 +546,7 @@ function renderWeekHeader() {
   const endOfWeek = new Date(currentWeekStart);
   endOfWeek.setDate(endOfWeek.getDate() + 6);
 
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const months = t('common.months');
 
   let label = '';
   if (currentWeekStart.getMonth() === endOfWeek.getMonth()) {
@@ -567,7 +567,7 @@ function renderWeekHeader() {
  */
 function renderDayHeaders() {
   const container = document.getElementById('dayHeaders');
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const days = t('common.days');
   const today = new Date();
 
   let html = '';
@@ -1669,7 +1669,7 @@ async function handleAddStudentSubmit(e) {
 
     if (response.ok) {
       const newStudent = await response.json();
-      alert('Student added successfully!');
+      alert(t('home.success.studentAdded'));
       closeAddStudentModal();
 
       // Add to students list
@@ -1681,11 +1681,11 @@ async function handleAddStudentSubmit(e) {
       document.getElementById('studentSelect').value = newStudent.id;
     } else {
       const error = await response.json();
-      alert('Failed to add student: ' + (error.error || 'Unknown error'));
+      alert(t('home.errors.addStudentFailed', { error: error.error || t('home.errors.unknownError') }));
     }
   } catch (error) {
     console.error('Error adding student:', error);
-    alert('Failed to add student. Please try again.');
+    alert(t('home.errors.addStudentRetry'));
   }
 }
 
@@ -1715,14 +1715,14 @@ function populateLessonTutors() {
   container.innerHTML = '';
 
   if (tutors.length === 0) {
-    container.innerHTML = '<p class="text-sm text-muted p-3">No tutors available.</p>';
+    container.innerHTML = `<p class="text-sm text-muted p-3">${t('common.noTutorsAvailable')}</p>`;
     return;
   }
 
   tutors.forEach((tutor, index) => {
     const colorClass = colors[index % colors.length];
     const initials = (tutor.name?.substring(0, 1) || '') + (tutor.surname?.substring(0, 1) || '');
-    const displayName = tutor.username + (tutor.id === currentUserId ? ' (You)' : '');
+    const displayName = tutor.username + (tutor.id === currentUserId ? t('common.youSuffix') : '');
 
     const label = document.createElement('label');
     label.className = 'checkbox-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted transition-colors';
@@ -1793,12 +1793,12 @@ async function handleLessonSubmit(e) {
   const repeatUntil = document.getElementById('lessonRepeatUntil').value;
 
   if (!studentId) {
-    alert('Please select a student');
+    alert(t('common.validation.selectStudent'));
     return;
   }
 
   if (!startTime || !endTime) {
-    alert('Please enter start and end times');
+    alert(t('common.validation.enterStartEndTimes'));
     return;
   }
 
@@ -1808,19 +1808,19 @@ async function handleLessonSubmit(e) {
 
   if (isRepeating) {
     if (!repeatFrom || !repeatUntil) {
-      alert('Please select a Repeat From and Repeat Until date');
+      alert(t('calendar.errors.repeatDatesRequired'));
       return;
     }
 
     occurrenceDates = getWeeklyOccurrences(repeatFrom, repeatUntil);
 
     if (occurrenceDates === null) {
-      alert('Repeat Until must be on or after Repeat From');
+      alert(t('calendar.errors.repeatUntilAfterFrom'));
       return;
     }
 
     if (occurrenceDates.length > MAX_REPEAT_OCCURRENCES) {
-      alert(`That range covers ${occurrenceDates.length} occurrences - please pick ${MAX_REPEAT_OCCURRENCES} or fewer.`);
+      alert(t('calendar.errors.repeatRangeTooLarge', { count: occurrenceDates.length, max: MAX_REPEAT_OCCURRENCES }));
       return;
     }
   }
@@ -1842,10 +1842,14 @@ async function handleLessonSubmit(e) {
 
     if (failedDates.length === 0) {
       alert(occurrenceDates.length === 1
-        ? 'Prenotation created successfully!'
-        : `Prenotation created on ${occurrenceDates.length} weeks successfully!`);
+        ? t('calendar.success.prenotationCreated')
+        : t('calendar.success.prenotationCreatedMultiple', { count: occurrenceDates.length }));
     } else {
-      alert(`Created ${occurrenceDates.length - failedDates.length} of ${occurrenceDates.length} prenotations. Failed on: ${failedDates.join(', ')}`);
+      alert(t('calendar.errors.createPrenotationsPartial', {
+        succeeded: occurrenceDates.length - failedDates.length,
+        total: occurrenceDates.length,
+        dates: failedDates.join(', ')
+      }));
     }
 
     closeLessonModal();
@@ -1855,7 +1859,7 @@ async function handleLessonSubmit(e) {
     window.location.href = `/calendar?date=${lessonDate}`;
   } catch (error) {
     console.error('Error creating prenotation:', error);
-    alert('Failed to create prenotation. Please try again.');
+    alert(t('calendar.errors.createPrenotationRetry'));
   }
 }
 
@@ -1978,29 +1982,29 @@ async function handleNoteSubmit(e) {
   }
 
   if (!description) {
-    alert('Please enter a description');
+    alert(t('common.validation.enterDescription'));
     return;
   }
 
   if (!noteStartDate || !noteEndDate) {
-    alert('Please select a start and end date');
+    alert(t('common.validation.selectStartEndDate'));
     return;
   }
 
   if (!startTime || !endTime) {
-    alert('Please enter start and end times');
+    alert(t('common.validation.enterStartEndTimes'));
     return;
   }
 
   const daySpan = getDaySpan(noteStartDate, noteEndDate);
 
   if (daySpan === null) {
-    alert('End Date must be on or after Start Date');
+    alert(t('common.validation.endDateAfterStart'));
     return;
   }
 
   if (daySpan > MAX_NOTE_RANGE_DAYS) {
-    alert(`That range covers ${daySpan} days - please pick ${MAX_NOTE_RANGE_DAYS} days or fewer.`);
+    alert(t('calendar.errors.noteRangeTooLarge', { count: daySpan, max: MAX_NOTE_RANGE_DAYS }));
     return;
   }
 
@@ -2009,7 +2013,7 @@ async function handleNoteSubmit(e) {
   const startMoment = new Date(`${noteStartDate}T${startTime}`);
   const endMoment = new Date(`${noteEndDate}T${endTime}`);
   if (endMoment <= startMoment) {
-    alert('End Date/Time must be after Start Date/Time');
+    alert(t('common.validation.endDateTimeAfterStart'));
     return;
   }
 
@@ -2045,7 +2049,7 @@ async function handleNoteSubmit(e) {
     });
 
     if (response.ok) {
-      alert('Calendar note created successfully!');
+      alert(t('calendar.success.noteCreated'));
       closeNoteModal();
 
       // Reload the calendar showing the note's start date, instead of
@@ -2053,11 +2057,11 @@ async function handleNoteSubmit(e) {
       window.location.href = `/calendar?date=${noteStartDate}`;
     } else {
       const error = await response.json();
-      alert('Failed to create calendar note: ' + (error.error || 'Unknown error'));
+      alert(t('calendar.errors.createNoteFailed', { error: error.error || t('calendar.errors.unknownError') }));
     }
   } catch (error) {
     console.error('Error creating calendar note:', error);
-    alert('Failed to create calendar note. Please try again.');
+    alert(t('calendar.errors.createNoteRetry'));
   }
 }
 
@@ -2179,7 +2183,7 @@ window.closeEditPrenotationModal = function () {
  * Shows confirm dialog and reloads page on success.
  */
 window.deletePrenotation = async function () {
-  if (!confirm('Are you sure you want to delete this prenotation?')) return;
+  if (!confirm(t('calendar.confirm.deletePrenotation'))) return;
 
   const prenotationId = document.getElementById('editPrenotationId').value;
   const prenotationDate = document.getElementById('editPrenotationDate').value;
@@ -2191,7 +2195,7 @@ window.deletePrenotation = async function () {
     });
 
     if (response.ok) {
-      alert('Prenotation deleted successfully!');
+      alert(t('calendar.success.prenotationDeleted'));
       closeEditPrenotationModal();
 
       // Reload the calendar showing the day the deleted prenotation was on,
@@ -2199,11 +2203,11 @@ window.deletePrenotation = async function () {
       window.location.href = `/calendar?date=${prenotationDate}`;
     } else {
       const error = await response.json();
-      alert('Failed to delete prenotation: ' + (error.error || 'Unknown error'));
+      alert(t('calendar.errors.deletePrenotationFailed', { error: error.error || t('calendar.errors.unknownError') }));
     }
   } catch (error) {
     console.error('Error deleting prenotation:', error);
-    alert('Failed to delete prenotation. Please try again.');
+    alert(t('calendar.errors.deletePrenotationRetry'));
   }
 };
 
@@ -2224,12 +2228,12 @@ document.getElementById('editPrenotationForm').addEventListener('submit', async 
   const endTime = document.getElementById('editPrenotationEndTime').value;
 
   if (!studentId || studentId === '') {
-    alert('Please select a student');
+    alert(t('common.validation.selectStudent'));
     return;
   }
 
   if (!startTime || !endTime) {
-    alert('Please enter start and end times');
+    alert(t('common.validation.enterStartEndTimes'));
     return;
   }
 
@@ -2262,7 +2266,7 @@ document.getElementById('editPrenotationForm').addEventListener('submit', async 
     });
 
     if (response.ok) {
-      alert('Prenotation updated successfully!');
+      alert(t('calendar.success.prenotationUpdated'));
       closeEditPrenotationModal();
 
       // Reload the calendar showing the (possibly new) day the prenotation
@@ -2270,11 +2274,11 @@ document.getElementById('editPrenotationForm').addEventListener('submit', async 
       window.location.href = `/calendar?date=${prenotationDate}`;
     } else {
       const error = await response.json();
-      alert('Failed to update prenotation: ' + (error.error || 'Unknown error'));
+      alert(t('calendar.errors.updatePrenotationFailed', { error: error.error || t('calendar.errors.unknownError') }));
     }
   } catch (error) {
     console.error('Error updating prenotation:', error);
-    alert('Failed to update prenotation. Please try again.');
+    alert(t('calendar.errors.updatePrenotationRetry'));
   }
 });
 
@@ -2375,7 +2379,7 @@ window.openEditNoteModal = async function (noteId) {
     console.log('[NOTE] Current user ID:', currentUserId, 'Creator ID:', creatorId);
 
     if (creatorId && creatorId !== currentUserId) {
-      alert('Only the creator can edit this note');
+      alert(t('calendar.errors.onlyCreatorCanEditNote'));
       return;
     }
 
@@ -2441,7 +2445,7 @@ window.openEditNoteModal = async function (noteId) {
     document.getElementById('editNoteModal').classList.add('open');
   } catch (error) {
     console.error('Error fetching note details:', error);
-    alert('Failed to load note details');
+    alert(t('calendar.errors.loadNoteDetailsFailed'));
   }
 };
 
@@ -2487,7 +2491,7 @@ function setupEditNoteAllDayToggle() {
  * Shows confirm dialog and reloads page on success.
  */
 window.deleteNote = async function () {
-  if (!confirm('Are you sure you want to delete this note?')) return;
+  if (!confirm(t('calendar.confirm.deleteNote'))) return;
 
   const noteId = document.getElementById('editNoteId').value;
   const noteStartDate = document.getElementById('editNoteStartDate').value;
@@ -2499,7 +2503,7 @@ window.deleteNote = async function () {
     });
 
     if (response.ok) {
-      alert('Note deleted successfully!');
+      alert(t('calendar.success.noteDeleted'));
       closeEditNoteModal();
 
       // Reload the calendar showing the day the deleted note started on,
@@ -2507,11 +2511,11 @@ window.deleteNote = async function () {
       window.location.href = `/calendar?date=${noteStartDate}`;
     } else {
       const error = await response.json();
-      alert('Failed to delete note: ' + (error.error || 'Unknown error'));
+      alert(t('calendar.errors.deleteNoteFailed', { error: error.error || t('calendar.errors.unknownError') }));
     }
   } catch (error) {
     console.error('Error deleting note:', error);
-    alert('Failed to delete note. Please try again.');
+    alert(t('calendar.errors.deleteNoteRetry'));
   }
 };
 
@@ -2542,36 +2546,36 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
   }
 
   if (!description) {
-    alert('Please enter a description');
+    alert(t('common.validation.enterDescription'));
     return;
   }
 
   if (!noteStartDate || !noteEndDate) {
-    alert('Please select a start and end date');
+    alert(t('common.validation.selectStartEndDate'));
     return;
   }
 
   if (!startTime || !endTime) {
-    alert('Please enter start and end times');
+    alert(t('common.validation.enterStartEndTimes'));
     return;
   }
 
   const daySpan = getDaySpan(noteStartDate, noteEndDate);
 
   if (daySpan === null) {
-    alert('End Date must be on or after Start Date');
+    alert(t('common.validation.endDateAfterStart'));
     return;
   }
 
   if (daySpan > MAX_NOTE_RANGE_DAYS) {
-    alert(`That range covers ${daySpan} days - please pick ${MAX_NOTE_RANGE_DAYS} days or fewer.`);
+    alert(t('calendar.errors.noteRangeTooLarge', { count: daySpan, max: MAX_NOTE_RANGE_DAYS }));
     return;
   }
 
   const startMoment = new Date(`${noteStartDate}T${startTime}`);
   const endMoment = new Date(`${noteEndDate}T${endTime}`);
   if (endMoment <= startMoment) {
-    alert('End Date/Time must be after Start Date/Time');
+    alert(t('common.validation.endDateTimeAfterStart'));
     return;
   }
 
@@ -2609,7 +2613,7 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
     });
 
     if (response.ok) {
-      alert('Note updated successfully!');
+      alert(t('calendar.success.noteUpdated'));
       closeEditNoteModal();
 
       // Reload the calendar showing the (possibly new) day the note now
@@ -2617,11 +2621,11 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
       window.location.href = `/calendar?date=${noteStartDate}`;
     } else {
       const error = await response.json();
-      alert('Failed to update note: ' + (error.error || 'Unknown error'));
+      alert(t('calendar.errors.updateNoteFailed', { error: error.error || t('calendar.errors.unknownError') }));
     }
   } catch (error) {
     console.error('Error updating note:', error);
-    alert('Failed to update note. Please try again.');
+    alert(t('calendar.errors.updateNoteRetry'));
   }
 });
 

@@ -119,7 +119,7 @@ async function loadLessons() {
  */
 function updateCurrentDate() {
   const options = { weekday: 'short', day: 'numeric', month: 'short' };
-  document.getElementById('currentDate').textContent = currentDate.toLocaleDateString('en-US', options);
+  document.getElementById('currentDate').textContent = currentDate.toLocaleDateString(window.lang || 'en', options);
 }
 
 
@@ -139,7 +139,7 @@ function updateCurrentDate() {
 async function renderCalendar() {
   const token = ++calendarRenderToken;
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthNames = t('common.months');
   document.getElementById('calendarMonth').textContent = `${monthNames[calendarDate.getMonth()]} ${calendarDate.getFullYear()}`;
 
   const firstDay = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), 1);
@@ -247,7 +247,7 @@ function renderTasks() {
 
   // Show empty state if no tasks
   if (tasks.length === 0) {
-    container.innerHTML = '<p class="text-sm text-muted-foreground py-2">There are no tasks for today</p>';
+    container.innerHTML = `<p class="text-sm text-muted-foreground py-2">${t('home.noTasksToday')}</p>`;
     return;
   }
 
@@ -294,7 +294,9 @@ function renderLessons() {
   const countEl = document.getElementById('lessonCount');
 
   // Update lesson count display
-  countEl.textContent = `${lessons.length} lesson${lessons.length !== 1 ? 's' : ''}`;
+  countEl.textContent = lessons.length === 1
+    ? t('home.lessonCount', { count: lessons.length })
+    : t('home.lessonCountPlural', { count: lessons.length });
 
   // Show empty state if no lessons
   if (lessons.length === 0) {
@@ -311,7 +313,7 @@ function renderLessons() {
   // lessons open the Edit Lesson modal pre-filled (see handleTodayRowClick)
   tableBody.innerHTML = lessons.map(lesson => `
     <tr class="group cursor-pointer hover:bg-secondary/50"
-      onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? 'Click to add this as a lesson' : 'Click to edit this lesson'}">
+      onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? t('home.clickToAddAsLesson') : t('home.clickToEditLesson')}">
       <td class="py-4">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-secondary rounded-full flex items-center justify-center">
@@ -333,7 +335,7 @@ function renderLessons() {
   // Mobile list view - card layout with avatars and compact info
   mobileList.innerHTML = lessons.map(lesson => `
     <div class="flex items-center justify-between p-4 bg-secondary rounded-xl cursor-pointer hover:bg-secondary/70"
-      onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? 'Click to add this as a lesson' : 'Click to edit this lesson'}">
+      onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? t('home.clickToAddAsLesson') : t('home.clickToEditLesson')}">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-card rounded-full flex items-center justify-center border border-border">
           <span class="text-sm font-medium text-foreground">${lesson.firstName[0]}${lesson.lastName ? lesson.lastName[0] : ''}</span>
@@ -494,17 +496,17 @@ async function handleAddStudentSubmit(e) {
 
     if (response.ok) {
       const newStudent = await response.json();
-      alert('Student added successfully!');
+      alert(t('home.success.studentAdded'));
       closeAddStudentModal();
 
       // Reload page to refresh student list and other data
       window.location.reload();
     } else {
       const error = await response.json();
-      alert('Failed to add student: ' + (error.error || 'Unknown error'));
+      alert(t('home.errors.addStudentFailed', { error: error.error || t('home.errors.unknownError') }));
     }
   } catch (error) {
     console.error('Error adding student:', error);
-    alert('Failed to add student. Please try again.');
+    alert(t('home.errors.addStudentRetry'));
   }
 }

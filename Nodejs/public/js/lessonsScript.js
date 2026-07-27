@@ -115,7 +115,7 @@ async function loadLessons() {
             id: lesson.id,
             studentId: lesson.studentId,
             description: lesson.description || '',
-            firstName: lesson.firstName || 'Unknown',
+            firstName: lesson.firstName || t('lessons.unknownStudent'),
             lastName: lesson.lastName || '',
             classType: lesson.classType || 'M',
             date: lesson.startTime.split('T')[0],
@@ -155,7 +155,7 @@ async function loadPrenotations() {
         prenotations = data.map(prenotation => ({
             id: prenotation.id,
             studentId: prenotation.studentId,
-            firstName: prenotation.firstName || 'Unknown',
+            firstName: prenotation.firstName || t('lessons.unknownStudent'),
             lastName: prenotation.lastName || '',
             classType: prenotation.classType || 'M',
             date: prenotation.startTime.split('T')[0],
@@ -267,7 +267,7 @@ function closeMobileMenu() {
  * Shows current month and year for statistics view.
  */
 function updateStatsMonth() {
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthNames = t('common.months');
     document.getElementById('statsMonth').textContent = `${monthNames[statsDate.getMonth()]} ${statsDate.getFullYear()}`;
 }
 
@@ -333,7 +333,7 @@ function renderStatistics() {
     // Overlap indicators: total concomitant time absorbed into a single hour,
     // and, per class, how much of its total was overlap - whether absorbed from a
     // lower class or from another lesson of the same class type
-    document.getElementById('totalHoursOverlap').textContent = overlapMinutes > 0 ? `${formatHours(overlapMinutes)} overlapped` : '';
+    document.getElementById('totalHoursOverlap').textContent = overlapMinutes > 0 ? `${formatHours(overlapMinutes)} ${t('lessons.overlapped')}` : '';
     document.getElementById('hoursMOverlap').textContent = buildOverlapLabel(overlapFrom.M, 'M');
     document.getElementById('hoursSOverlap').textContent = buildOverlapLabel(overlapFrom.S, 'S');
     document.getElementById('hoursUOverlap').textContent = buildOverlapLabel(overlapFrom.U, 'U');
@@ -436,8 +436,8 @@ function buildOverlapLabel(overlapSources, ownClass) {
     if (entries.length === 0) return '';
 
     const totalOverlapMinutes = entries.reduce((sum, [, minutes]) => sum + minutes, 0);
-    const sources = entries.map(([classType]) => classType === ownClass ? 'same class' : classType).join(', ');
-    return `${formatHours(totalOverlapMinutes)} overlapped (${sources})`;
+    const sources = entries.map(([classType]) => classType === ownClass ? t('lessons.sameClass') : classType).join(', ');
+    return `${formatHours(totalOverlapMinutes)} ${t('lessons.overlapped')} (${sources})`;
 }
 
 /**
@@ -499,7 +499,9 @@ function renderLessons() {
             return fullName.includes(searchTerm);
         }).length;
 
-    countEl.textContent = `${totalWithSearch} lesson${totalWithSearch !== 1 ? 's' : ''}`;
+    countEl.textContent = totalWithSearch === 1
+        ? t('home.lessonCount', { count: totalWithSearch })
+        : t('home.lessonCountPlural', { count: totalWithSearch });
 
     // Show empty state if no lessons
     if (filteredLessons.length === 0) {
@@ -519,11 +521,11 @@ function renderLessons() {
         };
 
         const date = new Date(lesson.date);
-        const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const formattedDate = date.toLocaleDateString(window.lang || 'en', { weekday: 'short', month: 'short', day: 'numeric' });
 
         return `
         <div class="flex items-center justify-between p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors cursor-pointer"
-            onclick="handleLessonCardClick(${lesson.id})" title="Click to edit this lesson">
+            onclick="handleLessonCardClick(${lesson.id})" title="${t('home.clickToEditLesson')}">
         <div class="flex items-center gap-4">
             <div class="w-10 h-10 ${classColors[lesson.classType].split(' ')[0]} rounded-lg flex items-center justify-center">
             <span class="text-sm font-bold ${classColors[lesson.classType].split(' ')[1]}">${lesson.classType}</span>
@@ -550,7 +552,7 @@ function renderLessons() {
         lessonsHTML += `
             <div class="text-center py-4">
                 <button onclick="loadMoreLessons()" class="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium">
-                    Load More (${completedTotal - completedLoaded} more available)
+                    ${t('lessons.loadMore', { count: completedTotal - completedLoaded })}
                 </button>
             </div>
         `;
@@ -621,16 +623,16 @@ function renderBookedLessons() {
         };
 
         const date = new Date(prenotation.date);
-        const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const formattedDate = date.toLocaleDateString(window.lang || 'en', { weekday: 'short', month: 'short', day: 'numeric' });
 
         // Add confirmation status badge
         const statusBadge = prenotation.confirmed
-            ? '<span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary ml-2">Confirmed</span>'
-            : '<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">Pending</span>';
+            ? `<span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary ml-2">${t('lessons.confirmed')}</span>`
+            : `<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">${t('lessons.pending')}</span>`;
 
         return `
         <div class="p-3 border border-border rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
-            onclick="handleBookedLessonClick(${prenotation.id})" title="Click to add this as a lesson">
+            onclick="handleBookedLessonClick(${prenotation.id})" title="${t('home.clickToAddAsLesson')}">
         <div class="flex items-center justify-between mb-2">
             <div class="flex items-center">
             <span class="font-medium text-foreground text-sm">${prenotation.firstName} ${prenotation.lastName}</span>
@@ -780,17 +782,17 @@ async function handleAddStudentSubmit(e) {
 
         if (response.ok) {
             const newStudent = await response.json();
-            alert('Student added successfully!');
+            alert(t('home.success.studentAdded'));
             closeAddStudentModal();
 
             // Reload page to refresh student list and other data
             window.location.reload();
         } else {
             const error = await response.json();
-            alert('Failed to add student: ' + (error.error || 'Unknown error'));
+            alert(t('home.errors.addStudentFailed', { error: error.error || t('home.errors.unknownError') }));
         }
     } catch (error) {
         console.error('Error adding student:', error);
-        alert('Failed to add student. Please try again.');
+        alert(t('home.errors.addStudentRetry'));
     }
 }

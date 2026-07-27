@@ -153,7 +153,7 @@ function addRecentDownload(filename, category) {
 function renderRecentDownloads() {
     const container = document.getElementById('recentDownloads');
     if (recentDownloads.length === 0) {
-        container.innerHTML = '<p class="text-sm text-muted-foreground text-center py-4">No recent downloads</p>';
+        container.innerHTML = `<p class="text-sm text-muted-foreground text-center py-4">${t('staffPanel.noRecentDownloads')}</p>`;
         return;
     }
 
@@ -163,6 +163,11 @@ function renderRecentDownloads() {
             tutor: { bg: 'bg-primary/20', text: 'text-primary' },       // Teal for tutor reports
             student: { bg: 'bg-amber-500/20', text: 'text-amber-500' }, // Amber for student reports
             single: { bg: 'bg-sky-500/20', text: 'text-sky-500' }       // Sky blue for single tutor reports
+        };
+        const categoryLabels = {
+            tutor: t('staffPanel.categoryTutor'),
+            student: t('staffPanel.categoryStudent'),
+            single: t('staffPanel.categorySingle')
         };
         const c = colors[dl.category] || colors.tutor;
         return `
@@ -178,7 +183,7 @@ function renderRecentDownloads() {
             <p class="text-xs text-muted-foreground">${dl.timestamp}</p>
             </div>
         </div>
-        <span class="text-xs px-2 py-1 rounded-full ${c.bg} ${c.text} capitalize">${dl.category}</span>
+        <span class="text-xs px-2 py-1 rounded-full ${c.bg} ${c.text}">${categoryLabels[dl.category] || dl.category}</span>
         </div>`;
     }).join('');
 }
@@ -444,19 +449,19 @@ function downloadXLSX(data, filename) {
 async function downloadAllTutorsHours() {
     const month = document.getElementById('tutorAllMonth').value;
     if (!month) {
-        showToast('Please select a month');
+        showToast(t('staffPanel.selectMonthPrompt'));
         return;
     }
 
     try {
-        showToast('Generating report...');
+        showToast(t('staffPanel.generatingReport'));
 
         // Call the server endpoint to generate Excel
         const response = await fetch(`/api/reports/lessons-by-month?month=${month}`, { credentials: 'same-origin' });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to generate report');
+            throw new Error(error.error || t('staffPanel.failedToGenerateReport'));
         }
 
         // Extract filename from Content-Disposition header if present
@@ -481,10 +486,10 @@ async function downloadAllTutorsHours() {
         document.body.removeChild(a);
 
         addRecentDownload(filename, 'tutor');
-        showToast(`Downloaded: ${filename}`);
+        showToast(t('staffPanel.downloaded', { filename }));
     } catch (error) {
         console.error('Error downloading report:', error);
-        showToast('Error: ' + error.message);
+        showToast(t('staffPanel.errorWithMessage', { message: error.message }));
     }
 }
 
@@ -501,19 +506,19 @@ async function downloadAllTutorsHours() {
 async function downloadAllStudentsHours() {
     const month = document.getElementById('studentAllMonth').value;
     if (!month) {
-        showToast('Please select a month');
+        showToast(t('staffPanel.selectMonthPrompt'));
         return;
     }
 
     try {
-        showToast('Generating report...');
+        showToast(t('staffPanel.generatingReport'));
 
         // Call the server endpoint to generate Excel
         const response = await fetch(`/api/reports/lessons-by-student?month=${month}`, { credentials: 'same-origin' });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to generate report');
+            throw new Error(error.error || t('staffPanel.failedToGenerateReport'));
         }
 
         // Get the filename from Content-Disposition header
@@ -538,10 +543,10 @@ async function downloadAllStudentsHours() {
         document.body.removeChild(a);
 
         addRecentDownload(filename, 'student');
-        showToast(`Downloaded: ${filename}`);
+        showToast(t('staffPanel.downloaded', { filename }));
     } catch (error) {
         console.error('Error downloading report:', error);
-        showToast('Error: ' + error.message);
+        showToast(t('staffPanel.errorWithMessage', { message: error.message }));
     }
 }
 
@@ -558,19 +563,19 @@ async function downloadAllStudentsHours() {
 async function downloadTutorMonthlyStats() {
     const year = document.getElementById('tutorStatsYear').value;
     if (!year) {
-        showToast('Please select a year');
+        showToast(t('staffPanel.selectYearPrompt'));
         return;
     }
 
     try {
-        showToast('Generating statistics report...');
+        showToast(t('staffPanel.generatingStatsReport'));
 
         // Call the server endpoint to generate Excel
         const response = await fetch(`/api/reports/tutors-monthly-stats?year=${year}`, { credentials: 'same-origin' });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to generate report');
+            throw new Error(error.error || t('staffPanel.failedToGenerateReport'));
         }
 
         // Get the filename from Content-Disposition header
@@ -595,10 +600,10 @@ async function downloadTutorMonthlyStats() {
         document.body.removeChild(a);
 
         addRecentDownload(filename, 'tutor');
-        showToast(`Downloaded: ${filename}`);
+        showToast(t('staffPanel.downloaded', { filename }));
     } catch (error) {
         console.error('Error downloading stats report:', error);
-        showToast('Error: ' + error.message);
+        showToast(t('staffPanel.errorWithMessage', { message: error.message }));
     }
 }
 

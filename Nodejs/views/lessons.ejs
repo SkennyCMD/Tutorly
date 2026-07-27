@@ -17,14 +17,14 @@ Features:
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <!-- HEAD: Page Configuration -->
 <!-- Tailwind CSS configuration with custom dark theme colors -->
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tutorly - My Lessons</title>
+  <title>Tutorly - <%= t('common.myLessons') %></title>
   <%- include('partials/theme-init') %>
   <script src="https://cdn.tailwindcss.com"></script>
   <%- include('partials/theme-config') %>
@@ -61,7 +61,7 @@ Features:
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <input type="text" id="searchInput" placeholder="Search lessons..."
+            <input type="text" id="searchInput" placeholder="<%= t('lessons.searchLessons') %>"
               class="w-full pl-10 pr-4 py-2 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
         </div>
@@ -80,12 +80,12 @@ Features:
 
         <!-- Desktop Navigation: Dashboard, Calendar, My Lessons (active), Staff Panel (STAFF only) -->
         <nav class="hidden md:flex items-center gap-6">
-          <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
-          <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors">Calendar</a>
-          <a href="/lessons" class="text-foreground font-medium">My Lessons</a>
+          <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.dashboard') %></a>
+          <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.calendar') %></a>
+          <a href="/lessons" class="text-foreground font-medium"><%= t('common.myLessons') %></a>
           <!-- STAFF role-based link to Staff Panel -->
           <% if (user && user.role==='STAFF' ) { %>
-            <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors">Staff Panel</a>
+            <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.staffPanel') %></a>
             <% } %>
         </nav>
 
@@ -99,7 +99,7 @@ Features:
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span class="text-sm font-medium">Logout</span>
+              <span class="text-sm font-medium"><%= t('common.logout') %></span>
             </button>
           </form>
         </div>
@@ -145,7 +145,7 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
-        Dashboard
+        <%= t('common.dashboard') %>
       </a>
       <a href="/calendar"
         class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
@@ -153,14 +153,14 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        Calendar
+        <%= t('common.calendar') %>
       </a>
       <a href="/lessons" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
         </svg>
-        My Lessons
+        <%= t('common.myLessons') %>
       </a>
       <!-- STAFF role-based link in mobile menu -->
       <% if (user && user.role==='STAFF' ) { %>
@@ -170,7 +170,7 @@ Features:
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
-          Staff Panel
+          <%= t('common.staffPanel') %>
         </a>
         <% } %>
           <!-- Theme toggle and Logout button in mobile menu -->
@@ -183,7 +183,7 @@ Features:
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                Logout
+                <%= t('common.logout') %>
               </button>
             </form>
           </div>
@@ -201,7 +201,7 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <input type="text" id="searchInputMobile" placeholder="Search lessons..."
+        <input type="text" id="searchInputMobile" placeholder="<%= t('lessons.searchLessons') %>"
           class="w-full pl-10 pr-4 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
       </div>
     </div>
@@ -209,15 +209,15 @@ Features:
     <!-- Page Header: Title, description, and Add Lesson button -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-foreground">My Lessons</h1>
-        <p class="text-muted-foreground mt-1">Manage your teaching history</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-foreground"><%= t('common.myLessons') %></h1>
+        <p class="text-muted-foreground mt-1"><%= t('lessons.subtitle') %></p>
       </div>
       <button id="addLessonBtn"
         class="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        Add Lesson
+        <%= t('home.addLesson') %>
       </button>
     </div>
 
@@ -230,7 +230,7 @@ Features:
         <!-- Statistics Card: Monthly stats with total hours and breakdown by class type -->
         <div class="bg-card border border-border rounded-xl p-5">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-foreground">Statistics</h2>
+            <h2 class="text-lg font-semibold text-foreground"><%= t('lessons.statistics') %></h2>
             <div class="flex items-center gap-2">
               <button id="prevStatsMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
                 <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,7 +250,7 @@ Features:
           <!-- Overlapping (concomitant) lessons are counted once; the deduplicated amount is shown bottom-right -->
           <div class="bg-secondary rounded-lg p-4 mb-4">
             <div class="flex items-center justify-between">
-              <span class="text-muted-foreground text-sm">Total Hours</span>
+              <span class="text-muted-foreground text-sm"><%= t('lessons.totalHours') %></span>
               <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -264,7 +264,7 @@ Features:
 
           <!-- Hours by Class: Breakdown of hours by student class level (M/S/U) -->
           <div class="space-y-3">
-            <h3 class="text-sm font-medium text-muted-foreground">Hours by Class</h3>
+            <h3 class="text-sm font-medium text-muted-foreground"><%= t('lessons.hoursByClass') %></h3>
 
             <!-- Middle School (M) hours -->
             <!-- Overlap with a lower class type has no effect here (M is the lowest); hoursMOverlap stays empty -->
@@ -273,7 +273,7 @@ Features:
                 <div class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
                   <span class="text-sm font-bold text-blue-400">M</span>
                 </div>
-                <span class="text-foreground">Middle School</span>
+                <span class="text-foreground"><%= t('lessons.middleSchool') %></span>
               </div>
               <div class="flex flex-col items-end">
                 <span id="hoursM" class="font-semibold text-foreground">0h</span>
@@ -288,7 +288,7 @@ Features:
                 <div class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
                   <span class="text-sm font-bold text-green-400">S</span>
                 </div>
-                <span class="text-foreground">Senior High</span>
+                <span class="text-foreground"><%= t('lessons.seniorHigh') %></span>
               </div>
               <div class="flex flex-col items-end">
                 <span id="hoursS" class="font-semibold text-foreground">0h</span>
@@ -303,7 +303,7 @@ Features:
                 <div class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
                   <span class="text-sm font-bold text-purple-400">U</span>
                 </div>
-                <span class="text-foreground">University</span>
+                <span class="text-foreground"><%= t('lessons.university') %></span>
               </div>
               <div class="flex flex-col items-end">
                 <span id="hoursU" class="font-semibold text-foreground">0h</span>
@@ -316,7 +316,7 @@ Features:
         <!-- Booked Lessons Card: List of upcoming scheduled lessons -->
         <div class="bg-card border border-border rounded-xl p-5">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-semibold text-foreground">Booked Lessons</h2>
+            <h2 class="text-lg font-semibold text-foreground"><%= t('lessons.bookedLessons') %></h2>
             <span id="bookedCount" class="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">0</span>
           </div>
 
@@ -326,7 +326,7 @@ Features:
 
           <!-- Empty state when no booked lessons exist -->
           <div id="emptyBooked" class="hidden py-8 text-center">
-            <p class="text-muted-foreground text-sm">No booked lessons</p>
+            <p class="text-muted-foreground text-sm"><%= t('lessons.noBookedLessons') %></p>
           </div>
         </div>
       </div>
@@ -334,8 +334,8 @@ Features:
       <!-- Right Column: Lessons History with search filtering -->
       <div class="lg:col-span-2 bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-foreground">Lessons History</h2>
-          <span id="lessonsCount" class="text-sm text-muted-foreground">0 lessons</span>
+          <h2 class="text-lg font-semibold text-foreground"><%= t('lessons.lessonsHistory') %></h2>
+          <span id="lessonsCount" class="text-sm text-muted-foreground"><%= t('home.lessonCountPlural', { count: 0 }) %></span>
         </div>
 
         <!-- Lessons List: Scrollable list of all lesson records -->
@@ -351,8 +351,8 @@ Features:
                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <p class="text-muted-foreground">No lessons found</p>
-          <button onclick="openModal()" class="mt-4 text-primary hover:underline text-sm">Add your first lesson</button>
+          <p class="text-muted-foreground"><%= t('lessons.noLessonsFound') %></p>
+          <button onclick="openModal()" class="mt-4 text-primary hover:underline text-sm"><%= t('home.addFirstLesson') %></button>
         </div>
       </div>
     </div>
@@ -364,7 +364,7 @@ Features:
     <div class="absolute inset-0 bg-black/60" onclick="closeModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Add New Lesson</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('home.addNewLesson') %></h2>
         <button onclick="closeModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -376,8 +376,8 @@ Features:
       <form id="lessonForm" class="space-y-4">
         <!-- Student search field with autocomplete filtering -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
-          <input type="text" id="studentSearch" placeholder="Search by name..."
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.searchStudent') %></label>
+          <input type="text" id="studentSearch" placeholder="<%= t('common.searchByName') %>"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             autocomplete="off">
         </div>
@@ -385,31 +385,31 @@ Features:
         <!-- Student selection dropdown with quick add new student option -->
         <div>
           <label class="flex items-center justify-between text-sm font-medium text-foreground mb-1.5">
-            <span>Select Student</span>
+            <span><%= t('common.selectStudent') %></span>
             <button type="button" onclick="openAddStudentModal()"
               class="ml-2 text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              Add New Student
+              <%= t('common.addNewStudent') %>
             </button>
           </label>
           <select id="studentSelect" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">-- Select a student --</option>
+            <option value=""><%= t('common.selectAStudentOption') %></option>
           </select>
         </div>
 
         <!-- Lesson description textarea (optional) -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
-          <textarea id="description" placeholder="Lesson description..." rows="3"
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.description') %></label>
+          <textarea id="description" placeholder="<%= t('home.lessonDescriptionPlaceholder') %>" rows="3"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"></textarea>
         </div>
 
         <!-- Date picker for lesson -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.date') %></label>
           <input type="date" id="lessonDate" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
@@ -417,12 +417,12 @@ Features:
         <!-- Start and End time pickers (15-minute intervals) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.startTime') %></label>
             <input type="time" id="startTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.endTime') %></label>
             <input type="time" id="endTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
@@ -431,10 +431,9 @@ Features:
         <!-- Action buttons: Cancel and Add Lesson -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeModal()"
-            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
           <button type="submit"
-            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add
-            Lesson</button>
+            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"><%= t('home.addLesson') %></button>
         </div>
       </form>
     </div>
@@ -445,7 +444,7 @@ Features:
     <div class="absolute inset-0 bg-black/60" onclick="closeEditLessonModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Edit Lesson</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('home.editLesson') %></h2>
         <button onclick="closeEditLessonModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -457,31 +456,31 @@ Features:
       <form id="editLessonForm" class="space-y-4">
         <!-- Student search field with autocomplete filtering -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
-          <input type="text" id="editLessonStudentSearch" placeholder="Search by name..."
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.searchStudent') %></label>
+          <input type="text" id="editLessonStudentSearch" placeholder="<%= t('common.searchByName') %>"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             autocomplete="off">
         </div>
 
         <!-- Student selection dropdown -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Select Student</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.selectStudent') %></label>
           <select id="editLessonStudentSelect" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">-- Select a student --</option>
+            <option value=""><%= t('common.selectAStudentOption') %></option>
           </select>
         </div>
 
         <!-- Lesson description textarea (optional) -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
-          <textarea id="editLessonDescription" placeholder="Lesson description..." rows="3"
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.description') %></label>
+          <textarea id="editLessonDescription" placeholder="<%= t('home.lessonDescriptionPlaceholder') %>" rows="3"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"></textarea>
         </div>
 
         <!-- Date picker for lesson -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.date') %></label>
           <input type="date" id="editLessonDate" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
@@ -489,12 +488,12 @@ Features:
         <!-- Start and End time pickers (15-minute intervals) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.startTime') %></label>
             <input type="time" id="editLessonStartTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.endTime') %></label>
             <input type="time" id="editLessonEndTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
@@ -503,11 +502,11 @@ Features:
         <!-- Action buttons: Delete, Cancel, and Update -->
         <div class="flex gap-3 pt-4">
           <button type="button" id="deleteLessonBtn"
-            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
+            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors"><%= t('common.delete') %></button>
           <button type="button" onclick="closeEditLessonModal()"
-            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
           <button type="submit"
-            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Update</button>
+            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"><%= t('common.update') %></button>
         </div>
       </form>
     </div>
@@ -518,7 +517,7 @@ Features:
     <div class="absolute inset-0 bg-black/60" onclick="closeAddStudentModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
       <div class="flex items-center justify-between mb-5">
-        <h2 class="text-xl font-semibold text-foreground">Add New Student</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('common.addNewStudent') %></h2>
         <button onclick="closeAddStudentModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -529,32 +528,32 @@ Features:
       <!-- Form with name, surname, class selection, and optional description -->
       <form id="addStudentForm" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Name</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.name') %></label>
           <input type="text" id="studentName" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Surname</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.surname') %></label>
           <input type="text" id="studentSurname" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <!-- Class selection: Middle School (M), High School (S), University (U) -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Class</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.class') %></label>
           <select id="studentClass" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">-- Select class --</option>
-            <option value="M">Middle School (M)</option>
-            <option value="S">High School (S)</option>
-            <option value="U">University (U)</option>
+            <option value=""><%= t('common.selectClassOption') %></option>
+            <option value="M"><%= t('lessons.classMiddleOption') %></option>
+            <option value="S"><%= t('lessons.classHighOption') %></option>
+            <option value="U"><%= t('lessons.classUniversityOption') %></option>
           </select>
         </div>
 
         <!-- Optional description field -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Description (Optional)</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.descriptionOptional') %></label>
           <textarea id="studentDescription" rows="3"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"></textarea>
         </div>
@@ -562,10 +561,9 @@ Features:
         <!-- Action buttons: Cancel and Add Student -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeAddStudentModal()"
-            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
           <button type="submit"
-            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add
-            Student</button>
+            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"><%= t('common.addStudent') %></button>
         </div>
       </form>
     </div>
@@ -579,8 +577,11 @@ Features:
     window.initialLessons = <%- JSON.stringify(lessons) %>;
     window.totalLessonsCount = <%= totalLessons %>;
     window.initialPrenotations = <%- JSON.stringify(prenotations) %>;
+    window.translations = <%- JSON.stringify(translations) %>;
+    window.lang = <%- JSON.stringify(lang) %>;
   </script>
   <script src="/js/theme.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/modalShared.js"></script>
   <script src="/js/lessonsScript.js"></script>
 </body>

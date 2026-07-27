@@ -17,14 +17,14 @@ Features:
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <!-- HEAD: Page Configuration -->
 <!-- Tailwind CSS configuration with custom dark theme and calendar-specific colors -->
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tutorly - Calendar</title>
+  <title>Tutorly - <%= t('common.calendar') %></title>
   <%- include('partials/theme-init') %>
   <script src="https://cdn.tailwindcss.com"></script>
   <%- include('partials/theme-config') %>
@@ -55,12 +55,12 @@ Features:
 
         <!-- Desktop Navigation: Dashboard, Calendar (active), My Lessons, Staff Panel (STAFF only) -->
         <nav class="hidden md:flex items-center gap-6">
-          <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard</a>
-          <a href="/calendar" class="text-foreground font-medium">Calendar</a>
-          <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors">My Lessons</a>
+          <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.dashboard') %></a>
+          <a href="/calendar" class="text-foreground font-medium"><%= t('common.calendar') %></a>
+          <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.myLessons') %></a>
           <!-- STAFF role-based link to Staff Panel -->
           <% if (user && user.role==='STAFF' ) { %>
-            <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors">Staff Panel</a>
+            <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.staffPanel') %></a>
             <% } %>
         </nav>
 
@@ -71,14 +71,14 @@ Features:
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            Prenotation
+            <%= t('calendar.prenotation') %>
           </button>
           <button id="addNoteBtn"
             class="inline-flex items-center gap-2 bg-note text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-note/90 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
-            Note
+            <%= t('calendar.note') %>
           </button>
           <!-- Theme toggle and Logout form button -->
           <div class="hidden md:flex items-center gap-1">
@@ -90,7 +90,7 @@ Features:
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                 </svg>
-                <span class="text-sm font-medium">Logout</span>
+                <span class="text-sm font-medium"><%= t('common.logout') %></span>
               </button>
             </form>
           </div>
@@ -137,14 +137,14 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
-        Dashboard
+        <%= t('common.dashboard') %>
       </a>
       <a href="/calendar" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
-        Calendar
+        <%= t('common.calendar') %>
       </a>
       <a href="/lessons"
         class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
@@ -152,7 +152,7 @@ Features:
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
         </svg>
-        My Lessons
+        <%= t('common.myLessons') %>
       </a>
       <!-- STAFF role-based link in mobile menu -->
       <% if (user && user.role==='STAFF' ) { %>
@@ -162,7 +162,7 @@ Features:
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
-          Staff Panel
+          <%= t('common.staffPanel') %>
         </a>
         <% } %>
     </nav>
@@ -175,14 +175,14 @@ Features:
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Add Prenotation
+          <%= t('calendar.addPrenotation') %>
         </button>
         <button onclick="openNoteModal()"
           class="flex items-center justify-center gap-2 bg-note text-white px-4 py-2.5 rounded-lg font-medium">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Add Note
+          <%= t('calendar.addNote') %>
         </button>
         <%- include('partials/theme-toggle-mobile') %>
         <form action="/logout" method="POST" class="mt-2">
@@ -192,7 +192,7 @@ Features:
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Logout
+            <%= t('common.logout') %>
           </button>
         </form>
       </div>
@@ -208,7 +208,7 @@ Features:
         <div class="flex items-center gap-4">
           <button id="todayBtn"
             class="px-3 py-1.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors">
-            Today
+            <%= t('calendar.today') %>
           </button>
           <!-- Week navigation is only meaningful for the desktop week view; the mobile
                day view has its own prevDay/nextDay controls, so hide this below md -->
@@ -231,10 +231,10 @@ Features:
           <!-- Tutor filter (STAFF only): shows only the selected tutor's prenotations -->
           <% if (user && user.role==='STAFF' ) { %>
             <div class="flex items-center gap-2">
-              <label for="tutorFilter" class="text-sm text-muted-foreground">Tutor:</label>
+              <label for="tutorFilter" class="text-sm text-muted-foreground"><%= t('calendar.tutor') %></label>
               <select id="tutorFilter"
                 class="px-2 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="all">All Tutors</option>
+                <option value="all"><%= t('calendar.allTutors') %></option>
               </select>
             </div>
             <% } %>
@@ -243,11 +243,11 @@ Features:
               <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2">
                   <span class="w-3 h-3 rounded-sm bg-lesson"></span>
-                  <span class="text-sm text-muted-foreground">Prenotation</span>
+                  <span class="text-sm text-muted-foreground"><%= t('calendar.prenotation') %></span>
                 </div>
                 <div class="flex items-center gap-2">
                   <span class="w-3 h-3 rounded-sm bg-note"></span>
-                  <span class="text-sm text-muted-foreground">Note</span>
+                  <span class="text-sm text-muted-foreground"><%= t('calendar.note') %></span>
                 </div>
               </div>
         </div>
@@ -273,7 +273,7 @@ Features:
           <!-- All-Day Notes Row: notes spanning a full day, shown here instead of stretched
                across the hourly grid below. Hidden when the visible week has none. -->
           <div class="calendar-grid border-t border-border hidden" id="allDayRow">
-            <div class="p-1 text-center text-[10px] text-muted-foreground">All day</div>
+            <div class="p-1 text-center text-[10px] text-muted-foreground"><%= t('calendar.allDay') %></div>
             <div id="allDayNotesContainer" class="contents">
               <!-- All-day note chips will be rendered here -->
             </div>
@@ -317,14 +317,14 @@ Features:
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              Prenotation
+              <%= t('calendar.prenotation') %>
             </button>
             <button onclick="openNoteModal()"
               class="flex-1 inline-flex items-center justify-center gap-2 bg-note text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-note/90 transition-colors">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              Note
+              <%= t('calendar.note') %>
             </button>
           </div>
 
@@ -349,7 +349,7 @@ Features:
     <div class="absolute inset-0 bg-black/60" onclick="closeSlotChoiceModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-sm p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Add to Calendar</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('calendar.addToCalendar') %></h2>
         <button onclick="closeSlotChoiceModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -357,7 +357,7 @@ Features:
         </button>
       </div>
 
-      <p class="text-sm text-muted-foreground mb-4">What would you like to add to this time slot?</p>
+      <p class="text-sm text-muted-foreground mb-4"><%= t('calendar.addToCalendarPrompt') %></p>
 
       <div class="flex flex-col gap-3">
         <button onclick="chooseSlotOption('lesson')"
@@ -365,14 +365,14 @@ Features:
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Prenotation
+          <%= t('calendar.prenotation') %>
         </button>
         <button onclick="chooseSlotOption('note')"
           class="w-full flex items-center justify-center gap-2 bg-note text-white px-4 py-3 rounded-lg font-medium hover:bg-note/90 transition-colors">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
-          Note
+          <%= t('calendar.note') %>
         </button>
       </div>
     </div>
@@ -384,7 +384,7 @@ Features:
     <div
       class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Add New Prenotation</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('calendar.addNewPrenotation') %></h2>
         <button onclick="closeLessonModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -395,8 +395,8 @@ Features:
       <!-- Form with student search/select, date/time pickers, and tutor assignment -->
       <form id="lessonForm" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
-          <input type="text" id="studentSearch" placeholder="Search by name..."
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.searchStudent') %></label>
+          <input type="text" id="studentSearch" placeholder="<%= t('common.searchByName') %>"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             autocomplete="off">
         </div>
@@ -404,24 +404,24 @@ Features:
         <!-- Student selection dropdown with option to add new student -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
-            <label class="block text-sm font-medium text-foreground">Select Student</label>
+            <label class="block text-sm font-medium text-foreground"><%= t('common.selectStudent') %></label>
             <button type="button" onclick="openAddStudentModal()"
               class="text-xs text-primary hover:underline flex items-center gap-1">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              Add New Student
+              <%= t('common.addNewStudent') %>
             </button>
           </div>
           <select id="studentSelect" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">-- Select a student --</option>
+            <option value=""><%= t('common.selectAStudentOption') %></option>
           </select>
         </div>
 
         <!-- Date picker for lesson -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.date') %></label>
           <input type="date" id="lessonDate" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
@@ -429,12 +429,12 @@ Features:
         <!-- Start and End time pickers (15-minute intervals) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.startTime') %></label>
             <input type="time" id="lessonStartTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.endTime') %></label>
             <input type="time" id="lessonEndTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
@@ -444,17 +444,17 @@ Features:
         <div class="flex items-center gap-2">
           <input type="checkbox" id="lessonRepeat"
             class="w-4 h-4 rounded border-border text-primary focus:outline-none focus:ring-2 focus:ring-ring">
-          <label for="lessonRepeat" class="text-sm font-medium text-foreground">Repeat weekly</label>
+          <label for="lessonRepeat" class="text-sm font-medium text-foreground"><%= t('calendar.repeatWeekly') %></label>
         </div>
 
         <div class="grid grid-cols-2 gap-4 hidden" id="lessonRepeatFields">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Repeat From</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('calendar.repeatFrom') %></label>
             <input type="date" id="lessonRepeatFrom"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Repeat Until</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('calendar.repeatUntil') %></label>
             <input type="date" id="lessonRepeatUntil"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
@@ -463,9 +463,8 @@ Features:
         <!-- Tutor assignment section with quick 'assign to myself' option -->
         <div id="lessonAssignToSection">
           <div class="flex items-center justify-between mb-1.5">
-            <label class="block text-sm font-medium text-foreground">Assign To</label>
-            <button type="button" onclick="assignLessonToMyself()" class="text-xs text-primary hover:underline">Assign
-              to myself</button>
+            <label class="block text-sm font-medium text-foreground"><%= t('common.assignTo') %></label>
+            <button type="button" onclick="assignLessonToMyself()" class="text-xs text-primary hover:underline"><%= t('common.assignToMyself') %></button>
           </div>
           <div id="lessonTutorsContainer"
             class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
@@ -475,10 +474,9 @@ Features:
 
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeLessonModal()"
-            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
           <button type="submit"
-            class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors">Add
-            Prenotation</button>
+            class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors"><%= t('calendar.addPrenotation') %></button>
         </div>
       </form>
     </div>
@@ -490,7 +488,7 @@ Features:
     <div
       class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Add New Note</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('calendar.addNewNote') %></h2>
         <button onclick="closeNoteModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -502,43 +500,43 @@ Features:
       <form id="noteForm" class="space-y-4">
         <!-- Note description textarea -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
-          <textarea id="noteDescription" required placeholder="Enter note description..." rows="3"
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.description') %></label>
+          <textarea id="noteDescription" required placeholder="<%= t('calendar.noteDescriptionPlaceholder') %>" rows="3"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
         <!-- Date range: creates the same note on every day from start to end (inclusive) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Start Date</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.startDate') %></label>
             <input type="date" id="noteStartDate" required
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">End Date</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.endDate') %></label>
             <input type="date" id="noteEndDate" required
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
         </div>
-        <p class="text-xs text-muted-foreground -mt-2">Use the same date for a single-day note, or a range to create one continuous note spanning multiple days.</p>
+        <p class="text-xs text-muted-foreground -mt-2"><%= t('calendar.noteRangeHint') %></p>
 
         <!-- All Day: when checked, skips manual times and takes each selected day in full -->
         <div class="flex items-center gap-2">
           <input type="checkbox" id="noteAllDay"
             class="w-4 h-4 rounded border-border text-primary focus:outline-none focus:ring-2 focus:ring-ring">
-          <label for="noteAllDay" class="text-sm font-medium text-foreground">All day</label>
+          <label for="noteAllDay" class="text-sm font-medium text-foreground"><%= t('calendar.allDay') %></label>
         </div>
 
         <!-- Start Time applies on Start Date, End Time applies on End Date - together they
              define one continuous note (e.g. Mon 14:00 to Wed 10:00 spans all three days) -->
         <div class="grid grid-cols-2 gap-4" id="noteTimeFields">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.startTime') %></label>
             <input type="time" id="noteStartTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.endTime') %></label>
             <input type="time" id="noteEndTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
@@ -547,9 +545,8 @@ Features:
         <!-- Tutor assignment section with quick 'assign to myself' option -->
         <div id="assignToSection">
           <div class="flex items-center justify-between mb-1.5">
-            <label class="block text-sm font-medium text-foreground">Assign To</label>
-            <button type="button" onclick="assignToMyself()" class="text-xs text-primary hover:underline">Assign to
-              myself</button>
+            <label class="block text-sm font-medium text-foreground"><%= t('common.assignTo') %></label>
+            <button type="button" onclick="assignToMyself()" class="text-xs text-primary hover:underline"><%= t('common.assignToMyself') %></button>
           </div>
           <div id="assigneesContainer"
             class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
@@ -559,10 +556,9 @@ Features:
 
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeNoteModal()"
-            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
           <button type="submit"
-            class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors">Add
-            Note</button>
+            class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors"><%= t('calendar.addNote') %></button>
         </div>
       </form>
     </div>
@@ -573,7 +569,7 @@ Features:
     <div class="absolute inset-0 bg-black/60" onclick="closeAddStudentModal()"></div>
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Add New Student</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('common.addNewStudent') %></h2>
         <button onclick="closeAddStudentModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -584,41 +580,40 @@ Features:
       <!-- Form with first name, last name, class selection, and optional description -->
       <form id="addStudentForm" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">First Name</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.firstName') %></label>
           <input type="text" id="studentName" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Last Name</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.lastName') %></label>
           <input type="text" id="studentSurname" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <!-- Class selection: M (Media/Middle School), S (Superiore/High School), U (Università/University) -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Class</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.class') %></label>
           <select id="studentClass" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">-- Select class --</option>
-            <option value="M">M (Media)</option>
-            <option value="S">S (Superiore)</option>
-            <option value="U">U (Università)</option>
+            <option value=""><%= t('common.selectClassOption') %></option>
+            <option value="M"><%= t('common.classMiddle') %></option>
+            <option value="S"><%= t('common.classHigh') %></option>
+            <option value="U"><%= t('common.classUniversity') %></option>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Description (Optional)</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.descriptionOptional') %></label>
           <textarea id="studentDescription" rows="3"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="closeAddStudentModal()"
-            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
           <button type="submit"
-            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add
-            Student</button>
+            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"><%= t('common.addStudent') %></button>
         </div>
       </form>
     </div>
@@ -630,7 +625,7 @@ Features:
     <div
       class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Edit Prenotation</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('calendar.editPrenotation') %></h2>
         <button onclick="closeEditPrenotationModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -644,34 +639,34 @@ Features:
 
         <!-- Student search field with autocomplete filtering -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Search Student</label>
-          <input type="text" id="editStudentSearch" placeholder="Search by name..."
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.searchStudent') %></label>
+          <input type="text" id="editStudentSearch" placeholder="<%= t('common.searchByName') %>"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             autocomplete="off">
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Select Student</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.selectStudent') %></label>
           <select id="editStudentSelect" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">-- Select a student --</option>
+            <option value=""><%= t('common.selectAStudentOption') %></option>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.date') %></label>
           <input type="date" id="editPrenotationDate" required
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.startTime') %></label>
             <input type="time" id="editPrenotationStartTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.endTime') %></label>
             <input type="time" id="editPrenotationEndTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
@@ -679,7 +674,7 @@ Features:
 
         <!-- Tutor assignment section for editing -->
         <div id="editPrenotationAssignToSection">
-          <label class="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.assignTo') %></label>
           <div id="editPrenotationTutorsContainer"
             class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
             <!-- Tutor checkboxes will be loaded dynamically -->
@@ -689,11 +684,11 @@ Features:
         <!-- Action buttons: Delete, Cancel, Update -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="deletePrenotation()"
-            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
+            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors"><%= t('common.delete') %></button>
           <button type="button" onclick="closeEditPrenotationModal()"
-            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
           <button type="submit"
-            class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors">Update</button>
+            class="flex-1 px-4 py-2.5 bg-lesson text-white rounded-lg font-medium hover:bg-lesson/90 transition-colors"><%= t('common.update') %></button>
         </div>
       </form>
     </div>
@@ -705,7 +700,7 @@ Features:
     <div
       class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Edit Note</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('calendar.editNote') %></h2>
         <button onclick="closeEditNoteModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -719,8 +714,8 @@ Features:
 
         <!-- Note description textarea -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Description</label>
-          <textarea id="editNoteDescription" required placeholder="Enter note description..." rows="3"
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.description') %></label>
+          <textarea id="editNoteDescription" required placeholder="<%= t('calendar.noteDescriptionPlaceholder') %>" rows="3"
             class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"></textarea>
         </div>
 
@@ -728,12 +723,12 @@ Features:
              one continuous note spanning multiple days (see Add Note for details) -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Start Date</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.startDate') %></label>
             <input type="date" id="editNoteStartDate" required
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">End Date</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.endDate') %></label>
             <input type="date" id="editNoteEndDate" required
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
@@ -743,17 +738,17 @@ Features:
         <div class="flex items-center gap-2">
           <input type="checkbox" id="editNoteAllDay"
             class="w-4 h-4 rounded border-border text-primary focus:outline-none focus:ring-2 focus:ring-ring">
-          <label for="editNoteAllDay" class="text-sm font-medium text-foreground">All day</label>
+          <label for="editNoteAllDay" class="text-sm font-medium text-foreground"><%= t('calendar.allDay') %></label>
         </div>
 
         <div class="grid grid-cols-2 gap-4" id="editNoteTimeFields">
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Start Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.startTime') %></label>
             <input type="time" id="editNoteStartTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">End Time</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.endTime') %></label>
             <input type="time" id="editNoteEndTime" required step="900"
               class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
@@ -761,7 +756,7 @@ Features:
 
         <!-- Tutor assignment section for editing -->
         <div id="editNoteAssignToSection">
-          <label class="block text-sm font-medium text-foreground mb-1.5">Assign To</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.assignTo') %></label>
           <div id="editNoteAssigneesContainer"
             class="bg-secondary border border-border rounded-lg p-2 max-h-40 overflow-y-auto space-y-1">
             <!-- Tutor checkboxes will be loaded dynamically -->
@@ -771,11 +766,11 @@ Features:
         <!-- Action buttons: Delete, Cancel, Update -->
         <div class="flex gap-3 pt-4">
           <button type="button" onclick="deleteNote()"
-            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
+            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors"><%= t('common.delete') %></button>
           <button type="button" onclick="closeEditNoteModal()"
-            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
           <button type="submit"
-            class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors">Update</button>
+            class="flex-1 px-4 py-2.5 bg-note text-white rounded-lg font-medium hover:bg-note/90 transition-colors"><%= t('common.update') %></button>
         </div>
       </form>
     </div>
@@ -793,8 +788,11 @@ Features:
       currentUserId: <%= userId %>,
       userRole: '<%= user.role %>'
     };
+    window.translations = <%- JSON.stringify(translations) %>;
+    window.lang = <%- JSON.stringify(lang) %>;
   </script>
   <script src="/js/theme.js"></script>
+  <script src="/js/i18n.js"></script>
   <!-- JavaScript for calendar rendering, event management, and modal interactions -->
   <script src="/js/calendarScript.js"></script>
 </body>
