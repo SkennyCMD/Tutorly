@@ -303,6 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupGridDragSelection();
   setupNoteAllDayToggle();
   setupEditNoteAllDayToggle();
+  setupLessonRepeatToggle();
   setDefaultDates();
   loadStudents();
   loadTutors();
@@ -1450,6 +1451,12 @@ function openLessonModal(prefill) {
   document.getElementById('studentSelect').size = 1;
   closeMenu();
 
+  // Start unchecked/hidden each time the modal opens, regardless of how it was left before
+  document.getElementById('lessonRepeat').checked = false;
+  document.getElementById('lessonRepeatFrom').value = '';
+  document.getElementById('lessonRepeatUntil').value = '';
+  updateLessonRepeatFields();
+
   if (prefill) {
     document.getElementById('lessonDate').value = prefill.date;
     document.getElementById('lessonStartTime').value = prefill.startTime;
@@ -1488,7 +1495,37 @@ function closeLessonModal() {
   document.getElementById('addLessonModal').classList.remove('open');
   document.getElementById('lessonForm').reset();
   document.getElementById('studentSelect').size = 1;
+  updateLessonRepeatFields();
   setDefaultDates();
+}
+
+/**
+ * Show/hide the "Repeat From"/"Repeat Until" fields based on the "Repeat
+ * weekly" checkbox, defaulting "Repeat From" to the main lesson date the
+ * first time it's shown.
+ */
+function updateLessonRepeatFields() {
+  const checkbox = document.getElementById('lessonRepeat');
+  const fields = document.getElementById('lessonRepeatFields');
+  const repeatFromInput = document.getElementById('lessonRepeatFrom');
+  if (!checkbox || !fields || !repeatFromInput) return;
+
+  const isRepeating = checkbox.checked;
+  fields.classList.toggle('hidden', !isRepeating);
+
+  if (isRepeating && !repeatFromInput.value) {
+    repeatFromInput.value = document.getElementById('lessonDate').value;
+  }
+}
+
+/**
+ * Wire up the "Repeat weekly" checkbox to show/hide the repeat date fields.
+ */
+function setupLessonRepeatToggle() {
+  const checkbox = document.getElementById('lessonRepeat');
+  if (checkbox) {
+    checkbox.addEventListener('change', updateLessonRepeatFields);
+  }
 }
 
 
@@ -1751,6 +1788,9 @@ async function handleLessonSubmit(e) {
   const lessonDate = document.getElementById('lessonDate').value;
   const startTime = document.getElementById('lessonStartTime').value;
   const endTime = document.getElementById('lessonEndTime').value;
+  const isRepeating = document.getElementById('lessonRepeat').checked;
+  const repeatFrom = document.getElementById('lessonRepeatFrom').value;
+  const repeatUntil = document.getElementById('lessonRepeatUntil').value;
 
   if (!studentId) {
     alert('Please select a student');
@@ -1762,6 +1802,29 @@ async function handleLessonSubmit(e) {
     return;
   }
 
+  // Single occurrence by default; "Repeat weekly" creates one prenotation
+  // per week (same day-of-week and time) from Repeat From to Repeat Until
+  let occurrenceDates = [lessonDate];
+
+  if (isRepeating) {
+    if (!repeatFrom || !repeatUntil) {
+      alert('Please select a Repeat From and Repeat Until date');
+      return;
+    }
+
+    occurrenceDates = getWeeklyOccurrences(repeatFrom, repeatUntil);
+
+    if (occurrenceDates === null) {
+      alert('Repeat Until must be on or after Repeat From');
+      return;
+    }
+
+    if (occurrenceDates.length > MAX_REPEAT_OCCURRENCES) {
+      alert(`That range covers ${occurrenceDates.length} occurrences - please pick ${MAX_REPEAT_OCCURRENCES} or fewer.`);
+      return;
+    }
+  }
+
   // Get selected tutor (for STAFF users)
   const selectedTutorRadio = document.querySelector('input[name="lessonTutors"]:checked');
   let assignedTutorId = selectedTutorRadio ? parseInt(selectedTutorRadio.value) : null;
@@ -1771,8 +1834,39 @@ async function handleLessonSubmit(e) {
     assignedTutorId = window.serverData?.currentUserId;
   }
 
-  // Prepare datetime with the selected date
-  const [year, month, day] = lessonDate.split('-');
+  try {
+    const results = await Promise.all(
+      occurrenceDates.map(date => createPrenotation({ studentId, date, startTime, endTime, tutorId: assignedTutorId }))
+    );
+    const failedDates = results.filter(r => !r.ok).map(r => r.date);
+
+    if (failedDates.length === 0) {
+      alert(occurrenceDates.length === 1
+        ? 'Prenotation created successfully!'
+        : `Prenotation created on ${occurrenceDates.length} weeks successfully!`);
+    } else {
+      alert(`Created ${occurrenceDates.length - failedDates.length} of ${occurrenceDates.length} prenotations. Failed on: ${failedDates.join(', ')}`);
+    }
+
+    closeLessonModal();
+
+    // Reload the calendar showing the week the new prenotation was added to,
+    // instead of resetting back to the current week
+    window.location.href = `/calendar?date=${lessonDate}`;
+  } catch (error) {
+    console.error('Error creating prenotation:', error);
+    alert('Failed to create prenotation. Please try again.');
+  }
+}
+
+/**
+ * Create a single prenotation via the API for one date.
+ *
+ * @param {{studentId: string, date: string, startTime: string, endTime: string, tutorId: number}} params
+ * @returns {Promise<{ok: boolean, date: string}>} Whether creation succeeded, and for which date
+ */
+async function createPrenotation({ studentId, date, startTime, endTime, tutorId }) {
+  const [year, month, day] = date.split('-');
   const startDateTime = `${year}-${month}-${day}T${startTime}:00`;
   const endDateTime = `${year}-${month}-${day}T${endTime}:00`;
 
@@ -1783,8 +1877,8 @@ async function handleLessonSubmit(e) {
   };
 
   // Add tutorId if different from current user
-  if (assignedTutorId && assignedTutorId !== window.serverData?.currentUserId) {
-    payload.tutorId = assignedTutorId;
+  if (tutorId && tutorId !== window.serverData?.currentUserId) {
+    payload.tutorId = tutorId;
   }
 
   try {
@@ -1796,22 +1890,40 @@ async function handleLessonSubmit(e) {
       },
       body: JSON.stringify(payload)
     });
-
-    if (response.ok) {
-      alert('Prenotation created successfully!');
-      closeLessonModal();
-
-      // Reload the calendar showing the week the new prenotation was added to,
-      // instead of resetting back to the current week
-      window.location.href = `/calendar?date=${lessonDate}`;
-    } else {
-      const error = await response.json();
-      alert('Failed to create prenotation: ' + (error.error || 'Unknown error'));
-    }
+    return { ok: response.ok, date };
   } catch (error) {
-    console.error('Error creating prenotation:', error);
-    alert('Failed to create prenotation. Please try again.');
+    console.error(`Error creating prenotation for ${date}:`, error);
+    return { ok: false, date };
   }
+}
+
+// Safety cap on how many weekly occurrences "Repeat weekly" can create at
+// once, to avoid an accidental multi-year repeat from a typo'd end date
+const MAX_REPEAT_OCCURRENCES = 52;
+
+/**
+ * Build the list of weekly occurrence dates (YYYY-MM-DD), stepping 7 days
+ * at a time from fromDateStr through untilDateStr inclusive.
+ *
+ * @param {string} fromDateStr - First occurrence date (YYYY-MM-DD)
+ * @param {string} untilDateStr - Last date an occurrence may fall on (YYYY-MM-DD)
+ * @returns {string[]|null} Occurrence dates, or null if untilDateStr is before fromDateStr
+ */
+function getWeeklyOccurrences(fromDateStr, untilDateStr) {
+  const [fy, fm, fd] = fromDateStr.split('-').map(Number);
+  const [uy, um, ud] = untilDateStr.split('-').map(Number);
+  const from = new Date(fy, fm - 1, fd);
+  const until = new Date(uy, um - 1, ud);
+
+  if (until < from) return null;
+
+  const dates = [];
+  const cursor = new Date(from);
+  while (cursor <= until) {
+    dates.push(formatDate(cursor));
+    cursor.setDate(cursor.getDate() + 7);
+  }
+  return dates;
 }
 
 /**
