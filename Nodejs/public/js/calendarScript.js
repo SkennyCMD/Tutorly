@@ -301,6 +301,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMobileDayView();
   setupEventListeners();
   setupGridDragSelection();
+  setupNoteAllDayToggle();
+  setupEditNoteAllDayToggle();
   setDefaultDates();
   loadStudents();
   loadTutors();
@@ -1507,6 +1509,10 @@ function openNoteModal(prefill) {
   document.getElementById('addNoteModal').classList.add('open');
   closeMenu();
 
+  // Start unchecked/visible each time the modal opens, regardless of how it was left before
+  document.getElementById('noteAllDay').checked = false;
+  updateNoteAllDayFields();
+
   if (prefill) {
     document.getElementById('noteStartDate').value = prefill.date;
     document.getElementById('noteEndDate').value = prefill.date;
@@ -1542,7 +1548,36 @@ function openNoteModal(prefill) {
 function closeNoteModal() {
   document.getElementById('addNoteModal').classList.remove('open');
   document.getElementById('noteForm').reset();
+  updateNoteAllDayFields();
   setDefaultDates();
+}
+
+/**
+ * Show/hide the Note form's time fields based on the "All day" checkbox,
+ * and toggle their `required` attribute to match - hidden fields shouldn't
+ * block submission.
+ */
+function updateNoteAllDayFields() {
+  const checkbox = document.getElementById('noteAllDay');
+  const timeFields = document.getElementById('noteTimeFields');
+  const startTimeInput = document.getElementById('noteStartTime');
+  const endTimeInput = document.getElementById('noteEndTime');
+  if (!checkbox || !timeFields || !startTimeInput || !endTimeInput) return;
+
+  const isAllDay = checkbox.checked;
+  timeFields.classList.toggle('hidden', isAllDay);
+  startTimeInput.required = !isAllDay;
+  endTimeInput.required = !isAllDay;
+}
+
+/**
+ * Wire up the Note form's "All day" checkbox to show/hide the time fields.
+ */
+function setupNoteAllDayToggle() {
+  const checkbox = document.getElementById('noteAllDay');
+  if (checkbox) {
+    checkbox.addEventListener('change', updateNoteAllDayFields);
+  }
 }
 
 /**
@@ -1820,8 +1855,15 @@ async function handleNoteSubmit(e) {
   const description = document.getElementById('noteDescription').value;
   const noteStartDate = document.getElementById('noteStartDate').value;
   const noteEndDate = document.getElementById('noteEndDate').value;
-  const startTime = document.getElementById('noteStartTime').value;
-  const endTime = document.getElementById('noteEndTime').value;
+  const isAllDay = document.getElementById('noteAllDay').checked;
+  let startTime = document.getElementById('noteStartTime').value;
+  let endTime = document.getElementById('noteEndTime').value;
+
+  // All day: take each selected day in full instead of a manually-entered range
+  if (isAllDay) {
+    startTime = '00:00';
+    endTime = '23:59';
+  }
 
   if (!description) {
     alert('Please enter a description');
@@ -2234,8 +2276,23 @@ window.openEditNoteModal = async function (noteId) {
     const endDate = parseAsLocalDate(fullNote.endTime);
     document.getElementById('editNoteStartDate').value = formatDateForInput(startDate);
     document.getElementById('editNoteEndDate').value = formatDateForInput(endDate);
-    document.getElementById('editNoteStartTime').value = formatTimeForInput(startDate);
-    document.getElementById('editNoteEndTime').value = formatTimeForInput(endDate);
+
+    const startTimeStr = formatTimeForInput(startDate);
+    const endTimeStr = formatTimeForInput(endDate);
+    const isAllDay = startTimeStr === '00:00' && endTimeStr === '23:59';
+
+    // Note: 23:59 doesn't align with the time inputs' step="900" (15-minute)
+    // grid, so writing it into the field's value makes the (hidden, but still
+    // validated) input fail native constraint validation and silently block
+    // the next submit. When all-day, leave both fields at the step-valid
+    // 00:00 instead - the actual 00:00/23:59 override happens in JS on
+    // submit regardless of what these fields contain (see the submit handler).
+    document.getElementById('editNoteStartTime').value = isAllDay ? '00:00' : startTimeStr;
+    document.getElementById('editNoteEndTime').value = isAllDay ? '00:00' : endTimeStr;
+
+    // Pre-check "All day" if the note already runs from 00:00 to 23:59
+    document.getElementById('editNoteAllDay').checked = isAllDay;
+    updateEditNoteAllDayFields();
 
     // Populate assignees (only for STAFF users)
     const assignToSection = document.getElementById('editNoteAssignToSection');
@@ -2282,7 +2339,35 @@ window.openEditNoteModal = async function (noteId) {
 window.closeEditNoteModal = function () {
   document.getElementById('editNoteModal').classList.remove('open');
   document.getElementById('editNoteForm').reset();
+  updateEditNoteAllDayFields();
 };
+
+/**
+ * Show/hide the Edit Note form's time fields based on the "All day"
+ * checkbox, and toggle their `required` attribute to match.
+ */
+function updateEditNoteAllDayFields() {
+  const checkbox = document.getElementById('editNoteAllDay');
+  const timeFields = document.getElementById('editNoteTimeFields');
+  const startTimeInput = document.getElementById('editNoteStartTime');
+  const endTimeInput = document.getElementById('editNoteEndTime');
+  if (!checkbox || !timeFields || !startTimeInput || !endTimeInput) return;
+
+  const isAllDay = checkbox.checked;
+  timeFields.classList.toggle('hidden', isAllDay);
+  startTimeInput.required = !isAllDay;
+  endTimeInput.required = !isAllDay;
+}
+
+/**
+ * Wire up the Edit Note form's "All day" checkbox to show/hide the time fields.
+ */
+function setupEditNoteAllDayToggle() {
+  const checkbox = document.getElementById('editNoteAllDay');
+  if (checkbox) {
+    checkbox.addEventListener('change', updateEditNoteAllDayFields);
+  }
+}
 
 /**
  * Delete calendar note after confirmation.
@@ -2334,8 +2419,15 @@ document.getElementById('editNoteForm').addEventListener('submit', async functio
   const description = document.getElementById('editNoteDescription').value;
   const noteStartDate = document.getElementById('editNoteStartDate').value;
   const noteEndDate = document.getElementById('editNoteEndDate').value;
-  const startTime = document.getElementById('editNoteStartTime').value;
-  const endTime = document.getElementById('editNoteEndTime').value;
+  const isAllDay = document.getElementById('editNoteAllDay').checked;
+  let startTime = document.getElementById('editNoteStartTime').value;
+  let endTime = document.getElementById('editNoteEndTime').value;
+
+  // All day: take each selected day in full instead of a manually-entered range
+  if (isAllDay) {
+    startTime = '00:00';
+    endTime = '23:59';
+  }
 
   if (!description) {
     alert('Please enter a description');
