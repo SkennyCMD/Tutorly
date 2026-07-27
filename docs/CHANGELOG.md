@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+**Internationalization (i18n)**
+- Automatic English/Italian translation for the Dashboard, Calendar, Lessons, Staff Panel, and Login pages, detected from the browser's `Accept-Language` header (no manual switcher).
+- `server_utilities/i18n.js`: language detection, dot-notation translation lookup with `{placeholder}` substitution, and an Express middleware exposing `t()`, `lang`, and `translations` to every EJS view via `res.locals`.
+- `public/js/i18n.js`: client-side mirror of the same `t()` helper for dynamically-rendered content and alerts in `calendarScript.js`, `homeScript.js`, `lessonsScript.js`, and `staffPanel.js`.
+- `locales/en.json` / `locales/it.json` dictionaries covering navigation, shared modals, validation/error messages, and page-specific strings.
+
+**Calendar**
+- Weekly repeat option for prenotations: create the same prenotation across a date range, same day-of-week and time each week, in one submission.
+- Continuous multi-day notes: a single note can span a start date/time to an end date/time across multiple days instead of one record per day.
+- "All day" flag for notes: skips manual time entry and takes each selected day in full; all-day notes render in a dedicated row above the hourly grid instead of stretched across it.
+
 ### Planned
 - E2E testing with Playwright
 - Redis session storage for horizontal scaling
@@ -16,7 +29,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mobile-responsive design improvements
 - Email notifications for lesson confirmations
 - Advanced reporting dashboard
-- Multi-language support (Italian, English)
 
 ---
 

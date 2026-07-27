@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: April 29, 2026  
+**Last Updated**: July 27, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -21,6 +21,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
   - [userService.js](#userservicejs)
   - [logger.js](#loggerjs)
   - [excel.js](#exceljs)
+  - [i18n.js](#i18njs)
 - [Best Practices](#best-practices)
 - [Maintenance](#maintenance)
 
@@ -432,6 +433,44 @@ const result = await generateTutorMonthlyReport(
 
 ### `userService.js`
 User management service (if present).
+
+---
+
+### `i18n.js`
+Language detection and translation lookup for the automatic English/Italian i18n system. Reads `Nodejs/locales/en.json` and `Nodejs/locales/it.json` once at startup into an in-memory `dictionaries` object (a process restart is required to pick up locale file changes).
+
+**Role:** Detect the visitor's language from `Accept-Language` and expose a `t()` translation helper to every EJS view via `res.locals`, with no manual switcher and no session/cookie state.
+
+**Functions:**
+```javascript
+parseAcceptLanguage(header)
+// 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7' -> 'it'
+// Ranks the header's tags by q-value and returns the first one in
+// SUPPORTED_LANGUAGES, or DEFAULT_LANGUAGE if none match.
+
+detectLanguage(req)
+// Shorthand for parseAcceptLanguage(req.headers['accept-language']).
+
+translate(lang, key, params)
+// Dot-notation lookup (e.g. 'common.cancel') into the requested
+// language's dictionary, falling back to English then to the key
+// itself if missing. Substitutes any {placeholder} tokens in params.
+
+i18nMiddleware(req, res, next)
+// Runs on every request: sets req.lang and res.locals.lang,
+// res.locals.t (bound translate for the detected language), and
+// res.locals.translations (the full per-language dictionary, for
+// client-side injection).
+```
+
+**Exports:**
+- `i18nMiddleware`: Express middleware, registered globally in `src/index.js`
+- `translate(lang, key, params)`: Direct translation lookup (used by `i18nMiddleware` and callable directly, e.g. `res.locals.t(...)`)
+- `detectLanguage(req)`: Resolves a request to a supported language code
+- `SUPPORTED_LANGUAGES`: `['en', 'it']`
+- `DEFAULT_LANGUAGE`: `'en'`
+
+**Companion client-side helper:** `public/js/i18n.js` defines `window.t(key, params)`, mirroring `translate()` but reading from `window.translations` (injected per-page). See [03_Nodejs_Frontend.md - Internationalization (i18n)](03_Nodejs_Frontend.md#internationalization-i18n) for the full page-by-page breakdown.
 
 ---
 

@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: July 20, 2026  
+**Last Updated**: July 27, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -41,6 +41,8 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 - ✅ Responsive design with modern CSS
 - ✅ Client-side JavaScript for interactive features
 - ✅ **Progressive Web App (PWA)** capabilities, with service worker caching and offline resilience
+- ✅ **Internationalization (i18n)**: automatic English/Italian translation based on the browser's language, no manual switcher
+- ✅ Calendar weekly-repeat prenotations and continuous multi-day/all-day notes
 
 ---
 
@@ -421,6 +423,7 @@ The application uses several service modules for authentication, API communicati
 - **excel.js**: Excel report generation
 - **userService.js**: User management utilities
 - **config.js**: Application configuration
+- **i18n.js**: Language detection and translation lookup for the i18n system (see [Internationalization (i18n)](#internationalization-i18n))
 
 📚 **Complete documentation for all service modules**: [05_Service_Modules.md](05_Service_Modules.md)
 
@@ -1114,6 +1117,7 @@ Client-side JavaScript is organized by page/feature:
 | `staffPanel.js` | Staff panel functionality |
 | `modalShared.js` | Shared modal utilities (open, close, populate) |
 | `theme.js` | Light/dark theme toggle and OS-preference syncing |
+| `i18n.js` | Client-side `t()` translation helper, reading from `window.translations` |
 | `404.js` | Error page interactions |
 
 ### Common Patterns
@@ -1201,6 +1205,37 @@ Every page supports a light and dark theme, toggled by a sun/moon icon button in
 3. The active theme is reflected as `data-theme="light"|"dark"` on `<html>`, which both the CSS variables and Tailwind's generated classes key off of.
 
 To add theming to a new page, include `partials/theme-init.ejs` (early in `<head>`, before the Tailwind CDN `<script>` tag), link `css/theme.css`, then include `partials/theme-config.ejs` (right after the Tailwind CDN `<script>` tag, so it can extend `tailwind.config`), load `js/theme.js`, and drop in `partials/theme-toggle.ejs` (and `theme-toggle-mobile.ejs` if the page has a mobile menu).
+
+---
+
+## Internationalization (i18n)
+
+The application auto-detects each visitor's language from the browser's `Accept-Language` header and serves fully translated pages — there is no manual language switcher, no cookie, and no new npm dependency. English and Italian are currently supported, with English as the fallback for unsupported languages.
+
+**Translated pages:** Dashboard (`home.ejs`), Calendar (`calendar.ejs`), Lessons (`lessons.ejs`), Staff Panel (`staffPanel.ejs`), and Login (`login.ejs`). Admin, Admin Login, and the 404 page are not yet translated.
+
+**Files:**
+- `locales/en.json` / `locales/it.json` - Dictionaries of dot-notation keys (e.g. `common.cancel`, `home.welcomeBack`) grouped by page/feature (`common`, `home`, `calendar`, `lessons`, `staffPanel`, `login`). Values can include `{placeholder}` tokens (e.g. `"lessonCount": "{count} lesson"`) and arrays (e.g. `common.months`, `common.daysFull`) for calendar labels.
+- `server_utilities/i18n.js` - `detectLanguage(req)` ranks the `Accept-Language` header by q-value and returns the first supported language; `translate(lang, key, params)` resolves a dot-notation key against the dictionaries (falling back to English, then to the key itself, if missing) and substitutes any `{placeholder}` params; `i18nMiddleware` runs on every request and sets `req.lang` plus `res.locals.lang`, `res.locals.t`, and `res.locals.translations` so every `res.render()` call gets them for free.
+- `public/js/i18n.js` - Client-side `window.t(key, params)`, mirroring the server-side lookup but reading from `window.translations`, which each translated view injects into a small inline `<script>` block (alongside its other server-rendered data) as `window.translations = <%- JSON.stringify(translations) %>;`. This lets page scripts like `calendarScript.js` and `homeScript.js` translate dynamically-rendered content, `alert()`/`confirm()` messages, and locale-aware date formatting (via `window.lang`).
+
+**How it works:**
+1. `i18nMiddleware` reads `Accept-Language` on every request and resolves it to `en` or `it`.
+2. EJS templates call `<%= t('common.cancel') %>` (or `<% t('common.daysShort').forEach(...) %>` for arrays); no per-route changes are needed since `t`/`lang`/`translations` come from `res.locals`.
+3. Server-rendered error messages (e.g. the `/login` POST route's invalid-credentials message) call `res.locals.t(...)` directly.
+4. Client-side scripts call the global `t(key, params)` from `public/js/i18n.js` for anything rendered or alerted after page load.
+
+**To add a new translated page:** add its keys to both `locales/en.json` and `locales/it.json`, replace hardcoded strings in the `.ejs` view with `<%= t('namespace.key') %>`, inject `window.translations`/`window.lang` in its data-injection `<script>` block, load `<script src="/js/i18n.js"></script>` before the page's own script, and replace hardcoded strings in that script with `t('namespace.key')`.
+
+---
+
+## Calendar Features
+
+### Weekly Repeat (Prenotations)
+The "Add Prenotation" form has a "Repeat weekly" checkbox with a Repeat From / Repeat Until date range. When checked, the client computes every matching day-of-week between the two dates and submits one `POST /api/prenotations` call per occurrence (capped at a maximum number of occurrences to avoid runaway batches), reporting how many succeeded if any individual date failed.
+
+### Continuous Multi-Day Notes and All-Day Notes
+Calendar notes are a single record spanning a Start Date/Time to an End Date/Time, rather than one record per day - e.g. a note from Monday 14:00 to Wednesday 10:00 is one note that renders across all three days. Checking "All day" sets the time range to `00:00`-`23:59` for the selected day(s) instead of requiring manual times. All-day notes are rendered in a dedicated all-day row above the hourly time grid (desktop week view and mobile day view) instead of being stretched across the 24-hour grid like timed events, and that row is hidden entirely when the visible week/day has no all-day notes.
 
 ---
 
