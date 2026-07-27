@@ -154,6 +154,19 @@ function buildNoteSegments(note) {
 }
 
 /**
+ * Whether an event segment spans a full day (00:00-23:59) - either a
+ * middle day of a multi-day note (see buildNoteSegments) or a single-day
+ * note explicitly set to run the whole day. These are shown as a compact
+ * chip above the hourly grid instead of stretched across all 24 hours.
+ *
+ * @param {Object} event - Event to check
+ * @returns {boolean}
+ */
+function isAllDayNote(event) {
+  return event.type === 'note' && event.startTime === '00:00' && event.endTime === '23:59';
+}
+
+/**
  * Convert server calendar notes to unified event format.
  *
  * Each note becomes one or more 'note' type events (one per day it spans -
@@ -516,6 +529,7 @@ function filterEventsByTutor(eventsToFilter) {
 function renderWeekView() {
   renderWeekHeader();
   renderDayHeaders();
+  renderAllDayNotesRow();
   renderTimeGrid();
   requestAnimationFrame(scrollCalendarToDefaultHour);
 }
@@ -574,8 +588,44 @@ function renderDayHeaders() {
 }
 
 /**
+ * Render the all-day notes row above the desktop week grid: one chip per
+ * all-day note (see isAllDayNote), positioned under its matching day header
+ * instead of stretched across all 24 hours in the grid below. Hides the
+ * whole row when the visible week has no all-day notes.
+ */
+function renderAllDayNotesRow() {
+  const row = document.getElementById('allDayRow');
+  const container = document.getElementById('allDayNotesContainer');
+  if (!row || !container) return;
+
+  const visibleEvents = filterEventsByTutor(events);
+  let html = '';
+  let hasAny = false;
+
+  for (let day = 0; day < 7; day++) {
+    const date = new Date(currentWeekStart);
+    date.setDate(date.getDate() + day);
+    const dateStr = formatDate(date);
+
+    const notesForDay = visibleEvents.filter(e => isAllDayNote(e) && e.date === dateStr);
+    if (notesForDay.length > 0) hasAny = true;
+
+    html += `
+      <div class="p-1 space-y-0.5 border-l border-border">
+        ${notesForDay.map(note => `
+          <div class="event-note text-[10px] px-1.5 py-0.5 rounded truncate cursor-pointer" onclick="openEditNoteModal(${note.id})" title="${note.description}">${note.description}</div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+  row.classList.toggle('hidden', !hasAny);
+}
+
+/**
  * Render time grid (24 hours x 7 days).
- * 
+ *
  * Creates grid cells for each hour of each day.
  * Then renders all events on the grid.
  */
@@ -625,8 +675,9 @@ function renderEventsOnGrid() {
   // Clear existing events from previous render
   document.querySelectorAll('.event').forEach(el => el.remove());
 
-  // Apply the STAFF-only tutor filter (notes are unaffected, see filterEventsByTutor)
-  const visibleEvents = filterEventsByTutor(events);
+  // Apply the STAFF-only tutor filter (notes are unaffected, see filterEventsByTutor);
+  // all-day notes are rendered separately in the all-day row, not in the hourly grid
+  const visibleEvents = filterEventsByTutor(events).filter(e => !isAllDayNote(e));
 
   /**
    * Check if two events overlap in time.
@@ -759,8 +810,27 @@ function renderMobileDayView() {
   dateLabel.textContent = formatDateDisplay(currentMobileDate);
   dayLabel.textContent = getDayName(currentMobileDate);
 
+  renderMobileAllDayNotes();
   renderMobileTimeGrid();
   requestAnimationFrame(scrollCalendarToDefaultHour);
+}
+
+/**
+ * Render the all-day notes row above the mobile hourly grid, for whichever
+ * day is currently being viewed (see isAllDayNote). Hidden when that day
+ * has no all-day notes.
+ */
+function renderMobileAllDayNotes() {
+  const row = document.getElementById('mobileAllDayRow');
+  if (!row) return;
+
+  const dateStr = formatDate(currentMobileDate);
+  const notesForDay = filterEventsByTutor(events).filter(e => isAllDayNote(e) && e.date === dateStr);
+
+  row.innerHTML = notesForDay.map(note => `
+    <div class="event-note text-xs px-2 py-1 rounded truncate cursor-pointer" onclick="openEditNoteModal(${note.id})">${note.description}</div>
+  `).join('');
+  row.classList.toggle('hidden', notesForDay.length === 0);
 }
 
 /**
@@ -797,8 +867,9 @@ function renderMobileTimeGrid() {
  */
 function renderMobileEvents() {
   const dateStr = formatDate(currentMobileDate);
-  // Apply the STAFF-only tutor filter (notes are unaffected, see filterEventsByTutor)
-  const dayEvents = filterEventsByTutor(events.filter(e => e.date === dateStr));
+  // Apply the STAFF-only tutor filter (notes are unaffected, see filterEventsByTutor);
+  // all-day notes are rendered separately in the all-day row, not in the hourly grid
+  const dayEvents = filterEventsByTutor(events.filter(e => e.date === dateStr)).filter(e => !isAllDayNote(e));
 
   /**
    * Check if two events overlap in time (mobile version).

@@ -259,11 +259,24 @@ Features:
 
       <!-- Desktop Week View: 7-day grid with time slots from 8:00 to 22:00 -->
       <div id="weekView" class="hidden md:block min-w-[800px]">
-        <!-- Day Headers: Column headers for each day of the week -->
-        <div class="calendar-grid sticky top-0 bg-card border-b border-border z-20">
-          <div class="p-2 text-center text-xs text-muted-foreground"></div>
-          <div id="dayHeaders" class="contents">
-            <!-- Day headers will be rendered here -->
+        <!-- Sticky header: day-of-week labels + all-day notes row stay pinned together
+             while scrolling the hourly grid below -->
+        <div class="sticky top-0 z-20 bg-card border-b border-border">
+          <!-- Day Headers: Column headers for each day of the week -->
+          <div class="calendar-grid">
+            <div class="p-2 text-center text-xs text-muted-foreground"></div>
+            <div id="dayHeaders" class="contents">
+              <!-- Day headers will be rendered here -->
+            </div>
+          </div>
+
+          <!-- All-Day Notes Row: notes spanning a full day, shown here instead of stretched
+               across the hourly grid below. Hidden when the visible week has none. -->
+          <div class="calendar-grid border-t border-border hidden" id="allDayRow">
+            <div class="p-1 text-center text-[10px] text-muted-foreground">All day</div>
+            <div id="allDayNotesContainer" class="contents">
+              <!-- All-day note chips will be rendered here -->
+            </div>
           </div>
         </div>
 
@@ -313,6 +326,12 @@ Features:
               </svg>
               Note
             </button>
+          </div>
+
+          <!-- All-Day Notes: notes spanning the full viewed day, shown here instead of
+               stretched across the hourly grid below. Hidden when the day has none. -->
+          <div class="px-4 py-2 border-t border-border space-y-1 hidden" id="mobileAllDayRow">
+            <!-- All-day note chips will be rendered here -->
           </div>
         </div>
 
