@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: July 27, 2026  
+**Last Updated**: July 31, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -43,6 +43,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 - ✅ **Progressive Web App (PWA)** capabilities, with service worker caching and offline resilience
 - ✅ **Internationalization (i18n)**: automatic English/Italian translation based on the browser's language, no manual switcher
 - ✅ Calendar weekly-repeat prenotations and continuous multi-day/all-day notes
+- ✅ Student evaluations (test marks) with per-student progress chart and running average
 
 ---
 
@@ -71,6 +72,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 | `/home` | GET | Dashboard | Tutor/Admin |
 | `/lessons` | GET | Lessons management | Tutor/Admin |
 | `/calendar` | GET | Calendar view | Tutor/Admin |
+| `/reports` | GET | Evaluations (student marks/tests, with per-student stats chart) | Tutor/Admin |
 | `/admin` | GET | Admin panel | Admin only |
 | `/staffPanel` | GET | Staff management | Staff/Admin |
 | `/logout` | GET | Logout | Tutor/Admin |
@@ -235,7 +237,12 @@ Nodejs/
 │   ├── adminLogger.js              # Admin login attempt logging
 │   ├── userService.js              # User management utilities
 │   ├── excel.js                    # Excel report generation
+│   ├── i18n.js                     # Language detection and translation lookup
 │   └── config.js                   # Application configuration
+│
+├── locales/                        # i18n dictionaries
+│   ├── en.json                     # English translations
+│   └── it.json                     # Italian translations
 │
 ├── views/                          # EJS templates (server-rendered HTML)
 │   ├── login.ejs                   # Tutor login page
@@ -243,6 +250,7 @@ Nodejs/
 │   ├── home.ejs                    # Tutor home dashboard
 │   ├── lessons.ejs                 # Lesson management interface
 │   ├── calendar.ejs                # Calendar view with notes
+│   ├── reports.ejs                 # Evaluations (student marks/tests)
 │   ├── admin.ejs                   # Admin panel
 │   ├── staffPanel.ejs              # Staff panel (STAFF role only)
 │   ├── 404.ejs                     # Error page
@@ -260,6 +268,7 @@ Nodejs/
 │   │   ├── home.css                # Home dashboard styles
 │   │   ├── lessons.css             # Lesson management styles
 │   │   ├── calendar.css            # Calendar view styles
+│   │   ├── reports.css             # Evaluations page styles
 │   │   ├── admin.css               # Admin panel styles
 │   │   ├── staffPanel.css          # Staff panel styles
 │   │   └── theme.css               # Light/dark theme CSS variables (all pages)
@@ -270,9 +279,11 @@ Nodejs/
 │       ├── homeScript.js           # Home page interactions
 │       ├── lessonsScript.js        # Lesson management logic
 │       ├── calendarScript.js       # Calendar interactions
+│       ├── reports.js              # Evaluations page logic
 │       ├── staffPanel.js           # Staff panel functionality
 │       ├── modalShared.js          # Shared modal utilities
 │       ├── theme.js                # Theme toggle behavior (all pages)
+│       ├── i18n.js                 # Client-side t() translation helper
 │       └── 404.js                  # Error page interactions
 │
 ├── ssl/                            # SSL certificates (gitignored)
@@ -1085,6 +1096,17 @@ Body: {
 
 ---
 
+### API Endpoints - Tests (Evaluations)
+
+Backs the `/reports` (Evaluations) page. `tutorId` is always taken from the session on create - there's no tutor-assignment field on this form.
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | `/api/tests` | Tutor | Create new test/evaluation |
+| DELETE | `/api/tests/:id` | Tutor | Delete test/evaluation |
+
+---
+
 ### Excel Report Endpoints
 
 | Method | Route | Auth | Description |
@@ -1115,6 +1137,7 @@ Client-side JavaScript is organized by page/feature:
 | `lessonsScript.js` | Lesson management (CRUD operations, filters) |
 | `calendarScript.js` | Calendar view (event handling, date navigation) |
 | `staffPanel.js` | Staff panel functionality |
+| `reports.js` | Evaluations page (add/delete tests, per-student SVG chart, search/date filters) |
 | `modalShared.js` | Shared modal utilities (open, close, populate) |
 | `theme.js` | Light/dark theme toggle and OS-preference syncing |
 | `i18n.js` | Client-side `t()` translation helper, reading from `window.translations` |
@@ -1236,6 +1259,19 @@ The "Add Prenotation" form has a "Repeat weekly" checkbox with a Repeat From / R
 
 ### Continuous Multi-Day Notes and All-Day Notes
 Calendar notes are a single record spanning a Start Date/Time to an End Date/Time, rather than one record per day - e.g. a note from Monday 14:00 to Wednesday 10:00 is one note that renders across all three days. Checking "All day" sets the time range to `00:00`-`23:59` for the selected day(s) instead of requiring manual times. All-day notes are rendered in a dedicated all-day row above the hourly time grid (desktop week view and mobile day view) instead of being stretched across the 24-hour grid like timed events, and that row is hidden entirely when the visible week/day has no all-day notes.
+
+---
+
+## Evaluations (Reports) Page
+
+The `/reports` page (`views/reports.ejs` + `public/js/reports.js`) tracks student test marks, backed by the Java backend's `Test` entity (see [01_Java_Backend_API.md - Tests](01_Java_Backend_API.md#tests)).
+
+- **Add Evaluation**: a modal with a real student dropdown (populated from `window.allStudents`, injected server-side), a 0-10 mark (half-point steps), a date, and an optional description. Submits via `POST /api/tests`; the tutor is always the logged-in session user - there's no tutor-assignment field. On success the page reloads so the newly-created record (with its server-enriched student name) comes from the server, same as every other creation flow in the app.
+- **Recent Evaluations**: a scrollable sidebar list of all the tutor's evaluations, sorted most-recent-first, filtered live by the search bar.
+- **Student Statistics**: per-student cards, each with a running average and an inline SVG line chart (marks over time plus a dashed running-average line), built by hand in `renderChart()` - no charting library. Filtered by the From/To date range and the search bar (student name).
+- **Test Details / Delete**: clicking a mark (in the sidebar list or on a chart point) opens a details popup with a Delete button (`DELETE /api/tests/:id`, confirms first, then reloads).
+- **Default date range**: From defaults to the most recent September 1st that's already occurred (start of the current school year), To defaults to today - see `getLastSeptemberFirst()` in `reports.js`.
+- There's no backend `testId`/test-code field - the `TST-{id}` shown in the UI is synthesized client-side from the real database `id` purely for display.
 
 ---
 

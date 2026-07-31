@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: July 20, 2026  
+**Last Updated**: July 31, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -40,6 +40,7 @@ Tutorly is a full-stack web application designed to simplify tutoring activity m
 - **Organize students**: Complete registry with information on classes and subjects
 - **Track bookings**: Lesson booking system with confirmation
 - **Plan activities**: Integrated calendar with notes and reminders
+- **Track evaluations**: Record student test marks and view per-student progress charts
 - **Generate reports**: Excel export of lessons, monthly statistics, and student reports
 - **Control access**: Dual authentication system (tutors and administrators) with differentiated roles
 
@@ -773,7 +774,7 @@ We thank the following users for their fundamental contribution
 
 
 ### Version 2.0
-- [ ] Student evaluation system
+- [x] Student evaluation system (Evaluations page at `/reports`, backed by the `Test` entity)
 
 
 ---

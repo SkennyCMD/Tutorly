@@ -5,7 +5,7 @@ This file explain how to migrate the database.
 ---
 
 **Document**: 06_Database_Migrations.md  
-**Last Updated**: February 25, 2026  
+**Last Updated**: July 31, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -84,6 +84,29 @@ Found 2 admins
 
 ---
 
+### Manual SQL: `test.mark` → `DOUBLE PRECISION`
+
+**⚠️ Not a checked-in script.** Unlike the migration above, this was a one-off manual SQL change run directly against Postgres via `psql` - there is no corresponding file under `Nodejs/migrations/`. Documented here so the schema change (and the data it discarded) has a record.
+
+**Why:** The `test` table's `mark` column was `INTEGER`, but the Evaluations page (`/reports`) needed half-point marks (7.5, 8.5) on the 0-10 scale it already used. The table also held 10 placeholder seed rows on an unrelated 0-30 scale, which were cleared first rather than converted.
+
+**What was run:**
+```sql
+-- 1. Clear placeholder seed data (0-30 scale, unrelated to the 0-10 UI)
+DELETE FROM test;
+
+-- 2. Widen the column to support half-point marks
+ALTER TABLE test ALTER COLUMN mark TYPE DOUBLE PRECISION USING mark::double precision;
+```
+
+**Corresponding code changes:** `Test.java`'s `mark` field changed from `Integer` to `Double` (getter/setter/constructor), and `TestRepository`/`TestService`'s `getTestsByMinMark`/`findByMarkGreaterThanEqual` signatures updated to match. See [01_Java_Backend_API.md - Tests](01_Java_Backend_API.md#tests).
+
+**Note:** `spring.jpa.hibernate.ddl-auto=update` (see `application.properties`) does **not** alter existing column types - it only adds missing tables/columns. A Java-only field type change would have caused a runtime type mismatch against the still-`INTEGER` column until this SQL was run by hand.
+
+**If you're setting up a fresh database:** not needed - a new database created from the current entity mapping will get `DOUBLE PRECISION` from the start. This only applies to a database that already had the `test` table from before this change.
+
+---
+
 ## Creating New Migrations
 
 When creating a new migration script:
@@ -125,4 +148,4 @@ migrate();
 
 ---
 
-**Last Updated**: February 25, 2026  
+**Last Updated**: July 31, 2026  

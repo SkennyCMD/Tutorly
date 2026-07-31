@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: July 27, 2026  
+**Last Updated**: July 31, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -283,6 +283,7 @@ await fetchFromJavaAPI('/api/lessons/42', 'DELETE');
 | `fetchPrenotationsByTutor(tutorId)` | Get bookings for tutor |
 | `fetchCalendarNotesByTutor(tutorId)` | Get calendar notes for tutor |
 | `fetchCalendarNotesByDateRange(start, end)` | Get notes in date range |
+| `fetchTestsByTutor(tutorId)` | Get tests (evaluations) for specific tutor |
 
 **Configuration:**
 ```javascript
@@ -302,6 +303,7 @@ JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu'
 - `fetchPrenotationsByTutor(tutorId)`: Fetches bookings for a tutor
 - `fetchStudentData(studentId)`: Fetches student data
 - `fetchAllStudents()`: Fetches all students
+- `fetchTestsByTutor(tutorId)`: Fetches tests (evaluations) for a tutor
 
 **Usage example:**
 ```javascript

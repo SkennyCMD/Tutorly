@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: April 29, 2026  
+**Last Updated**: July 31, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -65,6 +65,8 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 | `/api/lessons` | POST | Create new lesson | API Key |
 | `/api/prenotations` | GET | List bookings | API Key |
 | `/api/calendar-notes` | GET | List calendar notes | API Key |
+| `/api/tests` | GET | List tests (evaluations) | API Key |
+| `/api/tests` | POST | Create new test | API Key |
 
 ### Configuration Files
 
@@ -213,9 +215,9 @@ This section details the internal structure of the Java backend component:
 │ Lesson │  │Prenotation│  │   Test    │  │      │  │ CalendarNote │
 │        │  │           │  │           │  │      │  │              │
 │ -id    │  │ -id       │  │ -id       │  │      │  │ -id          │
-│ -desc  │  │ -startTime│  │ -testType │  │      │  │ -description │
-│ -start │  │ -endTime  │  │ -grade    │  │      │  │ -startTime   │
-│ -end   │  │ -flag     │  │ -date     │  │      │  │ -endTime     │
+│ -desc  │  │ -startTime│  │ -day      │  │      │  │ -description │
+│ -start │  │ -endTime  │  │ -desc     │  │      │  │ -startTime   │
+│ -end   │  │ -flag     │  │ -mark     │  │      │  │ -endTime     │
 │ -tutor ├──┤ -student  │  │ -tutor    ├──┘      │  │ -creator     │
 │ -student  │ -tutor    │  │ -student  │         │  │ -tutors      │
 └────┬───┘  │ -creator  │  └────┬──────┘         │  └──────────────┘
@@ -1001,26 +1003,35 @@ X-API-Key: <your-api-key>
 
 ### Tests
 
+Also known as **Evaluations** in the Node.js frontend (`/reports` page) — same entity, same `/api/tests` backend endpoints.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/tests` | List all tests |
 | GET | `/tests/{id}` | Test details by ID |
-| GET | `/tests/student/{studentId}` | Tests by student |
 | GET | `/tests/tutor/{tutorId}` | Tests administered by tutor |
+| GET | `/tests/student/{studentId}` | Tests by student |
+| GET | `/tests/tutor/{tutorId}/student/{studentId}` | Tests between a specific tutor and student |
+| GET | `/tests/date-range?start={start}&end={end}` | Tests within a date range (`yyyy-MM-dd`) |
+| GET | `/tests/min-mark/{mark}` | Tests with mark >= given value |
 | POST | `/tests` | Create new test |
 | PUT | `/tests/{id}` | Update test |
 | DELETE | `/tests/{id}` | Delete test |
 
-**Example Request Body (POST):**
+**Example Request Body (POST/PUT) - with DTO:**
 ```json
 {
-  "testType": "Mathematics",
-  "grade": "8.5",
-  "testDate": "2026-02-15T10:00:00",
+  "day": "2026-02-15",
+  "description": "Mathematics - Algebra quiz",
+  "mark": 8.5,
   "tutorId": 5,
   "studentId": 10
 }
 ```
+
+`mark` is a `Double` (0-10 scale, half-point increments like 7.5/8.5 are valid) and is optional - `null` represents an ungraded test. `day` is a plain date (`LocalDate`), not a timestamp.
+
+> **Note:** `findByTutorId`/`findByStudentId` in `TestRepository` had to be renamed to `findByTutor_Id`/`findByStudent_Id` (explicit underscore) to disambiguate the property path once `Test` gained `tutorId`/`studentId` JSON helper getters - without the underscore, Spring Data JPA tried to resolve `tutorId` as a literal attribute instead of traversing the `tutor.id` association, throwing `UnknownPathException` at runtime. `LessonRepository` already used this convention; `TestRepository` didn't, which is why this call path was broken until fixed.
 
 ---
 

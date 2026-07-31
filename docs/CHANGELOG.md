@@ -12,15 +12,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 **Internationalization (i18n)**
-- Automatic English/Italian translation for the Dashboard, Calendar, Lessons, Staff Panel, and Login pages, detected from the browser's `Accept-Language` header (no manual switcher).
+- Automatic English/Italian translation for the Dashboard, Calendar, Lessons, Staff Panel, Login, and Evaluations pages, detected from the browser's `Accept-Language` header (no manual switcher).
 - `server_utilities/i18n.js`: language detection, dot-notation translation lookup with `{placeholder}` substitution, and an Express middleware exposing `t()`, `lang`, and `translations` to every EJS view via `res.locals`.
-- `public/js/i18n.js`: client-side mirror of the same `t()` helper for dynamically-rendered content and alerts in `calendarScript.js`, `homeScript.js`, `lessonsScript.js`, and `staffPanel.js`.
+- `public/js/i18n.js`: client-side mirror of the same `t()` helper for dynamically-rendered content and alerts in `calendarScript.js`, `homeScript.js`, `lessonsScript.js`, `staffPanel.js`, and `reports.js`.
 - `locales/en.json` / `locales/it.json` dictionaries covering navigation, shared modals, validation/error messages, and page-specific strings.
 
 **Calendar**
 - Weekly repeat option for prenotations: create the same prenotation across a date range, same day-of-week and time each week, in one submission.
 - Continuous multi-day notes: a single note can span a start date/time to an end date/time across multiple days instead of one record per day.
 - "All day" flag for notes: skips manual time entry and takes each selected day in full; all-day notes render in a dedicated row above the hourly grid instead of stretched across it.
+
+**Evaluations (Reports)**
+- New `/reports` page tracking student test marks, wired end-to-end to the Java backend's existing `Test` entity (previously unused - no route rendered it and nothing persisted).
+- Add/delete evaluations (`POST`/`DELETE /api/tests`) with a real student dropdown, a 0-10 mark with half-point steps, a date, and an optional description.
+- Per-student statistics: running average and an inline SVG progress chart (marks over time plus running-average line), filterable by date range and a student-name search bar.
+- "Reports" navigation link added to Dashboard, Calendar, Lessons, and Staff Panel.
+
+### Fixed
+- `TestRepository.findByTutorId`/`findByStudentId` threw a 500 error (`UnknownPathException`) instead of returning results, because Spring Data JPA couldn't disambiguate the property path once `Test` gained `tutorId`/`studentId` JSON helper getters. Renamed to `findByTutor_Id`/`findByStudent_Id` (explicit underscore), matching the convention `LessonRepository` already used.
+
+### Changed
+- `Test.mark` changed from `Integer` to `Double` (DB column migrated to `double precision`) to support half-point grades, matching the 0-10 scale the Evaluations UI expects. See [06_Database_Migrations.md](06_Database_Migrations.md) for the manual SQL migration.
 
 ### Planned
 - E2E testing with Playwright
