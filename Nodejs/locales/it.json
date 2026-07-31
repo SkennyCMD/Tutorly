@@ -211,5 +211,39 @@
       "accountBlocked": "Account bloccato. Contatta l'amministratore.",
       "serverError": "Errore durante l'accesso. Assicurati che il server Java sia in esecuzione."
     }
+  },
+  "reports": {
+    "heading": "Valutazioni",
+    "subtitle": "Monitora i voti e i progressi dei tuoi studenti nel tempo",
+    "navLabel": "Report",
+    "addEvaluation": "Aggiungi Valutazione",
+    "recentEvaluations": "Valutazioni Recenti",
+    "studentStatistics": "Statistiche Studente",
+    "searchStudents": "Cerca studenti...",
+    "from": "Da",
+    "to": "A",
+    "apply": "Applica",
+    "noEvaluationsFound": "Nessuna valutazione trovata per l'intervallo di date selezionato",
+    "markLabel": "Voto (0-10)",
+    "testDescriptionPlaceholder": "Descrizione del test...",
+    "add": "Aggiungi",
+    "testDetails": "Dettagli Test",
+    "testIdLabel": "ID Test",
+    "total": "{count} totali",
+    "noEvaluationsYet": "Nessuna valutazione ancora aggiunta",
+    "marksLegend": "Voti",
+    "runningAverageLegend": "Media mobile",
+    "clickPointForDetails": "Clicca su un punto per i dettagli",
+    "evaluationCount": "{count} valutazione",
+    "evaluationCountPlural": "{count} valutazioni",
+    "average": "Media",
+    "noDescriptionProvided": "Nessuna descrizione fornita.",
+    "confirmDeleteEvaluation": "Sei sicuro di voler eliminare questa valutazione?",
+    "errors": {
+      "deleteEvaluationFailed": "Eliminazione valutazione non riuscita: {error}",
+      "deleteEvaluationRetry": "Eliminazione valutazione non riuscita. Riprova.",
+      "addEvaluationFailed": "Aggiunta valutazione non riuscita: {error}",
+      "addEvaluationRetry": "Aggiunta valutazione non riuscita. Riprova."
+    }
   }
 }

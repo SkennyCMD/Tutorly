@@ -1,6 +1,7 @@
 package com.tutorly.app.backend_api.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -101,19 +102,20 @@ public class Test {
     
     /**
      * Test score or mark awarded to the student.
-     * 
+     *
      * Optional field - can be null for tests that haven't been graded yet.
-     * Typically represents a numeric score (e.g., 0-100, or other grading scale).
-     * 
+     * Supports half-point increments (e.g., 7.5, 8.5) to match the 0-10
+     * Italian school grading scale used by the Evaluations page.
+     *
      * Use cases:
      * - null: Test not yet graded or score not recorded
-     * - 0-100: Percentage score
-     * - Custom scales: As defined by the tutoring program
-     * 
+     * - 0-10: School grading scale (with half-point steps)
+     * - Custom scales: As defined by the tutoring program (DB check constraint allows 0-30)
+     *
      * Used for calculating averages, tracking progress, and generating reports.
      */
     @Column(name = "mark")
-    private Integer mark;
+    private Double mark;
     
     /**
      * The tutor who administered, proctored, or graded this test.
@@ -163,7 +165,7 @@ public class Test {
      * @param tutor The tutor who administered the test (required)
      * @param student The student who took the test (required)
      */
-    public Test(LocalDate day, String description, Integer mark, Tutor tutor, Student student) {
+    public Test(LocalDate day, String description, Double mark, Tutor tutor, Student student) {
         this.day = day;
         this.description = description;
         this.mark = mark;
@@ -234,16 +236,16 @@ public class Test {
      * 
      * @return The test score, or null if not yet graded
      */
-    public Integer getMark() {
+    public Double getMark() {
         return mark;
     }
-    
+
     /**
      * Sets the test score or mark.
-     * 
+     *
      * @param mark The test score (can be null for ungraded tests)
      */
-    public void setMark(Integer mark) {
+    public void setMark(Double mark) {
         this.mark = mark;
     }
     
@@ -281,5 +283,37 @@ public class Test {
      */
     public void setStudent(Student student) {
         this.student = student;
+    }
+
+
+    // JSON Serialization Helper Methods
+
+
+    /**
+     * Gets the student ID for JSON serialization.
+     *
+     * This helper method provides direct access to the student's ID without
+     * serializing the entire Student entity, avoiding circular references and
+     * reducing payload size.
+     *
+     * @return The student's ID, or null if student is not set
+     */
+    @JsonProperty("studentId")
+    public Long getStudentId() {
+        return student != null ? student.getId() : null;
+    }
+
+    /**
+     * Gets the tutor ID for JSON serialization.
+     *
+     * This helper method provides direct access to the tutor's ID without
+     * serializing the entire Tutor entity, avoiding circular references and
+     * reducing payload size.
+     *
+     * @return The tutor's ID, or null if tutor is not set
+     */
+    @JsonProperty("tutorId")
+    public Long getTutorId() {
+        return tutor != null ? tutor.getId() : null;
     }
 }

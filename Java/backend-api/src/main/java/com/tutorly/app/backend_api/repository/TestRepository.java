@@ -23,15 +23,15 @@ public interface TestRepository extends JpaRepository<Test, Long> {
      * @param tutorId The ID of the tutor who administered the tests
      * @return List of tests administered by the specified tutor
      */
-    List<Test> findByTutorId(Long tutorId);
-    
+    List<Test> findByTutor_Id(Long tutorId);
+
     /**
      * Find all tests taken by a specific student
-     * 
+     *
      * @param studentId The ID of the student
      * @return List of tests taken by the specified student
      */
-    List<Test> findByStudentId(Long studentId);
+    List<Test> findByStudent_Id(Long studentId);
     
     /**
      * Find tests within a specific date range
@@ -55,7 +55,7 @@ public interface TestRepository extends JpaRepository<Test, Long> {
      * @param studentId The ID of the student
      * @return List of tests between the specified tutor and student
      */
-    List<Test> findByTutorIdAndStudentId(Long tutorId, Long studentId);
+    List<Test> findByTutor_IdAndStudent_Id(Long tutorId, Long studentId);
     
     /**
      * Find tests with a minimum mark/score
@@ -66,5 +66,5 @@ public interface TestRepository extends JpaRepository<Test, Long> {
      * @param mark The minimum mark threshold
      * @return List of tests with mark >= specified value
      */
-    List<Test> findByMarkGreaterThanEqual(Integer mark);
+    List<Test> findByMarkGreaterThanEqual(Double mark);
 }

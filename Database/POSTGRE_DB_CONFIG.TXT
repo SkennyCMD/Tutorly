@@ -110,7 +110,7 @@ CREATE TABLE test (
 	id SERIAL PRIMARY KEY,
 	day DATE NOT NULL,
 	description TEXT,
-	mark INTEGER CHECK (mark BETWEEN 0 AND 30),
+	mark FLOAT CHECK (mark BETWEEN 0 AND 30),
 	id_tutor INTEGER NOT NULL,
 	id_student INTEGER NOT NULL,
 	FOREIGN KEY (id_tutor) REFERENCES tutor(id)

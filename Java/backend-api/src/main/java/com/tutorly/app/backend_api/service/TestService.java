@@ -48,7 +48,7 @@ public class TestService {
      * @return List of tests administered by the specified tutor
      */
     public List<Test> getTestsByTutor(Long tutorId) {
-        return testRepository.findByTutorId(tutorId);
+        return testRepository.findByTutor_Id(tutorId);
     }
     
     /**
@@ -58,7 +58,7 @@ public class TestService {
      * @return List of tests taken by the specified student
      */
     public List<Test> getTestsByStudent(Long studentId) {
-        return testRepository.findByStudentId(studentId);
+        return testRepository.findByStudent_Id(studentId);
     }
     
     /**
@@ -72,7 +72,7 @@ public class TestService {
      * @return List of tests between the specified tutor and student
      */
     public List<Test> getTestsByTutorAndStudent(Long tutorId, Long studentId) {
-        return testRepository.findByTutorIdAndStudentId(tutorId, studentId);
+        return testRepository.findByTutor_IdAndStudent_Id(tutorId, studentId);
     }
     
     /**
@@ -97,7 +97,7 @@ public class TestService {
      * @param mark The minimum mark threshold
      * @return List of tests with mark >= specified value
      */
-    public List<Test> getTestsByMinMark(Integer mark) {
+    public List<Test> getTestsByMinMark(Double mark) {
         return testRepository.findByMarkGreaterThanEqual(mark);
     }
     

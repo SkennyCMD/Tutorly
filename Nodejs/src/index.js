@@ -48,7 +48,8 @@ const {
     fetchAllPrenotations,
     fetchPrenotationsByTutor,
     fetchStudentData,
-    fetchAllStudents
+    fetchAllStudents,
+    fetchTestsByTutor
 } = require('../server_utilities/javaApiService');
 
 // Configuration constants
@@ -728,6 +729,53 @@ app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
     }
 });
 
+/**
+ * Evaluations page
+ * GET /reports - Display student evaluations and marks tracking
+ */
+app.get('/reports', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const tutorId = req.session.userId;
+
+        const [tutorData, students, tests] = await Promise.all([
+            fetchTutorData(tutorId),
+            fetchAllStudents(),
+            fetchTestsByTutor(tutorId)
+        ]);
+
+        // Enrich tests with student data for display (Test only stores studentId)
+        const evaluationsWithStudents = await Promise.all(tests.map(async test => {
+            const studentId = test.studentId;
+            const student = studentId ? await fetchStudentData(studentId) : null;
+
+            return {
+                id: test.id,
+                studentId,
+                firstName: student?.name || 'Unknown',
+                lastName: student?.surname || '',
+                mark: test.mark,
+                day: test.day,
+                description: test.description || ''
+            };
+        }));
+
+        res.render('reports', {
+            userId: req.session.userId,
+            user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
+            students: students || [],
+            evaluations: evaluationsWithStudents
+        });
+    } catch (error) {
+        logError('Error accessing reports page', req, { error: error.message });
+        res.render('reports', {
+            userId: req.session.userId,
+            user: { username: req.session.username, role: req.session.role },
+            students: [],
+            evaluations: []
+        });
+    }
+});
+
 // ! REPORT GENERATION API ROUTES (STAFF only) !
 
 /**
@@ -1174,6 +1222,117 @@ app.delete('/api/lessons/:id', tutorSession, isAuthenticated, async (req, res) =
     } catch (error) {
         logError('Error deleting lesson', req, { id: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to delete lesson' });
+    }
+});
+
+// !!! TESTS (EVALUATIONS) API ROUTES !!!
+
+/**
+ * Create a new test/evaluation
+ * POST /api/tests
+ * Body: { studentId, mark, date, description }
+ * tutorId is always the logged-in tutor - there's no tutor-assignment field on this form.
+ */
+app.post('/api/tests', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { studentId, mark, date, description } = req.body;
+        const tutorId = req.session.userId;
+
+        if (!studentId || !date) {
+            return res.status(400).json({ error: 'Student and date are required' });
+        }
+
+        const testData = {
+            day: date,
+            description: description || '',
+            mark: mark !== undefined && mark !== null && mark !== '' ? parseFloat(mark) : null,
+            tutorId: parseInt(tutorId),
+            studentId: parseInt(studentId)
+        };
+
+        logInfo('Creating new test/evaluation', req, { studentId, tutorId });
+
+        const postData = JSON.stringify(testData);
+
+        const options = createJavaApiRequestOptions('/api/tests', 'POST', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    logSuccess('Test created successfully', req, { studentId, tutorId });
+                    try {
+                        const test = JSON.parse(data);
+                        res.status(201).json(test);
+                    } catch (e) {
+                        res.status(201).json({ success: true, message: 'Test created' });
+                    }
+                } else {
+                    logError(`Error creating test, status: ${httpsRes.statusCode}`, req, { response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to create test' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for test creation', req, { error: error.message });
+            res.status(500).json({ error: 'Failed to create test' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+
+    } catch (error) {
+        logError('Error creating test', req, { error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to create test' });
+    }
+});
+
+/**
+ * Delete a test/evaluation
+ * DELETE /api/tests/:id
+ */
+app.delete('/api/tests/:id', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        logInfo('Deleting test', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/tests/${id}`, 'DELETE');
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
+                    logSuccess('Test deleted successfully', req, { id });
+                    res.json({ success: true, message: 'Test deleted' });
+                } else {
+                    logError(`Error deleting test, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete test' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for test deletion', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to delete test' });
+        });
+
+        httpsReq.end();
+
+    } catch (error) {
+        logError('Error deleting test', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to delete test' });
     }
 });
 

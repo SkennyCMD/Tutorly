@@ -345,6 +345,31 @@ function fetchAllStudents() {
 }
 
 
+// Test (Evaluation) Operations
+
+
+/**
+ * Fetch all tests/evaluations administered by a specific tutor.
+ *
+ * Returns empty array if no tests found or on error.
+ *
+ * @param {number} tutorId - Unique tutor ID
+ * @returns {Promise<Array>} Array of test objects for this tutor
+ *
+ * @example
+ * const tests = await fetchTestsByTutor(5);
+ * // Returns: [{ id: 1, tutorId: 5, studentId: 10, day: '...', mark: 7.5, ... }]
+ */
+function fetchTestsByTutor(tutorId) {
+    return fetchFromJavaAPI(`/api/tests/tutor/${tutorId}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching tests:', error);
+            return [];
+        });
+}
+
+
 // Module Exports
 
 
@@ -360,7 +385,8 @@ function fetchAllStudents() {
  * - Lessons: fetchLessonsByTutor, fetchAllLessons
  * - Prenotations: fetchAllPrenotations, fetchPrenotationsByTutor
  * - Calendar Notes: fetchCalendarNotesByTutor, fetchCalendarNotesByDateRange
- * 
+ * - Tests (Evaluations): fetchTestsByTutor
+ *
  * Usage Pattern:
  * All functions return Promises that resolve to data or reject with errors.
  * List functions return empty arrays on error for safe iteration.
@@ -376,5 +402,6 @@ module.exports = {
     fetchAllPrenotations,
     fetchPrenotationsByTutor,
     fetchStudentData,
-    fetchAllStudents
+    fetchAllStudents,
+    fetchTestsByTutor
 };
