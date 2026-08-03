@@ -55,6 +55,11 @@ public class TestCreateDTO {
     private Double mark;
 
     /**
+     * Subject/topic the test covers (e.g., "Matematica", "Inglese"). Optional.
+     */
+    private String subject;
+
+    /**
      * ID of the tutor who administered this test.
      */
     private Long tutorId;
@@ -81,13 +86,15 @@ public class TestCreateDTO {
      * @param day Date the test was administered
      * @param description Test content description or subject
      * @param mark Test score or grade (can be null for ungraded tests)
+     * @param subject Subject/topic the test covers (optional)
      * @param tutorId ID of the tutor who administered the test
      * @param studentId ID of the student who took the test
      */
-    public TestCreateDTO(LocalDate day, String description, Double mark, Long tutorId, Long studentId) {
+    public TestCreateDTO(LocalDate day, String description, Double mark, String subject, Long tutorId, Long studentId) {
         this.day = day;
         this.description = description;
         this.mark = mark;
+        this.subject = subject;
         this.tutorId = tutorId;
         this.studentId = studentId;
     }
@@ -148,6 +155,24 @@ public class TestCreateDTO {
      */
     public void setMark(Double mark) {
         this.mark = mark;
+    }
+
+    /**
+     * Gets the subject/topic the test covers.
+     *
+     * @return The subject, or null if not provided
+     */
+    public String getSubject() {
+        return subject;
+    }
+
+    /**
+     * Sets the subject/topic the test covers.
+     *
+     * @param subject The subject name
+     */
+    public void setSubject(String subject) {
+        this.subject = subject;
     }
 
     /**

@@ -5,7 +5,7 @@ This file explain how to migrate the database.
 ---
 
 **Document**: 06_Database_Migrations.md  
-**Last Updated**: July 31, 2026  
+**Last Updated**: August 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -107,6 +107,16 @@ ALTER TABLE test ALTER COLUMN mark TYPE DOUBLE PRECISION USING mark::double prec
 
 ---
 
+### Automatic: `test.subject` column added
+
+**No manual action needed** - unlike the `mark` type change above, this was picked up automatically by `spring.jpa.hibernate.ddl-auto=update` on the next Java backend restart after `Test.java` gained a `subject` field. Hibernate's schema update *can* add missing columns (unlike altering an existing column's type), so no SQL had to be run by hand.
+
+**What changed:** `Test.java` gained a nullable `subject` field (`String`, e.g. "Matematica"); `TestCreateDTO` and `TestController` updated to pass it through. See [01_Java_Backend_API.md - Tests](01_Java_Backend_API.md#tests). The list of subjects offered in the Evaluations page's "Add Evaluation" dropdown lives in `Nodejs/config/subjects.json` (not the database) - `subject` itself has no check constraint or enum, it's a free-text column.
+
+**`Database/init.sql`** was updated to match (added the `subject VARCHAR(255)` column and updated the seed `test` rows with 0-10-scale marks and real subject names) - relevant only if you're bootstrapping a fresh database from that script rather than letting Hibernate create the schema.
+
+---
+
 ## Creating New Migrations
 
 When creating a new migration script:
@@ -148,4 +158,4 @@ migrate();
 
 ---
 
-**Last Updated**: July 31, 2026  
+**Last Updated**: August 3, 2026  

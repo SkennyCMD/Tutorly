@@ -225,6 +225,8 @@
     "apply": "Apply",
     "noEvaluationsFound": "No evaluations found for the selected date range",
     "markLabel": "Mark (0-10)",
+    "subjectLabel": "Subject",
+    "selectSubjectOption": "-- Select a subject --",
     "testDescriptionPlaceholder": "Description of the test...",
     "add": "Add",
     "testDetails": "Test Details",

@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: July 31, 2026  
+**Last Updated**: August 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -521,13 +521,17 @@ Tutorly/
 │   │   ├── logger.js               # Logging
 │   │   ├── adminLogger.js          # Admin logging
 │   │   ├── excel.js                # Excel reports
+│   │   ├── i18n.js                 # Language detection/translation
 │   │   └── config.js               # Configuration
+│   ├── locales/                    # i18n dictionaries (en.json, it.json)
+│   ├── config/                     # Static reference data (e.g. subjects.json)
 │   ├── views/                      # EJS templates
 │   │   ├── login.ejs
 │   │   ├── adminLogin.ejs
 │   │   ├── home.ejs
 │   │   ├── lessons.ejs
 │   │   ├── calendar.ejs
+│   │   ├── reports.ejs
 │   │   ├── admin.ejs
 │   │   └── staffPanel.ejs
 │   ├── public/                     # Static files
@@ -537,7 +541,7 @@ Tutorly/
 │   └── package.json                # npm dependencies
 │
 ├── Database/                       # Database scripts
-│   └── POSTGRE_DB_CONFIG.TXT
+│   └── init.sql                    # Schema + seed data
 │
 └── docs/                           # Centralized documentation
     ├── 00_Project_Overview.md      # This file

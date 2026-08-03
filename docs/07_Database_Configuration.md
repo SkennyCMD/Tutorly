@@ -5,7 +5,7 @@ This document provides comprehensive information about the Tutorly database stru
 ---
 
 **Document**: 07_Database_Configuration.md  
-**Last Updated**: February 25, 2026  
+**Last Updated**: August 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -170,13 +170,16 @@ The following diagram illustrates the complete database structure with all entit
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique test ID |
-| `description` | TEXT | | Description of the test content or subject |
-| `mark` | INTEGER | | Test score or grade received |
+| `description` | TEXT | | Description of the test content |
+| `mark` | DOUBLE PRECISION | CHECK (0-30) | Test score/grade (0-10 scale with half-points, e.g. 7.5, used by the app; column allows up to 30) |
+| `subject` | VARCHAR(255) | | Subject/topic the test covers (e.g. "Matematica"), free text |
 | `day` | DATE | NOT NULL | Test date |
-| `tutor_id` | BIGINT | FK → Tutor(id), NOT NULL | Tutor who administered the test |
-| `student_id` | BIGINT | FK → Student(id), NOT NULL | Student who took the test |
+| `id_tutor` | BIGINT | FK → Tutor(id), NOT NULL | Tutor who administered the test |
+| `id_student` | BIGINT | FK → Student(id), NOT NULL | Student who took the test |
 
 **Purpose**: Track student assessments and performance.
+
+> **Note:** this table's actual foreign-key columns are named `id_tutor`/`id_student` (prefix), not `tutor_id`/`student_id` (suffix) as this doc's other table sections show - see [Database/init.sql](../Database/init.sql) for the authoritative schema. `mark`'s type was `INTEGER` until it was migrated to `DOUBLE PRECISION` to support half-point grades (see [06_Database_Migrations.md](06_Database_Migrations.md)); `subject` was added in the same release.
 
 ---
 
@@ -838,4 +841,4 @@ ORDER BY pg_total_relation_size(tablename::regclass) DESC;
 
 ---
 
-**Last Updated**: February 25, 2026
+**Last Updated**: August 3, 2026

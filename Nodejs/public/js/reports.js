@@ -7,12 +7,17 @@ let evaluations = (window.initialEvaluations || []).map(ev => ({
     student: `${ev.firstName} ${ev.lastName}`.trim(),
     mark: ev.mark,
     date: ev.day,
+    subject: ev.subject || '',
     description: ev.description || '',
     testId: `TST-${String(ev.id).padStart(3, '0')}`
 }));
 
 // All students available for the "Add Evaluation" student dropdown
 const allStudents = window.allStudents || [];
+
+// Fixed reference list of subjects for the "Add Evaluation" subject dropdown
+// (window.allSubjects, see Nodejs/config/subjects.json) - blank entries filtered out
+const allSubjects = (window.allSubjects || []).filter(Boolean);
 
 // Search term for filtering evaluations by student name (desktop/mobile search bars)
 let searchTerm = '';
@@ -53,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('toDate').value = formatDateForInput(new Date());
 
     populateStudentDropdown();
+    populateSubjectDropdown();
     renderRecent();
     renderReports();
     setupEventListeners();
@@ -67,6 +73,17 @@ function populateStudentDropdown() {
 
     select.innerHTML = `<option value="">${t('common.selectAStudentOption')}</option>` +
         allStudents.map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
+}
+
+/**
+ * Populate the "Add Evaluation" subject dropdown from the fixed subjects list.
+ */
+function populateSubjectDropdown() {
+    const select = document.getElementById('evalSubject');
+    if (!select) return;
+
+    select.innerHTML = `<option value="">${t('reports.selectSubjectOption')}</option>` +
+        allSubjects.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
 function renderRecent() {
@@ -91,7 +108,7 @@ function renderRecent() {
         </div>
         <div class="min-w-0 flex-1">
         <p class="font-medium text-foreground truncate">${ev.student}</p>
-        <p class="text-xs text-muted-foreground truncate">${ev.testId} &middot; ${formatDate(ev.date)}</p>
+        <p class="text-xs text-muted-foreground truncate">${ev.testId}${ev.subject ? ' &middot; ' + ev.subject : ''} &middot; ${formatDate(ev.date)}</p>
         </div>
     </button>
     `).join('');
@@ -199,7 +216,7 @@ function renderChart(evs) {
     let xLabels = '';
     evs.forEach((e, i) => {
     const x = xFor(i), y = yFor(e.mark);
-    dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" fill="${markColor(e.mark)}" stroke="#141414" stroke-width="2" onclick="showTestInfo(${e.id})"><title>${e.testId}: ${e.mark}</title></circle>`;
+    dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" fill="${markColor(e.mark)}" stroke="#141414" stroke-width="2" onclick="showTestInfo(${e.id})"><title>${e.testId}${e.subject ? ' - ' + e.subject : ''}: ${e.mark}</title></circle>`;
     const d = new Date(e.date + 'T00:00:00');
     xLabels += `<text x="${x}" y="${H - padB + 20}" text-anchor="middle" fill="#a1a1aa" font-size="10">${d.getDate()} ${monthNames[d.getMonth()]}</text>`;
     });
@@ -241,6 +258,7 @@ function showTestInfo(id) {
     document.getElementById('infoTestId').textContent = ev.testId;
     document.getElementById('infoDate').textContent = formatDate(ev.date);
     document.getElementById('infoStudent').textContent = ev.student;
+    document.getElementById('infoSubject').textContent = ev.subject || '—';
     document.getElementById('infoDescription').textContent = ev.description || t('reports.noDescriptionProvided');
 
     document.getElementById('testInfoModal').classList.add('open');
@@ -335,6 +353,7 @@ async function handleAddEvaluationSubmit(e) {
     e.preventDefault();
 
     const studentId = document.getElementById('evalStudent').value;
+    const subject = document.getElementById('evalSubject').value;
     const mark = document.getElementById('evalMark').value;
     const date = document.getElementById('evalDate').value;
     const description = document.getElementById('evalDescription').value.trim();
@@ -351,7 +370,7 @@ async function handleAddEvaluationSubmit(e) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ studentId, mark, date, description })
+            body: JSON.stringify({ studentId, subject, mark, date, description })
         });
 
         if (response.ok) {

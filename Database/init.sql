@@ -99,6 +99,7 @@ CREATE TABLE test (
 	day DATE NOT NULL,
 	description TEXT,
 	mark FLOAT CHECK (mark BETWEEN 0 AND 30),
+	subject VARCHAR(255),
 	id_tutor INTEGER NOT NULL,
 	id_student INTEGER NOT NULL,
 	FOREIGN KEY (id_tutor) REFERENCES tutor(id)
@@ -191,14 +192,14 @@ INSERT INTO lesson (description, start_time, end_time, id_tutor, id_student) VAL
 ('Art','2025-03-09 11:00','2025-03-09 12:00',9,9),
 ('Music','2025-03-10 09:00','2025-03-10 10:00',10,10);
 
-INSERT INTO test (day, description, mark, id_tutor, id_student) VALUES
-('2025-04-01','Math test',28,1,1),
-('2025-04-02','Physics test',25,2,2),
-('2025-04-03','Chemistry test',30,3,3),
-('2025-04-04','Biology test',22,4,4),
-('2025-04-05','History test',27,5,5),
-('2025-04-06','Geography test',24,6,6),
-('2025-04-07','English test',29,7,7),
-('2025-04-08','Italian test',26,8,8),
-('2025-04-09','Art test',30,9,9),
-('2025-04-10','Music test',23,10,10);
+INSERT INTO test (day, description, mark, subject, id_tutor, id_student) VALUES
+('2025-04-01','Algebra review',8.5,'Matematica',1,1),
+('2025-04-02','Mechanics quiz',7,'Fisica',2,2),
+('2025-04-03','Organic chemistry',9,'Chimica',3,3),
+('2025-04-04','Cell biology',6.5,'Scienze',4,4),
+('2025-04-05','World War II',8,'Storia',5,5),
+('2025-04-06','European capitals',7.5,'Geografia',6,6),
+('2025-04-07','Grammar test',9.5,'Inglese',7,7),
+('2025-04-08','Essay writing',8,'Italiano',8,8),
+('2025-04-09','Renaissance art',7,'Arte',9,9),
+('2025-04-10','Music theory',9,'Musica',10,10);

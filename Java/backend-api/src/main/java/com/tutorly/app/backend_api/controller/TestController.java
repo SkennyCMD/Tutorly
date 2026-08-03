@@ -167,6 +167,7 @@ public class TestController {
             test.setDay(testDTO.getDay());
             test.setDescription(testDTO.getDescription());
             test.setMark(testDTO.getMark());
+            test.setSubject(testDTO.getSubject());
             test.setTutor(tutorOpt.get());
             test.setStudent(studentOpt.get());
 
@@ -214,6 +215,7 @@ public class TestController {
         test.setDay(dto.getDay());
         test.setDescription(dto.getDescription());
         test.setMark(dto.getMark());
+        test.setSubject(dto.getSubject());
         test.setTutor(tutor.get());
         test.setStudent(student.get());
 

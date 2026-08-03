@@ -24,15 +24,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Evaluations (Reports)**
 - New `/reports` page tracking student test marks, wired end-to-end to the Java backend's existing `Test` entity (previously unused - no route rendered it and nothing persisted).
-- Add/delete evaluations (`POST`/`DELETE /api/tests`) with a real student dropdown, a 0-10 mark with half-point steps, a date, and an optional description.
+- Add/delete evaluations (`POST`/`DELETE /api/tests`) with a real student dropdown, a subject dropdown, a 0-10 mark with half-point steps, a date, and an optional description.
 - Per-student statistics: running average and an inline SVG progress chart (marks over time plus running-average line), filterable by date range and a student-name search bar.
 - "Reports" navigation link added to Dashboard, Calendar, Lessons, and Staff Panel.
+- `Test.subject` field (free text) plus `Nodejs/config/subjects.json`, a fixed, non-translated reference list of subject names used only to populate the "Add Evaluation" subject dropdown.
 
 ### Fixed
 - `TestRepository.findByTutorId`/`findByStudentId` threw a 500 error (`UnknownPathException`) instead of returning results, because Spring Data JPA couldn't disambiguate the property path once `Test` gained `tutorId`/`studentId` JSON helper getters. Renamed to `findByTutor_Id`/`findByStudent_Id` (explicit underscore), matching the convention `LessonRepository` already used.
 
 ### Changed
 - `Test.mark` changed from `Integer` to `Double` (DB column migrated to `double precision`) to support half-point grades, matching the 0-10 scale the Evaluations UI expects. See [06_Database_Migrations.md](06_Database_Migrations.md) for the manual SQL migration.
+- `Database/init.sql` updated: `test` table gains a `subject` column, and its seed data now uses 0-10-scale marks with real subject names (previously an unrelated 0-30 scale with no subject).
+
+### Removed
+- `Database/POSTGRE_DB_CONFIG.TXT`: redundant near-duplicate of `Database/init.sql`'s schema (with plain-text passwords and no longer up to date).
 
 ### Planned
 - E2E testing with Playwright

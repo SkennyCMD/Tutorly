@@ -225,6 +225,8 @@
     "apply": "Applica",
     "noEvaluationsFound": "Nessuna valutazione trovata per l'intervallo di date selezionato",
     "markLabel": "Voto (0-10)",
+    "subjectLabel": "Materia",
+    "selectSubjectOption": "-- Seleziona una materia --",
     "testDescriptionPlaceholder": "Descrizione del test...",
     "add": "Aggiungi",
     "testDetails": "Dettagli Test",

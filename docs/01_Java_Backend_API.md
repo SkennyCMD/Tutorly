@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: July 31, 2026  
+**Last Updated**: August 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -241,6 +241,8 @@ This section details the internal structure of the Java backend component:
 │ -tests          │
 └─────────────────┘
 ```
+
+> **Note:** The `Test` box above doesn't show the `subject` field (a free-text subject/topic name, e.g. "Matematica") added after this diagram was drawn - adding a row would require re-aligning every neighboring box's border to match. See [Tests](#tests) below for the full, up-to-date field list.
 
 #### 1. **Admin → Tutor** (Many-to-Many with associative entity)
 - An admin can create multiple tutors
@@ -1024,12 +1026,13 @@ Also known as **Evaluations** in the Node.js frontend (`/reports` page) — same
   "day": "2026-02-15",
   "description": "Mathematics - Algebra quiz",
   "mark": 8.5,
+  "subject": "Matematica",
   "tutorId": 5,
   "studentId": 10
 }
 ```
 
-`mark` is a `Double` (0-10 scale, half-point increments like 7.5/8.5 are valid) and is optional - `null` represents an ungraded test. `day` is a plain date (`LocalDate`), not a timestamp.
+`mark` is a `Double` (0-10 scale, half-point increments like 7.5/8.5 are valid) and is optional - `null` represents an ungraded test. `day` is a plain date (`LocalDate`), not a timestamp. `subject` is a free-text `String`, optional - the entity/DB place no constraint on it, but the Node.js frontend restricts the "Add Evaluation" dropdown to a fixed list defined in `Nodejs/config/subjects.json`.
 
 > **Note:** `findByTutorId`/`findByStudentId` in `TestRepository` had to be renamed to `findByTutor_Id`/`findByStudent_Id` (explicit underscore) to disambiguate the property path once `Test` gained `tutorId`/`studentId` JSON helper getters - without the underscore, Spring Data JPA tried to resolve `tutorId` as a literal attribute instead of traversing the `tutor.id` association, throwing `UnknownPathException` at runtime. `LessonRepository` already used this convention; `TestRepository` didn't, which is why this call path was broken until fixed.
 

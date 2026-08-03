@@ -52,6 +52,9 @@ const {
     fetchTestsByTutor
 } = require('../server_utilities/javaApiService');
 
+// Fixed reference list of subjects for the Evaluations ("Add Evaluation") form
+const subjectsList = require('../config/subjects.json');
+
 // Configuration constants
 const { 
     JAVA_API_URL, 
@@ -755,6 +758,7 @@ app.get('/reports', tutorSession, isAuthenticated, async (req, res) => {
                 lastName: student?.surname || '',
                 mark: test.mark,
                 day: test.day,
+                subject: test.subject || '',
                 description: test.description || ''
             };
         }));
@@ -763,7 +767,8 @@ app.get('/reports', tutorSession, isAuthenticated, async (req, res) => {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
             students: students || [],
-            evaluations: evaluationsWithStudents
+            evaluations: evaluationsWithStudents,
+            subjects: subjectsList
         });
     } catch (error) {
         logError('Error accessing reports page', req, { error: error.message });
@@ -771,7 +776,8 @@ app.get('/reports', tutorSession, isAuthenticated, async (req, res) => {
             userId: req.session.userId,
             user: { username: req.session.username, role: req.session.role },
             students: [],
-            evaluations: []
+            evaluations: [],
+            subjects: subjectsList
         });
     }
 });
@@ -1230,12 +1236,12 @@ app.delete('/api/lessons/:id', tutorSession, isAuthenticated, async (req, res) =
 /**
  * Create a new test/evaluation
  * POST /api/tests
- * Body: { studentId, mark, date, description }
+ * Body: { studentId, mark, date, subject, description }
  * tutorId is always the logged-in tutor - there's no tutor-assignment field on this form.
  */
 app.post('/api/tests', tutorSession, isAuthenticated, async (req, res) => {
     try {
-        const { studentId, mark, date, description } = req.body;
+        const { studentId, mark, date, subject, description } = req.body;
         const tutorId = req.session.userId;
 
         if (!studentId || !date) {
@@ -1246,6 +1252,7 @@ app.post('/api/tests', tutorSession, isAuthenticated, async (req, res) => {
             day: date,
             description: description || '',
             mark: mark !== undefined && mark !== null && mark !== '' ? parseFloat(mark) : null,
+            subject: subject || null,
             tutorId: parseInt(tutorId),
             studentId: parseInt(studentId)
         };

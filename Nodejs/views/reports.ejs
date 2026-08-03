@@ -240,6 +240,13 @@
           </select>
         </div>
 
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('reports.subjectLabel') %></label>
+          <select id="evalSubject" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value=""><%= t('reports.selectSubjectOption') %></option>
+          </select>
+        </div>
+
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('reports.markLabel') %></label>
@@ -295,6 +302,10 @@
             <span class="text-sm text-muted-foreground"><%= t('home.student') %></span>
             <span id="infoStudent" class="text-sm font-medium text-foreground"></span>
           </div>
+          <div class="flex items-center justify-between py-2 border-b border-border">
+            <span class="text-sm text-muted-foreground"><%= t('reports.subjectLabel') %></span>
+            <span id="infoSubject" class="text-sm font-medium text-foreground"></span>
+          </div>
           <div class="py-2">
             <span class="text-sm text-muted-foreground block mb-1.5"><%= t('common.description') %></span>
             <p id="infoDescription" class="text-sm text-foreground"></p>
@@ -311,6 +322,7 @@
       // Pass server-rendered data to JavaScript for client-side rendering
       window.initialEvaluations = <%- JSON.stringify(evaluations) %>;
       window.allStudents = <%- JSON.stringify(students) %>;
+      window.allSubjects = <%- JSON.stringify(subjects) %>;
       window.translations = <%- JSON.stringify(translations) %>;
       window.lang = <%- JSON.stringify(lang) %>;
     </script>

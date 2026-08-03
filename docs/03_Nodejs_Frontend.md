@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: July 31, 2026  
+**Last Updated**: August 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -243,6 +243,9 @@ Nodejs/
 ├── locales/                        # i18n dictionaries
 │   ├── en.json                     # English translations
 │   └── it.json                     # Italian translations
+│
+├── config/                         # Static reference data
+│   └── subjects.json               # Fixed subject list (Evaluations page dropdown)
 │
 ├── views/                          # EJS templates (server-rendered HTML)
 │   ├── login.ejs                   # Tutor login page
@@ -1266,12 +1269,16 @@ Calendar notes are a single record spanning a Start Date/Time to an End Date/Tim
 
 The `/reports` page (`views/reports.ejs` + `public/js/reports.js`) tracks student test marks, backed by the Java backend's `Test` entity (see [01_Java_Backend_API.md - Tests](01_Java_Backend_API.md#tests)).
 
-- **Add Evaluation**: a modal with a real student dropdown (populated from `window.allStudents`, injected server-side), a 0-10 mark (half-point steps), a date, and an optional description. Submits via `POST /api/tests`; the tutor is always the logged-in session user - there's no tutor-assignment field. On success the page reloads so the newly-created record (with its server-enriched student name) comes from the server, same as every other creation flow in the app.
-- **Recent Evaluations**: a scrollable sidebar list of all the tutor's evaluations, sorted most-recent-first, filtered live by the search bar.
-- **Student Statistics**: per-student cards, each with a running average and an inline SVG line chart (marks over time plus a dashed running-average line), built by hand in `renderChart()` - no charting library. Filtered by the From/To date range and the search bar (student name).
-- **Test Details / Delete**: clicking a mark (in the sidebar list or on a chart point) opens a details popup with a Delete button (`DELETE /api/tests/:id`, confirms first, then reloads).
+- **Add Evaluation**: a modal with a real student dropdown (populated from `window.allStudents`, injected server-side), a subject dropdown (populated from `window.allSubjects`, see [Subjects Reference List](#subjects-reference-list) below), a 0-10 mark (half-point steps), a date, and an optional description. Submits via `POST /api/tests`; the tutor is always the logged-in session user - there's no tutor-assignment field. On success the page reloads so the newly-created record (with its server-enriched student name) comes from the server, same as every other creation flow in the app.
+- **Recent Evaluations**: a scrollable sidebar list of all the tutor's evaluations, sorted most-recent-first, filtered live by the search bar, showing the subject (if set) alongside the test ID and date.
+- **Student Statistics**: per-student cards, each with a running average and an inline SVG line chart (marks over time plus a dashed running-average line), built by hand in `renderChart()` - no charting library. Filtered by the From/To date range and the search bar (student name). Each chart point's tooltip includes the subject when set.
+- **Test Details / Delete**: clicking a mark (in the sidebar list or on a chart point) opens a details popup showing the subject alongside date/student/description, with a Delete button (`DELETE /api/tests/:id`, confirms first, then reloads).
 - **Default date range**: From defaults to the most recent September 1st that's already occurred (start of the current school year), To defaults to today - see `getLastSeptemberFirst()` in `reports.js`.
 - There's no backend `testId`/test-code field - the `TST-{id}` shown in the UI is synthesized client-side from the real database `id` purely for display.
+
+### Subjects Reference List
+
+`Nodejs/config/subjects.json` is a flat JSON array of subject names (e.g. `"Matematica"`, `"Inglese"`) used only to populate the "Add Evaluation" subject dropdown - it is **not** translated (single fixed list regardless of UI language) and has no server-side validation: `Test.subject` in the Java entity is a plain unconstrained `String`, so the list is a UI convenience, not an enum. Edit the JSON file directly to add/remove subjects; `require()` caches it in memory, so the Node.js server needs a restart to pick up changes (no Java/DB change needed).
 
 ---
 

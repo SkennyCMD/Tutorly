@@ -39,7 +39,8 @@ import java.time.LocalDate;
  * Test test = new Test(
  *     LocalDate.of(2026, 2, 16),
  *     "Mathematics Final Exam - Algebra and Geometry",
- *     85,  // score out of 100
+ *     8.5,  // score, 0-10 scale
+ *     "Matematica",
  *     tutor,
  *     student
  * );
@@ -116,7 +117,18 @@ public class Test {
      */
     @Column(name = "mark")
     private Double mark;
-    
+
+    /**
+     * Subject/topic the test covers (e.g., "Matematica", "Inglese").
+     *
+     * Optional field - can be null. Free text on the entity/DB side; the
+     * Node.js frontend restricts input to a fixed list of subjects defined
+     * in `Nodejs/config/subjects.json`, but this column itself has no
+     * enum/check constraint.
+     */
+    @Column(name = "subject")
+    private String subject;
+
     /**
      * The tutor who administered, proctored, or graded this test.
      * 
@@ -158,17 +170,19 @@ public class Test {
     
     /**
      * Parameterized constructor to create a new test with all fields.
-     * 
+     *
      * @param day Date when the test was administered (required)
      * @param description Test content description or subject (optional)
      * @param mark Test score or grade (optional, can be null for ungraded tests)
+     * @param subject Subject/topic the test covers (optional)
      * @param tutor The tutor who administered the test (required)
      * @param student The student who took the test (required)
      */
-    public Test(LocalDate day, String description, Double mark, Tutor tutor, Student student) {
+    public Test(LocalDate day, String description, Double mark, String subject, Tutor tutor, Student student) {
         this.day = day;
         this.description = description;
         this.mark = mark;
+        this.subject = subject;
         this.tutor = tutor;
         this.student = student;
     }
@@ -248,7 +262,25 @@ public class Test {
     public void setMark(Double mark) {
         this.mark = mark;
     }
-    
+
+    /**
+     * Gets the subject/topic the test covers.
+     *
+     * @return The subject, or null if not provided
+     */
+    public String getSubject() {
+        return subject;
+    }
+
+    /**
+     * Sets the subject/topic the test covers.
+     *
+     * @param subject The subject name
+     */
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
     /**
      * Gets the tutor who administered this test.
      * 
