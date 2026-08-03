@@ -236,6 +236,28 @@ function fetchLessonsByTutor(tutorId) {
 }
 
 /**
+ * Fetch all lessons a specific tutor has held with a specific student.
+ *
+ * Returns empty array if no lessons found or on error.
+ *
+ * @param {number} tutorId - Unique tutor ID
+ * @param {number} studentId - Unique student ID
+ * @returns {Promise<Array>} Array of lesson objects for this tutor/student pair
+ *
+ * @example
+ * const lessons = await fetchLessonsByTutorAndStudent(5, 10);
+ * // Returns: [{ id: 1, tutorId: 5, studentId: 10, startTime: '...', endTime: '...' }]
+ */
+function fetchLessonsByTutorAndStudent(tutorId, studentId) {
+    return fetchFromJavaAPI(`/api/lessons/tutor/${tutorId}/student/${studentId}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching lessons by tutor and student:', error);
+            return [];
+        });
+}
+
+/**
  * Fetch all lessons from the entire database.
  * 
  * Used for generating comprehensive reports, statistics,
@@ -304,6 +326,29 @@ function fetchPrenotationsByTutor(tutorId) {
         });
 }
 
+/**
+ * Fetch all prenotations (bookings) for a specific student, regardless of tutor.
+ *
+ * Used for STAFF-only views (e.g. the student profile page) that need to see
+ * a student's full upcoming booking history across every tutor.
+ * Returns empty array if no prenotations found or on error.
+ *
+ * @param {number} studentId - Unique student ID
+ * @returns {Promise<Array>} Array of prenotation objects for this student
+ *
+ * @example
+ * const bookings = await fetchPrenotationsByStudent(10);
+ * // Returns: [{ id: 1, tutorId: 5, studentId: 10, startTime: '...', flag: false, ... }]
+ */
+function fetchPrenotationsByStudent(studentId) {
+    return fetchFromJavaAPI(`/api/prenotations/student/${studentId}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching prenotations by student:', error);
+            return [];
+        });
+}
+
 
 // Student Data Operations
 
@@ -319,7 +364,11 @@ function fetchPrenotationsByTutor(tutorId) {
  * // Returns: { id: 10, name: 'Giovanni', surname: 'Bianchi', studentClass: 'M', ... }
  */
 function fetchStudentData(studentId) {
-    return fetchFromJavaAPI(`/api/students/${studentId}`, 'GET');
+    return fetchFromJavaAPI(`/api/students/${studentId}`, 'GET')
+        .catch(error => {
+            console.error('Error fetching student data:', error);
+            return null;
+        });
 }
 
 /**
@@ -369,6 +418,29 @@ function fetchTestsByTutor(tutorId) {
         });
 }
 
+/**
+ * Fetch all tests/evaluations a specific student has taken, regardless of tutor.
+ *
+ * Used for STAFF-only views (e.g. the student profile page) that need to see
+ * a student's full evaluation history across every tutor who has tested them.
+ * Returns empty array if no tests found or on error.
+ *
+ * @param {number} studentId - Unique student ID
+ * @returns {Promise<Array>} Array of test objects for this student
+ *
+ * @example
+ * const tests = await fetchTestsByStudent(10);
+ * // Returns: [{ id: 1, tutorId: 5, studentId: 10, day: '...', mark: 7.5, ... }]
+ */
+function fetchTestsByStudent(studentId) {
+    return fetchFromJavaAPI(`/api/tests/student/${studentId}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching tests by student:', error);
+            return [];
+        });
+}
+
 
 // Module Exports
 
@@ -398,10 +470,13 @@ module.exports = {
     fetchCalendarNotesByTutor,
     fetchCalendarNotesByDateRange,
     fetchLessonsByTutor,
+    fetchLessonsByTutorAndStudent,
     fetchAllLessons,
     fetchAllPrenotations,
     fetchPrenotationsByTutor,
+    fetchPrenotationsByStudent,
     fetchStudentData,
     fetchAllStudents,
-    fetchTestsByTutor
+    fetchTestsByTutor,
+    fetchTestsByStudent
 };

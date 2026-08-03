@@ -44,12 +44,15 @@ const {
     fetchCalendarNotesByTutor,
     fetchCalendarNotesByDateRange,
     fetchLessonsByTutor,
+    fetchLessonsByTutorAndStudent,
     fetchAllLessons,
     fetchAllPrenotations,
     fetchPrenotationsByTutor,
+    fetchPrenotationsByStudent,
     fetchStudentData,
     fetchAllStudents,
-    fetchTestsByTutor
+    fetchTestsByTutor,
+    fetchTestsByStudent
 } = require('../server_utilities/javaApiService');
 
 // Fixed reference list of subjects for the Evaluations ("Add Evaluation") form
@@ -815,10 +818,53 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
             });
         }
 
+        // Tests and prenotations span every tutor who has ever dealt with this student
+        // (STAFF sees the full history); lessons/hours stay scoped to the viewing tutor's own sessions
+        const [tests, lessons, prenotationsData, allTutors] = await Promise.all([
+            fetchTestsByStudent(studentId),
+            fetchLessonsByTutorAndStudent(tutorId, studentId),
+            fetchPrenotationsByStudent(studentId),
+            fetchFromJavaAPI('/api/tutors')
+        ]);
+
+        // Shared cache so tests and prenotations don't re-fetch the same tutor twice
+        const tutorCache = new Map();
+        const getTutorName = async (id) => {
+            if (id == null) return 'Unknown';
+            if (!tutorCache.has(id)) {
+                tutorCache.set(id, fetchTutorData(id));
+            }
+            const cachedTutor = await tutorCache.get(id);
+            return cachedTutor ? cachedTutor.username : 'Unknown';
+        };
+
+        const evaluations = await Promise.all(tests.map(async test => ({
+            id: test.id,
+            mark: test.mark,
+            day: test.day,
+            subject: test.subject || '',
+            description: test.description || '',
+            tutorId: test.tutorId,
+            tutorName: await getTutorName(test.tutorId)
+        })));
+
+        const prenotations = await Promise.all(prenotationsData.map(async prenotation => ({
+            id: prenotation.id,
+            startTime: prenotation.startTime,
+            endTime: prenotation.endTime,
+            flag: prenotation.flag,
+            tutorId: prenotation.tutorId,
+            tutorName: await getTutorName(prenotation.tutorId)
+        })));
+
         res.render('student', {
             userId: req.session.userId,
-            user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
-            student
+            user: { username: req.session.username, role: tutorData.role },
+            student,
+            evaluations,
+            lessons,
+            prenotations,
+            tutors: allTutors || []
         });
     } catch (error) {
         logError('Error accessing student profile page', req, { studentId: req.params.id, error: error.message });

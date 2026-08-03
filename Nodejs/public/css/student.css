@@ -31,3 +31,13 @@ body {
 .chart-dot:hover {
     r: 7;
 }
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: #141414;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #2e2e2e;
+    border-radius: 3px;
+}

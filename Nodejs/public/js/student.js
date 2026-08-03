@@ -1,8 +1,9 @@
-// Student data
+// Student profile data loaded from the server (window.studentData, see student.ejs)
+const rawStudent = window.studentData || {};
 const student = {
-    firstName: 'Emma',
-    lastName: 'Wilson',
-    classType: 'S', // M = Middle School, S = Senior High, U = University
+    firstName: rawStudent.name || '',
+    lastName: rawStudent.surname || '',
+    classType: rawStudent.studentClass || 'M', // M = Middle School, S = Senior High, U = University
 };
 
 const classNames = { M: 'Middle School', S: 'Senior High', U: 'University' };
@@ -12,30 +13,82 @@ const classColors = {
     U: { text: '#c084fc', bg: 'rgba(192,132,252,0.15)', border: 'rgba(192,132,252,0.4)' },
 };
 
-// Test marks
-let evaluations = [
-    { id: 1, mark: 6.5, date: '2026-02-10', description: 'Algebra basics test covering linear equations.', testId: 'TST-101' },
-    { id: 2, mark: 7,   date: '2026-03-04', description: 'Quadratic functions and factoring assessment.', testId: 'TST-118' },
-    { id: 3, mark: 6,   date: '2026-04-12', description: 'Geometry - triangles and circle theorems.', testId: 'TST-133' },
-    { id: 4, mark: 8,   date: '2026-05-09', description: 'Trigonometry mid-term evaluation.', testId: 'TST-141' },
-    { id: 5, mark: 7.5, date: '2026-06-20', description: 'Functions and limits assessment.', testId: 'TST-150' },
-    { id: 6, mark: 9,   date: '2026-07-15', description: 'Final calculus evaluation.', testId: 'TST-162' },
-];
+// Test marks loaded from the server (window.initialEvaluations, see student.ejs).
+// testId isn't a real backend field - it's synthesized from the real DB id for display purposes.
+let evaluations = (window.initialEvaluations || []).map(ev => ({
+    id: ev.id,
+    mark: ev.mark,
+    date: ev.day,
+    subject: ev.subject || '',
+    description: ev.description || '',
+    tutorId: ev.tutorId,
+    tutorName: ev.tutorName || 'Unknown',
+    testId: `TST-${String(ev.id).padStart(3, '0')}`
+}));
 
-// Hours completed per month (key: YYYY-MM)
-const hoursByMonth = {
-    '2026-02': 6,
-    '2026-03': 8,
-    '2026-04': 5,
-    '2026-05': 9,
-    '2026-06': 7,
-    '2026-07': 4,
-};
+// Fixed color palette used to tell apart the subject+tutor lines on the marks chart.
+// Cycles if a student has more subject/tutor combinations than colors.
+const lineColorPalette = ['#14b8a6', '#60a5fa', '#f97316', '#c084fc', '#f43f5e', '#eab308', '#38bdf8', '#a3e635', '#fb7185', '#94a3b8'];
 
-// Days that have a lesson (for calendar highlight), key: YYYY-MM-DD
-const lessonDays = new Set([
-    '2026-07-02', '2026-07-07', '2026-07-09', '2026-07-15', '2026-07-21', '2026-07-28',
-]);
+// Groups evaluations by subject+tutor (a line on the chart represents one subject
+// taught/tested by one specific tutor), assigning each group a stable color.
+function groupEvaluationsBySubjectAndTutor(evs) {
+    const groups = new Map();
+    evs.forEach(ev => {
+        const key = `${ev.subject}||${ev.tutorId}`;
+        if (!groups.has(key)) {
+            groups.set(key, { subject: ev.subject || 'No subject', tutorName: ev.tutorName, evaluations: [] });
+        }
+        groups.get(key).evaluations.push(ev);
+    });
+
+    const sortedKeys = Array.from(groups.keys()).sort((a, b) => {
+        const ga = groups.get(a), gb = groups.get(b);
+        return (ga.subject + ga.tutorName).localeCompare(gb.subject + gb.tutorName);
+    });
+
+    return sortedKeys.map((key, i) => ({
+        ...groups.get(key),
+        color: lineColorPalette[i % lineColorPalette.length]
+    }));
+}
+
+// Lessons loaded from the server (window.initialLessons, see student.ejs), used to
+// compute hours completed per month and highlight lesson days on the mini calendar.
+const initialLessons = window.initialLessons || [];
+
+// Prenotations (upcoming/pending bookings) loaded from the server, across every
+// tutor - see window.initialPrenotations in student.ejs.
+const prenotations = (window.initialPrenotations || []).map(p => ({
+    id: p.id,
+    startTime: p.startTime,
+    endTime: p.endTime,
+    confirmed: !!p.flag,
+    tutorId: p.tutorId,
+    tutorName: p.tutorName || 'Unknown'
+}));
+
+// Aggregates a list of lessons into hours completed per month (key: YYYY-MM)
+function computeHoursByMonth(lessons) {
+    const result = {};
+    lessons.forEach(lesson => {
+    if (!lesson.startTime || !lesson.endTime) return;
+    const dateKey = lesson.startTime.split('T')[0];
+    const hours = (new Date(lesson.endTime) - new Date(lesson.startTime)) / (1000 * 60 * 60);
+    const monthKey = dateKey.slice(0, 7);
+    result[monthKey] = (result[monthKey] || 0) + hours;
+    });
+    return result;
+}
+
+// Lifetime hours per month (unfiltered), used for the "Total Hours" profile stat
+const hoursByMonth = computeHoursByMonth(initialLessons);
+
+// Days that have a lesson (for calendar highlight), key: YYYY-MM-DD - unfiltered,
+// the mini calendar always shows the student's full lesson history
+const lessonDays = new Set(
+    initialLessons.filter(l => l.startTime).map(l => l.startTime.split('T')[0])
+);
 
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monthFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -51,49 +104,141 @@ function formatDate(dateStr) {
     return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// Calendar starts on the most recent month that has lessons
-let calendarDate = new Date('2026-07-01T00:00:00');
+// Formats fractional hours as exact hours and minutes, e.g. "2h 30m", "45m", "3h"
+function formatHours(hours) {
+    const totalMinutes = Math.round(hours * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+}
+
+function formatDateForInput(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function formatTimeForInput(date) {
+    const h = String(date.getHours()).padStart(2, '0');
+    const m = String(date.getMinutes()).padStart(2, '0');
+    return `${h}:${m}`;
+}
+
+// Parses an ISO datetime string (no timezone offset, as sent by the backend) directly
+// into a local Date object, avoiding UTC conversion shifting the displayed time.
+function parseAsLocalDate(dateString) {
+    const cleanDate = dateString.replace(/\.\d{3}Z?$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+    const [datePart, timePart] = cleanDate.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hour, minute, second = 0] = (timePart || '00:00:00').split(':').map(Number);
+    return new Date(year, month - 1, day, hour, minute, second);
+}
+
+/**
+ * Get the most recent September 1st that has already occurred (start of
+ * the current school year), based on today's date.
+ */
+function getLastSeptemberFirst() {
+    const now = new Date();
+    const septemberYear = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+    return new Date(septemberYear, 8, 1);
+}
+
+/**
+ * Evaluations within the From/To date range (see #fromDate/#toDate), used by the
+ * marks chart, its legend/average, and the "All Tests" list. Only the profile
+ * header's lifetime stats (avg mark, total tests, total hours) stay unfiltered.
+ */
+function getFilteredEvaluations() {
+    const from = document.getElementById('fromDate').value;
+    const to = document.getElementById('toDate').value;
+    return evaluations.filter(ev => (!from || ev.date >= from) && (!to || ev.date <= to));
+}
+
+/**
+ * Lessons within the same From/To date range, used to filter the Hours per Month list.
+ */
+function getFilteredLessons() {
+    const from = document.getElementById('fromDate').value;
+    const to = document.getElementById('toDate').value;
+    return initialLessons.filter(lesson => {
+    if (!lesson.startTime) return false;
+    const dateKey = lesson.startTime.split('T')[0];
+    return (!from || dateKey >= from) && (!to || dateKey <= to);
+    });
+}
+
+// Calendar starts on the most recent month that has a lesson, or the current month otherwise
+const sortedLessonDays = Array.from(lessonDays).sort();
+let calendarDate;
+if (sortedLessonDays.length > 0) {
+    const [y, m] = sortedLessonDays[sortedLessonDays.length - 1].split('-').map(Number);
+    calendarDate = new Date(y, m - 1, 1);
+} else {
+    const now = new Date();
+    calendarDate = new Date(now.getFullYear(), now.getMonth(), 1);
+}
 const today = new Date();
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Default date range: start of the current school year (last Sept 1) through today
+    document.getElementById('fromDate').value = formatDateForInput(getLastSeptemberFirst());
+    document.getElementById('toDate').value = formatDateForInput(new Date());
+
     renderProfile();
     renderMarksChart();
     renderMarksList();
     renderHours();
     renderCalendar();
+    renderPrenotations();
     setupEventListeners();
 });
 
 function renderProfile() {
-    const initials = (student.firstName[0] + student.lastName[0]).toUpperCase();
+    const initials = ((student.firstName.charAt(0) || '?') + (student.lastName.charAt(0) || '?')).toUpperCase();
     document.getElementById('studentInitials').textContent = initials;
-    document.getElementById('studentName').textContent = `${student.firstName} ${student.lastName}`;
+    document.getElementById('studentName').textContent = `${student.firstName} ${student.lastName}`.trim();
     document.getElementById('studentSurnameLabel').textContent = `Surname: ${student.lastName}`;
-    document.getElementById('studentClassLabel').textContent = `Class ${student.classType} - ${classNames[student.classType]}`;
+    document.getElementById('studentClassLabel').textContent = `Class ${student.classType} - ${classNames[student.classType] || student.classType}`;
 
-    const c = classColors[student.classType];
+    const c = classColors[student.classType] || classColors.M;
     const badge = document.getElementById('studentClassBadge');
     badge.textContent = `Class ${student.classType}`;
     badge.style.color = c.text;
     badge.style.background = c.bg;
     badge.style.border = `1px solid ${c.border}`;
 
-    const avg = evaluations.reduce((s, e) => s + e.mark, 0) / evaluations.length;
     const totalHours = Object.values(hoursByMonth).reduce((s, h) => s + h, 0);
+    document.getElementById('totalTests').textContent = evaluations.length;
+    document.getElementById('totalHours').textContent = formatHours(totalHours);
+
+    updateAvgMarkStat();
+}
+
+// "Avg mark" profile stat follows the same From/To filter as the marks chart/list
+function updateAvgMarkStat() {
+    const filtered = getFilteredEvaluations();
+    const avg = filtered.length ? filtered.reduce((s, e) => s + e.mark, 0) / filtered.length : 0;
     document.getElementById('avgMark').textContent = avg.toFixed(1);
     document.getElementById('avgMark').style.color = markColor(avg);
-    document.getElementById('totalTests').textContent = evaluations.length;
-    document.getElementById('totalHours').textContent = totalHours + 'h';
-    document.getElementById('chartAvg').textContent = avg.toFixed(2);
-    document.getElementById('chartAvg').style.color = markColor(avg);
 }
 
 function renderMarksChart() {
-    const evs = [...evaluations].sort((a, b) => new Date(a.date) - new Date(b.date));
-    document.getElementById('marksChart').innerHTML = renderChart(evs);
+    const filtered = getFilteredEvaluations();
+    const evs = [...filtered].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const groups = groupEvaluationsBySubjectAndTutor(evs);
+    document.getElementById('marksChart').innerHTML = renderChart(evs, groups);
+    renderChartLegend(groups);
+
+    const chartAvg = evs.length ? evs.reduce((s, e) => s + e.mark, 0) / evs.length : 0;
+    document.getElementById('chartAvg').textContent = chartAvg.toFixed(2);
+    document.getElementById('chartAvg').style.color = markColor(chartAvg);
 }
 
-function renderChart(evs) {
+function renderChart(evs, groups) {
     const W = 640, H = 240;
     const padL = 36, padR = 20, padT = 20, padB = 36;
     const plotW = W - padL - padR;
@@ -102,14 +247,11 @@ function renderChart(evs) {
     const n = evs.length;
     const maxMark = 10, minMark = 0;
 
-    const xFor = (i) => padL + (n === 1 ? plotW / 2 : (plotW * i) / (n - 1));
+    const xFor = (i) => padL + (n <= 1 ? plotW / 2 : (plotW * i) / (n - 1));
     const yFor = (m) => padT + plotH - ((m - minMark) / (maxMark - minMark)) * plotH;
 
-    let runSum = 0;
-    const avgPoints = evs.map((e, i) => {
-    runSum += e.mark;
-    return { x: xFor(i), y: yFor(runSum / (i + 1)) };
-    });
+    // Position of each evaluation within the shared, chronologically-sorted x axis
+    const indexOf = new Map(evs.map((e, i) => [e.id, i]));
 
     let grid = '';
     for (let m = 0; m <= 10; m += 2) {
@@ -118,27 +260,40 @@ function renderChart(evs) {
     grid += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="#a1a1aa" font-size="11">${m}</text>`;
     }
 
-    const markPath = evs.map((e, i) => `${xFor(i)},${yFor(e.mark)}`).join(' ');
-    const avgPath = avgPoints.map(p => `${p.x},${p.y}`).join(' ');
-
+    let lines = '';
     let dots = '';
+    groups.forEach(group => {
+    const groupEvs = [...group.evaluations].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const points = groupEvs.map(e => `${xFor(indexOf.get(e.id))},${yFor(e.mark)}`).join(' ');
+    lines += `<polyline points="${points}" fill="none" stroke="${group.color}" stroke-width="2.5"/>`;
+
+    groupEvs.forEach(e => {
+        const x = xFor(indexOf.get(e.id)), y = yFor(e.mark);
+        const label = `${e.testId} - ${group.subject} (${group.tutorName}): ${e.mark}`;
+        dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" fill="${group.color}" stroke="#141414" stroke-width="2" onclick="showTestInfo(${e.id})"><title>${label}</title></circle>`;
+    });
+    });
+
+    // Thin out date labels so they don't overlap when there are many points: only
+    // show as many as comfortably fit in the plot width, evenly spaced by index,
+    // always including the last one so the range doesn't look cut off.
+    const minLabelSpacing = 40; // px needed per label at font-size 10 (e.g. "31 Dec")
+    const maxLabels = Math.max(1, Math.floor(plotW / minLabelSpacing));
+    const labelStep = Math.max(1, Math.ceil(n / maxLabels));
+
     let xLabels = '';
     evs.forEach((e, i) => {
-    const x = xFor(i), y = yFor(e.mark);
-    dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" fill="${markColor(e.mark)}" stroke="#141414" stroke-width="2" onclick="showTestInfo(${e.id})"><title>${e.testId}: ${e.mark}</title></circle>`;
+    if (i % labelStep !== 0 && i !== n - 1) return;
+    const x = xFor(i);
     const d = new Date(e.date + 'T00:00:00');
     xLabels += `<text x="${x}" y="${H - padB + 20}" text-anchor="middle" fill="#a1a1aa" font-size="10">${d.getDate()} ${monthNames[d.getMonth()]}</text>`;
     });
-
-    let avgDots = avgPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="3" fill="#a1a1aa"/>`).join('');
 
     return `
     <div class="overflow-x-auto -mx-1">
         <svg viewBox="0 0 ${W} ${H}" class="w-full min-w-[420px]" preserveAspectRatio="xMidYMid meet">
         ${grid}
-        <polyline points="${avgPath}" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-dasharray="5 4"/>
-        <polyline points="${markPath}" fill="none" stroke="#14b8a6" stroke-width="2.5"/>
-        ${avgDots}
+        ${lines}
         ${dots}
         ${xLabels}
         </svg>
@@ -146,10 +301,41 @@ function renderChart(evs) {
     `;
 }
 
+function renderChartLegend(groups) {
+    const container = document.getElementById('chartLegend');
+    if (!container) return;
+
+    if (groups.length === 0) {
+    container.innerHTML = '<p class="text-sm text-muted-foreground col-span-full">No evaluations yet</p>';
+    return;
+    }
+
+    container.innerHTML = groups.map(group => {
+    const avg = group.evaluations.reduce((s, e) => s + e.mark, 0) / group.evaluations.length;
+    return `
+        <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${group.color}"></span>
+            <div class="min-w-0">
+            <p class="text-xs font-medium text-foreground truncate">${group.subject}</p>
+            <p class="text-[11px] text-muted-foreground truncate">${group.tutorName}</p>
+            </div>
+        </div>
+        <span class="text-sm font-bold flex-shrink-0" style="color:${group.color}">${avg.toFixed(1)}</span>
+        </div>
+    `;
+    }).join('');
+}
+
 function renderMarksList() {
     const container = document.getElementById('marksList');
-    const sorted = [...evaluations].sort((a, b) => new Date(b.date) - new Date(a.date));
+    const sorted = [...getFilteredEvaluations()].sort((a, b) => new Date(b.date) - new Date(a.date));
     document.getElementById('marksCount').textContent = `${sorted.length} test${sorted.length !== 1 ? 's' : ''}`;
+
+    if (sorted.length === 0) {
+    container.innerHTML = '<p class="text-sm text-muted-foreground">No tests in this range</p>';
+    return;
+    }
 
     container.innerHTML = sorted.map(ev => `
     <button onclick="showTestInfo(${ev.id})" class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors text-left">
@@ -157,8 +343,8 @@ function renderMarksList() {
         <span class="text-sm font-bold" style="color:${markColor(ev.mark)}">${ev.mark}</span>
         </div>
         <div class="min-w-0 flex-1">
-        <p class="font-medium text-foreground truncate">${ev.testId}</p>
-        <p class="text-xs text-muted-foreground truncate">${formatDate(ev.date)}</p>
+        <p class="font-medium text-foreground truncate">${ev.testId}${ev.subject ? ' &middot; ' + ev.subject : ''}</p>
+        <p class="text-xs text-muted-foreground truncate">${formatDate(ev.date)} &middot; ${ev.tutorName}</p>
         </div>
         <svg class="w-4 h-4 text-muted-foreground flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -169,19 +355,27 @@ function renderMarksList() {
 
 function renderHours() {
     const container = document.getElementById('hoursChart');
-    const keys = Object.keys(hoursByMonth).sort();
-    const maxHours = Math.max(...Object.values(hoursByMonth), 1);
+    const filteredHours = computeHoursByMonth(getFilteredLessons());
+    // Only the most recent 6 months (fewer if less history is available)
+    const keys = Object.keys(filteredHours).sort().slice(-6);
+
+    if (keys.length === 0) {
+    container.innerHTML = '<p class="text-sm text-muted-foreground">No lessons in this range</p>';
+    return;
+    }
+
+    const maxHours = Math.max(...Object.values(filteredHours), 1);
 
     container.innerHTML = keys.map(key => {
     const [year, m] = key.split('-');
     const label = `${monthNames[parseInt(m, 10) - 1]} '${year.slice(2)}`;
-    const hours = hoursByMonth[key];
+    const hours = filteredHours[key];
     const pct = (hours / maxHours) * 100;
     return `
         <div>
         <div class="flex items-center justify-between mb-1">
             <span class="text-sm text-muted-foreground">${label}</span>
-            <span class="text-sm font-semibold text-foreground">${hours}h</span>
+            <span class="text-sm font-semibold text-foreground">${formatHours(hours)}</span>
         </div>
         <div class="w-full h-2.5 bg-secondary rounded-full overflow-hidden">
             <div class="h-full bg-primary rounded-full transition-all" style="width:${pct}%"></div>
@@ -224,6 +418,123 @@ function renderCalendar() {
     document.getElementById('calendarDays').innerHTML = html;
 }
 
+function formatDateTime(isoString) {
+    const d = new Date(isoString);
+    const dateLabel = `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+    const timeLabel = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return { dateLabel, timeLabel };
+}
+
+function renderPrenotations() {
+    const container = document.getElementById('prenotationsList');
+    const emptyState = document.getElementById('emptyPrenotations');
+    const countEl = document.getElementById('prenotationsCount');
+
+    const sorted = [...prenotations].sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    countEl.textContent = sorted.length;
+
+    if (sorted.length === 0) {
+    container.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    return;
+    }
+    emptyState.classList.add('hidden');
+
+    const todayKey = formatDateForInput(today);
+    const canEdit = window.userRole === 'STAFF';
+
+    container.innerHTML = sorted.map(p => {
+    const start = formatDateTime(p.startTime);
+    const end = formatDateTime(p.endTime);
+    const isPast = p.startTime.split('T')[0] < todayKey;
+    const statusBadge = p.confirmed
+        ? '<span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary ml-2">Confirmed</span>'
+        : isPast
+            ? '<span class="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400 ml-2">Expired</span>'
+            : '<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">Pending</span>';
+    const cardClass = (isPast
+        ? 'p-3 border border-red-500/50 bg-red-500/10 rounded-lg'
+        : 'p-3 border border-border rounded-lg') + (canEdit ? ' cursor-pointer hover:border-primary/50 transition-colors' : '');
+    const dateClass = isPast ? 'text-red-400' : '';
+    const onClick = canEdit ? ` onclick="openEditPrenotationModal(${p.id})"` : '';
+
+    return `
+        <div class="${cardClass}"${onClick}>
+        <div class="flex items-center justify-between mb-1">
+            <span class="font-medium text-foreground text-sm">${p.tutorName}</span>
+            ${statusBadge}
+        </div>
+        <div class="flex items-center justify-between text-xs ${dateClass || 'text-muted-foreground'}">
+            <span>${start.dateLabel}</span>
+            <span>${start.timeLabel} - ${end.timeLabel}</span>
+        </div>
+        </div>
+    `;
+    }).join('');
+}
+
+// STAFF-only: click a prenotation card to edit its date/time and reassign its tutor
+function openEditPrenotationModal(id) {
+    if (window.userRole !== 'STAFF') return;
+
+    const prenotation = prenotations.find(p => p.id === id);
+    if (!prenotation) return;
+
+    document.getElementById('editPrenotationId').value = prenotation.id;
+
+    const startDate = parseAsLocalDate(prenotation.startTime);
+    const endDate = parseAsLocalDate(prenotation.endTime);
+    document.getElementById('editPrenotationDate').value = formatDateForInput(startDate);
+    document.getElementById('editPrenotationStartTime').value = formatTimeForInput(startDate);
+    document.getElementById('editPrenotationEndTime').value = formatTimeForInput(endDate);
+
+    const container = document.getElementById('editPrenotationTutorsContainer');
+    const allTutors = window.allTutors || [];
+    container.innerHTML = allTutors.map(tutor => {
+    const isAssigned = prenotation.tutorId === tutor.id;
+    const tutorName = tutor.username || `Tutor ${tutor.id}`;
+    return `
+        <div class="flex items-center">
+        <input type="radio" id="editTutor${tutor.id}" name="editAssignToTutor"
+            value="${tutor.id}" ${isAssigned ? 'checked' : ''}
+            class="w-4 h-4 text-primary bg-secondary border-border focus:ring-ring">
+        <label for="editTutor${tutor.id}" class="ml-2 text-sm font-medium text-foreground">${tutorName}</label>
+        </div>
+    `;
+    }).join('');
+
+    document.getElementById('editPrenotationModal').classList.add('open');
+}
+
+function closeEditPrenotationModal() {
+    document.getElementById('editPrenotationModal').classList.remove('open');
+    document.getElementById('editPrenotationForm').reset();
+}
+
+async function deletePrenotation() {
+    if (!confirm('Are you sure you want to delete this prenotation?')) return;
+
+    const prenotationId = document.getElementById('editPrenotationId').value;
+
+    try {
+        const response = await fetch(`/api/prenotations/${prenotationId}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            closeEditPrenotationModal();
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert(`Failed to delete prenotation: ${error.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('Error deleting prenotation:', error);
+        alert('Failed to delete prenotation. Please try again.');
+    }
+}
+
 function showTestInfo(id) {
     const ev = evaluations.find(e => e.id === id);
     if (!ev) return;
@@ -238,6 +549,8 @@ function showTestInfo(id) {
 
     document.getElementById('infoTestId').textContent = ev.testId;
     document.getElementById('infoDate').textContent = formatDate(ev.date);
+    document.getElementById('infoSubject').textContent = ev.subject || 'No subject';
+    document.getElementById('infoTutor').textContent = ev.tutorName;
     document.getElementById('infoDescription').textContent = ev.description || 'No description provided.';
 
     document.getElementById('testInfoModal').classList.add('open');
@@ -275,5 +588,54 @@ function setupEventListeners() {
     document.getElementById('nextMonth').addEventListener('click', () => {
     calendarDate.setMonth(calendarDate.getMonth() + 1);
     renderCalendar();
+    });
+
+    document.getElementById('applyFilter').addEventListener('click', () => {
+    renderMarksChart();
+    renderMarksList();
+    renderHours();
+    updateAvgMarkStat();
+    });
+
+    document.getElementById('editPrenotationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const prenotationId = document.getElementById('editPrenotationId').value;
+    const date = document.getElementById('editPrenotationDate').value;
+    const startTime = document.getElementById('editPrenotationStartTime').value;
+    const endTime = document.getElementById('editPrenotationEndTime').value;
+
+    if (!date || !startTime || !endTime) {
+        alert('Please select a date and start/end times');
+        return;
+    }
+
+    const selectedTutor = document.querySelector('input[name="editAssignToTutor"]:checked');
+    const tutorId = selectedTutor ? parseInt(selectedTutor.value) : null;
+
+    try {
+        const response = await fetch(`/api/prenotations/${prenotationId}`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            studentId: rawStudent.id,
+            startTime: `${date}T${startTime}:00`,
+            endTime: `${date}T${endTime}:00`,
+            tutorId
+        })
+        });
+
+        if (response.ok) {
+        closeEditPrenotationModal();
+        window.location.reload();
+        } else {
+        const error = await response.json();
+        alert(`Failed to update prenotation: ${error.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('Error updating prenotation:', error);
+        alert('Failed to update prenotation. Please try again.');
+    }
     });
 }
