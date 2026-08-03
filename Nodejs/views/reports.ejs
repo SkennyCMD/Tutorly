@@ -233,6 +233,14 @@
       </div>
 
       <form id="evalForm" class="space-y-4">
+        <!-- Student search field with autocomplete filtering -->
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('common.searchStudent') %></label>
+          <input type="text" id="evalStudentSearch" placeholder="<%= t('common.searchByName') %>"
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            autocomplete="off">
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('home.student') %></label>
           <select id="evalStudent" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
@@ -242,7 +250,7 @@
 
         <div>
           <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('reports.subjectLabel') %></label>
-          <select id="evalSubject" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <select id="evalSubject" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <option value=""><%= t('reports.selectSubjectOption') %></option>
           </select>
         </div>

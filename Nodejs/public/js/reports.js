@@ -15,6 +15,10 @@ let evaluations = (window.initialEvaluations || []).map(ev => ({
 // All students available for the "Add Evaluation" student dropdown
 const allStudents = window.allStudents || [];
 
+// Students currently shown in the "Add Evaluation" student dropdown,
+// narrowed down by the student search field (see filterEvalStudents)
+let filteredEvalStudents = allStudents;
+
 // Fixed reference list of subjects for the "Add Evaluation" subject dropdown
 // (window.allSubjects, see Nodejs/config/subjects.json) - blank entries filtered out
 const allSubjects = (window.allSubjects || []).filter(Boolean);
@@ -65,14 +69,36 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Populate the "Add Evaluation" student dropdown from the real student list.
+ * Populate the "Add Evaluation" student dropdown from the currently
+ * filtered student list (see filterEvalStudents).
  */
 function populateStudentDropdown() {
     const select = document.getElementById('evalStudent');
     if (!select) return;
 
     select.innerHTML = `<option value="">${t('common.selectAStudentOption')}</option>` +
-        allStudents.map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
+        filteredEvalStudents.map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
+}
+
+/**
+ * Filter the "Add Evaluation" student dropdown by name as the user types
+ * in the student search field, auto-expanding it to show multiple matches
+ * (same UX as the student search on the Lessons/Calendar/Home pages).
+ *
+ * @param {string} searchTerm - Search query to filter students by name
+ */
+function filterEvalStudents(searchTerm) {
+    const term = searchTerm.toLowerCase();
+    const select = document.getElementById('evalStudent');
+
+    filteredEvalStudents = allStudents.filter(s => `${s.name} ${s.surname}`.toLowerCase().includes(term));
+    populateStudentDropdown();
+
+    if (select && term.length > 0 && filteredEvalStudents.length > 0) {
+        select.size = Math.min(filteredEvalStudents.length + 1, 8); // Show up to 8 options
+    } else if (select) {
+        select.size = 1; // Reset to default dropdown
+    }
 }
 
 /**
@@ -135,19 +161,27 @@ function renderReports() {
     }
     emptyState.classList.add('hidden');
 
-    // Group by student
+    // Group by student, then by subject within each student - one card per
+    // student+subject pair, so a student's progress in different subjects
+    // is tracked (and averaged) separately instead of blended together.
     const byStudent = {};
     filtered.forEach(ev => {
-    if (!byStudent[ev.student]) byStudent[ev.student] = [];
-    byStudent[ev.student].push(ev);
+    if (!byStudent[ev.student]) byStudent[ev.student] = {};
+    const subjectKey = ev.subject || '';
+    if (!byStudent[ev.student][subjectKey]) byStudent[ev.student][subjectKey] = [];
+    byStudent[ev.student][subjectKey].push(ev);
     });
 
     container.innerHTML = Object.keys(byStudent).map(student => {
-    const evs = byStudent[student].sort((a, b) => new Date(a.date) - new Date(b.date));
-    const avg = (evs.reduce((s, e) => s + e.mark, 0) / evs.length);
+    const bySubject = byStudent[student];
     const initials = student.split(' ').map(n => n[0]).join('');
 
-    return `
+    return Object.keys(bySubject).map(subjectKey => {
+        const evs = bySubject[subjectKey].sort((a, b) => new Date(a.date) - new Date(b.date));
+        const avg = (evs.reduce((s, e) => s + e.mark, 0) / evs.length);
+        const subjectLabel = subjectKey || t('reports.noSubject');
+
+        return `
         <div class="bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-5">
             <div class="flex items-center gap-3">
@@ -155,7 +189,10 @@ function renderReports() {
                 <span class="text-sm font-medium text-foreground">${initials}</span>
             </div>
             <div>
+                <div class="flex items-center gap-2 flex-wrap">
                 <p class="font-semibold text-foreground">${student}</p>
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">${subjectLabel}</span>
+                </div>
                 <p class="text-xs text-muted-foreground">${evs.length === 1 ? t('reports.evaluationCount', { count: evs.length }) : t('reports.evaluationCountPlural', { count: evs.length })}</p>
             </div>
             </div>
@@ -176,6 +213,7 @@ function renderReports() {
         </div>
         </div>
     `;
+    }).join('');
     }).join('');
 }
 
@@ -296,6 +334,11 @@ function closeTestInfo() {
 }
 
 function openEvalModal() {
+    // Reset student search so a stale filter from a previous open doesn't carry over
+    const searchInput = document.getElementById('evalStudentSearch');
+    if (searchInput) searchInput.value = '';
+    filterEvalStudents('');
+
     document.getElementById('addEvalModal').classList.add('open');
     document.body.style.overflow = 'hidden';
 }
@@ -338,6 +381,11 @@ function setupEventListeners() {
     // Add evaluation modal
     document.getElementById('addEvalBtn').addEventListener('click', openEvalModal);
 
+    // Student search inside the Add Evaluation modal (filters evalStudent dropdown)
+    document.getElementById('evalStudentSearch').addEventListener('input', (e) => {
+    filterEvalStudents(e.target.value);
+    });
+
     // Form submission
     document.getElementById('evalForm').addEventListener('submit', handleAddEvaluationSubmit);
 }
@@ -360,6 +408,11 @@ async function handleAddEvaluationSubmit(e) {
 
     if (!studentId) {
         alert(t('common.validation.selectStudent'));
+        return;
+    }
+
+    if (!subject) {
+        alert(t('common.validation.selectSubject'));
         return;
     }
 

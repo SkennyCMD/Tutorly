@@ -44,6 +44,7 @@
     "monthsShort": ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"],
     "validation": {
       "selectStudent": "Seleziona uno studente",
+      "selectSubject": "Seleziona una materia",
       "selectDate": "Seleziona una data",
       "enterStartEndTimes": "Inserisci orario di inizio e fine",
       "enterDescription": "Inserisci una descrizione",
@@ -227,6 +228,7 @@
     "markLabel": "Voto (0-10)",
     "subjectLabel": "Materia",
     "selectSubjectOption": "-- Seleziona una materia --",
+    "noSubject": "Nessuna materia",
     "testDescriptionPlaceholder": "Descrizione del test...",
     "add": "Aggiungi",
     "testDetails": "Dettagli Test",

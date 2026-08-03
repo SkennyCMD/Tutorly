@@ -44,6 +44,7 @@
     "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     "validation": {
       "selectStudent": "Please select a student",
+      "selectSubject": "Please select a subject",
       "selectDate": "Please select a date",
       "enterStartEndTimes": "Please enter start and end times",
       "enterDescription": "Please enter a description",
@@ -227,6 +228,7 @@
     "markLabel": "Mark (0-10)",
     "subjectLabel": "Subject",
     "selectSubjectOption": "-- Select a subject --",
+    "noSubject": "No subject",
     "testDescriptionPlaceholder": "Description of the test...",
     "add": "Add",
     "testDetails": "Test Details",
