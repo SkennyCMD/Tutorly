@@ -782,6 +782,50 @@ app.get('/reports', tutorSession, isAuthenticated, async (req, res) => {
     }
 });
 
+/**
+ * Student profile page
+ * GET /student/:id - Display a single student's profile page
+ */
+app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const tutorId = req.session.userId;
+        const studentId = parseInt(req.params.id, 10);
+
+        if (isNaN(studentId)) {
+            return res.status(404).render('404', {
+                user: { userId: req.session.userId, username: req.session.username, role: req.session.role },
+                isAuthenticated: true
+            });
+        }
+
+        const [tutorData, student] = await Promise.all([
+            fetchTutorData(tutorId),
+            fetchStudentData(studentId)
+        ]);
+
+        // Only STAFF tutors may view student profile pages
+        if (!tutorData || tutorData.role !== 'STAFF') {
+            return res.redirect('/home');
+        }
+
+        if (!student) {
+            return res.status(404).render('404', {
+                user: { userId: req.session.userId, username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
+                isAuthenticated: true
+            });
+        }
+
+        res.render('student', {
+            userId: req.session.userId,
+            user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
+            student
+        });
+    } catch (error) {
+        logError('Error accessing student profile page', req, { studentId: req.params.id, error: error.message });
+        res.redirect('/home');
+    }
+});
+
 // ! REPORT GENERATION API ROUTES (STAFF only) !
 
 /**
