@@ -37,7 +37,7 @@ function groupEvaluationsBySubjectAndTutor(evs) {
     evs.forEach(ev => {
         const key = `${ev.subject}||${ev.tutorId}`;
         if (!groups.has(key)) {
-            groups.set(key, { subject: ev.subject || 'No subject', tutorName: ev.tutorName, evaluations: [] });
+            groups.set(key, { key, subject: ev.subject || 'No subject', tutorName: ev.tutorName, evaluations: [] });
         }
         groups.get(key).evaluations.push(ev);
     });
@@ -51,6 +51,20 @@ function groupEvaluationsBySubjectAndTutor(evs) {
         ...groups.get(key),
         color: lineColorPalette[i % lineColorPalette.length]
     }));
+}
+
+// Subject+tutor group keys toggled off via clicking their legend card, hiding
+// their line/dots from the marks chart while staying visible (dimmed) in the legend
+const hiddenChartGroupKeys = new Set();
+
+function toggleChartGroup(encodedKey) {
+    const key = decodeURIComponent(encodedKey);
+    if (hiddenChartGroupKeys.has(key)) {
+        hiddenChartGroupKeys.delete(key);
+    } else {
+        hiddenChartGroupKeys.add(key);
+    }
+    renderMarksChart();
 }
 
 // Lessons loaded from the server (window.initialLessons, see student.ejs), used to
@@ -262,7 +276,7 @@ function renderChart(evs, groups) {
 
     let lines = '';
     let dots = '';
-    groups.forEach(group => {
+    groups.filter(group => !hiddenChartGroupKeys.has(group.key)).forEach(group => {
     const groupEvs = [...group.evaluations].sort((a, b) => new Date(a.date) - new Date(b.date));
     const points = groupEvs.map(e => `${xFor(indexOf.get(e.id))},${yFor(e.mark)}`).join(' ');
     lines += `<polyline points="${points}" fill="none" stroke="${group.color}" stroke-width="2.5"/>`;
@@ -312,8 +326,12 @@ function renderChartLegend(groups) {
 
     container.innerHTML = groups.map(group => {
     const avg = group.evaluations.reduce((s, e) => s + e.mark, 0) / group.evaluations.length;
+    const isHidden = hiddenChartGroupKeys.has(group.key);
+    const cardClass = 'flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border cursor-pointer transition-opacity hover:border-primary/50'
+        + (isHidden ? ' opacity-40' : '');
     return `
-        <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-secondary/50 border border-border">
+        <div class="${cardClass}" onclick="toggleChartGroup('${encodeURIComponent(group.key)}')"
+        title="${isHidden ? 'Click to show this line' : 'Click to hide this line'}">
         <div class="flex items-center gap-2 min-w-0">
             <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${group.color}"></span>
             <div class="min-w-0">
