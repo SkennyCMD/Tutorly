@@ -747,6 +747,7 @@ app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
                 name: student.name,
                 surname: student.surname,
                 studentClass: student.studentClass,
+                description: student.description || '',
                 avgMark
             };
         });
