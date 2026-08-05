@@ -7,7 +7,8 @@
       "Bash(node /tmp/claude-1000/-home-skenny-Documents-GitHub-Tutorly/91a96de2-a827-457a-8bb7-ec888a0d9566/scratchpad/verify-render-e2e.js)",
       "Bash(node -e ' *)",
       "Bash(nohup node src/index.js)",
-      "Bash(echo \"exit:$?\")"
+      "Bash(echo \"exit:$?\")",
+      "Bash(PGPASSWORD='tutorly1234?' psql -h localhost -U tutorly_admin -d tutorly_db -c \"SELECT 'app_user' t, count\\(*\\) FROM app_user UNION ALL SELECT 'student', count\\(*\\) FROM student UNION ALL SELECT 'lesson', count\\(*\\) FROM lesson UNION ALL SELECT 'test', count\\(*\\) FROM test UNION ALL SELECT 'prenotation', count\\(*\\) FROM prenotation;\")"
     ]
   }
 }

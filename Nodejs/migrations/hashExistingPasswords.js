@@ -18,7 +18,7 @@ async function hashExistingPasswords() {
     try {
         // Fetch all tutors
         console.log('\x1b[36mFetching all tutors...\x1b[0m');
-        const tutors = await fetchFromJavaAPI('/api/tutors', 'GET');
+        const tutors = await fetchFromJavaAPI('/api/users', 'GET');
         
         if (!tutors || tutors.length === 0) {
             console.log('\x1b[33mNo tutors found in database.\x1b[0m');
@@ -48,7 +48,7 @@ async function hashExistingPasswords() {
                 password: hashedPassword
             };
 
-            await fetchFromJavaAPI(`/api/tutors/${tutor.id}`, 'PUT', updatedTutor);
+            await fetchFromJavaAPI(`/api/users/${tutor.id}`, 'PUT', updatedTutor);
             console.log(`\x1b[32m[SUCCESS]\x1b[0m ${tutor.username} - Password hashed and updated`);
             updatedCount++;
         }

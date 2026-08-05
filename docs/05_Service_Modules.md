@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: July 31, 2026  
+**Last Updated**: August 5, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -252,7 +252,7 @@ Service for interaction with the Java Backend API.
 **Example:**
 ```javascript
 // GET request
-const tutors = await fetchFromJavaAPI('/api/tutors', 'GET');
+const tutors = await fetchFromJavaAPI('/api/users', 'GET');
 
 // POST request with data
 const newLesson = await fetchFromJavaAPI('/api/lessons', 'POST', {
@@ -274,16 +274,23 @@ await fetchFromJavaAPI('/api/lessons/42', 'DELETE');
 
 | Function | Purpose |
 |----------|---------||
-| `fetchTutorData(tutorId)` | Get tutor by ID |
+| `fetchTutorData(tutorId)` | Get user by ID (hits `/api/users/:id`; name kept as-is, see note below) |
 | `fetchAllLessons()` | Get all lessons |
 | `fetchLessonsByTutor(tutorId)` | Get lessons for specific tutor |
+| `fetchLessonsByTutorAndStudent(tutorId, studentId)` | Get lessons for a tutor+student pair - used by the Student Profile page's hours/calendar |
 | `fetchAllStudents()` | Get all students |
-| `fetchStudentData(studentId)` | Get student by ID |
+| `fetchStudentData(studentId)` | Get student by ID (resolves `null` on 404, doesn't throw - see note below) |
 | `fetchAllPrenotations()` | Get all bookings |
 | `fetchPrenotationsByTutor(tutorId)` | Get bookings for tutor |
+| `fetchPrenotationsByStudent(studentId)` | Get bookings for a student, across every tutor - used by the Student Profile page |
 | `fetchCalendarNotesByTutor(tutorId)` | Get calendar notes for tutor |
 | `fetchCalendarNotesByDateRange(start, end)` | Get notes in date range |
 | `fetchTestsByTutor(tutorId)` | Get tests (evaluations) for specific tutor |
+| `fetchTestsByStudent(studentId)` | Get tests for a student, across every tutor - used by the Student Profile page |
+
+**Note - `fetchTutorData`/`/api/tutors` → `/api/users`:** the Java `Tutor` entity/table was renamed to `User`/`app_user` (see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role)), so this function now calls `/api/users/:id` internally. The function name itself was **not** changed - it's still describing "fetch the tutor for this lesson/test/etc.", a role, not the account type - matching the same reasoning documented in [01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users) for why `Lesson`/`Test`/`Prenotation`'s own field names didn't change either.
+
+**Note - `fetchStudentData` 404 handling:** originally this function returned whatever `fetchFromJavaAPI` did on a non-2xx response, which was a **rejected promise**, not `null` - inconsistent with every other single-item fetch helper in this file (`fetchTutorData` included) that already caught errors and resolved `null`/`[]`. This surfaced as a real bug: the `/student/:id` route's `if (!student) { render 404 }` check never ran, because a missing student threw before reaching it, landing in the route's generic catch block (redirect to `/home`) instead. Fixed by adding a `.catch()` that resolves `null`, same pattern as the rest of the file.
 
 **Configuration:**
 ```javascript
@@ -294,16 +301,19 @@ JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu'
 
 **Exports:**
 - `fetchFromJavaAPI(path, method, data)`: Generic function for API calls
-- `fetchTutorData(tutorId)`: Fetches tutor data
+- `fetchTutorData(tutorId)`: Fetches user data (tutor/STAFF/GUEST) by ID
 - `fetchCalendarNotesByTutor(tutorId)`: Fetches calendar notes for a tutor
 - `fetchCalendarNotesByDateRange(startTime, endTime)`: Fetches notes within a date range
 - `fetchLessonsByTutor(tutorId)`: Fetches lessons for a tutor
+- `fetchLessonsByTutorAndStudent(tutorId, studentId)`: Fetches lessons for a specific tutor+student pair
 - `fetchAllLessons()`: Fetches all lessons
 - `fetchAllPrenotations()`: Fetches all bookings
 - `fetchPrenotationsByTutor(tutorId)`: Fetches bookings for a tutor
-- `fetchStudentData(studentId)`: Fetches student data
+- `fetchPrenotationsByStudent(studentId)`: Fetches bookings for a student, across every tutor
+- `fetchStudentData(studentId)`: Fetches student data (resolves `null` if not found)
 - `fetchAllStudents()`: Fetches all students
 - `fetchTestsByTutor(tutorId)`: Fetches tests (evaluations) for a tutor
+- `fetchTestsByStudent(studentId)`: Fetches tests for a student, across every tutor
 
 **Usage example:**
 ```javascript
@@ -526,7 +536,7 @@ i18nMiddleware(req, res, next)
 
 ---
 
-**Last Updated**: February 25, 2026
+**Last Updated**: August 5, 2026
 
 ## Maintenance
 
@@ -538,4 +548,4 @@ To add new features:
 5. Update this README
 ---
 
-**Last Updated**: February 25, 2026  
+**Last Updated**: August 5, 2026  

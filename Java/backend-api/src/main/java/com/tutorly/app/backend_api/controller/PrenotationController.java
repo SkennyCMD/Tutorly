@@ -2,12 +2,12 @@ package com.tutorly.app.backend_api.controller;
 
 import com.tutorly.app.backend_api.entity.Prenotation;
 import com.tutorly.app.backend_api.entity.Student;
-import com.tutorly.app.backend_api.entity.Tutor;
+import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.dto.PrenotationCreateDTO;
 import com.tutorly.app.backend_api.dto.PrenotationResponseDTO;
 import com.tutorly.app.backend_api.service.PrenotationService;
 import com.tutorly.app.backend_api.service.StudentService;
-import com.tutorly.app.backend_api.service.TutorService;
+import com.tutorly.app.backend_api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -40,7 +40,7 @@ public class PrenotationController {
     private StudentService studentService;
     
     @Autowired
-    private TutorService tutorService;
+    private UserService tutorService;
     
     /**
      * Get all prenotations
@@ -148,8 +148,8 @@ public class PrenotationController {
         try {
             // Fetch entities by ID
             Optional<Student> student = studentService.getStudentById(dto.getStudentId());
-            Optional<Tutor> tutor = tutorService.getTutorById(dto.getTutorId());
-            Optional<Tutor> creator = tutorService.getTutorById(dto.getCreatorId());
+            Optional<User> tutor = tutorService.getUserById(dto.getTutorId());
+            Optional<User> creator = tutorService.getUserById(dto.getCreatorId());
             
             if (student.isEmpty()) {
                 return ResponseEntity.badRequest().body("Student not found with ID: " + dto.getStudentId());
@@ -210,8 +210,8 @@ public class PrenotationController {
             
             // Fetch entities by ID
             Optional<Student> student = studentService.getStudentById(dto.getStudentId());
-            Optional<Tutor> tutor = tutorService.getTutorById(dto.getTutorId());
-            Optional<Tutor> creator = tutorService.getTutorById(dto.getCreatorId());
+            Optional<User> tutor = tutorService.getUserById(dto.getTutorId());
+            Optional<User> creator = tutorService.getUserById(dto.getCreatorId());
             
             if (student.isEmpty()) {
                 return ResponseEntity.badRequest().body("Student not found with ID: " + dto.getStudentId());

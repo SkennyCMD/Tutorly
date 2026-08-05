@@ -26,15 +26,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `/reports` page tracking student test marks, wired end-to-end to the Java backend's existing `Test` entity (previously unused - no route rendered it and nothing persisted).
 - Add/delete evaluations (`POST`/`DELETE /api/tests`) with a real student dropdown, a subject dropdown, a 0-10 mark with half-point steps, a date, and an optional description.
 - Per-student statistics: running average and an inline SVG progress chart (marks over time plus running-average line), filterable by date range and a student-name search bar.
-- "Reports" navigation link added to Dashboard, Calendar, Lessons, and Staff Panel.
-- `Test.subject` field (free text) plus `Nodejs/config/subjects.json`, a fixed, non-translated reference list of subject names used only to populate the "Add Evaluation" subject dropdown.
+- "Reports" navigation link added to Dashboard, Calendar, Lessons, and Staff Panel; logout button added to the page header (desktop + mobile), matching every other page.
+- `Test.subject` field (free text) plus `Nodejs/config/subjects.json`, a fixed, non-translated reference list of subject names used only to populate the "Add Evaluation" subject dropdown; the subject field is required in the "Add Evaluation" form.
+- Statistics cards are now grouped by student **and** subject (previously just by student), each with its own average and chart, and a subject badge on the card header.
+- Student search/autocomplete added to the "Add Evaluation" form (same UX as the Lessons/Calendar/Home student pickers).
+- Full i18n coverage (English/Italian) for the Evaluations page and its "Reports" nav link everywhere it appears.
+
+**Student Profile Page** (STAFF only)
+- New `/student/:id` page: a per-student deep dive combining evaluations, hours taught, and prenotations across **every** tutor who has worked with that student (not just the viewing STAFF member) - see [03_Nodejs_Frontend.md - Student Profile Page](03_Nodejs_Frontend.md#student-profile-page).
+- Marks chart grouped by **subject + tutor** pair, one colored line per group (10-color palette), with a card-grid legend showing each group's average; click a legend card to toggle that line on/off in the chart.
+- Chart x-axis date labels thin out dynamically so they never overlap regardless of how many evaluations are plotted.
+- From/To date filter (same UX/default range as Evaluations) drives the marks chart, the "All Tests" list, the "Hours per Month" breakdown, and the "Avg mark" profile stat together.
+- "Hours per Month" shown as exact hours/minutes (not decimal), capped to the 6 most recent months with lessons.
+- Prenotations list (scrollable past ~5 entries) across every tutor, soonest-first; overdue ones shown in red and labeled "Expired" instead of "Pending".
+- STAFF can click a prenotation to edit its date/time/tutor or delete it, reusing the same `PUT`/`DELETE /api/prenotations/:id` endpoints and edit-modal pattern as the Calendar page.
+- Logout button, real session-driven navigation (previously a static mockup with no route, no auth, and hardcoded sample data).
+
+**Accounts, GUEST Role & Lesson Packages**
+- `Tutor` entity/table renamed to `User`/`app_user` (`user` is a reserved SQL keyword in PostgreSQL) to make room for a `GUEST` role - an account type intended for a parent/guardian who should only see their linked student's data. **The view-restriction for `GUEST` isn't implemented yet** - today it authenticates and sees data like a `GENERIC` tutor would; this is a data-model-only first step. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role).
+- New `Student.id_user` (nullable FK to `app_user`): the `GUEST` account, if any, linked to a student.
+- New `Pack` entity/table (id, hours, closure date, student) representing a prepaid block of tutoring hours; `Lesson.id_pack` (nullable) optionally links a lesson to the package it was drawn from. No REST endpoint for `Pack` yet - entity + repository only.
+- Java REST base path `/api/tutors` renamed to `/api/users` (`UserController`, formerly `TutorController`); every other controller's `/tutor/{tutorId}`-style sub-paths were deliberately left unchanged, since those describe the tutor *role* in that relationship, not the account type.
 
 ### Fixed
 - `TestRepository.findByTutorId`/`findByStudentId` threw a 500 error (`UnknownPathException`) instead of returning results, because Spring Data JPA couldn't disambiguate the property path once `Test` gained `tutorId`/`studentId` JSON helper getters. Renamed to `findByTutor_Id`/`findByStudent_Id` (explicit underscore), matching the convention `LessonRepository` already used.
+- `javaApiService.js`'s `fetchStudentData()` let a Java 404 reject the promise instead of resolving `null` like every other single-item fetch helper - this silently broke the Student Profile page's own "student not found" 404 handling, since the rejection was caught by the route's generic error handler (redirect to `/home`) before the explicit `if (!student)` check ever ran.
 
 ### Changed
 - `Test.mark` changed from `Integer` to `Double` (DB column migrated to `double precision`) to support half-point grades, matching the 0-10 scale the Evaluations UI expects. See [06_Database_Migrations.md](06_Database_Migrations.md) for the manual SQL migration.
-- `Database/init.sql` updated: `test` table gains a `subject` column, and its seed data now uses 0-10-scale marks with real subject names (previously an unrelated 0-30 scale with no subject).
+- `Test.mark`'s check constraint tightened from `0-30` (stale, unrelated to the app) to `0-10`, matching the scale the Evaluations UI has always enforced.
+- `Database/init.sql` updated: `test` table gains a `subject` column, and its seed data now uses 0-10-scale marks with real subject names (previously an unrelated 0-30 scale with no subject); also updated for the `tutor` → `app_user` rename and new `pack` table (see above).
 
 ### Removed
 - `Database/POSTGRE_DB_CONFIG.TXT`: redundant near-duplicate of `Database/init.sql`'s schema (with plain-text passwords and no longer up to date).
@@ -194,4 +215,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: February 25, 2026
+**Last Updated**: August 5, 2026

@@ -34,7 +34,7 @@ import java.time.LocalDateTime;
  * 
  * <p>Usage Example:
  * <pre>
- * Tutor tutor = tutorRepository.findById(tutorId).orElseThrow();
+ * User tutor = userRepository.findById(tutorId).orElseThrow();
  * Student student = studentRepository.findById(studentId).orElseThrow();
  * Lesson lesson = new Lesson(
  *     "Mathematics - Algebra",
@@ -46,17 +46,18 @@ import java.time.LocalDateTime;
  * lessonRepository.save(lesson);
  * </pre>
  * </p>
- * 
+ *
  * <p>Database Mapping:
  * <ul>
  *   <li>Table: lesson</li>
  *   <li>Primary Key: id (auto-generated)</li>
- *   <li>Foreign Keys: id_tutor, id_student</li>
+ *   <li>Foreign Keys: id_tutor, id_student, id_pack (optional)</li>
  * </ul>
  * </p>
- * 
- * @see Tutor
+ *
+ * @see User
  * @see Student
+ * @see Pack
  * @see LessonCreateDTO
  * @author Tutorly Development Team
  * @version 1.0
@@ -107,8 +108,8 @@ public class Lesson {
     
     /**
      * The tutor conducting/teaching this lesson.
-     * 
-     * Many-to-one relationship with Tutor entity.
+     *
+     * Many-to-one relationship with User entity.
      * Required (nullable = false) as every lesson must have an assigned tutor.
      * Uses @JsonBackReference to prevent circular references during JSON serialization.
      * The tutor's ID can be accessed directly via the getTutorId() helper method.
@@ -116,11 +117,11 @@ public class Lesson {
     @ManyToOne
     @JoinColumn(name = "id_tutor", nullable = false)
     @JsonBackReference("tutor-lessons")
-    private Tutor tutor;
-    
+    private User tutor;
+
     /**
      * The student attending/receiving this lesson.
-     * 
+     *
      * Many-to-one relationship with Student entity.
      * Required (nullable = false) as every lesson must have an assigned student.
      * Uses @JsonBackReference to prevent circular references during JSON serialization.
@@ -130,7 +131,20 @@ public class Lesson {
     @JoinColumn(name = "id_student", nullable = false)
     @JsonBackReference("student-lessons")
     private Student student;
-    
+
+    /**
+     * The lesson package (block of prepaid hours) this lesson was drawn from, if any.
+     *
+     * Many-to-one relationship with Pack entity. Optional (nullable) - a lesson
+     * doesn't have to be tied to a package.
+     * Uses @JsonBackReference to prevent circular references during JSON serialization.
+     * The pack's ID can be accessed directly via the getPackId() helper method.
+     */
+    @ManyToOne
+    @JoinColumn(name = "id_pack")
+    @JsonBackReference("pack-lessons")
+    private Pack pack;
+
     
     // Constructors
     
@@ -151,7 +165,7 @@ public class Lesson {
      * @param tutor The tutor conducting the lesson (required)
      * @param student The student attending the lesson (required)
      */
-    public Lesson(String description, LocalDateTime startTime, LocalDateTime endTime, Tutor tutor, Student student) {
+    public Lesson(String description, LocalDateTime startTime, LocalDateTime endTime, User tutor, Student student) {
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -237,22 +251,40 @@ public class Lesson {
     
     /**
      * Gets the tutor conducting this lesson.
-     * 
-     * @return The Tutor entity
+     *
+     * @return The User entity
      */
-    public Tutor getTutor() {
+    public User getTutor() {
         return tutor;
     }
-    
+
     /**
      * Sets the tutor conducting this lesson.
-     * 
-     * @param tutor The Tutor entity
+     *
+     * @param tutor The User entity
      */
-    public void setTutor(Tutor tutor) {
+    public void setTutor(User tutor) {
         this.tutor = tutor;
     }
-    
+
+    /**
+     * Gets the package this lesson was drawn from.
+     *
+     * @return The Pack entity, or null if this lesson isn't tied to a package
+     */
+    public Pack getPack() {
+        return pack;
+    }
+
+    /**
+     * Sets the package this lesson was drawn from.
+     *
+     * @param pack The Pack entity
+     */
+    public void setPack(Pack pack) {
+        this.pack = pack;
+    }
+
     /**
      * Gets the student attending this lesson.
      * 
@@ -293,13 +325,27 @@ public class Lesson {
      * Gets the tutor ID for JSON serialization.
      * 
      * This helper method provides direct access to the tutor's ID without
-     * serializing the entire Tutor entity, avoiding circular references and
+     * serializing the entire User entity, avoiding circular references and
      * reducing payload size.
-     * 
+     *
      * @return The tutor's ID, or null if tutor is not set
      */
     @JsonProperty("tutorId")
     public Long getTutorId() {
         return tutor != null ? tutor.getId() : null;
+    }
+
+    /**
+     * Gets the pack ID for JSON serialization.
+     *
+     * This helper method provides direct access to the pack's ID without
+     * serializing the entire Pack entity, avoiding circular references and
+     * reducing payload size.
+     *
+     * @return The pack's ID, or null if this lesson isn't tied to a package
+     */
+    @JsonProperty("packId")
+    public Long getPackId() {
+        return pack != null ? pack.getId() : null;
     }
 }

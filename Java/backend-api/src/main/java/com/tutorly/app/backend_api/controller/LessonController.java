@@ -3,10 +3,10 @@ package com.tutorly.app.backend_api.controller;
 import com.tutorly.app.backend_api.dto.LessonCreateDTO;
 import com.tutorly.app.backend_api.entity.Lesson;
 import com.tutorly.app.backend_api.entity.Student;
-import com.tutorly.app.backend_api.entity.Tutor;
+import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.service.LessonService;
 import com.tutorly.app.backend_api.service.StudentService;
-import com.tutorly.app.backend_api.service.TutorService;
+import com.tutorly.app.backend_api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -37,7 +37,7 @@ public class LessonController {
     private LessonService lessonService;
     
     @Autowired
-    private TutorService tutorService;
+    private UserService tutorService;
     
     @Autowired
     private StudentService studentService;
@@ -187,7 +187,7 @@ public class LessonController {
         try {
             log.info("Attempting to create lesson for tutor {} and student {}", lessonDTO.getTutorId(), lessonDTO.getStudentId());
             // Fetch tutor and student by ID
-            Optional<Tutor> tutorOpt = tutorService.getTutorById(lessonDTO.getTutorId());
+            Optional<User> tutorOpt = tutorService.getUserById(lessonDTO.getTutorId());
             Optional<Student> studentOpt = studentService.getStudentById(lessonDTO.getStudentId());
             
             if (tutorOpt.isEmpty()) {
@@ -237,7 +237,7 @@ public class LessonController {
             return ResponseEntity.notFound().build();
         }
 
-        Optional<Tutor> tutor = tutorService.getTutorById(dto.getTutorId());
+        Optional<User> tutor = tutorService.getUserById(dto.getTutorId());
         Optional<Student> student = studentService.getStudentById(dto.getStudentId());
 
         if (tutor.isEmpty()) {

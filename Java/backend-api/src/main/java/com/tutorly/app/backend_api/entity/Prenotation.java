@@ -34,9 +34,9 @@ import java.time.LocalDateTime;
  * 
  * <p>Usage Example:
  * <pre>
- * Tutor tutor = tutorRepository.findById(tutorId).orElseThrow();
+ * User tutor = userRepository.findById(tutorId).orElseThrow();
  * Student student = studentRepository.findById(studentId).orElseThrow();
- * Tutor creator = tutorRepository.findById(creatorId).orElseThrow();
+ * User creator = userRepository.findById(creatorId).orElseThrow();
  * Prenotation prenotation = new Prenotation(
  *     LocalDateTime.of(2026, 2, 20, 10, 0),
  *     LocalDateTime.of(2026, 2, 20, 11, 30),
@@ -49,7 +49,7 @@ import java.time.LocalDateTime;
  * prenotationRepository.save(prenotation);
  * </pre>
  * </p>
- * 
+ *
  * <p>Database Mapping:
  * <ul>
  *   <li>Table: prenotation</li>
@@ -58,9 +58,9 @@ import java.time.LocalDateTime;
  *   <li>Timestamps: created_at (automatically set)</li>
  * </ul>
  * </p>
- * 
+ *
  * @see Student
- * @see Tutor
+ * @see User
  * @see Lesson
  * @see PrenotationCreateDTO
  * @see PrenotationResponseDTO
@@ -140,8 +140,8 @@ public class Prenotation {
     
     /**
      * The tutor assigned to conduct this tutoring session.
-     * 
-     * Many-to-one relationship with Tutor entity.
+     *
+     * Many-to-one relationship with User entity.
      * Required (nullable = false) as every prenotation must have an assigned tutor.
      * Uses @JsonBackReference to prevent circular references during JSON serialization.
      * The tutor's ID can be accessed directly via the getTutorId() helper method.
@@ -149,24 +149,24 @@ public class Prenotation {
     @ManyToOne
     @JoinColumn(name = "id_tutor", nullable = false)
     @JsonBackReference("tutor-prenotations")
-    private Tutor tutor;
-    
+    private User tutor;
+
     /**
-     * The tutor who created this prenotation record.
-     * 
-     * Many-to-one relationship with Tutor entity.
+     * The user who created this prenotation record.
+     *
+     * Many-to-one relationship with User entity.
      * Required (nullable = false) as every prenotation must have a tracked creator.
      * Uses @JsonBackReference to prevent circular references during JSON serialization.
      * The creator's ID can be accessed directly via the getCreatorId() helper method.
-     * 
-     * Note: The creator may be different from the assigned tutor - one tutor
+     *
+     * Note: The creator may be different from the assigned tutor - one user
      * can create bookings for another tutor's sessions.
      * Useful for accountability and tracking who initiated the booking.
      */
     @ManyToOne
     @JoinColumn(name = "id_creator", nullable = false)
     @JsonBackReference("tutor-createdPrenotations")
-    private Tutor creator;
+    private User creator;
     
     
     // Constructors
@@ -191,7 +191,7 @@ public class Prenotation {
      * @param tutor The tutor assigned to conduct the session (required)
      * @param creator The tutor who created this prenotation record (required)
      */
-    public Prenotation(LocalDateTime startTime, LocalDateTime endTime, Student student, Tutor tutor, Tutor creator) {
+    public Prenotation(LocalDateTime startTime, LocalDateTime endTime, Student student, User tutor, User creator) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.student = student;
@@ -313,37 +313,37 @@ public class Prenotation {
     
     /**
      * Gets the tutor assigned to conduct this session.
-     * 
-     * @return The Tutor entity
+     *
+     * @return The User entity
      */
-    public Tutor getTutor() {
+    public User getTutor() {
         return tutor;
     }
-    
+
     /**
      * Sets the tutor assigned to conduct this session.
-     * 
-     * @param tutor The Tutor entity
+     *
+     * @param tutor The User entity
      */
-    public void setTutor(Tutor tutor) {
+    public void setTutor(User tutor) {
         this.tutor = tutor;
     }
-    
+
     /**
-     * Gets the tutor who created this prenotation record.
-     * 
-     * @return The creator Tutor entity
+     * Gets the user who created this prenotation record.
+     *
+     * @return The creator User entity
      */
-    public Tutor getCreator() {
+    public User getCreator() {
         return creator;
     }
-    
+
     /**
-     * Sets the tutor who created this prenotation record.
-     * 
-     * @param creator The creator Tutor entity
+     * Sets the user who created this prenotation record.
+     *
+     * @param creator The creator User entity
      */
-    public void setCreator(Tutor creator) {
+    public void setCreator(User creator) {
         this.creator = creator;
     }
     
@@ -369,7 +369,7 @@ public class Prenotation {
      * Gets the tutor ID for JSON serialization.
      * 
      * This helper method provides direct access to the tutor's ID without
-     * serializing the entire Tutor entity, avoiding circular references and
+     * serializing the entire User entity, avoiding circular references and
      * reducing payload size.
      * 
      * @return The tutor's ID, or null if tutor is not set
@@ -383,7 +383,7 @@ public class Prenotation {
      * Gets the creator tutor ID for JSON serialization.
      * 
      * This helper method provides direct access to the creator's ID without
-     * serializing the entire Tutor entity, avoiding circular references and
+     * serializing the entire User entity, avoiding circular references and
      * reducing payload size. Useful for accountability and tracking who initiated
      * the booking.
      * 

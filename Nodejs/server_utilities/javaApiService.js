@@ -46,7 +46,7 @@ const { JAVA_API_HOST, JAVA_API_PORT, JAVA_API_KEY } = require('./config');
  * This is the core utility function used by all other API functions.
  * Handles HTTPS requests with proper headers, error handling, and JSON parsing.
  * 
- * @param {string} path - API endpoint path (e.g., '/api/prenotations', '/api/tutors/123')
+ * @param {string} path - API endpoint path (e.g., '/api/prenotations', '/api/users/123')
  * @param {string} method - HTTP method: GET, POST, PUT, PATCH, or DELETE (default: 'GET')
  * @param {object} data - Request body data for POST/PUT/PATCH requests (optional, auto-stringified)
  * @returns {Promise<any|null>} Parsed JSON response data if successful, null for empty responses
@@ -54,7 +54,7 @@ const { JAVA_API_HOST, JAVA_API_PORT, JAVA_API_KEY } = require('./config');
  * 
  * @example
  * // GET request
- * const tutors = await fetchFromJavaAPI('/api/tutors', 'GET');
+ * const tutors = await fetchFromJavaAPI('/api/users', 'GET');
  * 
  * @example
  * // POST request with data
@@ -154,7 +154,7 @@ function fetchFromJavaAPI(path, method = 'GET', data = null) {
  * // Returns: { id: 5, username: 'mario.rossi', email: '...', ... }
  */
 function fetchTutorData(tutorId) {
-    return fetchFromJavaAPI(`/api/tutors/${tutorId}`, 'GET');
+    return fetchFromJavaAPI(`/api/users/${tutorId}`, 'GET');
 }
 
 

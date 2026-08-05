@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: August 3, 2026  
+**Last Updated**: August 5, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -44,6 +44,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 - ✅ **Internationalization (i18n)**: automatic English/Italian translation based on the browser's language, no manual switcher
 - ✅ Calendar weekly-repeat prenotations and continuous multi-day/all-day notes
 - ✅ Student evaluations (test marks) with per-student progress chart and running average
+- ✅ STAFF-only Student Profile page: per-subject/tutor marks chart with toggleable lines, hours breakdown, and prenotation management
 
 ---
 
@@ -73,6 +74,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 | `/lessons` | GET | Lessons management | Tutor/Admin |
 | `/calendar` | GET | Calendar view | Tutor/Admin |
 | `/reports` | GET | Evaluations (student marks/tests, with per-student stats chart) | Tutor/Admin |
+| `/student/:id` | GET | Student profile (marks chart, hours, prenotations) | STAFF only |
 | `/admin` | GET | Admin panel | Admin only |
 | `/staffPanel` | GET | Staff management | Staff/Admin |
 | `/logout` | GET | Logout | Tutor/Admin |
@@ -82,7 +84,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 | Route | Method | Description | Access |
 |-------|--------|-------------|--------|
 | `/api/students` | GET | Fetch all students | Authenticated |
-| `/api/tutors` | GET | Fetch all tutors | Authenticated |
+| `/api/users` | GET | Fetch all users (tutors/STAFF/GUEST) | Authenticated |
 | `/api/lessons/new` | POST | Create new lesson | Authenticated |
 | `/api/lessons/delete/:id` | DELETE | Delete lesson | Staff/Admin |
 | `/api/export/lessons` | GET | Export lessons to Excel | Authenticated |
@@ -254,6 +256,7 @@ Nodejs/
 │   ├── lessons.ejs                 # Lesson management interface
 │   ├── calendar.ejs                # Calendar view with notes
 │   ├── reports.ejs                 # Evaluations (student marks/tests)
+│   ├── student.ejs                 # Student profile (STAFF only)
 │   ├── admin.ejs                   # Admin panel
 │   ├── staffPanel.ejs              # Staff panel (STAFF role only)
 │   ├── 404.ejs                     # Error page
@@ -272,6 +275,7 @@ Nodejs/
 │   │   ├── lessons.css             # Lesson management styles
 │   │   ├── calendar.css            # Calendar view styles
 │   │   ├── reports.css             # Evaluations page styles
+│   │   ├── student.css             # Student profile page styles
 │   │   ├── admin.css               # Admin panel styles
 │   │   ├── staffPanel.css          # Staff panel styles
 │   │   └── theme.css               # Light/dark theme CSS variables (all pages)
@@ -283,6 +287,7 @@ Nodejs/
 │       ├── lessonsScript.js        # Lesson management logic
 │       ├── calendarScript.js       # Calendar interactions
 │       ├── reports.js              # Evaluations page logic
+│       ├── student.js              # Student profile page logic
 │       ├── staffPanel.js           # Staff panel functionality
 │       ├── modalShared.js          # Shared modal utilities
 │       ├── theme.js                # Theme toggle behavior (all pages)
@@ -513,12 +518,12 @@ req.session = {
 
 5. authService.authenticateTutor()
    ✓ Hash attempted password with bcrypt
-   ✓ Call Java API: GET /api/tutors
+   ✓ Call Java API: GET /api/users
 
 6. JAVA API
    ✓ Verify X-API-Key header
-   ✓ Query PostgreSQL for tutors
-   ✓ Return JSON array of tutors
+   ✓ Query PostgreSQL for users
+   ✓ Return JSON array of users
 
 7. authService (continued)
    ✓ Find tutor by username
@@ -954,7 +959,7 @@ mvn spring-boot:run
 
 2. **Verify API connectivity:**
 ```bash
-curl -k -X GET https://localhost:8443/api/tutors \
+curl -k -X GET https://localhost:8443/api/users \
      -H "X-API-Key: MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu"
 ```
 
@@ -1021,6 +1026,14 @@ Default admin account (created via Java API):
 |--------|-------|-------------|
 | GET | `/staffPanel` | Staff panel with advanced features |
 
+### STAFF-Only Route (Manual Role Check, not `isStaff`)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/student/:id` | Student profile - see [Student Profile Page](#student-profile-page) |
+
+`/student/:id` checks `role !== 'STAFF'` inline in the route handler (redirecting to `/home` if not STAFF) rather than using the `isStaff` middleware, because `isStaff` returns a JSON 401/403 response - appropriate for an API route, but not for a page route where a redirect is expected. It still requires `isAuthenticated` first.
+
 ---
 
 ### API Endpoints - Lessons
@@ -1072,17 +1085,23 @@ Body: {
 | DELETE | `/api/prenotations/:id` | Tutor | Delete prenotation |
 | PATCH | `/api/prenotations/:id/confirm` | Tutor | Confirm prenotation |
 
+`PUT`/`DELETE /api/prenotations/:id` are also what the Student Profile page's edit-prenotation modal calls (see [Student Profile Page](#student-profile-page)) - same endpoints as the Calendar page, no dedicated routes were added.
+
 ---
 
-### API Endpoints - Tutors
+### API Endpoints - Users
+
+Renamed from "Tutors" - `/api/tutors` became `/api/users` when the underlying `Tutor` entity/table was renamed to `User`/`app_user` to accommodate the new `GUEST` role. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role) and [01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users).
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/api/tutors` | Tutor | Get all tutors |
-| GET | `/api/tutors/:id` | Tutor | Get tutor by ID |
-| POST | `/api/tutors` | Admin | Create new tutor |
-| PUT | `/api/tutors/:id` | Admin | Update tutor |
-| DELETE | `/api/tutors/:id` | Admin | Delete tutor |
+| GET | `/api/users` | Tutor | Get all users |
+| GET | `/api/users/:id` | Tutor | Get user by ID |
+| POST | `/api/users` | Admin | Create new user |
+| PUT | `/api/users/:id` | Admin | Update user |
+| DELETE | `/api/users/:id` | Admin | Delete user |
+| PATCH | `/api/users/:id/role` | Admin | Update role only (`GENERIC`/`STAFF`/`GUEST`) |
+| PATCH | `/api/users/:id/status` | Admin | Update status only |
 
 ---
 
@@ -1141,6 +1160,7 @@ Client-side JavaScript is organized by page/feature:
 | `calendarScript.js` | Calendar view (event handling, date navigation) |
 | `staffPanel.js` | Staff panel functionality |
 | `reports.js` | Evaluations page (add/delete tests, per-student SVG chart, search/date filters) |
+| `student.js` | Student profile page (per-subject/tutor SVG chart with toggleable lines, hours breakdown, prenotation edit/delete) - see [Student Profile Page](#student-profile-page) |
 | `modalShared.js` | Shared modal utilities (open, close, populate) |
 | `theme.js` | Light/dark theme toggle and OS-preference syncing |
 | `i18n.js` | Client-side `t()` translation helper, reading from `window.translations` |
@@ -1279,6 +1299,37 @@ The `/reports` page (`views/reports.ejs` + `public/js/reports.js`) tracks studen
 ### Subjects Reference List
 
 `Nodejs/config/subjects.json` is a flat JSON array of subject names (e.g. `"Matematica"`, `"Inglese"`) used only to populate the "Add Evaluation" subject dropdown - it is **not** translated (single fixed list regardless of UI language) and has no server-side validation: `Test.subject` in the Java entity is a plain unconstrained `String`, so the list is a UI convenience, not an enum. Edit the JSON file directly to add/remove subjects; `require()` caches it in memory, so the Node.js server needs a restart to pick up changes (no Java/DB change needed).
+
+---
+
+## Student Profile Page
+
+The `/student/:id` page (`views/student.ejs` + `public/js/student.js` + `public/css/student.css`) is a **STAFF-only** deep-dive into a single student: their evaluation history, hours taught, and prenotations, pulled together across every tutor who has ever worked with them (not just the viewing STAFF member).
+
+**Access control:** requires `isAuthenticated`, then the route handler fetches the viewing tutor's own data and redirects to `/home` if their `role !== 'STAFF'` (see [Routes and Endpoints](#staff-only-route-manual-role-check-not-isstaff) above). If `:id` doesn't resolve to a real student, the route renders the shared `404.ejs` instead of crashing - this required fixing `fetchStudentData()` in `javaApiService.js`, which previously let a Java 404 reject the promise instead of resolving `null` like every other single-item fetch helper does.
+
+**Data sources:** unlike most of the app (which scopes lessons/tests/prenotations to the logged-in tutor), this page deliberately fetches **all** of a student's tests and prenotations regardless of which tutor administered them (`fetchTestsByStudent`, `fetchPrenotationsByStudent` in `javaApiService.js`) - a STAFF member reviewing a student needs the full picture, not just their own interactions. Hours/lesson-calendar data stays scoped to the viewing tutor's own lessons with that student (`fetchLessonsByTutorAndStudent`), since "hours I've personally taught this student" is the meaningful number there. Each test/prenotation is enriched server-side with the administering tutor's username (`tutorName`), deduplicating repeated tutor lookups with a small in-memory cache built per-request.
+
+### Marks Chart (subject + tutor lines)
+
+- Evaluations are grouped by **subject + tutor pair** - if a student took Philosophy tests from two different tutors, that's two separate lines, not one blended average. Each group gets a stable color from a fixed 10-color palette (cycling if there are more groups than colors) and its own average, shown in a card-grid legend below the chart.
+- **Click a legend card to toggle its line** on/off in the chart (the card stays visible, dimmed, so it can be clicked again) - state persists across re-renders (e.g. re-applying the date filter) via a `Set` of hidden group keys.
+- Date labels on the x-axis are thinned dynamically (evenly spaced, always including the last point) so they don't overlap regardless of how many evaluations are plotted - the point/line data itself is never thinned, only the text labels.
+- Clicking a point opens the same kind of details popup as the Evaluations page, additionally showing which subject and tutor that mark belongs to.
+
+### From/To Date Filter
+
+Same UX and default range as the Evaluations page (last September 1st through today - see `getLastSeptemberFirst()`), but wider in scope here: it drives the marks chart, the "All Tests" list, the "Hours per Month" breakdown, and the top "Avg mark" profile stat, all at once via a shared `getFilteredEvaluations()`/`getFilteredLessons()` pair. The profile header's "Tests" count and "Total Hours" stay lifetime totals, unaffected by the filter - only "Avg mark" was asked to follow it.
+
+### Hours per Month
+
+Shown as exact hours and minutes (e.g. `2h 15m`, computed from the real `endTime - startTime` of each lesson) rather than a decimal, capped to the 6 most recent months with lessons in the filtered range (fewer if less history exists).
+
+### Prenotations
+
+Below the mini lesson-calendar, a scrollable list (`max-h-[32rem]`, same `scrollbar-thin` pattern as the Evaluations page's sidebar) of the student's prenotations across every tutor, soonest-first. A prenotation dated before today is shown with a red border/background and labeled "Expired" instead of "Pending" (a confirmed-but-past prenotation still shows "Confirmed" - only the pending state changes wording).
+
+**STAFF can click a card to edit or delete it** - opens the same kind of modal as the Calendar page's edit-prenotation flow (date, start/end time, tutor reassignment via radio buttons populated from `window.allTutors`), calling the existing `PUT`/`DELETE /api/prenotations/:id` endpoints (no new backend routes). The click handler and edit modal are gated by `window.userRole === 'STAFF'` in `student.js` - redundant with the route-level check today (only STAFF can reach this page at all), kept as defense-in-depth in case that ever changes.
 
 ---
 
@@ -1633,4 +1684,4 @@ pm2 save
 
 ---
 
-**Last updated:** February 25, 2026
+**Last updated:** August 5, 2026

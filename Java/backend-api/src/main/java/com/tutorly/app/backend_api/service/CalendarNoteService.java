@@ -2,9 +2,9 @@ package com.tutorly.app.backend_api.service;
 
 import com.tutorly.app.backend_api.dto.CalendarNoteCreateDTO;
 import com.tutorly.app.backend_api.entity.CalendarNote;
-import com.tutorly.app.backend_api.entity.Tutor;
+import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.repository.CalendarNoteRepository;
-import com.tutorly.app.backend_api.repository.TutorRepository;
+import com.tutorly.app.backend_api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,7 +28,7 @@ public class CalendarNoteService {
     private CalendarNoteRepository calendarNoteRepository;
     
     @Autowired
-    private TutorRepository tutorRepository;
+    private UserRepository tutorRepository;
     
     /**
      * Retrieve all calendar notes
@@ -94,7 +94,7 @@ public class CalendarNoteService {
      */
     public CalendarNote createCalendarNoteFromDTO(CalendarNoteCreateDTO dto) {
         // Find creator
-        Tutor creator = tutorRepository.findById(dto.getCreatorId())
+        User creator = tutorRepository.findById(dto.getCreatorId())
                 .orElseThrow(() -> new RuntimeException("Creator tutor not found with ID: " + dto.getCreatorId()));
         
         // Create calendar note
@@ -106,9 +106,9 @@ public class CalendarNoteService {
         
         // Find and assign tutors if provided
         if (dto.getTutorIds() != null && !dto.getTutorIds().isEmpty()) {
-            Set<Tutor> tutors = new HashSet<>();
+            Set<User> tutors = new HashSet<>();
             for (Long tutorId : dto.getTutorIds()) {
-                Tutor tutor = tutorRepository.findById(tutorId)
+                User tutor = tutorRepository.findById(tutorId)
                         .orElseThrow(() -> new RuntimeException("Tutor not found with ID: " + tutorId));
                 tutors.add(tutor);
             }
@@ -139,16 +139,16 @@ public class CalendarNoteService {
         // Keep existing creator (don't update creator)
         // If you need to update creator, uncomment the following:
         // if (dto.getCreatorId() != null) {
-        //     Tutor creator = tutorRepository.findById(dto.getCreatorId())
+        //     User creator = tutorRepository.findById(dto.getCreatorId())
         //             .orElseThrow(() -> new RuntimeException("Creator tutor not found with ID: " + dto.getCreatorId()));
         //     note.setCreator(creator);
         // }
         
         // Find and update tutors
         if (dto.getTutorIds() != null) {
-            Set<Tutor> tutors = new HashSet<>();
+            Set<User> tutors = new HashSet<>();
             for (Long tutorId : dto.getTutorIds()) {
-                Tutor tutor = tutorRepository.findById(tutorId)
+                User tutor = tutorRepository.findById(tutorId)
                         .orElseThrow(() -> new RuntimeException("Tutor not found with ID: " + tutorId));
                 tutors.add(tutor);
             }

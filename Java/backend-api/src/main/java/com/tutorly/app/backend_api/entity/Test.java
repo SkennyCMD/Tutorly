@@ -34,7 +34,7 @@ import java.time.LocalDate;
  * 
  * <p>Usage Example:
  * <pre>
- * Tutor tutor = tutorRepository.findById(tutorId).orElseThrow();
+ * User tutor = userRepository.findById(tutorId).orElseThrow();
  * Student student = studentRepository.findById(studentId).orElseThrow();
  * Test test = new Test(
  *     LocalDate.of(2026, 2, 16),
@@ -47,7 +47,7 @@ import java.time.LocalDate;
  * testRepository.save(test);
  * </pre>
  * </p>
- * 
+ *
  * <p>Database Mapping:
  * <ul>
  *   <li>Table: test</li>
@@ -56,8 +56,8 @@ import java.time.LocalDate;
  *   <li>Nullable fields: description, mark (score can be null for ungraded tests)</li>
  * </ul>
  * </p>
- * 
- * @see Tutor
+ *
+ * @see User
  * @see Student
  * @author Tutorly Development Team
  * @version 1.0
@@ -110,8 +110,7 @@ public class Test {
      *
      * Use cases:
      * - null: Test not yet graded or score not recorded
-     * - 0-10: School grading scale (with half-point steps)
-     * - Custom scales: As defined by the tutoring program (DB check constraint allows 0-30)
+     * - 0-10: School grading scale (with half-point steps) - enforced by a DB check constraint
      *
      * Used for calculating averages, tracking progress, and generating reports.
      */
@@ -131,17 +130,17 @@ public class Test {
 
     /**
      * The tutor who administered, proctored, or graded this test.
-     * 
-     * Many-to-one relationship with Tutor entity.
+     *
+     * Many-to-one relationship with User entity.
      * Required (nullable = false) as every test must be associated with a tutor.
      * Uses @JsonBackReference to prevent circular references during JSON serialization.
-     * 
+     *
      * Used for tracking tutor effectiveness and workload distribution.
      */
     @ManyToOne
     @JoinColumn(name = "id_tutor", nullable = false)
     @JsonBackReference("tutor-tests")
-    private Tutor tutor;
+    private User tutor;
     
     /**
      * The student who took or will take this test.
@@ -178,7 +177,7 @@ public class Test {
      * @param tutor The tutor who administered the test (required)
      * @param student The student who took the test (required)
      */
-    public Test(LocalDate day, String description, Double mark, String subject, Tutor tutor, Student student) {
+    public Test(LocalDate day, String description, Double mark, String subject, User tutor, Student student) {
         this.day = day;
         this.description = description;
         this.mark = mark;
@@ -283,19 +282,19 @@ public class Test {
 
     /**
      * Gets the tutor who administered this test.
-     * 
-     * @return The Tutor entity
+     *
+     * @return The User entity
      */
-    public Tutor getTutor() {
+    public User getTutor() {
         return tutor;
     }
-    
+
     /**
      * Sets the tutor who administered this test.
-     * 
-     * @param tutor The Tutor entity
+     *
+     * @param tutor The User entity
      */
-    public void setTutor(Tutor tutor) {
+    public void setTutor(User tutor) {
         this.tutor = tutor;
     }
     
@@ -339,7 +338,7 @@ public class Test {
      * Gets the tutor ID for JSON serialization.
      *
      * This helper method provides direct access to the tutor's ID without
-     * serializing the entire Tutor entity, avoiding circular references and
+     * serializing the entire User entity, avoiding circular references and
      * reducing payload size.
      *
      * @return The tutor's ID, or null if tutor is not set

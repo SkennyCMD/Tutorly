@@ -1,7 +1,9 @@
 package com.tutorly.app.backend_api.entity;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -69,7 +71,7 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "student")
-@JsonIgnoreProperties(value = {"lessons", "prenotations", "tests"}, allowGetters = true)
+@JsonIgnoreProperties(value = {"lessons", "prenotations", "tests", "packs"}, allowGetters = true)
 public class Student {
     
     /**
@@ -138,7 +140,21 @@ public class Student {
      */
     @Column(name = "status", nullable = false)
     private String status = "ACTIVE";
-    
+
+    /**
+     * The GUEST account (e.g. a parent/guardian) allowed to view this student's data.
+     *
+     * Many-to-one relationship with User entity. Optional (nullable) - a student
+     * doesn't have to be linked to a GUEST account. A single GUEST user can be
+     * linked to more than one student (one-to-many from the User side).
+     * Uses @JsonBackReference to prevent circular references during JSON serialization.
+     * The linked user's ID can be accessed directly via the getUserId() helper method.
+     */
+    @ManyToOne
+    @JoinColumn(name = "id_user")
+    @JsonBackReference("user-students")
+    private User user;
+
     /**
      * Collection of prenotations (bookings/reservations) associated with this student.
      * 
@@ -180,6 +196,20 @@ public class Student {
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
     @JsonManagedReference("student-tests")
     private Set<Test> tests = new HashSet<>();
+
+    /**
+     * Collection of lesson packages (blocks of prepaid hours) bought for this student.
+     *
+     * One-to-many relationship with Pack entity.
+     * Cascade ALL: operations on student cascade to packs.
+     * Uses @JsonManagedReference to manage bidirectional relationship serialization.
+     * Mapped by "student" field in the Pack entity.
+     *
+     * Initialized as empty HashSet to avoid null pointer exceptions.
+     */
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL)
+    @JsonManagedReference("student-packs")
+    private Set<Pack> packs = new HashSet<>();
     
     
     // Constructors
@@ -371,10 +401,60 @@ public class Student {
     
     /**
      * Sets the collection of tests taken by this student.
-     * 
+     *
      * @param tests Set of Test entities
      */
     public void setTests(Set<Test> tests) {
         this.tests = tests;
+    }
+
+    /**
+     * Gets the collection of lesson packages bought for this student.
+     *
+     * @return Set of Pack entities
+     */
+    public Set<Pack> getPacks() {
+        return packs;
+    }
+
+    /**
+     * Sets the collection of lesson packages bought for this student.
+     *
+     * @param packs Set of Pack entities
+     */
+    public void setPacks(Set<Pack> packs) {
+        this.packs = packs;
+    }
+
+    /**
+     * Gets the GUEST account linked to this student, if any.
+     *
+     * @return The User entity, or null if no GUEST account is linked
+     */
+    public User getUser() {
+        return user;
+    }
+
+    /**
+     * Sets the GUEST account linked to this student.
+     *
+     * @param user The User entity to link (or null to unlink)
+     */
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    /**
+     * Gets the linked GUEST account's ID for JSON serialization.
+     *
+     * This helper method provides direct access to the linked user's ID without
+     * serializing the entire User entity, avoiding circular references and
+     * reducing payload size.
+     *
+     * @return The linked user's ID, or null if no GUEST account is linked
+     */
+    @JsonProperty("userId")
+    public Long getUserId() {
+        return user != null ? user.getId() : null;
     }
 }

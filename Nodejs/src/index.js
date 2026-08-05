@@ -573,7 +573,7 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             fetchFromJavaAPI(prenotationsEndpoint),
             fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`),
             fetchFromJavaAPI('/api/students'),
-            fetchFromJavaAPI('/api/tutors')
+            fetchFromJavaAPI('/api/users')
         ]);
         
         // Enrich prenotations with student and tutor data
@@ -722,7 +722,7 @@ app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
         }
         
         // Fetch all tutors from database
-        const allTutors = await fetchFromJavaAPI('/api/tutors');
+        const allTutors = await fetchFromJavaAPI('/api/users');
         
         res.render('staffPanel', {
             userId: req.session.userId,
@@ -824,7 +824,7 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
             fetchTestsByStudent(studentId),
             fetchLessonsByTutorAndStudent(tutorId, studentId),
             fetchPrenotationsByStudent(studentId),
-            fetchFromJavaAPI('/api/tutors')
+            fetchFromJavaAPI('/api/users')
         ]);
 
         // Shared cache so tests and prenotations don't re-fetch the same tutor twice
@@ -1010,7 +1010,7 @@ app.get('/api/reports/tutors-monthly-stats', tutorSession, isAuthenticated, isSt
         }
 
         // Fetch all tutors
-        const tutors = await fetchFromJavaAPI('/api/tutors');
+        const tutors = await fetchFromJavaAPI('/api/users');
         
         if (!tutors || tutors.length === 0) {
             return res.status(404).json({ error: 'No tutors found' });
@@ -1936,7 +1936,7 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
  */
 app.get('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     try {
-        const tutors = await fetchFromJavaAPI('/api/tutors', 'GET');
+        const tutors = await fetchFromJavaAPI('/api/users', 'GET');
         res.json(tutors);
     } catch (error) {
         logError('Error fetching tutors', req, { error: error.message });
@@ -1975,7 +1975,7 @@ app.patch('/api/admin/tutors/:id/role', adminSession, isAdmin, async (req, res) 
         }
 
         // Use the specific PATCH endpoint for role update
-        const updatedTutor = await fetchFromJavaAPI(`/api/tutors/${tutorId}/role`, 'PATCH', { role });
+        const updatedTutor = await fetchFromJavaAPI(`/api/users/${tutorId}/role`, 'PATCH', { role });
         
         logSuccess('Tutor role updated', req, { tutorId, role });
         res.json(updatedTutor);
@@ -2001,7 +2001,7 @@ app.patch('/api/admin/tutors/:id/status', adminSession, isAdmin, async (req, res
         }
 
         // Use the specific PATCH endpoint for status update
-        const updatedTutor = await fetchFromJavaAPI(`/api/tutors/${tutorId}/status`, 'PATCH', { status });
+        const updatedTutor = await fetchFromJavaAPI(`/api/users/${tutorId}/status`, 'PATCH', { status });
         
         logSuccess('Tutor status updated', req, { tutorId, status });
         res.json(updatedTutor);
@@ -2046,7 +2046,7 @@ app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
             status: 'ACTIVE'
         };
 
-        const newTutor = await fetchFromJavaAPI('/api/tutors', 'POST', tutorData);
+        const newTutor = await fetchFromJavaAPI('/api/users', 'POST', tutorData);
         
         logSuccess('Tutor created successfully', req, { username });
         res.status(201).json(newTutor);

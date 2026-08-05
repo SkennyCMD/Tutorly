@@ -5,7 +5,7 @@ This document provides comprehensive information about the Tutorly database stru
 ---
 
 **Document**: 07_Database_Configuration.md  
-**Last Updated**: August 3, 2026  
+**Last Updated**: August 5, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -74,39 +74,45 @@ The following diagram illustrates the complete database structure with all entit
 
 ---
 
-#### 2. **Tutor** (Tutors/Staff)
+#### 2. **User** (Tutors/STAFF/GUEST - table `app_user`)
+
+Renamed from `Tutor`/table `tutor`. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role) for the full migration and rationale (in short: a `GUEST` role was added for accounts that should only view their linked student's data, and since that's not really "a tutor" anymore, the table was renamed to the more general `app_user` - not `user`, since that's a reserved SQL keyword in PostgreSQL).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique tutor ID |
+| `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique user ID |
 | `username` | VARCHAR(100) | NOT NULL, UNIQUE | Login username |
 | `password` | VARCHAR(255) | NOT NULL | Bcrypt-hashed password |
 | `status` | VARCHAR(20) | NOT NULL | Account status (ACTIVE/BLOCKED) |
-| `role` | VARCHAR(20) | NOT NULL | Role (STAFF/NORMAL) |
+| `role` | VARCHAR(20) | NOT NULL | Role (GENERIC/STAFF/GUEST) |
+| `mail` | VARCHAR(255) | | Email address, optional (unlike `Admin.mail`, no format check) |
 
-**Purpose**: Store tutor accounts with role-based access control.
+**Purpose**: Store tutor, STAFF, and GUEST accounts with role-based access control.
 
 **Status Values**:
 - `ACTIVE` - Can log in and use the system
 - `BLOCKED` - Account disabled, login prevented
 
 **Role Values**:
-- `STAFF` - Full access (manage students, view all lessons, export reports)
+- `STAFF` - Full access (manage students, view all lessons, export reports, student profile pages)
 - `GENERIC` - Limited access (own lessons only)
+- `GUEST` - Intended for a parent/guardian who should only see their linked student(s) (see `Student.id_user` below) - **the view-restriction itself isn't implemented yet**, a `GUEST` account today authenticates and sees data like a `GENERIC` tutor would
 
 ---
 
-#### 3. **AdminCreatesTutor** (Associative Entity)
+#### 3. **AdminCreatesUser** (Associative Entity)
+
+Renamed from `AdminCreatesTutor` (its `id_tutor` column renamed to `id_user`) alongside the table 2 rename above. As with `Test` above, this table's real columns are prefix-style (`id_admin`, `id_user`), not the `admin_id`/`user_id` suffix style shown below - see [Database/init.sql](../Database/init.sql).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| `admin_id` | BIGINT | FK → Admin(id) | Administrator who created the tutor |
-| `tutor_id` | BIGINT | FK → Tutor(id) | Created tutor |
+| `admin_id` | BIGINT | FK → Admin(id) | Administrator who created the user |
+| `user_id` | BIGINT | FK → User(id) | Created user |
 | `timestamp` | TIMESTAMP | NOT NULL | Creation date/time |
 
-**Purpose**: Track which admin created each tutor account and when. (*Note: While the ER diagram suggests a (1,1) cardinality, the backend implements this as a join table to allow auditing creation history*).
+**Purpose**: Track which admin created each user account and when. (*Note: While the ER diagram suggests a (1,1) cardinality, the backend implements this as a join table to allow auditing creation history*).
 
-**Composite Primary Key**: (`admin_id`, `tutor_id`)
+**Composite Primary Key**: (`id_admin`, `id_user`)
 
 ---
 
@@ -120,6 +126,7 @@ The following diagram illustrates the complete database structure with all entit
 | `student_class` | VARCHAR(10) | | Class/grade (e.g., "3Ainfo") |
 | `description` | TEXT | | Additional notes |
 | `status` | VARCHAR(20) | NOT NULL | Student status (ACTIVE/INACTIVE) |
+| `id_user` | BIGINT | FK → User(id), nullable | The `GUEST` account (if any) allowed to view this student - see [User](#2-user-tutorsstaffguest---table-app_user) above |
 
 **Purpose**: Store student information and academic details.
 
@@ -133,14 +140,16 @@ The following diagram illustrates the complete database structure with all entit
 | `description` | TEXT | | Lesson content/topics covered |
 | `start_time` | TIMESTAMP | NOT NULL | Lesson start date/time |
 | `end_time` | TIMESTAMP | NOT NULL | Lesson end date/time |
-| `tutor_id` | BIGINT | FK → Tutor(id), NOT NULL | Tutor who conducted the lesson |
+| `tutor_id` | BIGINT | FK → User(id), NOT NULL | Tutor who conducted the lesson |
 | `student_id` | BIGINT | FK → Student(id), NOT NULL | Student who attended |
+| `id_pack` | BIGINT | FK → Pack(id), nullable | The lesson package this lesson was drawn from, if any |
 
 **Purpose**: Record completed tutoring sessions.
 
 **Constraints**:
 - `end_time` must be after `start_time`
 - One tutor and one student per lesson
+- A lesson doesn't have to belong to a `Pack`
 
 ---
 
@@ -154,8 +163,8 @@ The following diagram illustrates the complete database structure with all entit
 | `end_time` | TIMESTAMP | NOT NULL | Scheduled end time |
 | `flag` | BOOLEAN | NOT NULL | Booking status (false = pending, true = confirmed) |
 | `student_id` | BIGINT | FK → Student(id), NOT NULL | Student booking the lesson |
-| `tutor_id` | BIGINT | FK → Tutor(id), NOT NULL | Assigned tutor |
-| `creator_id` | BIGINT | FK → Tutor(id) | Tutor who created the booking |
+| `tutor_id` | BIGINT | FK → User(id), NOT NULL | Assigned tutor |
+| `creator_id` | BIGINT | FK → User(id) | User who created the booking |
 
 **Purpose**: Manage lesson reservations and scheduling.
 
@@ -171,15 +180,15 @@ The following diagram illustrates the complete database structure with all entit
 |--------|------|-------------|-------------|
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique test ID |
 | `description` | TEXT | | Description of the test content |
-| `mark` | DOUBLE PRECISION | CHECK (0-30) | Test score/grade (0-10 scale with half-points, e.g. 7.5, used by the app; column allows up to 30) |
+| `mark` | DOUBLE PRECISION | CHECK (0-10) | Test score/grade, 0-10 scale with half-points (e.g. 7.5) |
 | `subject` | VARCHAR(255) | | Subject/topic the test covers (e.g. "Matematica"), free text |
 | `day` | DATE | NOT NULL | Test date |
-| `id_tutor` | BIGINT | FK → Tutor(id), NOT NULL | Tutor who administered the test |
+| `id_tutor` | BIGINT | FK → User(id), NOT NULL | Tutor who administered the test |
 | `id_student` | BIGINT | FK → Student(id), NOT NULL | Student who took the test |
 
 **Purpose**: Track student assessments and performance.
 
-> **Note:** this table's actual foreign-key columns are named `id_tutor`/`id_student` (prefix), not `tutor_id`/`student_id` (suffix) as this doc's other table sections show - see [Database/init.sql](../Database/init.sql) for the authoritative schema. `mark`'s type was `INTEGER` until it was migrated to `DOUBLE PRECISION` to support half-point grades (see [06_Database_Migrations.md](06_Database_Migrations.md)); `subject` was added in the same release.
+> **Note:** this table's actual foreign-key columns are named `id_tutor`/`id_student` (prefix), not `tutor_id`/`student_id` (suffix) as this doc's other table sections show - see [Database/init.sql](../Database/init.sql) for the authoritative schema. `mark`'s type was `INTEGER` until it was migrated to `DOUBLE PRECISION` to support half-point grades, and its check constraint was later tightened from `0-30` to the app's actual `0-10` scale (see [06_Database_Migrations.md](06_Database_Migrations.md)); `subject` was added in the same release as the type change.
 
 ---
 
@@ -191,13 +200,28 @@ The following diagram illustrates the complete database structure with all entit
 | `description` | TEXT | NOT NULL | Note content/task description |
 | `start_time` | TIMESTAMP | NOT NULL | Note/event start time |
 | `end_time` | TIMESTAMP | NOT NULL | Note/event end time |
-| `creator_id` | BIGINT | FK → Tutor(id), NOT NULL | Tutor who created the note |
+| `creator_id` | BIGINT | FK → User(id), NOT NULL | Tutor who created the note |
 
 **Purpose**: Calendar reminders, tasks, and planning notes.
 
-**Many-to-Many Relationship**: `CalendarNote ↔ Tutor` (via join table)
+**Many-to-Many Relationship**: `CalendarNote ↔ User` (via `has` join table)
 - A note can be shared with multiple tutors
 - A tutor can see multiple notes
+
+---
+
+#### 9. **Pack** (Lesson Packages)
+
+New table - not yet exposed via any REST endpoint (entity + `PackRepository` exist; no controller/service). See [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique pack ID |
+| `hours` | DOUBLE PRECISION | NOT NULL | Total hours purchased in this package |
+| `closure` | DATE | nullable | Date the package was closed/expired; null while still active |
+| `id_student` | BIGINT | FK → Student(id), NOT NULL | The student this package belongs to |
+
+**Purpose**: Track prepaid blocks of tutoring hours purchased for a student. A `Lesson` can optionally reference a `Pack` via `lesson.id_pack` to track which package it was drawn from.
 
 ---
 
@@ -205,14 +229,17 @@ The following diagram illustrates the complete database structure with all entit
 
 | Relationship | Type | Description |
 |--------------|------|-------------|
-| **Admin → Tutor** | Many-to-Many | An admin can create multiple tutors; tracked via `AdminCreatesTutor` |
-| **Tutor → Lesson** | One-to-Many | A tutor conducts many lessons |
+| **Admin → User** | Many-to-Many | An admin can create multiple users; tracked via `AdminCreatesUser` |
+| **User → Lesson** | One-to-Many | A tutor conducts many lessons |
 | **Student → Lesson** | One-to-Many | A student attends many lessons |
-| **Tutor → Prenotation** | One-to-Many (2 roles) | As assigned tutor OR as creator |
+| **User → Prenotation** | One-to-Many (2 roles) | As assigned tutor OR as creator |
 | **Student → Prenotation** | One-to-Many | A student can have many bookings |
-| **Tutor → Test** | One-to-Many | A tutor administers many tests |
+| **User → Test** | One-to-Many | A tutor administers many tests |
 | **Student → Test** | One-to-Many | A student takes many tests |
-| **Tutor → CalendarNote** | Many-to-Many | Tutors can create and share notes |
+| **User → CalendarNote** | Many-to-Many | Tutors can create and share notes |
+| **Student → Pack** | One-to-Many | A student can have many lesson packages |
+| **Pack → Lesson** | One-to-Many, optional | A package can have lessons drawn from it; a lesson doesn't need a package |
+| **User → Student** | One-to-Many, optional | A `GUEST` user can be linked to student(s) via `Student.id_user` - visibility restriction not yet enforced |
 
 ---
 
@@ -507,7 +534,7 @@ If you have existing data with **plain-text passwords**, you must migrate them t
    ```
 
 3. **Verify**:
-   - All passwords in `admin` and `tutor` tables should start with `$2b$10$`
+   - All passwords in `admin` and `app_user` tables should start with `$2b$10$`
    - Test login functionality
 
 **When to Run**:
@@ -704,7 +731,7 @@ psql -U postgres -l | grep tutorly
 ```sql
 -- Find duplicates
 SELECT username, COUNT(*) 
-FROM tutor 
+FROM app_user 
 GROUP BY username 
 HAVING COUNT(*) > 1;
 
@@ -841,4 +868,4 @@ ORDER BY pg_total_relation_size(tablename::regclass) DESC;
 
 ---
 
-**Last Updated**: August 3, 2026
+**Last Updated**: August 5, 2026

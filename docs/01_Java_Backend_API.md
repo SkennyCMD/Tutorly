@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: August 3, 2026  
+**Last Updated**: August 5, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -60,7 +60,7 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 | `/api/students` | POST | Create new student | API Key |
 | `/api/students/{id}` | PUT | Update student | API Key |
 | `/api/students/{id}` | DELETE | Delete student | API Key |
-| `/api/tutors` | GET | List all tutors | API Key |
+| `/api/users` | GET | List all users (tutors, STAFF, GUEST) | API Key |
 | `/api/lessons` | GET | List all lessons | API Key |
 | `/api/lessons` | POST | Create new lesson | API Key |
 | `/api/prenotations` | GET | List bookings | API Key |
@@ -114,7 +114,7 @@ This section details the internal structure of the Java backend component:
 │                        │                                    │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │              CONTROLLER LAYER                        │   │
-│  │  - StudentController    - TutorController            │   │
+│  │  - StudentController    - UserController             │   │
 │  │  - LessonController     - PrenotationController      │   │
 │  │  - AdminController      - TestController             │   │
 │  │  - CalendarNoteController                            │   │
@@ -122,7 +122,7 @@ This section details the internal structure of the Java backend component:
 │                       │                                     │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │              SERVICE LAYER (Business Logic)          │   │
-│  │  - StudentService       - TutorService               │   │
+│  │  - StudentService       - UserService                │   │
 │  │  - LessonService        - PrenotationService         │   │
 │  │  - AdminService         - TestService                │   │
 │  │  - CalendarNoteService                               │   │
@@ -130,10 +130,10 @@ This section details the internal structure of the Java backend component:
 │                       │                                     │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │              REPOSITORY LAYER (Data Access)          │   │
-│  │  - StudentRepository    - TutorRepository            │   │
+│  │  - StudentRepository    - UserRepository             │   │
 │  │  - LessonRepository     - PrenotationRepository      │   │
 │  │  - AdminRepository      - TestRepository             │   │
-│  │  - CalendarNoteRepository                            │   │
+│  │  - CalendarNoteRepository - PackRepository           │   │
 │  └────────────────────┬─────────────────────────────────┘   │
 │                       │                                     │
 │  ┌──────────────────────────────────────────────────────┐   │
@@ -242,14 +242,20 @@ This section details the internal structure of the Java backend component:
 └─────────────────┘
 ```
 
-> **Note:** The `Test` box above doesn't show the `subject` field (a free-text subject/topic name, e.g. "Matematica") added after this diagram was drawn - adding a row would require re-aligning every neighboring box's border to match. See [Tests](#tests) below for the full, up-to-date field list.
+> **Note:** This diagram is out of date and kept only for the broad shape of the relationships - redrawing it without breaking every neighboring box's alignment isn't worth the risk. What it doesn't show, as of the `tutor` → `app_user` migration (see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role)):
+> - **`Tutor` is now `User`** (table `app_user`, not `tutor`) - same relationships shown above (Lesson/Prenotation/Test/CalendarNote), plus a new `mail` field and a `GUEST` role value alongside `GENERIC`/`STAFF`. All the fields/relationships listed under the `Tutor` box below still apply to `User`, just under the new name.
+> - **New `Pack` entity** (id, hours, closure date) - belongs to one `Student`, and a `Lesson` can optionally belong to one `Pack` (nullable `id_pack`) - not shown in the diagram at all.
+> - **`Student` gained an optional `user` field** - links a student to the `GUEST` account (if any) allowed to view them.
+> - The `Test` box also doesn't show the `subject` field (a free-text subject/topic name, e.g. "Matematica") added earlier - adding a row would require re-aligning every neighboring box's border to match.
+>
+> See [Tests](#tests) and [Users](#users) below for the full, up-to-date field lists.
 
-#### 1. **Admin → Tutor** (Many-to-Many with associative entity)
-- An admin can create multiple tutors
-- A tutor can be created by multiple admins (joint management)
-- Tracking through `AdminCreatesTutor` entity with timestamp
+#### 1. **Admin → User** (Many-to-Many with associative entity)
+- An admin can create multiple users (tutors, STAFF, or GUEST accounts)
+- A user can be created by multiple admins (joint management)
+- Tracking through `AdminCreatesUser` entity with timestamp
 
-#### 2. **Tutor → Lesson** (One-to-Many)
+#### 2. **User → Lesson** (One-to-Many, as tutor)
 - A tutor conducts many lessons
 - A lesson has exactly one tutor
 
@@ -257,7 +263,7 @@ This section details the internal structure of the Java backend component:
 - A student participates in many lessons
 - A lesson has exactly one student
 
-#### 4. **Tutor → Prenotation** (One-to-Many, dual role)
+#### 4. **User → Prenotation** (One-to-Many, dual role)
 - **As assigned tutor**: manages the booking
 - **As creator**: created the booking (can be different from the tutor)
 
@@ -265,7 +271,7 @@ This section details the internal structure of the Java backend component:
 - A student has many bookings
 - A booking belongs to one student
 
-#### 6. **Tutor → Test** (One-to-Many)
+#### 6. **User → Test** (One-to-Many, as tutor)
 - A tutor administers many tests
 - A test is administered by one tutor
 
@@ -273,10 +279,23 @@ This section details the internal structure of the Java backend component:
 - A student takes many tests
 - A test is taken by one student
 
-#### 8. **Tutor ↔ CalendarNote** (Many-to-Many)
+#### 8. **User ↔ CalendarNote** (Many-to-Many)
 - A tutor can have many calendar notes
 - A note can be associated with multiple tutors
 - A tutor (creator) creates the note
+
+#### 9. **Student → Pack** (One-to-Many)
+- A student can have many lesson packages (prepaid hour blocks)
+- A package belongs to exactly one student
+
+#### 10. **Pack → Lesson** (One-to-Many, optional)
+- A package can have many lessons drawn from it
+- A lesson doesn't have to belong to any package (`id_pack` is nullable)
+
+#### 11. **User → Student** (One-to-Many, GUEST link, optional)
+- A `GUEST` user (e.g. a parent/guardian) can be linked to one or more students to view their data
+- A student is linked to at most one `GUEST` account (`id_user` is nullable)
+- **Not yet enforced anywhere**: this is a data-model-only relationship for now - no backend or frontend code currently restricts a `GUEST` account's visibility to only their linked student(s)
 
 📚 **For complete database documentation** (installation, configuration, migrations):  
 See [07_Database_Configuration.md](07_Database_Configuration.md)
@@ -484,7 +503,7 @@ public class LessonCreateDTO {
     private String description;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Long tutorId;      // Only ID, not the entire Tutor object
+    private Long tutorId;      // Only ID, not the entire User object
     private Long studentId;    // Only ID, not the entire Student object
     
     // Getters, setters, constructors...
@@ -667,7 +686,7 @@ public class WebConfig implements WebMvcConfigurer {
 | Controller | Base Endpoint | Responsibilities |
 |------------|--------------|------------------|
 | `StudentController` | `/api/students` | Student CRUD, search by status/class |
-| `TutorController` | `/api/tutors` | Tutor CRUD, authentication, role management |
+| `UserController` | `/api/users` | User CRUD, authentication, role management (tutors, STAFF, GUEST) |
 | `LessonController` | `/api/lessons` | Lesson CRUD, search by tutor/student/period |
 | `PrenotationController` | `/api/prenotations` | Booking CRUD, confirm/reject |
 | `AdminController` | `/api/admins` | Admin CRUD, tutor creation |
@@ -678,12 +697,14 @@ public class WebConfig implements WebMvcConfigurer {
 
 Each controller has its dedicated service with the same naming:
 - `StudentService`
-- `TutorService`
+- `UserService`
 - `LessonService`
 - `PrenotationService`
 - `AdminService`
 - `TestService`
 - `CalendarNoteService`
+
+`PackRepository` exists (basic CRUD) but has no matching `PackService`/`PackController` yet - nothing calls it. See [Users](#users) below.
 
 **Common Service Functions:**
 - Business logic validation
@@ -701,7 +722,7 @@ List<Student> findByStatus(String status);
 List<Lesson> findByTutorIdAndStartTimeBetween(Long tutorId, 
                                                LocalDateTime start, 
                                                LocalDateTime end);
-Optional<Tutor> findByUsername(String username);
+Optional<User> findByUsername(String username);
 ```
 
 ### 4. Entity Relationships
@@ -925,18 +946,23 @@ X-API-Key: <your-api-key>
 
 ---
 
-### Tutors
+### Users
+
+Entity `User` (table `app_user`, not `user` - `user` is a reserved SQL keyword in PostgreSQL). Covers tutors, STAFF, and GUEST accounts alike; `role` is what distinguishes them. Renamed from `Tutor`/`/api/tutors` - see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role) for the full rationale and migration steps. Other controllers' `/tutor/{tutorId}` sub-paths (Lessons, Prenotations, Tests, Calendar Notes below) were deliberately **not** renamed - they describe the tutor *role* in that relationship, not the account type.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/tutors` | List all tutors |
-| GET | `/tutors/{id}` | Tutor details by ID |
-| GET | `/tutors/username/{username}` | Tutor by username |
-| GET | `/tutors/status/{status}` | Tutors by status |
-| GET | `/tutors/role/{role}` | Tutors by role |
-| POST | `/tutors` | Create new tutor |
-| PUT | `/tutors/{id}` | Update tutor |
-| DELETE | `/tutors/{id}` | Delete tutor |
+| GET | `/users` | List all users |
+| GET | `/users/{id}` | User details by ID |
+| GET | `/users/username/{username}` | User by username |
+| GET | `/users/status/{status}` | Users by status |
+| GET | `/users/role/{role}` | Users by role (`GENERIC`, `STAFF`, or `GUEST`) |
+| POST | `/users` | Create new user |
+| PUT | `/users/{id}` | Update user |
+| DELETE | `/users/{id}` | Delete user |
+| PATCH | `/users/{id}/status` | Update status only |
+| PATCH | `/users/{id}/role` | Update role only |
+| POST | `/users/login` | Authenticate by username/password, returns the user's ID (legacy - the Node.js frontend does its own bcrypt-based auth, see [05_Service_Modules.md](05_Service_Modules.md)) |
 
 **Example Request Body (POST):**
 ```json
@@ -944,9 +970,28 @@ X-API-Key: <your-api-key>
   "username": "mario.rossi",
   "password": "hashedPassword123",
   "status": "ACTIVE",
-  "role": "TEACHER"
+  "role": "STAFF"
 }
 ```
+
+`mail` (optional `String`, no format check unlike `Admin.mail`) can be set via PUT after creation - `POST /users` doesn't currently accept it.
+
+**`GUEST` role:** a data-model-only addition for now. A `GUEST` account authenticates exactly like any other user and, today, sees the same data any `GENERIC` tutor would - nothing yet restricts it to only the student(s) linked via `Student.user` (see [Data Model](#data-model)). Building that restriction is a separate, not-yet-implemented piece of work.
+
+---
+
+### Packs
+
+No REST controller exists for `Pack` yet - only the entity and `PackRepository` (basic CRUD, unused). A lesson package (a prepaid block of hours) is created directly against the database for now; there's no `/api/packs` endpoint to call. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role) for the schema.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `id` | `Long` | Auto-generated |
+| `hours` | `Double` | Required |
+| `closure` | `LocalDate` | Optional - null while the package is still open/active |
+| `studentId` | `Long` | Required (`@JsonProperty` helper, like `tutorId` on `Test`/`Lesson`) |
+
+`Lesson` gained an optional `packId` field (`Long`, nullable) pointing to the package a lesson was drawn from - a lesson doesn't have to belong to one.
 
 ---
 
@@ -1149,8 +1194,8 @@ echo "Testing Students endpoint..."
 curl -k -X GET "$BASE_URL/students" \
      -H "X-API-Key: $API_KEY"
 
-echo "\n\nTesting Tutors endpoint..."
-curl -k -X GET "$BASE_URL/tutors" \
+echo "\n\nTesting Users endpoint..."
+curl -k -X GET "$BASE_URL/users" \
      -H "X-API-Key: $API_KEY"
 ```
 
@@ -1172,7 +1217,7 @@ HTTP 401 Unauthorized
 **Solution:**
 - Verify `X-API-Key` header in the request
 - Check that the key is in `api.security.keys` in `application.properties`
-- Test with curl: `curl -k https://localhost:8443/api/tutors -H "X-API-Key: your-key"`
+- Test with curl: `curl -k https://localhost:8443/api/users -H "X-API-Key: your-key"`
 
 ---
 
@@ -1207,7 +1252,7 @@ backend-api/
 │   │   │   │   └── HttpsRedirectConfig.java      # SSL config
 │   │   │   ├── controller/
 │   │   │   │   ├── StudentController.java
-│   │   │   │   ├── TutorController.java
+│   │   │   │   ├── UserController.java
 │   │   │   │   ├── LessonController.java
 │   │   │   │   ├── PrenotationController.java
 │   │   │   │   ├── AdminController.java
@@ -1215,7 +1260,7 @@ backend-api/
 │   │   │   │   └── CalendarNoteController.java
 │   │   │   ├── service/
 │   │   │   │   ├── StudentService.java
-│   │   │   │   ├── TutorService.java
+│   │   │   │   ├── UserService.java
 │   │   │   │   ├── LessonService.java
 │   │   │   │   ├── PrenotationService.java
 │   │   │   │   ├── AdminService.java
@@ -1223,23 +1268,25 @@ backend-api/
 │   │   │   │   └── CalendarNoteService.java
 │   │   │   ├── repository/
 │   │   │   │   ├── StudentRepository.java
-│   │   │   │   ├── TutorRepository.java
+│   │   │   │   ├── UserRepository.java
 │   │   │   │   ├── LessonRepository.java
 │   │   │   │   ├── PrenotationRepository.java
 │   │   │   │   ├── AdminRepository.java
 │   │   │   │   ├── TestRepository.java
 │   │   │   │   ├── CalendarNoteRepository.java
-│   │   │   │   └── AdminCreatesTutorRepository.java
+│   │   │   │   ├── PackRepository.java
+│   │   │   │   └── AdminCreatesUserRepository.java
 │   │   │   ├── entity/
 │   │   │   │   ├── Student.java
-│   │   │   │   ├── Tutor.java
+│   │   │   │   ├── User.java
 │   │   │   │   ├── Lesson.java
 │   │   │   │   ├── Prenotation.java
 │   │   │   │   ├── Admin.java
 │   │   │   │   ├── Test.java
 │   │   │   │   ├── CalendarNote.java
-│   │   │   │   ├── AdminCreatesTutor.java
-│   │   │   │   └── AdminCreatesTutorId.java
+│   │   │   │   ├── Pack.java
+│   │   │   │   ├── AdminCreatesUser.java
+│   │   │   │   └── AdminCreatesUserId.java
 │   │   │   ├── dto/
 │   │   │   │   ├── LessonCreateDTO.java
 │   │   │   │   ├── PrenotationCreateDTO.java
@@ -1283,7 +1330,7 @@ Client          Controller        Service           Repository      Database
   |                 |                |---findById(tutorId)|              |
   |                 |                |                    |------------->|
   |                 |                |<-------------------|  SELECT      |
-  |                 |                |   Optional<Tutor>  |<-------------|
+  |                 |                |   Optional<User>   |<-------------|
   |                 |                |                    |              |
   |                 |                |---findById(studentId)             |
   |                 |                |                    |------------->|
@@ -1417,4 +1464,4 @@ java -jar target/backend-api-0.0.1-SNAPSHOT.jar
 
 ---
 
-**Last updated:** February 25, 2026
+**Last updated:** August 5, 2026

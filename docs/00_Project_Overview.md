@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: August 3, 2026  
+**Last Updated**: August 5, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -125,12 +125,13 @@ The heart of the system is a robust RESTful API built with Spring Boot 3.4.1 and
 - ✅ **Centralized error handling** with @ControllerAdvice
 
 **Managed entities**:
-- `Tutor`: Teachers/tutors with roles (STAFF, GENERIC)
-- `Student`: Students with class and information
-- `Lesson`: Lessons with tutor, student, schedules
+- `User` (table `app_user`, renamed from `Tutor`): Tutor/STAFF/GUEST accounts with roles (GENERIC, STAFF, GUEST)
+- `Student`: Students with class and information; can optionally be linked to a `GUEST` account
+- `Lesson`: Lessons with tutor, student, schedules; can optionally belong to a `Pack`
 - `Prenotation`: Lesson bookings (confirmed/unconfirmed)
 - `Test`: Student assessments and exam results
 - `CalendarNote`: Notes and reminders for the calendar
+- `Pack`: Prepaid lesson packages (hours purchased for a student) - entity/repository only, no REST endpoint yet
 - `Admin`: System administrators
 
 **Technologies**:
@@ -283,6 +284,7 @@ Tutors with **STAFF** role have additional features:
 - **Calendar note management**: Create notes visible to all
 - **Calendar tutor filter**: Filter the calendar view to show only a selected tutor's prenotations (notes remain always visible)
 - **Extended reports**: Access to reports from other tutors (if authorized)
+- **Student Profile page**: per-student view combining evaluations (grouped by subject and tutor, one toggleable chart line per pair), hours taught, and prenotations across every tutor who's worked with that student - not just their own; can edit/delete a student's prenotations directly from this page
 - **Advanced configurations**: System settings
 
 ---

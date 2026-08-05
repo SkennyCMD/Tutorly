@@ -34,7 +34,7 @@ import java.util.Set;
  * 
  * <p>Usage Example:
  * <pre>
- * Tutor creator = tutorRepository.findById(tutorId).orElseThrow();
+ * User creator = userRepository.findById(tutorId).orElseThrow();
  * CalendarNote note = new CalendarNote(
  *     "Staff meeting",
  *     LocalDateTime.of(2026, 2, 16, 10, 0),
@@ -46,17 +46,17 @@ import java.util.Set;
  * calendarNoteRepository.save(note);
  * </pre>
  * </p>
- * 
+ *
  * <p>Database Mapping:
  * <ul>
  *   <li>Table: calendar_note</li>
  *   <li>Primary Key: id (auto-generated)</li>
- *   <li>Foreign Key: id_creator (references tutor)</li>
- *   <li>Junction Table: has (links calendar_note and tutor in many-to-many)</li>
+ *   <li>Foreign Key: id_creator (references app_user)</li>
+ *   <li>Junction Table: has (links calendar_note and app_user in many-to-many)</li>
  * </ul>
  * </p>
- * 
- * @see Tutor
+ *
+ * @see User
  * @see CalendarNoteCreateDTO
  * @author Tutorly Development Team
  * @version 1.0
@@ -104,22 +104,22 @@ public class CalendarNote {
     
     /**
      * The tutor who created this calendar note (owner/author).
-     * 
-     * Many-to-one relationship with Tutor entity.
+     *
+     * Many-to-one relationship with User entity.
      * The creator is required (nullable = false) as every note must have an author.
      * Uses @JsonIgnoreProperties to prevent circular references during JSON serialization
      * by excluding sensitive and recursive fields.
      */
     @ManyToOne
     @JoinColumn(name = "id_creator", nullable = false)
-    @JsonIgnoreProperties({"password", "calendarNotes", "createdCalendarNotes", "createdPrenotations", 
+    @JsonIgnoreProperties({"password", "calendarNotes", "createdCalendarNotes", "createdPrenotations",
                            "lessons", "prenotations", "tests", "createdByAdmins"})
-    private Tutor creator;
-    
+    private User creator;
+
     /**
      * Collection of tutors assigned to or associated with this calendar note.
-     * 
-     * Many-to-many relationship with Tutor entity through the 'has' junction table.
+     *
+     * Many-to-many relationship with User entity through the 'has' junction table.
      * A calendar note can be assigned to multiple tutors, and a tutor can have multiple notes.
      * Initialized as HashSet to prevent duplicates and ensure efficient operations.
      * Uses @JsonIgnoreProperties to prevent circular references during JSON serialization.
@@ -130,9 +130,9 @@ public class CalendarNote {
         joinColumns = @JoinColumn(name = "id_calendar_note"),
         inverseJoinColumns = @JoinColumn(name = "id_tutor")
     )
-    @JsonIgnoreProperties({"password", "calendarNotes", "createdCalendarNotes", "createdPrenotations", 
+    @JsonIgnoreProperties({"password", "calendarNotes", "createdCalendarNotes", "createdPrenotations",
                            "lessons", "prenotations", "tests", "createdByAdmins"})
-    private Set<Tutor> tutors = new HashSet<>();
+    private Set<User> tutors = new HashSet<>();
     
     
     // Constructors
@@ -156,7 +156,7 @@ public class CalendarNote {
      * @param endTime End date and time of the event
      * @param creator The tutor creating/owning this note
      */
-    public CalendarNote(String description, LocalDateTime startTime, LocalDateTime endTime, Tutor creator) {
+    public CalendarNote(String description, LocalDateTime startTime, LocalDateTime endTime, User creator) {
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -241,37 +241,37 @@ public class CalendarNote {
     
     /**
      * Gets the tutor who created this calendar note.
-     * 
-     * @return The creator Tutor entity
+     *
+     * @return The creator User entity
      */
-    public Tutor getCreator() {
+    public User getCreator() {
         return creator;
     }
-    
+
     /**
      * Sets the tutor who created this calendar note.
-     * 
-     * @param creator The creator Tutor entity
+     *
+     * @param creator The creator User entity
      */
-    public void setCreator(Tutor creator) {
+    public void setCreator(User creator) {
         this.creator = creator;
     }
-    
+
     /**
      * Gets the collection of tutors associated with this calendar note.
-     * 
-     * @return Set of Tutor entities (modifiable)
+     *
+     * @return Set of User entities (modifiable)
      */
-    public Set<Tutor> getTutors() {
+    public Set<User> getTutors() {
         return tutors;
     }
-    
+
     /**
      * Sets the collection of tutors associated with this calendar note.
-     * 
-     * @param tutors Set of Tutor entities to associate with this note
+     *
+     * @param tutors Set of User entities to associate with this note
      */
-    public void setTutors(Set<Tutor> tutors) {
+    public void setTutors(Set<User> tutors) {
         this.tutors = tutors;
     }
 }

@@ -8,9 +8,9 @@ import java.util.Set;
 /**
  * JPA Entity representing an Administrator in the tutoring system
  * 
- * Admins have privileges to create and manage tutors, students, and other system resources.
+ * Admins have privileges to create and manage users, students, and other system resources.
  * Each admin has unique email and username credentials for authentication.
- * Admins can create multiple tutors, tracked via AdminCreatesTutor relationship.
+ * Admins can create multiple users, tracked via AdminCreatesUser relationship.
  * 
  * Database table: admin
  */
@@ -46,13 +46,13 @@ public class Admin {
     private String username;
     
     /**
-     * Collection of tutors created by this admin
-     * Tracks the relationship between admins and the tutors they've created
+     * Collection of users created by this admin
+     * Tracks the relationship between admins and the users they've created
      * Cascade ALL ensures related records are managed automatically
      */
     @OneToMany(mappedBy = "admin", cascade = CascadeType.ALL)
-    @JsonManagedReference("admin-createdTutors")
-    private Set<AdminCreatesTutor> createdTutors = new HashSet<>();
+    @JsonManagedReference("admin-createdUsers")
+    private Set<AdminCreatesUser> createdUsers = new HashSet<>();
     
     // Constructors
     
@@ -142,18 +142,18 @@ public class Admin {
     }
     
     /**
-     * Get the collection of tutors created by this admin
-     * @return Set of AdminCreatesTutor relationships
+     * Get the collection of users created by this admin
+     * @return Set of AdminCreatesUser relationships
      */
-    public Set<AdminCreatesTutor> getCreatedTutors() {
-        return createdTutors;
+    public Set<AdminCreatesUser> getCreatedUsers() {
+        return createdUsers;
     }
-    
+
     /**
-     * Set the collection of tutors created by this admin
-     * @param createdTutors Set of AdminCreatesTutor relationships
+     * Set the collection of users created by this admin
+     * @param createdUsers Set of AdminCreatesUser relationships
      */
-    public void setCreatedTutors(Set<AdminCreatesTutor> createdTutors) {
-        this.createdTutors = createdTutors;
+    public void setCreatedUsers(Set<AdminCreatesUser> createdUsers) {
+        this.createdUsers = createdUsers;
     }
 }

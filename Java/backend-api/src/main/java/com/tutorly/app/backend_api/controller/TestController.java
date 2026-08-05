@@ -3,10 +3,10 @@ package com.tutorly.app.backend_api.controller;
 import com.tutorly.app.backend_api.dto.TestCreateDTO;
 import com.tutorly.app.backend_api.entity.Student;
 import com.tutorly.app.backend_api.entity.Test;
-import com.tutorly.app.backend_api.entity.Tutor;
+import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.service.StudentService;
 import com.tutorly.app.backend_api.service.TestService;
-import com.tutorly.app.backend_api.service.TutorService;
+import com.tutorly.app.backend_api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -37,7 +37,7 @@ public class TestController {
     private TestService testService;
 
     @Autowired
-    private TutorService tutorService;
+    private UserService tutorService;
 
     @Autowired
     private StudentService studentService;
@@ -151,7 +151,7 @@ public class TestController {
     public ResponseEntity<?> createTest(@RequestBody TestCreateDTO testDTO) {
         try {
             log.info("Attempting to create test for tutor {} and student {}", testDTO.getTutorId(), testDTO.getStudentId());
-            Optional<Tutor> tutorOpt = tutorService.getTutorById(testDTO.getTutorId());
+            Optional<User> tutorOpt = tutorService.getUserById(testDTO.getTutorId());
             Optional<Student> studentOpt = studentService.getStudentById(testDTO.getStudentId());
 
             if (tutorOpt.isEmpty()) {
@@ -201,7 +201,7 @@ public class TestController {
             return ResponseEntity.notFound().build();
         }
 
-        Optional<Tutor> tutor = tutorService.getTutorById(dto.getTutorId());
+        Optional<User> tutor = tutorService.getUserById(dto.getTutorId());
         Optional<Student> student = studentService.getStudentById(dto.getStudentId());
 
         if (tutor.isEmpty()) {

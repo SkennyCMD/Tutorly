@@ -432,13 +432,13 @@ class LessonIntegrationTest {
     private StudentRepository studentRepository;
     
     @Autowired
-    private TutorRepository tutorRepository;
+    private UserRepository userRepository;
     
     @Test
     void shouldCreateLessonWithRelationships() {
         // Given
         Student student = createAndSaveStudent();
-        Tutor tutor = createAndSaveTutor();
+        User tutor = createAndSaveTutor();
         
         Lesson lesson = new Lesson();
         lesson.setStudent(student);

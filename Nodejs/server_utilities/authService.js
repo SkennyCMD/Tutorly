@@ -71,7 +71,7 @@ async function authenticateTutor(username, password) {
         const attemptedPasswordHash = await hashPassword(password);
 
         // Fetch all tutors from Java backend API
-        const tutors = await fetchFromJavaAPI('/api/tutors', 'GET');
+        const tutors = await fetchFromJavaAPI('/api/users', 'GET');
         const tutor = tutors?.find(t => t.username === username);
         
         // User not found in database
@@ -176,7 +176,7 @@ async function authenticateAdmin(username, password) {
  * 
  * @deprecated This method is deprecated. Use authenticateTutor() instead for bcrypt authentication.
  * 
- * Makes direct HTTPS request to Java backend /api/tutors/login endpoint.
+ * Makes direct HTTPS request to Java backend /api/users/login endpoint.
  * Bypasses bcrypt verification and blocked account checks.
  * 
  * @param {string} username - Tutor username
@@ -192,12 +192,12 @@ function authenticateTutorWithJavaAPI(username, password) {
         });
 
         console.log('Java API Call:', {
-            url: `https://${JAVA_API_HOST}:${JAVA_API_PORT}/api/tutors/login`,
+            url: `https://${JAVA_API_HOST}:${JAVA_API_PORT}/api/users/login`,
             data: { username, password: '***' }  // Hide password in logs
         });
 
         // Configure HTTPS request to Java backend
-        const options = createJavaApiOptions('/api/tutors/login', postData);
+        const options = createJavaApiOptions('/api/users/login', postData);
 
         // Make HTTPS request to Java API
         const req = https.request(options, (res) => {
