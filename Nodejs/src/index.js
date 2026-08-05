@@ -52,7 +52,8 @@ const {
     fetchStudentData,
     fetchAllStudents,
     fetchTestsByTutor,
-    fetchTestsByStudent
+    fetchTestsByStudent,
+    fetchAllTests
 } = require('../server_utilities/javaApiService');
 
 // Fixed reference list of subjects for the Evaluations ("Add Evaluation") form
@@ -721,13 +722,40 @@ app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
             return res.redirect('/home');
         }
         
-        // Fetch all tutors from database
-        const allTutors = await fetchFromJavaAPI('/api/users');
-        
+        // Fetch all tutors, students, and tests (for per-student average marks)
+        const [allTutors, allStudents, allTests] = await Promise.all([
+            fetchFromJavaAPI('/api/users'),
+            fetchAllStudents(),
+            fetchAllTests()
+        ]);
+
+        // Group marks by student to compute each student's average
+        const marksByStudent = {};
+        (allTests || []).forEach(test => {
+            if (test.mark == null) return;
+            if (!marksByStudent[test.studentId]) marksByStudent[test.studentId] = [];
+            marksByStudent[test.studentId].push(test.mark);
+        });
+
+        const studentsWithAvg = (allStudents || []).map(student => {
+            const marks = marksByStudent[student.id] || [];
+            const avgMark = marks.length
+                ? marks.reduce((sum, m) => sum + m, 0) / marks.length
+                : null;
+            return {
+                id: student.id,
+                name: student.name,
+                surname: student.surname,
+                studentClass: student.studentClass,
+                avgMark
+            };
+        });
+
         res.render('staffPanel', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData.role },
-            tutors: allTutors || []
+            tutors: allTutors || [],
+            students: studentsWithAvg
         });
     } catch (error) {
         logError('Error accessing staff panel', req, { error: error.message });

@@ -191,7 +191,12 @@
     "errorWithMessage": "Error: {message}",
     "categoryTutor": "Tutor",
     "categoryStudent": "Student",
-    "categorySingle": "Single Tutor"
+    "categorySingle": "Single Tutor",
+    "studentsList": "Students",
+    "studentsListDesc": "Click a student to open their profile",
+    "avgMark": "Avg mark",
+    "noMarks": "N/A",
+    "noStudentsFound": "No students found"
   },
   "login": {
     "pageTitle": "Login | Tutorly",

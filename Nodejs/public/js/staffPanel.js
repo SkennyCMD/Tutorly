@@ -199,39 +199,47 @@ const selectedTutorLabel = document.getElementById('selectedTutorLabel');
 const selectedTutorNameEl = document.getElementById('selectedTutorName');
 
 // Real-time search filtering as user types
-tutorInput.addEventListener('input', function () {
-    const query = this.value.trim().toLowerCase();
-    if (query.length === 0) {
-        closeDropdown();
-        return;
-    }
-    // Filter tutors by name (case-insensitive partial match)
-    const results = tutors.filter(t => t.name.toLowerCase().includes(query));
-    if (results.length === 0) {
-        tutorDropdown.innerHTML = '<div class="px-4 py-3 text-muted-foreground text-sm">No tutors found</div>';
-    } else {
-        tutorDropdown.innerHTML = results.map(t => `
-        <div class="flex items-center gap-3 px-4 py-3 cursor-pointer rounded-lg hover:bg-muted transition-colors" onclick="selectTutor(${t.id})">
-        <div class="w-8 h-8 bg-sky-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-        </div>
-        <div>
-            <p class="text-sm font-medium text-foreground">${highlightMatch(t.name, query)}</p>
-            <p class="text-xs text-muted-foreground">${t.subject}</p>
-        </div>
-        </div>`).join('');
-    }
-    tutorDropdown.classList.add('open');
-});
+//
+// Guarded with `if (tutorInput)`: the HTML for this dropdown (tutorSearchInput/
+// tutorDropdown/etc.) isn't actually present in staffPanel.ejs's current markup,
+// so tutorInput is null. Without this guard, addEventListener on null threw
+// immediately at script load and silently killed every top-level statement
+// after it in this file - including, e.g., the student search bar's listener.
+if (tutorInput) {
+    tutorInput.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        if (query.length === 0) {
+            closeDropdown();
+            return;
+        }
+        // Filter tutors by name (case-insensitive partial match)
+        const results = tutors.filter(t => t.name.toLowerCase().includes(query));
+        if (results.length === 0) {
+            tutorDropdown.innerHTML = '<div class="px-4 py-3 text-muted-foreground text-sm">No tutors found</div>';
+        } else {
+            tutorDropdown.innerHTML = results.map(t => `
+            <div class="flex items-center gap-3 px-4 py-3 cursor-pointer rounded-lg hover:bg-muted transition-colors" onclick="selectTutor(${t.id})">
+            <div class="w-8 h-8 bg-sky-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg class="w-3.5 h-3.5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-foreground">${highlightMatch(t.name, query)}</p>
+                <p class="text-xs text-muted-foreground">${t.subject}</p>
+            </div>
+            </div>`).join('');
+        }
+        tutorDropdown.classList.add('open');
+    });
 
-// Re-open dropdown on focus if there's a search query
-tutorInput.addEventListener('focus', function () {
-    if (this.value.trim().length > 0) {
-        this.dispatchEvent(new Event('input')); // Re-trigger search
-    }
-});
+    // Re-open dropdown on focus if there's a search query
+    tutorInput.addEventListener('focus', function () {
+        if (this.value.trim().length > 0) {
+            this.dispatchEvent(new Event('input')); // Re-trigger search
+        }
+    });
+}
 
 /**
  * Highlight matching text in search results.
@@ -285,15 +293,49 @@ function clearTutorSelection() {
  * Close the tutor search dropdown.
  */
 function closeDropdown() {
-    tutorDropdown.classList.remove('open');
+    if (tutorDropdown) tutorDropdown.classList.remove('open');
 }
 
 // Close dropdown when clicking outside the search wrapper
 document.addEventListener('click', function (e) {
-    if (!document.getElementById('tutorSearchWrapper').contains(e.target)) {
+    const wrapper = document.getElementById('tutorSearchWrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
         closeDropdown();
     }
 });
+
+
+
+// Student Search (All Students section)
+
+// Live-filters the student cards by name as the user types - same UX as the
+// student search bar on the Reports page, but filtering pre-rendered cards
+// by their data-name attribute instead of re-rendering from JS data.
+const studentSearchInput = document.getElementById('studentSearchInput');
+if (studentSearchInput) {
+    studentSearchInput.addEventListener('input', function () {
+        const query = this.value.trim().toLowerCase();
+        const cards = document.querySelectorAll('[data-student-card]');
+        let visibleCount = 0;
+
+        cards.forEach(card => {
+            const matches = card.dataset.name.includes(query);
+            // Inline style, not the "hidden" class: this card already carries the
+            // "block" display class, and with Tailwind's CDN build the generated
+            // CSS order between "block" and "hidden" isn't guaranteed, so toggling
+            // "hidden" alone could silently lose the cascade and do nothing visible.
+            card.style.display = matches ? '' : 'none';
+            if (matches) visibleCount++;
+        });
+
+        const noMatchEl = document.getElementById('noStudentsMatch');
+        if (noMatchEl) {
+            // noStudentsMatch starts with class="hidden" (display:none); showing it
+            // needs an explicit override, not just clearing the inline style.
+            noMatchEl.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    });
+}
 
 
 

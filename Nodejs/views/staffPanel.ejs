@@ -303,6 +303,65 @@ Features:
         <p class="text-sm text-muted-foreground text-center py-4"><%= t('staffPanel.noRecentDownloads') %></p>
       </div>
     </div>
+
+    <!-- All Students Section: one card per student, click to open their profile -->
+    <div class="mt-6 bg-card border border-border rounded-xl p-5">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <div>
+          <h3 class="text-lg font-semibold text-foreground"><%= t('staffPanel.studentsList') %></h3>
+          <p class="text-xs text-muted-foreground"><%= t('staffPanel.studentsListDesc') %></p>
+        </div>
+      </div>
+
+      <% if (!students || students.length === 0) { %>
+        <p class="text-sm text-muted-foreground text-center py-4"><%= t('staffPanel.noStudentsFound') %></p>
+      <% } else { %>
+        <!-- Search Bar: Filter student cards by name (same pattern as the Reports page) -->
+        <div class="relative w-full mb-4">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" id="studentSearchInput" placeholder="<%= t('reports.searchStudents') %>"
+            class="w-full pl-10 pr-4 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+
+        <div id="studentsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% students.forEach(function(student) {
+            var avgColor = '#a1a1aa';
+            var avgText = t('staffPanel.noMarks');
+            if (student.avgMark !== null) {
+              avgText = student.avgMark.toFixed(1);
+              if (student.avgMark >= 8) avgColor = '#14b8a6';
+              else if (student.avgMark >= 6) avgColor = '#eab308';
+              else avgColor = '#ef4444';
+            }
+            var fullName = (student.name + ' ' + student.surname).toLowerCase();
+          %>
+            <a href="/student/<%= student.id %>" data-student-card data-name="<%= fullName %>"
+              class="block bg-secondary/50 border border-border rounded-lg p-4 hover:border-primary/50 transition-colors">
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <span class="font-semibold text-foreground truncate"><%= student.name %> <%= student.surname %></span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground flex-shrink-0">#<%= student.id %></span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs px-2 py-0.5 rounded bg-primary/15 text-primary"><%= student.studentClass || '—' %></span>
+                <div class="text-right">
+                  <p class="text-[11px] text-muted-foreground"><%= t('staffPanel.avgMark') %></p>
+                  <p class="text-sm font-bold" style="color:<%= avgColor %>"><%= avgText %></p>
+                </div>
+              </div>
+            </a>
+          <% }); %>
+        </div>
+        <p id="noStudentsMatch" class="hidden text-sm text-muted-foreground text-center py-4"><%= t('staffPanel.noStudentsFound') %></p>
+      <% } %>
+    </div>
   </main>
 
   <!-- TOAST NOTIFICATION -->

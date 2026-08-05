@@ -419,6 +419,28 @@ function fetchTestsByTutor(tutorId) {
 }
 
 /**
+ * Fetch all tests/evaluations in the entire database, regardless of tutor or student.
+ *
+ * Used for STAFF-only views (e.g. the Staff Panel's student list) that need every
+ * student's average mark without issuing one request per student.
+ * Returns empty array if no tests found or on error.
+ *
+ * @returns {Promise<Array>} Array of all test objects
+ *
+ * @example
+ * const tests = await fetchAllTests();
+ * // Returns: [{ id: 1, tutorId: 5, studentId: 10, day: '...', mark: 7.5, ... }, ...]
+ */
+function fetchAllTests() {
+    return fetchFromJavaAPI('/api/tests', 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching all tests:', error);
+            return [];
+        });
+}
+
+/**
  * Fetch all tests/evaluations a specific student has taken, regardless of tutor.
  *
  * Used for STAFF-only views (e.g. the student profile page) that need to see
@@ -478,5 +500,6 @@ module.exports = {
     fetchStudentData,
     fetchAllStudents,
     fetchTestsByTutor,
-    fetchTestsByStudent
+    fetchTestsByStudent,
+    fetchAllTests
 };
