@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -43,6 +44,26 @@ public class Pack {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /**
+     * Timestamp when this pack record was created.
+     *
+     * Automatically initialized to the current time when the entity is instantiated,
+     * same pattern as {@link Prenotation#getCreatedAt()}. Non-nullable, audit-only -
+     * not user-editable via the create/update DTO.
+     */
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    /**
+     * Date and time the package starts being usable.
+     *
+     * Required field - cannot be null. Unlike createdAt, this is a business-meaningful,
+     * user-editable value (e.g. defaults to "now" in the creation form, but can be
+     * backdated or postdated).
+     */
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
 
     /**
      * Total number of hours purchased in this package.
@@ -98,11 +119,15 @@ public class Pack {
     /**
      * Parameterized constructor to create a new pack with all required fields.
      *
+     * The createdAt timestamp is initialized by the field default value.
+     *
+     * @param startTime Date and time the package starts being usable (required)
      * @param hours Total number of hours purchased (required)
      * @param closure Date the package was closed (optional, null while active)
      * @param student The student this package belongs to (required)
      */
-    public Pack(Double hours, LocalDate closure, Student student) {
+    public Pack(LocalDateTime startTime, Double hours, LocalDate closure, Student student) {
+        this.startTime = startTime;
         this.hours = hours;
         this.closure = closure;
         this.student = student;
@@ -128,6 +153,42 @@ public class Pack {
      */
     public void setId(Long id) {
         this.id = id;
+    }
+
+    /**
+     * Gets the timestamp when this pack record was created.
+     *
+     * @return The creation date and time
+     */
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    /**
+     * Sets the timestamp when this pack record was created.
+     *
+     * @param createdAt The creation date and time
+     */
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    /**
+     * Gets the date and time the package starts being usable.
+     *
+     * @return The start date and time
+     */
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    /**
+     * Sets the date and time the package starts being usable.
+     *
+     * @param startTime The start date and time
+     */
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
     }
 
     /**

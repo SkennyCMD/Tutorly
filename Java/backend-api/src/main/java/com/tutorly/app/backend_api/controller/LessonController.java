@@ -2,9 +2,11 @@ package com.tutorly.app.backend_api.controller;
 
 import com.tutorly.app.backend_api.dto.LessonCreateDTO;
 import com.tutorly.app.backend_api.entity.Lesson;
+import com.tutorly.app.backend_api.entity.Pack;
 import com.tutorly.app.backend_api.entity.Student;
 import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.service.LessonService;
+import com.tutorly.app.backend_api.service.PackService;
 import com.tutorly.app.backend_api.service.StudentService;
 import com.tutorly.app.backend_api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,7 +43,10 @@ public class LessonController {
     
     @Autowired
     private StudentService studentService;
-    
+
+    @Autowired
+    private PackService packService;
+
     /**
      * Get all lessons
      * 
@@ -206,8 +211,18 @@ public class LessonController {
             lesson.setEndTime(lessonDTO.getEndTime());
             lesson.setTutor(tutorOpt.get());
             lesson.setStudent(studentOpt.get());
-            
-            Lesson savedLesson = lessonService.saveLesson(lesson);
+
+            // If the student has an active pack with hours still available, draw this lesson from it.
+            // If the lesson only partially fits, it's split: the part that fits stays in the pack,
+            // the remainder is saved as a separate, unassigned lesson.
+            Optional<Pack> activePack = packService.findActivePackWithAvailableHours(lessonDTO.getStudentId(), lessonDTO.getStartTime());
+            Lesson savedLesson;
+            if (activePack.isPresent()) {
+                log.info("Assigning lesson to pack {} for student {}", activePack.get().getId(), lessonDTO.getStudentId());
+                savedLesson = packService.assignLessonToPack(activePack.get(), lesson);
+            } else {
+                savedLesson = lessonService.saveLesson(lesson);
+            }
             log.info("Successfully created lesson with ID {}", savedLesson.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(savedLesson);
         } catch (Exception e) {

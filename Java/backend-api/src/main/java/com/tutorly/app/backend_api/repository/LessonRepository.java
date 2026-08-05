@@ -56,4 +56,36 @@ public interface LessonRepository extends JpaRepository<Lesson, Long> {
      * @return List of lessons between the specified tutor and student
      */
     List<Lesson> findByTutor_IdAndStudent_Id(Long tutorId, Long studentId);
+
+    /**
+     * Find all lessons drawn from a specific pack
+     *
+     * @param packId The ID of the pack
+     * @return List of lessons linked to the specified pack
+     */
+    List<Lesson> findByPack_Id(Long packId);
+
+    /**
+     * Find lessons for a student that aren't drawn from any pack, starting after a given time
+     *
+     * Used to surface hours a student has done that fell outside a pack - e.g. lessons
+     * booked after a pack ran out of hours.
+     *
+     * @param studentId The ID of the student
+     * @param after Only lessons starting after this time are included
+     * @return List of pack-less lessons for the student starting after the given time
+     */
+    List<Lesson> findByStudent_IdAndPackIsNullAndStartTimeAfter(Long studentId, LocalDateTime after);
+
+    /**
+     * Find lessons for a student that aren't drawn from any pack, starting at or after a given time
+     *
+     * Used when a new pack is created to retroactively absorb unassigned lessons that
+     * fall within the pack's coverage (i.e. starting from the pack's own start time).
+     *
+     * @param studentId The ID of the student
+     * @param start Only lessons starting at or after this time are included
+     * @return List of pack-less lessons for the student starting at or after the given time
+     */
+    List<Lesson> findByStudent_IdAndPackIsNullAndStartTimeGreaterThanEqual(Long studentId, LocalDateTime start);
 }

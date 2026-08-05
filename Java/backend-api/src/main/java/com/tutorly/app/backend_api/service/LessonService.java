@@ -74,7 +74,39 @@ public class LessonService {
     public List<Lesson> getLessonsByTutorAndStudent(Long tutorId, Long studentId) {
         return lessonRepository.findByTutor_IdAndStudent_Id(tutorId, studentId);
     }
-    
+
+    /**
+     * Find all lessons drawn from a specific pack
+     *
+     * @param packId The ID of the pack
+     * @return List of lessons linked to the specified pack
+     */
+    public List<Lesson> getLessonsByPack(Long packId) {
+        return lessonRepository.findByPack_Id(packId);
+    }
+
+    /**
+     * Find lessons for a student that aren't drawn from any pack, starting after a given time
+     *
+     * @param studentId The ID of the student
+     * @param after Only lessons starting after this time are included
+     * @return List of pack-less lessons for the student starting after the given time
+     */
+    public List<Lesson> getLessonsWithNoPackAfter(Long studentId, LocalDateTime after) {
+        return lessonRepository.findByStudent_IdAndPackIsNullAndStartTimeAfter(studentId, after);
+    }
+
+    /**
+     * Find lessons for a student that aren't drawn from any pack, starting at or after a given time
+     *
+     * @param studentId The ID of the student
+     * @param start Only lessons starting at or after this time are included
+     * @return List of pack-less lessons for the student starting at or after the given time
+     */
+    public List<Lesson> getLessonsWithNoPackFrom(Long studentId, LocalDateTime start) {
+        return lessonRepository.findByStudent_IdAndPackIsNullAndStartTimeGreaterThanEqual(studentId, start);
+    }
+
     /**
      * Find lessons within a specific date/time range
      * 

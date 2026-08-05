@@ -464,6 +464,32 @@ function fetchTestsByStudent(studentId) {
 }
 
 
+// Pack (Lesson Package) Operations
+
+
+/**
+ * Fetch all lesson packages purchased for a specific student.
+ *
+ * Used by the student profile page to list a student's packages (prepaid
+ * blocks of tutoring hours). Returns empty array if none found or on error.
+ *
+ * @param {number} studentId - Unique student ID
+ * @returns {Promise<Array>} Array of pack objects for this student
+ *
+ * @example
+ * const packs = await fetchPacksByStudent(10);
+ * // Returns: [{ id: 1, studentId: 10, hours: 10, closure: null }, ...]
+ */
+function fetchPacksByStudent(studentId) {
+    return fetchFromJavaAPI(`/api/packs/student/${studentId}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching packs by student:', error);
+            return [];
+        });
+}
+
+
 // Module Exports
 
 
@@ -501,5 +527,6 @@ module.exports = {
     fetchAllStudents,
     fetchTestsByTutor,
     fetchTestsByStudent,
-    fetchAllTests
+    fetchAllTests,
+    fetchPacksByStudent
 };

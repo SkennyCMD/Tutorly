@@ -82,6 +82,16 @@ const prenotations = (window.initialPrenotations || []).map(p => ({
     tutorName: p.tutorName || 'Unknown'
 }));
 
+// Active lesson packages (no closure date) loaded from the server - see
+// window.initialPacks in student.ejs. The server already filters to active-only.
+const packs = (window.initialPacks || []).map(p => ({
+    id: p.id,
+    hours: p.hours,
+    usedHours: p.usedHours || 0,
+    unassignedHours: p.unassignedHours || 0,
+    firstUnassignedLessonStart: p.firstUnassignedLessonStart || null
+}));
+
 // Aggregates a list of lessons into hours completed per month (key: YYYY-MM)
 function computeHoursByMonth(lessons) {
     const result = {};
@@ -208,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHours();
     renderCalendar();
     renderPrenotations();
+    renderPacks();
     setupEventListeners();
 });
 
@@ -491,6 +502,66 @@ function renderPrenotations() {
     }).join('');
 }
 
+function renderPacks() {
+    const container = document.getElementById('packsList');
+    const emptyState = document.getElementById('emptyPacks');
+
+    if (packs.length === 0) {
+    container.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    return;
+    }
+    emptyState.classList.add('hidden');
+
+    container.innerHTML = packs.map(p => {
+    const pct = p.hours > 0 ? Math.min(100, (p.usedHours / p.hours) * 100) : 0;
+    const isComplete = pct >= 100;
+    const cardClasses = isComplete
+        ? 'p-3 border border-destructive bg-destructive/10 rounded-lg space-y-2'
+        : 'p-3 border border-border rounded-lg space-y-2';
+    const barColor = isComplete ? 'bg-destructive' : 'bg-primary';
+    return `
+        <div class="${cardClasses}">
+        <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-foreground">${p.usedHours}h / ${p.hours}h</span>
+            <span class="text-xs text-muted-foreground">#${p.id}</span>
+        </div>
+        <div class="w-full h-2 bg-secondary rounded-full overflow-hidden">
+            <div class="h-full ${barColor} rounded-full" style="width: ${pct}%"></div>
+        </div>
+        ${isComplete ? `
+        ${p.unassignedHours > 0 ? `
+        <p class="text-xs text-destructive">${p.unassignedHours}h done outside any pack since it filled up</p>
+        <button type="button" data-new-pack-start="${p.firstUnassignedLessonStart || ''}"
+            class="new-pack-from-unassigned-btn w-full text-xs border border-destructive text-destructive px-3 py-1.5 rounded-lg font-medium hover:bg-destructive/10 transition-colors">
+            + New Package
+        </button>
+        ` : ''}
+        <button type="button" data-close-pack-id="${p.id}"
+            class="close-pack-btn w-full text-xs bg-destructive text-white px-3 py-1.5 rounded-lg font-medium hover:bg-destructive/90 transition-colors">
+            Close Package
+        </button>
+        ` : ''}
+        </div>
+    `;
+    }).join('');
+}
+
+// STAFF-only: open the "New Package" modal
+function openNewPackModal(defaultStart) {
+    if (window.userRole !== 'STAFF') return;
+    const start = defaultStart || new Date();
+    document.getElementById('newPackHours').value = 10;
+    document.getElementById('newPackStartDate').value = formatDateForInput(start);
+    document.getElementById('newPackStartTime').value = formatTimeForInput(start);
+    document.getElementById('newPackModal').classList.add('open');
+}
+
+function closeNewPackModal() {
+    document.getElementById('newPackModal').classList.remove('open');
+    document.getElementById('newPackForm').reset();
+}
+
 // STAFF-only: click a prenotation card to edit its date/time and reassign its tutor
 function openEditPrenotationModal(id) {
     if (window.userRole !== 'STAFF') return;
@@ -654,6 +725,81 @@ function setupEventListeners() {
     } catch (error) {
         console.error('Error updating prenotation:', error);
         alert('Failed to update prenotation. Please try again.');
+    }
+    });
+
+    document.getElementById('newPackBtn').addEventListener('click', openNewPackModal);
+
+    document.getElementById('newPackForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const hours = document.getElementById('newPackHours').value;
+    const startDate = document.getElementById('newPackStartDate').value;
+    const startTime = document.getElementById('newPackStartTime').value;
+    if (!hours || parseFloat(hours) <= 0) {
+        alert('Please enter a valid number of hours');
+        return;
+    }
+    if (!startDate || !startTime) {
+        alert('Please enter a valid start date and time');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/packs', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            studentId: rawStudent.id,
+            hours: parseFloat(hours),
+            startDate,
+            startTime
+        })
+        });
+
+        if (response.ok) {
+        closeNewPackModal();
+        window.location.reload();
+        } else {
+        const error = await response.json();
+        alert(`Failed to create package: ${error.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('Error creating package:', error);
+        alert('Failed to create package. Please try again.');
+    }
+    });
+
+    document.getElementById('packsList').addEventListener('click', async (e) => {
+    const newPackFromUnassignedBtn = e.target.closest('.new-pack-from-unassigned-btn');
+    if (newPackFromUnassignedBtn) {
+        const startTimeStr = newPackFromUnassignedBtn.getAttribute('data-new-pack-start');
+        openNewPackModal(startTimeStr ? parseAsLocalDate(startTimeStr) : null);
+        return;
+    }
+
+    const btn = e.target.closest('.close-pack-btn');
+    if (!btn) return;
+
+    const packId = btn.getAttribute('data-close-pack-id');
+    if (!confirm('Are you sure you want to close this package?')) return;
+
+    try {
+        const response = await fetch(`/api/packs/${packId}/close`, {
+        method: 'PUT',
+        credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+        window.location.reload();
+        } else {
+        const error = await response.json();
+        alert(`Failed to close package: ${error.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('Error closing package:', error);
+        alert('Failed to close package. Please try again.');
     }
     });
 }

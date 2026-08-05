@@ -53,7 +53,8 @@ const {
     fetchAllStudents,
     fetchTestsByTutor,
     fetchTestsByStudent,
-    fetchAllTests
+    fetchAllTests,
+    fetchPacksByStudent
 } = require('../server_utilities/javaApiService');
 
 // Fixed reference list of subjects for the Evaluations ("Add Evaluation") form
@@ -849,12 +850,24 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
 
         // Tests and prenotations span every tutor who has ever dealt with this student
         // (STAFF sees the full history); lessons/hours stay scoped to the viewing tutor's own sessions
-        const [tests, lessons, prenotationsData, allTutors] = await Promise.all([
+        const [tests, lessons, prenotationsData, allTutors, packsData] = await Promise.all([
             fetchTestsByStudent(studentId),
             fetchLessonsByTutorAndStudent(tutorId, studentId),
             fetchPrenotationsByStudent(studentId),
-            fetchFromJavaAPI('/api/users')
+            fetchFromJavaAPI('/api/users'),
+            fetchPacksByStudent(studentId)
         ]);
+
+        // A pack is still active if it has no closure date
+        const activePacks = (packsData || [])
+            .filter(pack => pack.closure == null)
+            .map(pack => ({
+                id: pack.id,
+                hours: pack.hours,
+                usedHours: pack.usedHours || 0,
+                unassignedHours: pack.unassignedHours || 0,
+                firstUnassignedLessonStart: pack.firstUnassignedLessonStart || null
+            }));
 
         // Shared cache so tests and prenotations don't re-fetch the same tutor twice
         const tutorCache = new Map();
@@ -893,7 +906,8 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
             evaluations,
             lessons,
             prenotations,
-            tutors: allTutors || []
+            tutors: allTutors || [],
+            packs: activePacks
         });
     } catch (error) {
         logError('Error accessing student profile page', req, { studentId: req.params.id, error: error.message });
@@ -1459,6 +1473,113 @@ app.delete('/api/tests/:id', tutorSession, isAuthenticated, async (req, res) => 
     } catch (error) {
         logError('Error deleting test', req, { id: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to delete test' });
+    }
+});
+
+// !!! PACKS (LESSON PACKAGES) API ROUTES !!!
+
+/**
+ * Create a new lesson package for a student
+ * POST /api/packs
+ * Body: { studentId, hours }
+ */
+app.post('/api/packs', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { studentId, hours, startDate, startTime } = req.body;
+
+        if (!studentId || !hours || !startDate || !startTime) {
+            return res.status(400).json({ error: 'Student, hours, and start date/time are required' });
+        }
+
+        const packData = {
+            startTime: `${startDate}T${startTime}:00`,
+            hours: parseFloat(hours),
+            studentId: parseInt(studentId)
+        };
+
+        logInfo('Creating new pack', req, { studentId, hours, startDate, startTime });
+
+        const postData = JSON.stringify(packData);
+
+        const options = createJavaApiRequestOptions('/api/packs', 'POST', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    logSuccess('Pack created successfully', req, { studentId, hours });
+                    try {
+                        const pack = JSON.parse(data);
+                        res.status(201).json(pack);
+                    } catch (e) {
+                        res.status(201).json({ success: true, message: 'Pack created' });
+                    }
+                } else {
+                    logError(`Error creating pack, status: ${httpsRes.statusCode}`, req, { response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to create pack' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for pack creation', req, { error: error.message });
+            res.status(500).json({ error: 'Failed to create pack' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+
+    } catch (error) {
+        logError('Error creating pack', req, { error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to create pack' });
+    }
+});
+
+/**
+ * Close a lesson package (sets its closure date to today)
+ * PUT /api/packs/:id/close
+ */
+app.put('/api/packs/:id/close', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        logInfo('Closing pack', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/packs/${id}/close`, 'PUT');
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200) {
+                    logSuccess('Pack closed successfully', req, { id });
+                    res.json({ success: true, message: 'Pack closed' });
+                } else {
+                    logError(`Error closing pack, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to close pack' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for pack closure', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to close pack' });
+        });
+
+        httpsReq.end();
+
+    } catch (error) {
+        logError('Error closing pack', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to close pack' });
     }
 });
 
