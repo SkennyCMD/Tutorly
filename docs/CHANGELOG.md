@@ -45,8 +45,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Accounts, GUEST Role & Lesson Packages**
 - `Tutor` entity/table renamed to `User`/`app_user` (`user` is a reserved SQL keyword in PostgreSQL) to make room for a `GUEST` role - an account type intended for a parent/guardian who should only see their linked student's data. **The view-restriction for `GUEST` isn't implemented yet** - today it authenticates and sees data like a `GENERIC` tutor would; this is a data-model-only first step. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role).
 - New `Student.id_user` (nullable FK to `app_user`): the `GUEST` account, if any, linked to a student.
-- New `Pack` entity/table (id, hours, closure date, student) representing a prepaid block of tutoring hours; `Lesson.id_pack` (nullable) optionally links a lesson to the package it was drawn from. No REST endpoint for `Pack` yet - entity + repository only.
+- New `Pack` entity/table (id, hours, closure date, student) representing a prepaid block of tutoring hours; `Lesson.id_pack` (nullable) optionally links a lesson to the package it was drawn from.
 - Java REST base path `/api/tutors` renamed to `/api/users` (`UserController`, formerly `TutorController`); every other controller's `/tutor/{tutorId}`-style sub-paths were deliberately left unchanged, since those describe the tutor *role* in that relationship, not the account type.
+
+**Lesson Packages - full feature** (STAFF only)
+- Full `Pack` REST API (`PackController`/`PackService`, previously entity + repository only): `GET/POST/PUT /api/packs`, `GET /api/packs/student/{studentId}`, `PUT /api/packs/{id}/close`, `DELETE /api/packs/{id}`. See [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs).
+- `Pack` gained `createdAt` (audit-only) and `startTime` (required, user-editable) timestamp columns.
+- New lessons are automatically drawn from the student's active pack when one is eligible (not closed, lesson starts after the pack's start time, hours still available); if a lesson only partially fits in the pack's remaining hours, it's **split into two lessons** - the portion that fits stays in the pack, the remainder is saved as a separate unassigned lesson.
+- Creating a new pack retroactively absorbs the student's existing unassigned lessons starting at or after the pack's start time (same eligibility/splitting logic, processed chronologically until the pack's hours run out).
+- `GET /api/packs/student/{studentId}` now reports each pack's `usedHours`, and for packs that are full and still open, `unassignedHours` and the earliest unassigned lesson's `firstUnassignedLessonStart`.
+- Student Profile page: a "Packs" card below "Hours per Month" lists active packs with a progress bar; a full pack's card turns red with a "Close Package" button (`PUT /api/packs/:id/close`); if there are hours outside any pack, a "+ New Package" button opens the create-pack form pre-filled with the first unassigned lesson's date/time. The New Package form defaults Hours to 10 and Start Date/Time to now.
+- `lesson.id_pack`'s FK changed from `ON DELETE CASCADE` to `ON DELETE SET NULL` - deleting a pack no longer deletes its lessons, only clears their `id_pack`. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql-pack-timestamps-and-lessonid_pack-on-delete-set-null).
 
 ### Fixed
 - `TestRepository.findByTutorId`/`findByStudentId` threw a 500 error (`UnknownPathException`) instead of returning results, because Spring Data JPA couldn't disambiguate the property path once `Test` gained `tutorId`/`studentId` JSON helper getters. Renamed to `findByTutor_Id`/`findByStudent_Id` (explicit underscore), matching the convention `LessonRepository` already used.
@@ -55,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `Test.mark` changed from `Integer` to `Double` (DB column migrated to `double precision`) to support half-point grades, matching the 0-10 scale the Evaluations UI expects. See [06_Database_Migrations.md](06_Database_Migrations.md) for the manual SQL migration.
 - `Test.mark`'s check constraint tightened from `0-30` (stale, unrelated to the app) to `0-10`, matching the scale the Evaluations UI has always enforced.
-- `Database/init.sql` updated: `test` table gains a `subject` column, and its seed data now uses 0-10-scale marks with real subject names (previously an unrelated 0-30 scale with no subject); also updated for the `tutor` → `app_user` rename and new `pack` table (see above).
+- `Database/init.sql` updated: `test` table gains a `subject` column, and its seed data now uses 0-10-scale marks with real subject names (previously an unrelated 0-30 scale with no subject); also updated for the `tutor` → `app_user` rename, the new `pack` table (`created_at`/`start_time` columns included), and `lesson.id_pack`'s `ON DELETE SET NULL` FK (see above).
 
 ### Removed
 - `Database/POSTGRE_DB_CONFIG.TXT`: redundant near-duplicate of `Database/init.sql`'s schema (with plain-text passwords and no longer up to date).

@@ -135,7 +135,7 @@ Don't run the SQL against a database still being served by the old code, and don
 - New `lesson.id_pack` column (nullable FK to `pack`) - a lesson doesn't have to belong to a package
 - `test.mark`'s check constraint tightened from `0-30` to `0-10` - a stale range left over from before the Evaluations page's half-point 0-10 scale (see the `test.mark → DOUBLE PRECISION` entry above); unrelated to the rename, bundled in because it was noticed while touching this same file
 
-**Corresponding code changes:** `Tutor` entity renamed to `User` (`@Table(name = "app_user")`); `TutorRepository`/`TutorService`/`TutorController` renamed to `UserRepository`/`UserService`/`UserController`; `UserController`'s REST base path changed from `/api/tutors` to `/api/users` (including `/api/users/login`). `AdminCreatesTutor`(`+Id`/`Repository`) renamed to `AdminCreatesUser`. `Lesson`, `Test`, `Prenotation`, `CalendarNote` now reference the `User` type instead of `Tutor`, but kept their own field names (`tutor`, `creator`), DB columns (`id_tutor`, `id_creator`), and sub-paths (e.g. `/api/lessons/tutor/{tutorId}`) unchanged - those describe the *role* a user plays in that relationship, not the account type, so renaming them would have been pure churn with no benefit. New `Pack` entity + `PackRepository` (no REST controller yet - nothing calls it). New `Lesson.pack` / `Student.user` relations. On the Node.js side: every `/api/tutors/*` call in `index.js`, `javaApiService.js`, `authService.js` (including the real login flow), and `migrations/hashExistingPasswords.js` updated to `/api/users/*`.
+**Corresponding code changes:** `Tutor` entity renamed to `User` (`@Table(name = "app_user")`); `TutorRepository`/`TutorService`/`TutorController` renamed to `UserRepository`/`UserService`/`UserController`; `UserController`'s REST base path changed from `/api/tutors` to `/api/users` (including `/api/users/login`). `AdminCreatesTutor`(`+Id`/`Repository`) renamed to `AdminCreatesUser`. `Lesson`, `Test`, `Prenotation`, `CalendarNote` now reference the `User` type instead of `Tutor`, but kept their own field names (`tutor`, `creator`), DB columns (`id_tutor`, `id_creator`), and sub-paths (e.g. `/api/lessons/tutor/{tutorId}`) unchanged - those describe the *role* a user plays in that relationship, not the account type, so renaming them would have been pure churn with no benefit. New `Pack` entity + `PackRepository` (a REST controller/service were added later - see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs)). New `Lesson.pack` / `Student.user` relations. On the Node.js side: every `/api/tutors/*` call in `index.js`, `javaApiService.js`, `authService.js` (including the real login flow), and `migrations/hashExistingPasswords.js` updated to `/api/users/*`.
 
 **`Database/init.sql`** was updated to match - only relevant if you're bootstrapping a brand-new database from that script rather than migrating an existing one; a fresh database doesn't need any of the steps below.
 
@@ -250,6 +250,30 @@ ALTER TABLE app_user RENAME TO tutor;
 COMMIT;
 ```
 This does **not** undo the Java/Node code changes - only redeploy this rollback against a database still running the *old* code, and redeploy the old code alongside it.
+
+---
+
+### Manual SQL: Pack timestamps and lesson.id_pack ON DELETE SET NULL
+
+**⚠️ Not a checked-in script.** Like the `test.mark` migration above, these were one-off manual SQL changes run directly against Postgres via `psql`.
+
+**Why:** The Pack feature (see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs)) needed a `startTime` (when the pack starts being usable - required for the lesson auto-assignment/eligibility logic) and a `createdAt` audit timestamp, neither of which existed on the original `pack` table from the `tutor` → `app_user` migration above. Separately, `lesson.id_pack`'s FK was originally `ON DELETE CASCADE`, meaning deleting a pack silently deleted every lesson ever drawn from it - real attendance/billing history. Changed to `ON DELETE SET NULL` so deleting a pack only clears `id_pack` on its lessons.
+
+**What was run:**
+```sql
+-- Add createdAt/startTime to the existing (empty) pack table
+ALTER TABLE pack ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE pack ADD COLUMN start_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+-- Stop cascading lesson deletes when a pack is deleted
+ALTER TABLE lesson DROP CONSTRAINT lesson_id_pack_fkey;
+ALTER TABLE lesson ADD CONSTRAINT lesson_id_pack_fkey FOREIGN KEY (id_pack) REFERENCES pack(id)
+    ON DELETE SET NULL;
+```
+
+**Corresponding code changes:** `Pack.java` gained `createdAt` (Java-side field-initializer default, same pattern as `Prenotation.createdAt` - not DTO-settable) and `startTime` (required, user-editable, passed through `PackCreateDTO`) fields. See [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs) for the full field list and the `PackService` business logic that uses `startTime` for pack-eligibility checks.
+
+**If you're setting up a fresh database:** not needed - `Database/init.sql` was updated to match (`pack.created_at`/`pack.start_time` columns with `DEFAULT CURRENT_TIMESTAMP`, and `lesson.id_pack`'s FK already `ON DELETE SET NULL`). This only applies to a database that already had the `pack`/`lesson` tables from before this change.
 
 ---
 

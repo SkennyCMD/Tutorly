@@ -287,6 +287,7 @@ await fetchFromJavaAPI('/api/lessons/42', 'DELETE');
 | `fetchCalendarNotesByDateRange(start, end)` | Get notes in date range |
 | `fetchTestsByTutor(tutorId)` | Get tests (evaluations) for specific tutor |
 | `fetchTestsByStudent(studentId)` | Get tests for a student, across every tutor - used by the Student Profile page |
+| `fetchPacksByStudent(studentId)` | Get lesson packages for a student, each annotated with `usedHours`/`unassignedHours` - used by the Student Profile page's "Packs" card |
 
 **Note - `fetchTutorData`/`/api/tutors` → `/api/users`:** the Java `Tutor` entity/table was renamed to `User`/`app_user` (see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role)), so this function now calls `/api/users/:id` internally. The function name itself was **not** changed - it's still describing "fetch the tutor for this lesson/test/etc.", a role, not the account type - matching the same reasoning documented in [01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users) for why `Lesson`/`Test`/`Prenotation`'s own field names didn't change either.
 
@@ -314,6 +315,7 @@ JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu'
 - `fetchAllStudents()`: Fetches all students
 - `fetchTestsByTutor(tutorId)`: Fetches tests (evaluations) for a tutor
 - `fetchTestsByStudent(studentId)`: Fetches tests for a student, across every tutor
+- `fetchPacksByStudent(studentId)`: Fetches lesson packages for a student, each annotated with `usedHours`/`unassignedHours`
 
 **Usage example:**
 ```javascript

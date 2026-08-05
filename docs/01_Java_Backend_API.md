@@ -62,7 +62,10 @@ The **Tutorly Backend API** is a RESTful application developed in Java with Spri
 | `/api/students/{id}` | DELETE | Delete student | API Key |
 | `/api/users` | GET | List all users (tutors, STAFF, GUEST) | API Key |
 | `/api/lessons` | GET | List all lessons | API Key |
-| `/api/lessons` | POST | Create new lesson | API Key |
+| `/api/lessons` | POST | Create new lesson (auto-drawn from an active pack if one is eligible) | API Key |
+| `/api/packs/student/{studentId}` | GET | List a student's packs, with computed `usedHours`/`unassignedHours` | API Key |
+| `/api/packs` | POST | Create new pack (retroactively absorbs the student's unassigned lessons) | API Key |
+| `/api/packs/{id}/close` | PUT | Close a pack (sets its closure date to today) | API Key |
 | `/api/prenotations` | GET | List bookings | API Key |
 | `/api/calendar-notes` | GET | List calendar notes | API Key |
 | `/api/tests` | GET | List tests (evaluations) | API Key |
@@ -244,7 +247,7 @@ This section details the internal structure of the Java backend component:
 
 > **Note:** This diagram is out of date and kept only for the broad shape of the relationships - redrawing it without breaking every neighboring box's alignment isn't worth the risk. What it doesn't show, as of the `tutor` → `app_user` migration (see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role)):
 > - **`Tutor` is now `User`** (table `app_user`, not `tutor`) - same relationships shown above (Lesson/Prenotation/Test/CalendarNote), plus a new `mail` field and a `GUEST` role value alongside `GENERIC`/`STAFF`. All the fields/relationships listed under the `Tutor` box below still apply to `User`, just under the new name.
-> - **New `Pack` entity** (id, hours, closure date) - belongs to one `Student`, and a `Lesson` can optionally belong to one `Pack` (nullable `id_pack`) - not shown in the diagram at all.
+> - **New `Pack` entity** (id, createdAt, startTime, hours, closure date) - belongs to one `Student`, and a `Lesson` can optionally belong to one `Pack` (nullable `id_pack`, `ON DELETE SET NULL` - deleting a pack never deletes its lessons) - not shown in the diagram at all. See [Packs](#packs) below for the full REST API and business logic.
 > - **`Student` gained an optional `user` field** - links a student to the `GUEST` account (if any) allowed to view them.
 > - The `Test` box also doesn't show the `subject` field (a free-text subject/topic name, e.g. "Matematica") added earlier - adding a row would require re-aligning every neighboring box's border to match.
 >
@@ -687,7 +690,8 @@ public class WebConfig implements WebMvcConfigurer {
 |------------|--------------|------------------|
 | `StudentController` | `/api/students` | Student CRUD, search by status/class |
 | `UserController` | `/api/users` | User CRUD, authentication, role management (tutors, STAFF, GUEST) |
-| `LessonController` | `/api/lessons` | Lesson CRUD, search by tutor/student/period |
+| `LessonController` | `/api/lessons` | Lesson CRUD, search by tutor/student/period; auto-assigns/splits lessons against the student's active pack on create |
+| `PackController` | `/api/packs` | Pack CRUD, close a pack, per-student list with computed used/unassigned hours |
 | `PrenotationController` | `/api/prenotations` | Booking CRUD, confirm/reject |
 | `AdminController` | `/api/admins` | Admin CRUD, tutor creation |
 | `TestController` | `/api/tests` | Test CRUD, search by student/tutor |
@@ -699,12 +703,13 @@ Each controller has its dedicated service with the same naming:
 - `StudentService`
 - `UserService`
 - `LessonService`
+- `PackService`
 - `PrenotationService`
 - `AdminService`
 - `TestService`
 - `CalendarNoteService`
 
-`PackRepository` exists (basic CRUD) but has no matching `PackService`/`PackController` yet - nothing calls it. See [Users](#users) below.
+`PackService` also holds the pack/lesson matching logic (`findActivePackWithAvailableHours`, `assignLessonToPack`, `assignUnassignedLessonsSince`) and is autowired directly into `LessonController` - see [Packs](#packs) below.
 
 **Common Service Functions:**
 - Business logic validation
@@ -982,16 +987,45 @@ Entity `User` (table `app_user`, not `user` - `user` is a reserved SQL keyword i
 
 ### Packs
 
-No REST controller exists for `Pack` yet - only the entity and `PackRepository` (basic CRUD, unused). A lesson package (a prepaid block of hours) is created directly against the database for now; there's no `/api/packs` endpoint to call. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role) for the schema.
+A `Pack` is a prepaid block of tutoring hours purchased for a student. `PackController`/`PackService`/`PackRepository` mirror `TestController`'s flat-ID DTO pattern. Backs the "Packs" card on the Node.js Student Profile page - see [03_Nodejs_Frontend.md - Student Profile Page](03_Nodejs_Frontend.md#student-profile-page).
 
 | Field | Type | Notes |
 |-------|------|-------|
 | `id` | `Long` | Auto-generated |
-| `hours` | `Double` | Required |
-| `closure` | `LocalDate` | Optional - null while the package is still open/active |
+| `createdAt` | `LocalDateTime` | Audit-only, defaults to `now()` on the Java side when the entity is instantiated (same pattern as `Prenotation.createdAt`) - not settable via the DTO |
+| `startTime` | `LocalDateTime` | Required, user-editable. When the pack is eligible to draw a lesson (see below), a lesson must start *after* this time |
+| `hours` | `Double` | Required - total hours purchased |
+| `closure` | `LocalDate` | Optional - null while the package is still open/active; set by the close endpoint below |
 | `studentId` | `Long` | Required (`@JsonProperty` helper, like `tutorId` on `Test`/`Lesson`) |
 
-`Lesson` gained an optional `packId` field (`Long`, nullable) pointing to the package a lesson was drawn from - a lesson doesn't have to belong to one.
+`Lesson` gained an optional `packId` field (`Long`, nullable) pointing to the package a lesson was drawn from - a lesson doesn't have to belong to one. `lesson.id_pack`'s FK is `ON DELETE SET NULL` (not `CASCADE`) - deleting a pack clears `packId` on its lessons instead of deleting them, so attendance/billing history is never lost. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role) for the original table and [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql-pack-timestamps-and-lessonid_pack-on-delete-set-null) for the `createdAt`/`startTime` columns and the `ON DELETE SET NULL` change.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/packs` | List all packs |
+| GET | `/packs/{id}` | Pack details by ID |
+| GET | `/packs/student/{studentId}` | Packs for a student, each annotated with `usedHours` and, for full-but-open packs, `unassignedHours`/`firstUnassignedLessonStart` (see below) |
+| POST | `/packs` | Create a new pack; retroactively assigns any of the student's unassigned lessons starting at or after `startTime` (see below) |
+| PUT | `/packs/{id}` | Update a pack (same DTO shape as create) |
+| PUT | `/packs/{id}/close` | Close a pack - sets `closure` to today if not already closed |
+| DELETE | `/packs/{id}` | Delete a pack (its lessons keep their other data, `packId` is set to `null`) |
+
+**Example Request Body (POST):**
+```json
+{
+  "startTime": "2026-08-01T09:00:00",
+  "hours": 10,
+  "studentId": 10
+}
+```
+
+#### Business logic (`PackService`)
+
+- **`getUsedHours(pack)`** - sums the duration (in hours) of every lesson currently drawn from a pack.
+- **`findActivePackWithAvailableHours(studentId, lessonStartTime)`** - called by `LessonController.createLesson` for every new lesson. A pack is eligible if: it has no `closure` date, `lessonStartTime` is after the pack's `startTime`, and `getUsedHours(pack) < pack.hours`. If a student has more than one eligible pack, the one with the earliest `startTime` is used first (oldest pack drained first).
+- **`assignLessonToPack(pack, lesson)`** - draws a lesson from a pack. If the lesson's full duration fits in the pack's remaining hours, the whole lesson is assigned. **If it only partially fits, the lesson is split in two**: the portion that fits (from the lesson's original start time) stays in the pack, and the remainder is saved as a brand-new, unassigned `Lesson` covering the rest of the original time range - exactly as if that portion had been booked outside any pack.
+- **`getHoursOutsidePack(pack)` / `getFirstUnassignedLessonStart(pack)`** - for a pack that's full (`usedHours >= hours`) and still open, finds the student's lessons with no pack that started at or after this pack's `startTime` (i.e. hours done once the pack ran out), and the earliest such lesson's start time. Surfaced via `GET /packs/student/{studentId}` as `unassignedHours`/`firstUnassignedLessonStart`, and used by the Node.js frontend to pre-fill a new pack's start date/time so it can absorb them.
+- **`assignUnassignedLessonsSince(pack)`** - called right after a pack is created. Finds the student's unassigned lessons starting at or after the new pack's `startTime`, sorted chronologically, and assigns them via `assignLessonToPack` (with the same splitting behavior) until the pack's hours run out.
 
 ---
 
@@ -1018,6 +1052,8 @@ No REST controller exists for `Pack` yet - only the entity and `PackRepository` 
   "studentId": 10
 }
 ```
+
+`POST /lessons` doesn't accept a `packId` - it's never client-settable. `LessonController.createLesson` always calls `PackService.findActivePackWithAvailableHours` itself and assigns (and, if needed, splits) the lesson against whichever pack qualifies. See [Packs - Business logic](#packs) above.
 
 ---
 
@@ -1254,6 +1290,7 @@ backend-api/
 │   │   │   │   ├── StudentController.java
 │   │   │   │   ├── UserController.java
 │   │   │   │   ├── LessonController.java
+│   │   │   │   ├── PackController.java
 │   │   │   │   ├── PrenotationController.java
 │   │   │   │   ├── AdminController.java
 │   │   │   │   ├── TestController.java
@@ -1262,6 +1299,7 @@ backend-api/
 │   │   │   │   ├── StudentService.java
 │   │   │   │   ├── UserService.java
 │   │   │   │   ├── LessonService.java
+│   │   │   │   ├── PackService.java
 │   │   │   │   ├── PrenotationService.java
 │   │   │   │   ├── AdminService.java
 │   │   │   │   ├── TestService.java
@@ -1289,6 +1327,7 @@ backend-api/
 │   │   │   │   └── AdminCreatesUserId.java
 │   │   │   ├── dto/
 │   │   │   │   ├── LessonCreateDTO.java
+│   │   │   │   ├── PackCreateDTO.java
 │   │   │   │   ├── PrenotationCreateDTO.java
 │   │   │   │   ├── PrenotationResponseDTO.java
 │   │   │   │   └── CalendarNoteCreateDTO.java
@@ -1448,6 +1487,14 @@ java -jar target/backend-api-0.0.1-SNAPSHOT.jar
 ---
 
 ## Changelog
+
+### Unreleased (2026-08-05)
+- ✅ `Pack` REST API added (`PackController`/`PackService`) - previously entity + repository only
+- ✅ `Pack` gained `createdAt`/`startTime` timestamp columns
+- ✅ New lessons auto-assigned to (and, if only partially fitting, split across) the student's active pack
+- ✅ Creating a pack retroactively absorbs the student's prior unassigned lessons
+- ✅ `GET /api/packs/student/{studentId}` reports `usedHours`, and for full-but-open packs, `unassignedHours`/`firstUnassignedLessonStart`
+- ✅ `PUT /api/packs/{id}/close` closes a pack; `lesson.id_pack` FK changed to `ON DELETE SET NULL` so deleting a pack no longer deletes its lessons
 
 ### v1.0.0 (2026-02-16)
 - ✅ Initial implementation with all entities

@@ -44,7 +44,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 - ✅ **Internationalization (i18n)**: automatic English/Italian translation based on the browser's language, no manual switcher
 - ✅ Calendar weekly-repeat prenotations and continuous multi-day/all-day notes
 - ✅ Student evaluations (test marks) with per-student progress chart and running average
-- ✅ STAFF-only Student Profile page: per-subject/tutor marks chart with toggleable lines, hours breakdown, and prenotation management
+- ✅ STAFF-only Student Profile page: per-subject/tutor marks chart with toggleable lines, hours breakdown, prenotation management, and lesson-package (Pack) tracking with auto-assignment
 
 ---
 
@@ -74,7 +74,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 | `/lessons` | GET | Lessons management | Tutor/Admin |
 | `/calendar` | GET | Calendar view | Tutor/Admin |
 | `/reports` | GET | Evaluations (student marks/tests, with per-student stats chart) | Tutor/Admin |
-| `/student/:id` | GET | Student profile (marks chart, hours, prenotations) | STAFF only |
+| `/student/:id` | GET | Student profile (marks chart, hours, prenotations, lesson packages) | STAFF only |
 | `/admin` | GET | Admin panel | Admin only |
 | `/staffPanel` | GET | Staff management | Staff/Admin |
 | `/logout` | GET | Logout | Tutor/Admin |
@@ -1074,6 +1074,28 @@ Body: {
 
 ---
 
+### API Endpoints - Packs (Lesson Packages)
+
+Backs the Student Profile page's "Packs" card - see [Lesson Packages (Packs)](#lesson-packages-packs) above. Thin proxies to the Java `Pack` API ([01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs)).
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | `/api/packs` | Tutor (STAFF-only page) | Create new pack; body `{ studentId, hours, startDate, startTime }` |
+| PUT | `/api/packs/:id/close` | Tutor (STAFF-only page) | Close a pack (sets its closure date) |
+
+**Example - Create Pack:**
+```javascript
+POST /api/packs
+Body: {
+    studentId: 10,
+    hours: 10,
+    startDate: "2026-08-01",
+    startTime: "09:00"
+}
+```
+
+---
+
 ### API Endpoints - Prenotations (Bookings)
 
 | Method | Route | Auth | Description |
@@ -1308,7 +1330,7 @@ The `/student/:id` page (`views/student.ejs` + `public/js/student.js` + `public/
 
 **Access control:** requires `isAuthenticated`, then the route handler fetches the viewing tutor's own data and redirects to `/home` if their `role !== 'STAFF'` (see [Routes and Endpoints](#staff-only-route-manual-role-check-not-isstaff) above). If `:id` doesn't resolve to a real student, the route renders the shared `404.ejs` instead of crashing - this required fixing `fetchStudentData()` in `javaApiService.js`, which previously let a Java 404 reject the promise instead of resolving `null` like every other single-item fetch helper does.
 
-**Data sources:** unlike most of the app (which scopes lessons/tests/prenotations to the logged-in tutor), this page deliberately fetches **all** of a student's tests and prenotations regardless of which tutor administered them (`fetchTestsByStudent`, `fetchPrenotationsByStudent` in `javaApiService.js`) - a STAFF member reviewing a student needs the full picture, not just their own interactions. Hours/lesson-calendar data stays scoped to the viewing tutor's own lessons with that student (`fetchLessonsByTutorAndStudent`), since "hours I've personally taught this student" is the meaningful number there. Each test/prenotation is enriched server-side with the administering tutor's username (`tutorName`), deduplicating repeated tutor lookups with a small in-memory cache built per-request.
+**Data sources:** unlike most of the app (which scopes lessons/tests/prenotations to the logged-in tutor), this page deliberately fetches **all** of a student's tests and prenotations regardless of which tutor administered them (`fetchTestsByStudent`, `fetchPrenotationsByStudent` in `javaApiService.js`) - a STAFF member reviewing a student needs the full picture, not just their own interactions. Hours/lesson-calendar data stays scoped to the viewing tutor's own lessons with that student (`fetchLessonsByTutorAndStudent`), since "hours I've personally taught this student" is the meaningful number there. Packs (`fetchPacksByStudent`) are also fetched student-wide, same as tests/prenotations - a lesson package isn't tied to a single tutor. Each test/prenotation is enriched server-side with the administering tutor's username (`tutorName`), deduplicating repeated tutor lookups with a small in-memory cache built per-request.
 
 ### Marks Chart (subject + tutor lines)
 
@@ -1330,6 +1352,19 @@ Shown as exact hours and minutes (e.g. `2h 15m`, computed from the real `endTime
 Below the mini lesson-calendar, a scrollable list (`max-h-[32rem]`, same `scrollbar-thin` pattern as the Evaluations page's sidebar) of the student's prenotations across every tutor, soonest-first. A prenotation dated before today is shown with a red border/background and labeled "Expired" instead of "Pending" (a confirmed-but-past prenotation still shows "Confirmed" - only the pending state changes wording).
 
 **STAFF can click a card to edit or delete it** - opens the same kind of modal as the Calendar page's edit-prenotation flow (date, start/end time, tutor reassignment via radio buttons populated from `window.allTutors`), calling the existing `PUT`/`DELETE /api/prenotations/:id` endpoints (no new backend routes). The click handler and edit modal are gated by `window.userRole === 'STAFF'` in `student.js` - redundant with the route-level check today (only STAFF can reach this page at all), kept as defense-in-depth in case that ever changes.
+
+### Lesson Packages (Packs)
+
+Below the "Hours per Month" card, a "Packs" card lists the student's still-active packages (a pack is active if it has no closure date - closed packs simply aren't shown here) plus a "+ New Package" button. Backed by the Java `Pack` REST API - see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs) for the full field list and server-side matching/splitting logic.
+
+**Each pack card shows:**
+- `usedHours` / `hours` (e.g. "4.5h / 10h") and a progress bar, both driven by `usedHours` computed server-side by `PackController.getPacksByStudent` (sum of the durations of every lesson currently drawn from that pack) - the Node.js route and `student.js` just pass it through.
+- **Once full** (`usedHours >= hours`), the card turns red (border + tinted background + red progress bar) and gains a **"Close Package"** button, which calls `PUT /api/packs/:id/close` (a thin proxy to the Java endpoint of the same shape) and reloads the page on success.
+- **If the pack is full, still open, and the student has hours outside any pack** (`unassignedHours > 0` - lessons booked once the pack ran out, with no other pack available to absorb them), the card also shows that hour count and a **"+ New Package"** button. Clicking it opens the New Package modal pre-filled with the *first* such unassigned lesson's date/time (`firstUnassignedLessonStart`, both computed server-side by `PackService`) instead of "now" - so the new pack, once created, retroactively absorbs those lessons (see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs) for `assignUnassignedLessonsSince`).
+
+**New Package modal:** Hours, Start Date, and Start Time fields. Hours defaults to `10`; Start Date/Time default to right now (or, per above, to the first unassigned lesson's date/time when opened from a full pack's "+ New Package" button). Submits via `POST /api/packs` with `{ studentId, hours, startDate, startTime }`; the Node.js route combines `startDate`+`startTime` into a single ISO datetime string before forwarding to the Java API, same convention as prenotations elsewhere in the app. The header's own "+ New Package" button (next to the card title) opens the same modal with plain "now" defaults.
+
+All of the click handlers above (`close-pack-btn`, `new-pack-from-unassigned-btn`, the header button, and the form submit) are gated by `window.userRole === 'STAFF'`, same as the Prenotations card - this page is STAFF-only end to end anyway, but the check is kept for defense-in-depth.
 
 ---
 

@@ -131,7 +131,7 @@ The heart of the system is a robust RESTful API built with Spring Boot 3.4.1 and
 - `Prenotation`: Lesson bookings (confirmed/unconfirmed)
 - `Test`: Student assessments and exam results
 - `CalendarNote`: Notes and reminders for the calendar
-- `Pack`: Prepaid lesson packages (hours purchased for a student) - entity/repository only, no REST endpoint yet
+- `Pack`: Prepaid lesson packages (hours purchased for a student); new lessons are auto-drawn from (and split across, if only partially fitting) a student's active pack - see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs)
 - `Admin`: System administrators
 
 **Technologies**:

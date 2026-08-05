@@ -212,16 +212,18 @@ Renamed from `AdminCreatesTutor` (its `id_tutor` column renamed to `id_user`) al
 
 #### 9. **Pack** (Lesson Packages)
 
-New table - not yet exposed via any REST endpoint (entity + `PackRepository` exist; no controller/service). See [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs).
+Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs) for endpoints and the server-side matching/splitting logic that draws lessons from a pack.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique pack ID |
+| `created_at` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Audit timestamp, set when the record is created |
+| `start_time` | TIMESTAMP | NOT NULL, DEFAULT CURRENT_TIMESTAMP | When the package starts being usable - a lesson can only be drawn from a pack if it starts after this |
 | `hours` | DOUBLE PRECISION | NOT NULL | Total hours purchased in this package |
 | `closure` | DATE | nullable | Date the package was closed/expired; null while still active |
 | `id_student` | BIGINT | FK → Student(id), NOT NULL | The student this package belongs to |
 
-**Purpose**: Track prepaid blocks of tutoring hours purchased for a student. A `Lesson` can optionally reference a `Pack` via `lesson.id_pack` to track which package it was drawn from.
+**Purpose**: Track prepaid blocks of tutoring hours purchased for a student. A `Lesson` can optionally reference a `Pack` via `lesson.id_pack` (FK is `ON DELETE SET NULL` - deleting a pack clears this on its lessons rather than deleting them) to track which package it was drawn from.
 
 ---
 
