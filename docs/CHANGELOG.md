@@ -12,10 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 **Internationalization (i18n)**
-- Automatic English/Italian translation for the Dashboard, Calendar, Lessons, Staff Panel, Login, and Evaluations pages, detected from the browser's `Accept-Language` header (no manual switcher).
+- Automatic English/Italian translation for the Dashboard, Calendar, Lessons, Staff Panel, Login, Evaluations, and Student Profile pages, detected from the browser's `Accept-Language` header (no manual switcher). Admin, Admin Login, and the 404 page remain untranslated.
 - `server_utilities/i18n.js`: language detection, dot-notation translation lookup with `{placeholder}` substitution, and an Express middleware exposing `t()`, `lang`, and `translations` to every EJS view via `res.locals`.
-- `public/js/i18n.js`: client-side mirror of the same `t()` helper for dynamically-rendered content and alerts in `calendarScript.js`, `homeScript.js`, `lessonsScript.js`, `staffPanel.js`, and `reports.js`.
-- `locales/en.json` / `locales/it.json` dictionaries covering navigation, shared modals, validation/error messages, and page-specific strings.
+- `public/js/i18n.js`: client-side mirror of the same `t()` helper for dynamically-rendered content and alerts in `calendarScript.js`, `homeScript.js`, `lessonsScript.js`, `staffPanel.js`, `reports.js`, and `student.js`.
+- `locales/en.json` / `locales/it.json` dictionaries covering navigation, shared modals, validation/error messages, and page-specific strings, including a `student` namespace that reuses `common`/`lessons`/`reports`/`calendar`/`staffPanel` keys wherever the text already matched.
 
 **Calendar**
 - Weekly repeat option for prenotations: create the same prenotation across a date range, same day-of-week and time each week, in one submission.
@@ -32,23 +32,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Student search/autocomplete added to the "Add Evaluation" form (same UX as the Lessons/Calendar/Home student pickers).
 - Full i18n coverage (English/Italian) for the Evaluations page and its "Reports" nav link everywhere it appears.
 
-**Student Profile Page** (STAFF only)
-- New `/student/:id` page: a per-student deep dive combining evaluations, hours taught, and prenotations across **every** tutor who has worked with that student (not just the viewing STAFF member) - see [03_Nodejs_Frontend.md - Student Profile Page](03_Nodejs_Frontend.md#student-profile-page).
+**Student Profile Page** (STAFF, and GUEST for their own assigned student - see GUEST Role Enforcement below)
+- New `/student/:id` page: a per-student deep dive combining evaluations, hours, prenotations, and lesson packages across **every** tutor who has worked with that student (not just the viewing user) - see [03_Nodejs_Frontend.md - Student Profile Page](03_Nodejs_Frontend.md#student-profile-page).
 - Marks chart grouped by **subject + tutor** pair, one colored line per group (10-color palette), with a card-grid legend showing each group's average; click a legend card to toggle that line on/off in the chart.
 - Chart x-axis date labels thin out dynamically so they never overlap regardless of how many evaluations are plotted.
-- From/To date filter (same UX/default range as Evaluations) drives the marks chart, the "All Tests" list, the "Hours per Month" breakdown, and the "Avg mark" profile stat together.
+- From/To date filter (same UX/default range as Evaluations) drives the marks chart, the "All Tests" list, the "Hours per Month" breakdown, and both the "Avg mark" and "Tests" profile stats together; the third stat, "Month's Hours", always reflects the real current calendar month regardless of the filter.
 - "Hours per Month" shown as exact hours/minutes (not decimal), capped to the 6 most recent months with lessons.
 - Prenotations list (scrollable past ~5 entries) across every tutor, soonest-first; overdue ones shown in red and labeled "Expired" instead of "Pending".
-- STAFF can click a prenotation to edit its date/time/tutor or delete it, reusing the same `PUT`/`DELETE /api/prenotations/:id` endpoints and edit-modal pattern as the Calendar page.
+- STAFF can click a prenotation to edit its date/time/tutor or delete it, reusing the same `PUT`/`DELETE /api/prenotations/:id` endpoints and edit-modal pattern as the Calendar page. GUEST accounts see the same cards but they aren't clickable.
 - Logout button, real session-driven navigation (previously a static mockup with no route, no auth, and hardcoded sample data).
 
 **Accounts, GUEST Role & Lesson Packages**
-- `Tutor` entity/table renamed to `User`/`app_user` (`user` is a reserved SQL keyword in PostgreSQL) to make room for a `GUEST` role - an account type intended for a parent/guardian who should only see their linked student's data. **The view-restriction for `GUEST` isn't implemented yet** - today it authenticates and sees data like a `GENERIC` tutor would; this is a data-model-only first step. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role).
+- `Tutor` entity/table renamed to `User`/`app_user` (`user` is a reserved SQL keyword in PostgreSQL) to make room for a `GUEST` role - an account type intended for a parent/guardian who should only see their linked student's data. The view-restriction is now fully implemented - see **GUEST Role Enforcement** below. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role).
 - New `Student.id_user` (nullable FK to `app_user`): the `GUEST` account, if any, linked to a student.
 - New `Pack` entity/table (id, hours, closure date, student) representing a prepaid block of tutoring hours; `Lesson.id_pack` (nullable) optionally links a lesson to the package it was drawn from.
 - Java REST base path `/api/tutors` renamed to `/api/users` (`UserController`, formerly `TutorController`); every other controller's `/tutor/{tutorId}`-style sub-paths were deliberately left unchanged, since those describe the tutor *role* in that relationship, not the account type.
 
-**Lesson Packages - full feature** (STAFF only)
+**GUEST Role Enforcement**
+- `blockGuest`/`blockGuestApi` middleware (`server_utilities/authMiddleware.js`): `blockGuest` redirects `GUEST` sessions away from page routes (`/lessons`, `/staffPanel`, write-intent pages); `blockGuestApi` responds `403 JSON` on write API routes (`POST`/`PUT /api/lessons`, `/api/prenotations`, `/api/calendar-notes`, `/api/packs`, `PUT /api/packs/:id/close`). See [05_Service_Modules.md - authMiddleware.js](05_Service_Modules.md#authmiddlewarejs).
+- Home and Calendar now data-scope to a `GUEST`'s assigned student(s) instead of a tutor's own lessons, via the new `fetchStudentsByGuest(guestId)` (`Nodejs/server_utilities/javaApiService.js`, calling `GET /api/students/guest/{userId}`).
+- Home gained a `GUEST`-only "My Students" card grid (same card markup as Staff Panel's student list) linking to each assigned student's `/student/:id` page.
+- `/student/:id` is now reachable by `GUEST` accounts, restricted to their own assigned student(s); Dashboard/Calendar lesson and prenotation rows, and the Student Profile page's prenotation/pack cards, are rendered without click handlers or pointer cursor for `GUEST` (not just gated in the handler, so nothing appears clickable that isn't).
+- Nav links to `/lessons`, `/reports`, and `/staffPanel`, and every "Add Lesson/Note/Prenotation/Package" button, are hidden for `GUEST` in the relevant views; this is a UI courtesy only, the middleware above is the real enforcement boundary.
+
+**Admin Panel - Guest Account Management**
+- New "Guest Accounts" section in `/admin`, kept separate from the Tutors list: search, create-account form, and an edit modal (username/email, optional password change - blank leaves it unchanged, assigned-student list with per-student Unassign, and an "Assign a Student" dropdown with client-side search over the unassigned-student pool).
+- New Java endpoints backing it: `GET /api/students/unassigned`, `GET /api/students/guest/{userId}`, `PATCH /api/students/{id}/guest`, and `PATCH /api/users/{id}/profile` (partial update - only touches `username`/`mail`/`password` fields that are actually present, unlike the existing `PUT /api/users/{id}`). See [01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users) and [01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students).
+- New Node.js admin routes proxying the above: `GET/POST /api/admin/guests`, `PATCH /api/admin/guests/:id`, `GET /api/admin/guests/:id/students`, `GET /api/admin/students/unassigned`, `PATCH /api/admin/students/:id/guest`; `GET /api/admin/tutors` now excludes `GUEST` accounts.
+
+**Bug fix: Student Profile hours scoped to one tutor**
+- `/student/:id` previously fetched lessons via `fetchLessonsByTutorAndStudent(tutorId, studentId)`, so a STAFF (or now GUEST) viewer only ever saw hours/lessons involving *their own* account, not the student's full history. Now fetches `GET /api/lessons/student/:id` for every viewer, showing all lessons across all tutors; `fetchLessonsByTutorAndStudent` was removed as fully unused.
+
+**i18n and Theme coverage extended to Student Profile and Evaluations**
+- Student Profile (`student.ejs`/`student.js`) now has full English/Italian translation (new `student` locale namespace, ~36 keys, reusing `common`/`lessons`/`reports`/`calendar`/`staffPanel` keys wherever the text already matched) and the shared light/dark theme toggle - both pages previously carried their own hardcoded-dark inline Tailwind config, so the theme toggle silently did nothing on either.
+- Fixed a bug the theme rollout exposed: the hand-built SVG mark charts on both pages hardcoded dark-only colors for the grid, axis labels, and dot strokes, which would have been broken/invisible in light mode. Both now read the active theme's CSS custom properties via a small `themeColor(varName)` helper, and `.scrollbar-thin` on both pages was switched from hardcoded dark colors to the same `rgb(var(--color-card))`/`rgb(var(--color-border))` pattern already used on the Calendar page.
+
+**Lesson Packages - full feature** (STAFF manage, GUEST read-only)
 - Full `Pack` REST API (`PackController`/`PackService`, previously entity + repository only): `GET/POST/PUT /api/packs`, `GET /api/packs/student/{studentId}`, `PUT /api/packs/{id}/close`, `DELETE /api/packs/{id}`. See [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs).
 - `Pack` gained `createdAt` (audit-only) and `startTime` (required, user-editable) timestamp columns.
 - New lessons are automatically drawn from the student's active pack when one is eligible (not closed, lesson starts after the pack's start time, hours still available); if a lesson only partially fits in the pack's remaining hours, it's **split into two lessons** - the portion that fits stays in the pack, the remainder is saved as a separate unassigned lesson.
@@ -224,4 +243,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: August 5, 2026
+**Last Updated**: August 6, 2026

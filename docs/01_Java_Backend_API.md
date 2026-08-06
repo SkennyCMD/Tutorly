@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: August 5, 2026  
+**Last Updated**: August 6, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -298,7 +298,7 @@ This section details the internal structure of the Java backend component:
 #### 11. **User → Student** (One-to-Many, GUEST link, optional)
 - A `GUEST` user (e.g. a parent/guardian) can be linked to one or more students to view their data
 - A student is linked to at most one `GUEST` account (`id_user` is nullable)
-- **Not yet enforced anywhere**: this is a data-model-only relationship for now - no backend or frontend code currently restricts a `GUEST` account's visibility to only their linked student(s)
+- **Enforced end-to-end**: `StudentController`'s `/students/guest/{userId}`, `/students/unassigned`, and `PATCH /students/{id}/guest` endpoints manage the link (used by the Node.js Admin Panel's Guest Accounts feature); the Node.js frontend restricts a `GUEST` session to only their linked student(s)' data and pages - see [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control)
 
 📚 **For complete database documentation** (installation, configuration, migrations):  
 See [07_Database_Configuration.md](07_Database_Configuration.md)
@@ -934,8 +934,11 @@ X-API-Key: <your-api-key>
 | GET | `/students/status/{status}` | Students by status (ACTIVE, INACTIVE) |
 | GET | `/students/class/{class}` | Students by class (e.g., "3A") |
 | GET | `/students/search?q={query}` | Search by name/surname |
+| GET | `/students/unassigned` | Students with no `GUEST` account linked (`id_user IS NULL`) - the pool a `GUEST` can be assigned to |
+| GET | `/students/guest/{userId}` | Students currently linked to a given `GUEST` account |
 | POST | `/students` | Create new student |
 | PUT | `/students/{id}` | Update student |
+| PATCH | `/students/{id}/guest` | Assign or unassign a student's `GUEST` account - body `{ "userId": 17 }`, or `{ "userId": null }` to unassign |
 | DELETE | `/students/{id}` | Delete student |
 
 **Example Request Body (POST):**
@@ -948,6 +951,8 @@ X-API-Key: <your-api-key>
   "status": "ACTIVE"
 }
 ```
+
+The `/unassigned`, `/guest/{userId}`, and `PATCH /{id}/guest` endpoints back the Node.js Admin Panel's Guest Accounts feature (student assignment) and the Node.js frontend's GUEST-role data scoping - see [03_Nodejs_Frontend.md - Admin Panel - Guest Accounts](03_Nodejs_Frontend.md#admin-panel---guest-accounts) and [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control).
 
 ---
 
@@ -967,6 +972,7 @@ Entity `User` (table `app_user`, not `user` - `user` is a reserved SQL keyword i
 | DELETE | `/users/{id}` | Delete user |
 | PATCH | `/users/{id}/status` | Update status only |
 | PATCH | `/users/{id}/role` | Update role only |
+| PATCH | `/users/{id}/profile` | Update username/email and, optionally, password - see below |
 | POST | `/users/login` | Authenticate by username/password, returns the user's ID (legacy - the Node.js frontend does its own bcrypt-based auth, see [05_Service_Modules.md](05_Service_Modules.md)) |
 
 **Example Request Body (POST):**
@@ -974,14 +980,17 @@ Entity `User` (table `app_user`, not `user` - `user` is a reserved SQL keyword i
 {
   "username": "mario.rossi",
   "password": "hashedPassword123",
+  "mail": "mario.rossi@email.com",
   "status": "ACTIVE",
   "role": "STAFF"
 }
 ```
 
-`mail` (optional `String`, no format check unlike `Admin.mail`) can be set via PUT after creation - `POST /users` doesn't currently accept it.
+`mail` (optional `String`, no format check unlike `Admin.mail`) can be set on creation (`POST /users`) or updated later via `PUT /{id}` or `PATCH /{id}/profile`.
 
-**`GUEST` role:** a data-model-only addition for now. A `GUEST` account authenticates exactly like any other user and, today, sees the same data any `GENERIC` tutor would - nothing yet restricts it to only the student(s) linked via `Student.user` (see [Data Model](#data-model)). Building that restriction is a separate, not-yet-implemented piece of work.
+**`PATCH /{id}/profile`** (`UserController.ProfileUpdate`: `username`, `mail`, `password`, all optional) updates only the fields present in the request body - in particular, `password` is left untouched unless explicitly provided, unlike the raw `PUT /{id}` endpoint (which deserializes a full `User` and would null out the password if the request body omits it). Returns `409 Conflict` if the new `username` is already taken by a different user. The password is expected to already be bcrypt-hashed by the caller, same convention as `POST /users` - the Node.js Admin Panel hashes it before forwarding (see [03_Nodejs_Frontend.md - Admin Panel - Guest Accounts](03_Nodejs_Frontend.md#admin-panel---guest-accounts)).
+
+**`GUEST` role:** used for accounts (e.g. a parent/guardian) restricted to viewing only their linked student(s)' data - see `Student.id_user` in [Data Model](#data-model) and the `/students/guest/{userId}` lookup under [Students](#students) below. Authentication is identical to any other user (`POST /users/login` or the Node.js `POST /login` flow); the actual view restriction is enforced entirely on the Node.js side - see [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control) for the middleware and page/data scoping that implements it.
 
 ---
 
@@ -1496,6 +1505,12 @@ java -jar target/backend-api-0.0.1-SNAPSHOT.jar
 - ✅ `GET /api/packs/student/{studentId}` reports `usedHours`, and for full-but-open packs, `unassignedHours`/`firstUnassignedLessonStart`
 - ✅ `PUT /api/packs/{id}/close` closes a pack; `lesson.id_pack` FK changed to `ON DELETE SET NULL` so deleting a pack no longer deletes its lessons
 
+### Unreleased (2026-08-06)
+- ✅ `POST /api/users` now accepts `mail` on creation (previously PUT-only)
+- ✅ `PATCH /api/users/{id}/profile` added - updates username/email/password, each only if provided (password never nulled out by omission, unlike the raw `PUT /{id}`)
+- ✅ `GET /api/students/unassigned`, `GET /api/students/guest/{userId}`, and `PATCH /api/students/{id}/guest` added to manage the `Student.id_user` (GUEST) link
+- ✅ `GUEST` role view-restriction is now actually enforced (previously data-model-only) - implemented entirely in the Node.js frontend, see [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control)
+
 ### v1.0.0 (2026-02-16)
 - ✅ Initial implementation with all entities
 - ✅ Complete REST API with API Key authentication
@@ -1511,4 +1526,4 @@ java -jar target/backend-api-0.0.1-SNAPSHOT.jar
 
 ---
 
-**Last updated:** August 5, 2026
+**Last updated:** August 6, 2026

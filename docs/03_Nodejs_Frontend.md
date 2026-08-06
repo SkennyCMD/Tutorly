@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: August 5, 2026  
+**Last Updated**: August 6, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -638,15 +638,17 @@ The system supports two separate authentication contexts:
 {
     userId: number,        // Tutor ID
     username: string,      // Username
-    role: string          // 'staff', 'generic', etc.
+    role: string          // 'staff', 'generic', or 'guest'
 }
 ```
 
 **Protected Routes:**
 - `/home` - Home dashboard
-- `/lessons` - Lesson management
+- `/lessons` - Lesson management (blocked for `guest`, see [GUEST Role Access Control](#guest-role-access-control))
 - `/calendar` - Calendar view
-- `/staffPanel` - Staff panel (STAFF role only)
+- `/reports` - Evaluations page (blocked for `guest`)
+- `/staffPanel` - Staff panel (STAFF role only, also blocked for `guest`)
+- `/student/:id` - Student profile (STAFF, or `guest` for their own assigned student(s) only - see [GUEST Role Access Control](#guest-role-access-control))
 
 #### 2. **Admin Authentication**
 
@@ -690,6 +692,18 @@ Plain-text passwords can be migrated using:
 ```bash
 node migrations/hashExistingPasswords.js
 ```
+
+### GUEST Role Access Control
+
+A `GUEST` account (e.g. a parent/guardian, created via the [Admin Panel - Guest Accounts](#admin-panel---guest-accounts)) authenticates through the same `POST /login` flow as any tutor, but is restricted at every layer once logged in - unlike the `role` field itself, which was added to the data model long before any of this enforcement existed (see [01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users)).
+
+**Two middleware functions in `server_utilities/authMiddleware.js` do the enforcement:**
+- **`blockGuest`** - for page (`GET`) routes. Redirects to `/home` if `req.session.role === 'guest'`, otherwise calls `next()`. Applied to `/lessons`, `/reports`, `/staffPanel` - the only pages a GUEST can reach are `/home`, `/calendar`, and their own assigned student's `/student/:id` (see below).
+- **`blockGuestApi`** - for write (`POST`/`PUT`) API routes a GUEST might otherwise reach via a raw `fetch()` even with the UI hidden. Returns `403 { error: '...' }` JSON instead of redirecting. Applied to every creation/modification endpoint: `POST /api/lessons`, `PUT /api/lessons/:id`, `POST /api/prenotations`, `PUT /api/prenotations/:id`, `POST /api/calendar-notes`, `PUT /api/calendar-notes/:id`, `POST /api/packs`, `PUT /api/packs/:id/close`. This is the actual enforcement boundary - hiding the corresponding buttons client-side (see below) is only a courtesy on top of it.
+
+**Data scoping for GUEST on `/home` and `/calendar`:** a GUEST has no lessons/prenotations of their own (they don't teach), so both routes special-case `userRole === 'guest'` and filter by the student(s) assigned to that guest (via `fetchStudentsByGuest(guestId)`, backed by `GET /api/students/guest/{userId}`) instead of by `tutorId`. `/home` additionally renders a GUEST-only "My Students" card grid: one card per assigned student (name, class, average mark - same style and color-by-mark logic as the Staff Panel's student cards), linking to `/student/:id`. The route computes each student's average from `fetchTestsByStudent`, mirroring how `/staffPanel` computes `avgMark` for its own cards. See [01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students).
+
+**UI hardening for GUEST:** on `/home` and `/calendar`, the "Add Lesson"/"Add Prenotation"/"Add Note" buttons aren't rendered, and every lesson/prenotation/note row is rendered without its click handler or pointer cursor (no edit/convert-to-lesson modal reachable) - covering grid clicks, drag-to-select, and all-day note chips, not just the obvious buttons. Nav links to pages a GUEST can't reach (`My Lessons`, `Reports`, `Staff Panel`) are hidden rather than left as dead ends.
 
 ---
 
@@ -1005,9 +1019,10 @@ Default admin account (created via Java API):
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/logout` | Destroy tutor session and redirect to login |
-| GET | `/home` | Home dashboard (today's tasks, lessons, prenotations) |
-| GET | `/lessons` | Lesson management interface |
+| GET | `/home` | Home dashboard (today's tasks, lessons, prenotations; GUEST-only "My Students" section) |
+| GET | `/lessons` | Lesson management interface (blocked for `guest` via `blockGuest`) |
 | GET | `/calendar` | Calendar view with notes |
+| GET | `/reports` | Evaluations page (blocked for `guest` via `blockGuest`) |
 
 ---
 
@@ -1015,24 +1030,21 @@ Default admin account (created via Java API):
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| GET | `/admin` | Admin panel (tutor/student management) |
+| GET | `/admin` | Admin panel (tutor/student management, GUEST account management - see [Admin Panel - Guest Accounts](#admin-panel---guest-accounts)) |
 | GET | `/adminLogout` | Destroy admin session and redirect to admin login |
 
 ---
 
-### Protected Staff Routes (Requires `isStaff`)
+### Staff Panel and Student Profile (Manual Role Check, not a role middleware)
 
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/staffPanel` | Staff panel with advanced features |
-
-### STAFF-Only Route (Manual Role Check, not `isStaff`)
-
-| Method | Route | Description |
-|--------|-------|-------------|
 | GET | `/student/:id` | Student profile - see [Student Profile Page](#student-profile-page) |
 
-`/student/:id` checks `role !== 'STAFF'` inline in the route handler (redirecting to `/home` if not STAFF) rather than using the `isStaff` middleware, because `isStaff` returns a JSON 401/403 response - appropriate for an API route, but not for a page route where a redirect is expected. It still requires `isAuthenticated` first.
+Neither route uses the `isStaff` middleware (which returns a JSON 401/403 - appropriate for an API route, not a page route where a redirect is expected). Both require `isAuthenticated` first, then do their own inline role check:
+- **`/staffPanel`**: redirects to `/home` if `role !== 'STAFF'`. Also passes through `blockGuest`, though the inline check alone would already exclude GUEST.
+- **`/student/:id`**: STAFF may view any student. A GUEST may view a student's profile **only if that student is assigned to them** (checked via `fetchStudentsByGuest`, see [GUEST Role Access Control](#guest-role-access-control)) - any other student ID, or any other role, redirects to `/home`.
 
 ---
 
@@ -1042,8 +1054,8 @@ Default admin account (created via Java API):
 |--------|-------|------|-------------|
 | GET | `/api/lessons` | Tutor | Get all lessons or filter by date range |
 | GET | `/api/lessons/:id` | Tutor | Get lesson by ID |
-| POST | `/api/lessons` | Tutor | Create new lesson |
-| PUT | `/api/lessons/:id` | Tutor | Update lesson |
+| POST | `/api/lessons` | Tutor, blocked for `guest` (`blockGuestApi`) | Create new lesson |
+| PUT | `/api/lessons/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Update lesson |
 | DELETE | `/api/lessons/:id` | Tutor | Delete lesson |
 | GET | `/api/lessons/tutor/:tutorId` | Tutor | Get lessons for specific tutor |
 
@@ -1080,8 +1092,8 @@ Backs the Student Profile page's "Packs" card - see [Lesson Packages (Packs)](#l
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| POST | `/api/packs` | Tutor (STAFF-only page) | Create new pack; body `{ studentId, hours, startDate, startTime }` |
-| PUT | `/api/packs/:id/close` | Tutor (STAFF-only page) | Close a pack (sets its closure date) |
+| POST | `/api/packs` | Tutor, blocked for `guest` (`blockGuestApi`) | Create new pack; body `{ studentId, hours, startDate, startTime }` |
+| PUT | `/api/packs/:id/close` | Tutor, blocked for `guest` (`blockGuestApi`) | Close a pack (sets its closure date) |
 
 **Example - Create Pack:**
 ```javascript
@@ -1102,8 +1114,8 @@ Body: {
 |--------|-------|------|-------------|
 | GET | `/api/prenotations` | Tutor | Get all prenotations |
 | GET | `/api/prenotations/:id` | Tutor | Get prenotation by ID |
-| POST | `/api/prenotations` | Tutor | Create new prenotation |
-| PUT | `/api/prenotations/:id` | Tutor | Update prenotation |
+| POST | `/api/prenotations` | Tutor, blocked for `guest` (`blockGuestApi`) | Create new prenotation |
+| PUT | `/api/prenotations/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Update prenotation |
 | DELETE | `/api/prenotations/:id` | Tutor | Delete prenotation |
 | PATCH | `/api/prenotations/:id/confirm` | Tutor | Confirm prenotation |
 
@@ -1111,19 +1123,41 @@ Body: {
 
 ---
 
-### API Endpoints - Users
+### API Endpoints - Admin (Tutors, Students, Guest Accounts)
 
-Renamed from "Tutors" - `/api/tutors` became `/api/users` when the underlying `Tutor` entity/table was renamed to `User`/`app_user` to accommodate the new `GUEST` role. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role) and [01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users).
+Every route below requires an admin session (`isAdmin`) and proxies to the Java `User`/`Student` API ([01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users), [01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students)). There is **no** generic `/api/users/*` route in the Node.js app (that path only exists on the Java backend, called internally) - every admin-facing user/student management route lives under `/api/admin/*`.
 
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| GET | `/api/users` | Tutor | Get all users |
-| GET | `/api/users/:id` | Tutor | Get user by ID |
-| POST | `/api/users` | Admin | Create new user |
-| PUT | `/api/users/:id` | Admin | Update user |
-| DELETE | `/api/users/:id` | Admin | Delete user |
-| PATCH | `/api/users/:id/role` | Admin | Update role only (`GENERIC`/`STAFF`/`GUEST`) |
-| PATCH | `/api/users/:id/status` | Admin | Update status only |
+**Tutors and Students:**
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/admin/tutors` | List all tutors (`GENERIC`/`STAFF` - `GUEST` accounts are filtered out, see Guest Accounts below) |
+| POST | `/api/admin/tutors` | Create new tutor; body `{ username, password, role }`, password hashed with bcrypt |
+| PATCH | `/api/admin/tutors/:id/role` | Update a tutor's role (`GENERIC`/`STAFF`) |
+| PATCH | `/api/admin/tutors/:id/status` | Update a tutor's status (e.g. block/unblock) |
+| GET | `/api/admin/students` | List all students |
+| PATCH | `/api/admin/students/:id/class` | Update a student's class (`M`/`S`/`U`) |
+
+**Guest Accounts** (see [Admin Panel - Guest Accounts](#admin-panel---guest-accounts) below):
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/admin/guests` | List all `GUEST`-role users |
+| POST | `/api/admin/guests` | Create new guest account; body `{ username, mail, password }`, password hashed with bcrypt, role always `GUEST` |
+| PATCH | `/api/admin/guests/:id` | Update a guest's profile; body `{ username, mail, password? }` - password only changed if provided, never nulled out by omission |
+| GET | `/api/admin/guests/:id/students` | List the students currently assigned to a guest account |
+| GET | `/api/admin/students/unassigned` | List students with no guest assigned (`id_user IS NULL`) - the pool a guest can be assigned from |
+| PATCH | `/api/admin/students/:id/guest` | Assign or unassign a student's guest account; body `{ userId }` (`null` to unassign) |
+
+**Example - Create Guest Account:**
+```javascript
+POST /api/admin/guests
+Body: {
+    username: "jane.doe",
+    mail: "jane.doe@email.com",
+    password: "securePassword123"
+}
+```
 
 ---
 
@@ -1133,8 +1167,8 @@ Renamed from "Tutors" - `/api/tutors` became `/api/users` when the underlying `T
 |--------|-------|------|-------------|
 | GET | `/api/calendar-notes` | Tutor | Get all calendar notes |
 | GET | `/api/calendar-notes/:id` | Tutor | Get note by ID |
-| POST | `/api/calendar-notes` | Staff | Create new note |
-| PUT | `/api/calendar-notes/:id` | Staff | Update note |
+| POST | `/api/calendar-notes` | Staff, blocked for `guest` (`blockGuestApi`) | Create new note |
+| PUT | `/api/calendar-notes/:id` | Staff, blocked for `guest` (`blockGuestApi`) | Update note |
 | DELETE | `/api/calendar-notes/:id` | Staff | Delete note |
 | GET | `/api/calendar-notes/range` | Tutor | Get notes by date range |
 
@@ -1176,7 +1210,7 @@ Client-side JavaScript is organized by page/feature:
 | File | Purpose |
 |------|---------|
 | `adminLogin.js` | Admin login form handling |
-| `admin.js` | Admin panel interactions (add/edit/delete users) |
+| `admin.js` | Admin panel interactions (add/edit/delete tutors and students, GUEST account management) - see [Admin Panel - Guest Accounts](#admin-panel---guest-accounts) |
 | `homeScript.js` | Home dashboard (task completion, quick actions) |
 | `lessonsScript.js` | Lesson management (CRUD operations, filters) |
 | `calendarScript.js` | Calendar view (event handling, date navigation) |
@@ -1280,7 +1314,7 @@ To add theming to a new page, include `partials/theme-init.ejs` (early in `<head
 
 The application auto-detects each visitor's language from the browser's `Accept-Language` header and serves fully translated pages — there is no manual language switcher, no cookie, and no new npm dependency. English and Italian are currently supported, with English as the fallback for unsupported languages.
 
-**Translated pages:** Dashboard (`home.ejs`), Calendar (`calendar.ejs`), Lessons (`lessons.ejs`), Staff Panel (`staffPanel.ejs`), and Login (`login.ejs`). Admin, Admin Login, and the 404 page are not yet translated.
+**Translated pages:** Dashboard (`home.ejs`), Calendar (`calendar.ejs`), Lessons (`lessons.ejs`), Staff Panel (`staffPanel.ejs`), Login (`login.ejs`), Evaluations/Reports (`reports.ejs`), and Student Profile (`student.ejs`). Admin, Admin Login, and the 404 page are not yet translated. The `student` locale namespace (page title, headings, labels, modals, status badges, validation/error messages) reuses keys from `common`/`lessons`/`reports`/`calendar`/`staffPanel` wherever the text already matched, rather than duplicating them.
 
 **Files:**
 - `locales/en.json` / `locales/it.json` - Dictionaries of dot-notation keys (e.g. `common.cancel`, `home.welcomeBack`) grouped by page/feature (`common`, `home`, `calendar`, `lessons`, `staffPanel`, `login`). Values can include `{placeholder}` tokens (e.g. `"lessonCount": "{count} lesson"`) and arrays (e.g. `common.months`, `common.daysFull`) for calendar labels.
@@ -1324,13 +1358,30 @@ The `/reports` page (`views/reports.ejs` + `public/js/reports.js`) tracks studen
 
 ---
 
+## Admin Panel - Guest Accounts
+
+The `/admin` page (`views/admin.ejs` + `public/js/admin.js`) manages tutors, students, and - alongside the pre-existing tutor management - `GUEST` accounts (parents/guardians), kept in a genuinely separate list/form pair from tutors rather than folded into the existing "Tutors" column, per how the feature was scoped: `GET /api/admin/tutors` filters out `GUEST`-role users server-side, so a newly-created guest never shows up in the Tutors list even though both are rows in the same `app_user` table.
+
+**Guest Accounts list + Create form:** a second row below the existing Tutors/Students/Create-Tutor grid, with its own search box and a "Create New Guest" form (Username, Email, Password, Confirm Password - same show/hide-password and confirm-match UX as the tutor form). Submits to `POST /api/admin/guests`.
+
+**Guest detail/edit modal:** clicking a guest account card opens a modal with:
+- **Profile edit form** (Username, Email, optional New Password/Confirm - blank leaves the password unchanged). Submits to `PATCH /api/admin/guests/:id`; the Node.js route only includes `password` in the payload it forwards to Java if the admin actually typed one, so a blank field can never accidentally null out the stored password.
+- **Assigned Students list**, each with an "Unassign" button (`PATCH /api/admin/students/:id/guest` with `{ userId: null }`).
+- **"Assign a Student" dropdown**, populated from `GET /api/admin/students/unassigned` - **mandatorily filtered server-side** to students with no guest linked yet, so an already-assigned student can never appear as a choice regardless of what the client does. A client-side search box filters this already-fetched pool locally by name (no extra requests per keystroke). Selecting a student and clicking "Assign" calls `PATCH /api/admin/students/:id/guest` with `{ userId: <this guest's id> }`.
+
+See [01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students) for the underlying `Student.id_user` relationship and Java endpoints, and [GUEST Role Access Control](#guest-role-access-control) above for what a guest account can actually do once it logs in.
+
+---
+
 ## Student Profile Page
 
-The `/student/:id` page (`views/student.ejs` + `public/js/student.js` + `public/css/student.css`) is a **STAFF-only** deep-dive into a single student: their evaluation history, hours taught, and prenotations, pulled together across every tutor who has ever worked with them (not just the viewing STAFF member).
+The `/student/:id` page (`views/student.ejs` + `public/js/student.js` + `public/css/student.css`) is a deep-dive into a single student: their evaluation history, hours, prenotations, and lesson packages, pulled together across every tutor who has ever worked with them (not just the viewing tutor). Reachable by **STAFF** (any student) and by **GUEST** accounts (only their own assigned student(s)) - see [GUEST Role Access Control](#guest-role-access-control) above.
 
-**Access control:** requires `isAuthenticated`, then the route handler fetches the viewing tutor's own data and redirects to `/home` if their `role !== 'STAFF'` (see [Routes and Endpoints](#staff-only-route-manual-role-check-not-isstaff) above). If `:id` doesn't resolve to a real student, the route renders the shared `404.ejs` instead of crashing - this required fixing `fetchStudentData()` in `javaApiService.js`, which previously let a Java 404 reject the promise instead of resolving `null` like every other single-item fetch helper does.
+**Access control:** requires `isAuthenticated`, then the route handler fetches the viewing user's own data. STAFF is authorized for any `:id`. A GUEST is authorized only if `:id` is one of the students returned by `fetchStudentsByGuest(guestId)`; any other student, or any other role, redirects to `/home`. If `:id` doesn't resolve to a real student at all, the route renders the shared `404.ejs` instead of crashing - this required fixing `fetchStudentData()` in `javaApiService.js`, which previously let a Java 404 reject the promise instead of resolving `null` like every other single-item fetch helper does.
 
-**Data sources:** unlike most of the app (which scopes lessons/tests/prenotations to the logged-in tutor), this page deliberately fetches **all** of a student's tests and prenotations regardless of which tutor administered them (`fetchTestsByStudent`, `fetchPrenotationsByStudent` in `javaApiService.js`) - a STAFF member reviewing a student needs the full picture, not just their own interactions. Hours/lesson-calendar data stays scoped to the viewing tutor's own lessons with that student (`fetchLessonsByTutorAndStudent`), since "hours I've personally taught this student" is the meaningful number there. Packs (`fetchPacksByStudent`) are also fetched student-wide, same as tests/prenotations - a lesson package isn't tied to a single tutor. Each test/prenotation is enriched server-side with the administering tutor's username (`tutorName`), deduplicating repeated tutor lookups with a small in-memory cache built per-request.
+**Data sources:** unlike most of the app (which scopes lessons/tests/prenotations to the logged-in tutor), this page fetches **all** of a student's tests, prenotations, and lessons/hours regardless of which tutor administered them (`fetchTestsByStudent`, `fetchPrenotationsByStudent`, and `GET /api/lessons/student/:id` directly - not the tutor-scoped `fetchLessonsByTutorAndStudent`, which was removed since nothing calls it anymore) - a full history is the meaningful number here, not just the viewing user's own interactions, and it's the only sensible option for a GUEST anyway (a GUEST isn't a tutor, so "lessons I taught" would always be empty). Packs (`fetchPacksByStudent`) are also fetched student-wide, same as tests/prenotations. Each test/prenotation is enriched server-side with the administering tutor's username (`tutorName`), deduplicating repeated tutor lookups with a small in-memory cache built per-request.
+
+**GUEST read-only hardening:** the page's interactive elements (edit-prenotation click, pack action buttons, header "+ New Package" button) were originally gated by `window.userRole === 'STAFF'` purely as defense-in-depth, back when only STAFF could reach this page at all. Now that a GUEST can reach it too, those same checks are the actual enforcement - a GUEST sees the same data read-only, with no buttons or click handlers to modify anything. The GUEST-only "My Students" card grid on `/home` (see [GUEST Role Access Control](#guest-role-access-control) above) is what links a GUEST into this page in the first place.
 
 ### Marks Chart (subject + tutor lines)
 
@@ -1341,7 +1392,7 @@ The `/student/:id` page (`views/student.ejs` + `public/js/student.js` + `public/
 
 ### From/To Date Filter
 
-Same UX and default range as the Evaluations page (last September 1st through today - see `getLastSeptemberFirst()`), but wider in scope here: it drives the marks chart, the "All Tests" list, the "Hours per Month" breakdown, and the top "Avg mark" profile stat, all at once via a shared `getFilteredEvaluations()`/`getFilteredLessons()` pair. The profile header's "Tests" count and "Total Hours" stay lifetime totals, unaffected by the filter - only "Avg mark" was asked to follow it.
+Same UX and default range as the Evaluations page (last September 1st through today - see `getLastSeptemberFirst()`), but wider in scope here: it drives the marks chart, the "All Tests" list, the "Hours per Month" breakdown, and both the "Avg mark" and "Tests" profile header stats, all via a shared `getFilteredEvaluations()`/`getFilteredLessons()` pair (`updateAvgMarkStat()`/`updateTotalTestsStat()`, re-run on both initial load and "Apply"). The third stat, **"Month's Hours"**, is deliberately *not* filtered by the date range - it always reflects the real current calendar month (looked up directly from `hoursByMonth[currentMonthKey]`), regardless of what From/To is set to.
 
 ### Hours per Month
 
@@ -1351,7 +1402,7 @@ Shown as exact hours and minutes (e.g. `2h 15m`, computed from the real `endTime
 
 Below the mini lesson-calendar, a scrollable list (`max-h-[32rem]`, same `scrollbar-thin` pattern as the Evaluations page's sidebar) of the student's prenotations across every tutor, soonest-first. A prenotation dated before today is shown with a red border/background and labeled "Expired" instead of "Pending" (a confirmed-but-past prenotation still shows "Confirmed" - only the pending state changes wording).
 
-**STAFF can click a card to edit or delete it** - opens the same kind of modal as the Calendar page's edit-prenotation flow (date, start/end time, tutor reassignment via radio buttons populated from `window.allTutors`), calling the existing `PUT`/`DELETE /api/prenotations/:id` endpoints (no new backend routes). The click handler and edit modal are gated by `window.userRole === 'STAFF'` in `student.js` - redundant with the route-level check today (only STAFF can reach this page at all), kept as defense-in-depth in case that ever changes.
+**STAFF can click a card to edit or delete it** - opens the same kind of modal as the Calendar page's edit-prenotation flow (date, start/end time, tutor reassignment via radio buttons populated from `window.allTutors`), calling the existing `PUT`/`DELETE /api/prenotations/:id` endpoints (no new backend routes). The click handler and edit modal are gated by `window.userRole === 'STAFF'` in `student.js` - for a GUEST viewing their own student's page, this means the cards are shown but aren't clickable at all.
 
 ### Lesson Packages (Packs)
 
@@ -1364,7 +1415,7 @@ Below the "Hours per Month" card, a "Packs" card lists the student's still-activ
 
 **New Package modal:** Hours, Start Date, and Start Time fields. Hours defaults to `10`; Start Date/Time default to right now (or, per above, to the first unassigned lesson's date/time when opened from a full pack's "+ New Package" button). Submits via `POST /api/packs` with `{ studentId, hours, startDate, startTime }`; the Node.js route combines `startDate`+`startTime` into a single ISO datetime string before forwarding to the Java API, same convention as prenotations elsewhere in the app. The header's own "+ New Package" button (next to the card title) opens the same modal with plain "now" defaults.
 
-All of the click handlers above (`close-pack-btn`, `new-pack-from-unassigned-btn`, the header button, and the form submit) are gated by `window.userRole === 'STAFF'`, same as the Prenotations card - this page is STAFF-only end to end anyway, but the check is kept for defense-in-depth.
+All of the click handlers above (`close-pack-btn`, `new-pack-from-unassigned-btn`, the header button, and the form submit) are gated by `window.userRole === 'STAFF'`, same as the Prenotations card. Now that GUEST accounts can reach this page, this check is the *actual* enforcement, not just defense-in-depth: `renderPacks()` doesn't even render the action buttons for a non-STAFF viewer (only the read-only progress bar/hours), and the header "+ New Package" button isn't rendered by the EJS template at all unless `user.role === 'STAFF'`. Server-side, `blockGuestApi` on `POST /api/packs` and `PUT /api/packs/:id/close` backs this up regardless of what the client does.
 
 ---
 
@@ -1719,4 +1770,4 @@ pm2 save
 
 ---
 
-**Last updated:** August 5, 2026
+**Last updated:** August 6, 2026

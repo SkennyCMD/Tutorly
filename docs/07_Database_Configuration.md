@@ -5,7 +5,7 @@ This document provides comprehensive information about the Tutorly database stru
 ---
 
 **Document**: 07_Database_Configuration.md  
-**Last Updated**: August 5, 2026  
+**Last Updated**: August 6, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -96,7 +96,7 @@ Renamed from `Tutor`/table `tutor`. See [06_Database_Migrations.md](06_Database_
 **Role Values**:
 - `STAFF` - Full access (manage students, view all lessons, export reports, student profile pages)
 - `GENERIC` - Limited access (own lessons only)
-- `GUEST` - Intended for a parent/guardian who should only see their linked student(s) (see `Student.id_user` below) - **the view-restriction itself isn't implemented yet**, a `GUEST` account today authenticates and sees data like a `GENERIC` tutor would
+- `GUEST` - For a parent/guardian who can only see their linked student(s) (see `Student.id_user` below); restricted to the Dashboard, Calendar, and their own assigned student's profile page, read-only. Created and assigned via the Admin Panel's Guest Accounts feature - see [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control)
 
 ---
 
@@ -241,7 +241,7 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | **User → CalendarNote** | Many-to-Many | Tutors can create and share notes |
 | **Student → Pack** | One-to-Many | A student can have many lesson packages |
 | **Pack → Lesson** | One-to-Many, optional | A package can have lessons drawn from it; a lesson doesn't need a package |
-| **User → Student** | One-to-Many, optional | A `GUEST` user can be linked to student(s) via `Student.id_user` - visibility restriction not yet enforced |
+| **User → Student** | One-to-Many, optional | A `GUEST` user can be linked to student(s) via `Student.id_user` - visibility restriction enforced in the Node.js frontend |
 
 ---
 
@@ -870,4 +870,4 @@ ORDER BY pg_total_relation_size(tablename::regclass) DESC;
 
 ---
 
-**Last Updated**: August 5, 2026
+**Last Updated**: August 6, 2026

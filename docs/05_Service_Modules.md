@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: August 5, 2026  
+**Last Updated**: August 6, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -199,6 +199,28 @@ const isStaff = async (req, res, next) => {
 };
 ```
 
+#### `blockGuest`
+Blocks `GUEST`-role accounts from a page route, redirecting to `/home` instead. Applied after `isAuthenticated` on any page a GUEST shouldn't reach (`/lessons`, `/reports`, `/staffPanel`); `/home`, `/calendar`, and `/student/:id` intentionally do **not** use it, since GUEST needs conditional access to those (see [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control)).
+```javascript
+const blockGuest = (req, res, next) => {
+    if (req.session && req.session.role === 'guest') {
+        return res.redirect('/home');
+    }
+    next();
+};
+```
+
+#### `blockGuestApi`
+Same restriction as `blockGuest`, but for write (`POST`/`PUT`) API routes - returns a JSON `403` instead of redirecting, since a `fetch()` call can't follow a page redirect meaningfully. This is the real enforcement boundary for GUEST write restrictions; hiding the corresponding UI buttons is only a courtesy on top of it.
+```javascript
+const blockGuestApi = (req, res, next) => {
+    if (req.session && req.session.role === 'guest') {
+        return res.status(403).json({ error: 'GUEST accounts cannot perform this action' });
+    }
+    next();
+};
+```
+
 #### `hasRole(...roles)`
 Flexible role verification middleware factory.
 ```javascript
@@ -212,8 +234,10 @@ app.get('/reports', hasRole('STAFF', 'admin'), (req, res) => {
 - `isAuthenticated`: Verifies that the user (tutor) is authenticated
 - `isAdmin`: Verifies that the admin user is authenticated
 - `isStaff`: Verifies that the user has STAFF role
+- `blockGuest`: Redirects `GUEST`-role sessions away from a page route
+- `blockGuestApi`: Returns a JSON 403 for `GUEST`-role sessions on a write API route
 - `hasRole(...roles)`: Verifies that the user has one of the specified roles
-- `isGuest`: Verifies that the user is NOT authenticated
+- `isGuest`: Verifies that the user is **not authenticated at all** (an anonymous visitor) - guards login-style pages from already-logged-in users. Not to be confused with the `GUEST` account *role* (`blockGuest`/`blockGuestApi` above) - an authenticated `GUEST`-role user is not "a guest" as far as this function is concerned.
 - `logAuthentication`: Logs authenticated requests
 
 **Usage example:**
@@ -277,7 +301,6 @@ await fetchFromJavaAPI('/api/lessons/42', 'DELETE');
 | `fetchTutorData(tutorId)` | Get user by ID (hits `/api/users/:id`; name kept as-is, see note below) |
 | `fetchAllLessons()` | Get all lessons |
 | `fetchLessonsByTutor(tutorId)` | Get lessons for specific tutor |
-| `fetchLessonsByTutorAndStudent(tutorId, studentId)` | Get lessons for a tutor+student pair - used by the Student Profile page's hours/calendar |
 | `fetchAllStudents()` | Get all students |
 | `fetchStudentData(studentId)` | Get student by ID (resolves `null` on 404, doesn't throw - see note below) |
 | `fetchAllPrenotations()` | Get all bookings |
@@ -288,6 +311,7 @@ await fetchFromJavaAPI('/api/lessons/42', 'DELETE');
 | `fetchTestsByTutor(tutorId)` | Get tests (evaluations) for specific tutor |
 | `fetchTestsByStudent(studentId)` | Get tests for a student, across every tutor - used by the Student Profile page |
 | `fetchPacksByStudent(studentId)` | Get lesson packages for a student, each annotated with `usedHours`/`unassignedHours` - used by the Student Profile page's "Packs" card |
+| `fetchStudentsByGuest(guestId)` | Get the students linked to a GUEST account - used by `/home`/`/calendar`'s GUEST data scoping, `/student/:id`'s GUEST authorization check, and the Admin Panel's Guest Accounts feature (see [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control)) |
 
 **Note - `fetchTutorData`/`/api/tutors` → `/api/users`:** the Java `Tutor` entity/table was renamed to `User`/`app_user` (see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role)), so this function now calls `/api/users/:id` internally. The function name itself was **not** changed - it's still describing "fetch the tutor for this lesson/test/etc.", a role, not the account type - matching the same reasoning documented in [01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users) for why `Lesson`/`Test`/`Prenotation`'s own field names didn't change either.
 
@@ -306,7 +330,6 @@ JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu'
 - `fetchCalendarNotesByTutor(tutorId)`: Fetches calendar notes for a tutor
 - `fetchCalendarNotesByDateRange(startTime, endTime)`: Fetches notes within a date range
 - `fetchLessonsByTutor(tutorId)`: Fetches lessons for a tutor
-- `fetchLessonsByTutorAndStudent(tutorId, studentId)`: Fetches lessons for a specific tutor+student pair
 - `fetchAllLessons()`: Fetches all lessons
 - `fetchAllPrenotations()`: Fetches all bookings
 - `fetchPrenotationsByTutor(tutorId)`: Fetches bookings for a tutor
@@ -316,6 +339,7 @@ JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu'
 - `fetchTestsByTutor(tutorId)`: Fetches tests (evaluations) for a tutor
 - `fetchTestsByStudent(studentId)`: Fetches tests for a student, across every tutor
 - `fetchPacksByStudent(studentId)`: Fetches lesson packages for a student, each annotated with `usedHours`/`unassignedHours`
+- `fetchStudentsByGuest(guestId)`: Fetches the students linked to a GUEST account
 
 **Usage example:**
 ```javascript
@@ -538,7 +562,7 @@ i18nMiddleware(req, res, next)
 
 ---
 
-**Last Updated**: August 5, 2026
+**Last Updated**: August 6, 2026
 
 ## Maintenance
 
@@ -550,4 +574,4 @@ To add new features:
 5. Update this README
 ---
 
-**Last Updated**: August 5, 2026  
+**Last Updated**: August 6, 2026  

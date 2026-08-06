@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: August 5, 2026  
+**Last Updated**: August 6, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -165,10 +165,12 @@ User-friendly web interface that handles authentication, sessions and presents d
 
 **Main pages**:
 - **Login/Admin Login**: Dual authentication for tutors and admins
-- **Home**: Dashboard with daily lessons and tasks
+- **Home**: Dashboard with daily lessons and tasks (GUEST accounts see a "My Students" card grid instead of lesson-creation tools)
 - **Lessons**: Complete lesson management (CRUD)
 - **Calendar**: Interactive calendar with notes
-- **Admin Panel**: Tutor and student management (admin only)
+- **Reports (Evaluations)**: Student test marks and per-student progress charts
+- **Student Profile**: Per-student deep dive (marks, hours, prenotations, packs) - STAFF, or GUEST for their own assigned student(s)
+- **Admin Panel**: Tutor, student, and GUEST account management (admin only)
 - **Staff Panel**: Advanced features for STAFF role
 
 **Technologies**:
@@ -578,7 +580,7 @@ Each component has its own detailed documentation:
 - **API Key**: Backend request authentication
 
 ### Authorization
-- **Role-Based Access Control (RBAC)**: ADMIN, STAFF, GENERIC roles
+- **Role-Based Access Control (RBAC)**: ADMIN, STAFF, GENERIC, and GUEST roles - GUEST is restricted to the Dashboard, Calendar, and their own assigned student's profile page, read-only (see [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control))
 - **Middleware protection**: Routes protected with middleware
 - **Account blocking**: Ability to block compromised accounts
 

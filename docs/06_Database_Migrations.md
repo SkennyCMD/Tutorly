@@ -5,7 +5,7 @@ This file explain how to migrate the database.
 ---
 
 **Document**: 06_Database_Migrations.md  
-**Last Updated**: August 5, 2026  
+**Last Updated**: August 6, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -125,7 +125,7 @@ ALTER TABLE test ALTER COLUMN mark TYPE DOUBLE PRECISION USING mark::double prec
 
 Don't run the SQL against a database still being served by the old code, and don't deploy the new code against a database that hasn't been migrated yet.
 
-**Why:** Introduces a `GUEST` account role (e.g. a parent/guardian who should only ever see their own child's data - the actual view-filtering for GUEST is a separate, not-yet-implemented follow-up) and lesson packages (`pack`, a prepaid block of hours a student can draw lessons from). Since `tutor` was gaining a role that isn't really "a tutor" (a GUEST doesn't teach), the table was renamed to the more general `app_user` at the same time. `user` was **not** used as the table name because it's a reserved SQL keyword in PostgreSQL - `CREATE TABLE user` fails without quoting every reference to it everywhere, which was judged worse than a slightly less on-the-nose name.
+**Why:** Introduces a `GUEST` account role (e.g. a parent/guardian who should only ever see their own child's data - the view-filtering for GUEST is implemented in the Node.js frontend, see [05_Service_Modules.md - authMiddleware.js](05_Service_Modules.md#authmiddlewarejs)) and lesson packages (`pack`, a prepaid block of hours a student can draw lessons from). Since `tutor` was gaining a role that isn't really "a tutor" (a GUEST doesn't teach), the table was renamed to the more general `app_user` at the same time. `user` was **not** used as the table name because it's a reserved SQL keyword in PostgreSQL - `CREATE TABLE user` fails without quoting every reference to it everywhere, which was judged worse than a slightly less on-the-nose name.
 
 **What changed at the schema level:**
 - `tutor` renamed to `app_user`; `role` check constraint extended to allow `GUEST` (previously only `GENERIC`/`STAFF`); `mail` column (nullable)
@@ -318,4 +318,4 @@ migrate();
 
 ---
 
-**Last Updated**: August 5, 2026  
+**Last Updated**: August 6, 2026  
