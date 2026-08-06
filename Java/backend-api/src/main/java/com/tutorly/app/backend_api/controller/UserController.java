@@ -114,6 +114,7 @@ public class UserController {
         user.setPassword(userRequest.getPassword());
         user.setRole(userRequest.getRole() != null ? userRequest.getRole() : "GENERIC");
         user.setStatus(userRequest.getStatus() != null ? userRequest.getStatus() : "ACTIVE");
+        user.setMail(userRequest.getMail());
 
         User savedUser = userService.saveUser(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
@@ -191,6 +192,47 @@ public class UserController {
     }
 
     /**
+     * Update a user's profile info (username, email, and optionally password)
+     *
+     * Each field is only touched if present in the request body - in particular,
+     * password is left untouched unless explicitly provided, unlike the raw PUT /{id}
+     * endpoint, which would null it out if the request body doesn't include one.
+     * The password is expected to already be hashed by the caller (the Node.js frontend
+     * hashes with bcrypt before forwarding), same convention as user creation.
+     *
+     * @param id The user ID
+     * @param profileUpdate Object containing the new username/mail/password (all optional)
+     * @return Updated user if found, 404 Not Found if user doesn't exist, 409 Conflict if
+     *         the new username is already taken by another user
+     * @apiNote PATCH /api/users/{id}/profile
+     */
+    @PatchMapping("/{id}/profile")
+    public ResponseEntity<?> updateUserProfile(@PathVariable Long id, @RequestBody ProfileUpdate profileUpdate) {
+        Optional<User> userOptional = userService.getUserById(id);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        User user = userOptional.get();
+
+        if (profileUpdate.getUsername() != null && !profileUpdate.getUsername().equals(user.getUsername())
+                && userService.existsByUsername(profileUpdate.getUsername())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
+        }
+
+        if (profileUpdate.getUsername() != null) {
+            user.setUsername(profileUpdate.getUsername());
+        }
+        if (profileUpdate.getMail() != null) {
+            user.setMail(profileUpdate.getMail());
+        }
+        if (profileUpdate.getPassword() != null) {
+            user.setPassword(profileUpdate.getPassword());
+        }
+
+        return ResponseEntity.ok(userService.saveUser(user));
+    }
+
+    /**
      * Authenticate a user and get their ID
      *
      * Validates the provided username and password.
@@ -222,6 +264,7 @@ public class UserController {
         private String password;
         private String role;
         private String status;
+        private String mail;
 
         public String getUsername() {
             return username;
@@ -253,6 +296,47 @@ public class UserController {
 
         public void setStatus(String status) {
             this.status = status;
+        }
+
+        public String getMail() {
+            return mail;
+        }
+
+        public void setMail(String mail) {
+            this.mail = mail;
+        }
+    }
+
+    /**
+     * Inner class for profile update request payload
+     */
+    public static class ProfileUpdate {
+        private String username;
+        private String mail;
+        private String password;
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getMail() {
+            return mail;
+        }
+
+        public void setMail(String mail) {
+            this.mail = mail;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
         }
     }
 

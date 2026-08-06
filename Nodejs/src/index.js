@@ -2082,15 +2082,32 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
 /**
  * Get all tutors
  * GET /api/admin/tutors
- * Returns list of all tutors in the system
+ * Returns list of all tutors in the system (GENERIC/STAFF only - GUEST accounts
+ * are managed separately, see /api/admin/guests)
  */
 app.get('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     try {
-        const tutors = await fetchFromJavaAPI('/api/users', 'GET');
+        const users = await fetchFromJavaAPI('/api/users', 'GET');
+        const tutors = (users || []).filter(u => u.role !== 'GUEST');
         res.json(tutors);
     } catch (error) {
         logError('Error fetching tutors', req, { error: error.message });
         res.status(500).json({ error: 'Failed to fetch tutors' });
+    }
+});
+
+/**
+ * Get all guest accounts
+ * GET /api/admin/guests
+ * Returns list of all GUEST-role users in the system (e.g. parents/guardians)
+ */
+app.get('/api/admin/guests', adminSession, isAdmin, async (req, res) => {
+    try {
+        const guests = await fetchFromJavaAPI('/api/users/role/GUEST', 'GET');
+        res.json(guests || []);
+    } catch (error) {
+        logError('Error fetching guest accounts', req, { error: error.message });
+        res.status(500).json({ error: 'Failed to fetch guest accounts' });
     }
 });
 
@@ -2210,6 +2227,55 @@ app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
 });
 
 /**
+ * Create a new guest account
+ * POST /api/admin/guests
+ * Body: { username, mail, password }
+ * Password is automatically hashed with bcrypt before storing. Role is always GUEST.
+ */
+app.post('/api/admin/guests', adminSession, isAdmin, async (req, res) => {
+    try {
+        const { username, mail, password } = req.body;
+
+        logInfo('Creating new guest account', req, { username, mail });
+
+        if (!username || !mail || !password) {
+            return res.status(400).json({ error: 'Username, email, and password are required' });
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+            return res.status(400).json({ error: 'Invalid email address' });
+        }
+
+        if (password.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        }
+
+        // Hash password with bcrypt before saving
+        const hashedPassword = await hashPassword(password);
+        logInfo('Password hashed for new guest account', req, { username });
+
+        const guestData = {
+            username: username,
+            password: hashedPassword,
+            mail: mail,
+            role: 'GUEST',
+            status: 'ACTIVE'
+        };
+
+        const newGuest = await fetchFromJavaAPI('/api/users', 'POST', guestData);
+
+        logSuccess('Guest account created successfully', req, { username });
+        res.status(201).json(newGuest);
+    } catch (error) {
+        logError('Error creating guest account', req, { error: error.message, stack: error.stack });
+        if (error.statusCode === 409) {
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+        res.status(500).json({ error: 'Failed to create guest account' });
+    }
+});
+
+/**
  * Change student class
  * PATCH /api/admin/students/:id/class
  * Body: { studentClass: 'M' | 'S' | 'U' }
@@ -2239,6 +2305,94 @@ app.patch('/api/admin/students/:id/class', adminSession, isAdmin, async (req, re
     } catch (error) {
         logError('Error updating student class', req, { studentId: req.params.id, error: error.message });
         res.status(500).json({ error: 'Failed to update student class' });
+    }
+});
+
+/**
+ * Update a guest account's profile (username, email, and optionally password)
+ * PATCH /api/admin/guests/:id
+ * Body: { username, mail, password? }
+ * Password is only changed if provided (and re-hashed with bcrypt here before forwarding).
+ */
+app.patch('/api/admin/guests/:id', adminSession, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { username, mail, password } = req.body;
+
+        if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+            return res.status(400).json({ error: 'Invalid email address' });
+        }
+
+        const profileData = { username, mail };
+
+        if (password) {
+            if (password.length < 8) {
+                return res.status(400).json({ error: 'Password must be at least 8 characters' });
+            }
+            profileData.password = await hashPassword(password);
+            logInfo('Password hashed for guest account update', req, { id });
+        }
+
+        const updatedGuest = await fetchFromJavaAPI(`/api/users/${id}/profile`, 'PATCH', profileData);
+
+        logSuccess('Guest account profile updated', req, { id, username, mail, passwordChanged: !!password });
+        res.json(updatedGuest);
+    } catch (error) {
+        logError('Error updating guest account', req, { id: req.params.id, error: error.message });
+        if (error.statusCode === 409) {
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+        res.status(500).json({ error: 'Failed to update guest account' });
+    }
+});
+
+/**
+ * Get students not linked to any guest account
+ * GET /api/admin/students/unassigned
+ * Used to populate the pool of students a guest account can be assigned to.
+ */
+app.get('/api/admin/students/unassigned', adminSession, isAdmin, async (req, res) => {
+    try {
+        const students = await fetchFromJavaAPI('/api/students/unassigned', 'GET');
+        res.json(students || []);
+    } catch (error) {
+        logError('Error fetching unassigned students', req, { error: error.message });
+        res.status(500).json({ error: 'Failed to fetch unassigned students' });
+    }
+});
+
+/**
+ * Get students assigned to a specific guest account
+ * GET /api/admin/guests/:id/students
+ */
+app.get('/api/admin/guests/:id/students', adminSession, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const students = await fetchFromJavaAPI(`/api/students/guest/${id}`, 'GET');
+        res.json(students || []);
+    } catch (error) {
+        logError('Error fetching guest\'s assigned students', req, { id: req.params.id, error: error.message });
+        res.status(500).json({ error: 'Failed to fetch assigned students' });
+    }
+});
+
+/**
+ * Assign or unassign a student's guest account
+ * PATCH /api/admin/students/:id/guest
+ * Body: { userId } - the guest's user ID, or null to unassign
+ */
+app.patch('/api/admin/students/:id/guest', adminSession, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+
+        const updatedStudent = await fetchFromJavaAPI(`/api/students/${id}/guest`, 'PATCH', { userId: userId || null });
+
+        logSuccess('Student guest assignment updated', req, { studentId: id, userId });
+        res.json(updatedStudent);
+    } catch (error) {
+        logError('Error updating student guest assignment', req, { studentId: req.params.id, error: error.message });
+        res.status(500).json({ error: 'Failed to update student guest assignment' });
     }
 });
 

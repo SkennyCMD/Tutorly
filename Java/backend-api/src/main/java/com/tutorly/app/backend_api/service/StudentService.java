@@ -74,7 +74,26 @@ public class StudentService {
     public List<Student> searchStudents(String searchTerm) {
         return studentRepository.findByNameContainingOrSurnameContaining(searchTerm, searchTerm);
     }
-    
+
+    /**
+     * Find students not linked to any GUEST account
+     *
+     * @return List of students with no linked GUEST account
+     */
+    public List<Student> getUnassignedStudents() {
+        return studentRepository.findByUserIsNull();
+    }
+
+    /**
+     * Find students linked to a specific GUEST account
+     *
+     * @param userId The GUEST account's user ID
+     * @return List of students linked to the specified GUEST account
+     */
+    public List<Student> getStudentsByGuest(Long userId) {
+        return studentRepository.findByUser_Id(userId);
+    }
+
     /**
      * Save or update a student
      * 

@@ -44,6 +44,9 @@ let tutors = [];
 // Array of all student objects
 let students = [];
 
+// Array of all guest (GUEST role) account objects
+let guests = [];
+
 // Recently created tutors (max 3) for display
 let recentlyCreated = [];
 
@@ -64,6 +67,7 @@ let pendingAction = null;
 document.addEventListener('DOMContentLoaded', () => {
     loadTutors();
     loadStudents();
+    loadGuests();
     setupEventListeners();
 });
 
@@ -113,6 +117,27 @@ async function loadStudents() {
     }
 }
 
+/**
+ * Load all guest (GUEST role) accounts from backend API.
+ *
+ * Fetches guest account data and renders the guest list.
+ * Shows error toast if request fails.
+ */
+async function loadGuests() {
+    try {
+        const response = await fetch('/api/admin/guests', { credentials: 'same-origin' });
+        if (response.ok) {
+            guests = await response.json();
+            renderGuests();
+        } else {
+            showToast('Failed to load guest accounts', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading guest accounts:', error);
+        showToast('Error loading guest accounts', 'error');
+    }
+}
+
 
 // Event Listeners Setup
 
@@ -141,12 +166,53 @@ function setupEventListeners() {
     // Mobile menu - click outside to close
     document.getElementById('menuOverlay').addEventListener('click', closeMenuFn);
 
-    // Search filters - real-time filtering of tutors and students
+    // Search filters - real-time filtering of tutors, students, and guest accounts
     document.getElementById('tutorSearch').addEventListener('input', renderTutors);
     document.getElementById('studentSearch').addEventListener('input', renderStudents);
+    document.getElementById('guestSearch').addEventListener('input', renderGuests);
 
     // Create tutor form submission
     document.getElementById('createTutorForm').addEventListener('submit', handleCreateTutor);
+
+    // Create guest form submission
+    document.getElementById('createGuestForm').addEventListener('submit', handleCreateGuest);
+
+    // Guest detail modal: profile edit form + assign-student button
+    document.getElementById('editGuestForm').addEventListener('submit', handleEditGuestProfile);
+    document.getElementById('assignStudentBtn').addEventListener('click', assignSelectedStudent);
+    document.getElementById('assignStudentSearch').addEventListener('input', filterUnassignedStudentsSelect);
+
+    // Guest edit form: new-password visibility toggle (eye icon)
+    document.getElementById('toggleEditGuestPassword').addEventListener('click', () => {
+        const input = document.getElementById('editGuestPassword');
+        const icon = document.getElementById('editGuestEyeIcon');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l18 18"/>';
+        } else {
+            input.type = 'password';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+        }
+    });
+
+    // Guest edit form: confirm new-password matching indicator
+    document.getElementById('confirmEditGuestPassword').addEventListener('input', (e) => {
+        const match = document.getElementById('editGuestPasswordMatch');
+        const pw = document.getElementById('editGuestPassword').value;
+
+        if (e.target.value.length === 0) { match.classList.add('hidden'); return; }
+
+        match.classList.remove('hidden');
+
+        if (e.target.value === pw) {
+            match.textContent = 'Passwords match';
+            match.className = 'text-xs mt-1 text-primary';
+        } else {
+            match.textContent = 'Passwords do not match';
+            match.className = 'text-xs mt-1 text-destructive';
+        }
+    });
 
     // Password visibility toggle (eye icon)
     document.getElementById('togglePassword').addEventListener('click', () => {
@@ -207,6 +273,38 @@ function setupEventListeners() {
         match.classList.remove('hidden');
 
         // Check if passwords match
+        if (e.target.value === pw) {
+            match.textContent = 'Passwords match';
+            match.className = 'text-xs mt-1 text-primary';
+        } else {
+            match.textContent = 'Passwords do not match';
+            match.className = 'text-xs mt-1 text-destructive';
+        }
+    });
+
+    // Guest form: password visibility toggle (eye icon)
+    document.getElementById('toggleGuestPassword').addEventListener('click', () => {
+        const input = document.getElementById('newGuestPassword');
+        const icon = document.getElementById('guestEyeIcon');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l18 18"/>';
+        } else {
+            input.type = 'password';
+            icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+        }
+    });
+
+    // Guest form: confirm password matching indicator
+    document.getElementById('confirmGuestPassword').addEventListener('input', (e) => {
+        const match = document.getElementById('guestPasswordMatch');
+        const pw = document.getElementById('newGuestPassword').value;
+
+        if (e.target.value.length === 0) { match.classList.add('hidden'); return; }
+
+        match.classList.remove('hidden');
+
         if (e.target.value === pw) {
             match.textContent = 'Passwords match';
             match.className = 'text-xs mt-1 text-primary';
@@ -328,6 +426,46 @@ function renderStudents() {
                 <option value="S" ${s.studentClass === 'S' ? 'selected' : ''}>S</option>
                 <option value="U" ${s.studentClass === 'U' ? 'selected' : ''}>U</option>
             </select>
+        </div>
+    `).join('');
+}
+
+
+// Guest Accounts List Rendering
+
+
+/**
+ * Render the guest accounts list with search filtering.
+ *
+ * - Filters guest accounts based on search input (username + email)
+ * - Updates guest count display
+ * - Shows username and email for each account
+ */
+function renderGuests() {
+    const search = document.getElementById('guestSearch').value.toLowerCase();
+    const filtered = guests.filter(g =>
+        g.username.toLowerCase().includes(search) || (g.mail || '').toLowerCase().includes(search)
+    );
+
+    document.getElementById('guestCount').textContent = `${filtered.length} guest${filtered.length !== 1 ? 's' : ''}`;
+
+    const container = document.getElementById('guestsList');
+
+    if (filtered.length === 0) {
+        container.innerHTML = '<p class="text-sm text-muted-foreground py-4 text-center">No guest accounts found</p>';
+        return;
+    }
+
+    container.innerHTML = filtered.map(g => `
+        <div onclick="openGuestModal(${g.id})" class="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-secondary/50 transition-colors">
+            <div class="w-9 h-9 bg-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                <span class="text-sm font-medium text-foreground">${g.username.charAt(0).toUpperCase()}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-foreground truncate">${g.username}</p>
+                <p class="text-xs text-muted-foreground truncate">${g.mail || ''}</p>
+            </div>
+            <span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">GUEST</span>
         </div>
     `).join('');
 }
@@ -607,6 +745,324 @@ async function handleCreateTutor(e) {
     } catch (error) {
         console.error('Error creating tutor:', error);
         showToast('Error creating tutor', 'error');
+    }
+}
+
+
+// Create Guest
+
+
+/**
+ * Handle create guest account form submission.
+ *
+ * Validates:
+ * - Password length (minimum 8 characters)
+ * - Password confirmation match
+ *
+ * On success:
+ * - Adds new guest account to list
+ * - Resets form
+ *
+ * @param {Event} e - Form submit event
+ */
+async function handleCreateGuest(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('newGuestUsername').value.trim();
+    const mail = document.getElementById('newGuestMail').value.trim();
+    const password = document.getElementById('newGuestPassword').value;
+    const confirm = document.getElementById('confirmGuestPassword').value;
+
+    if (password.length < 8) {
+        showToast('Password must be at least 8 characters', 'error');
+        return;
+    }
+
+    if (password !== confirm) {
+        showToast('Passwords do not match', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/admin/guests', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, mail, password })
+        });
+
+        if (response.ok) {
+            const newGuest = await response.json();
+
+            // Add to guests list (at beginning)
+            guests.unshift(newGuest);
+            renderGuests();
+
+            // Reset form and hide indicators
+            e.target.reset();
+            document.getElementById('guestPasswordMatch').classList.add('hidden');
+
+            showToast(`Guest account "${username}" created`, 'success');
+        } else {
+            const error = await response.json();
+            showToast(error.error || 'Failed to create guest account', 'error');
+        }
+    } catch (error) {
+        console.error('Error creating guest account:', error);
+        showToast('Error creating guest account', 'error');
+    }
+}
+
+
+// Guest Detail/Edit Modal
+
+
+// The guest currently open in the edit modal, or null if closed
+let currentGuestId = null;
+
+/**
+ * Open the guest detail/edit modal for a specific guest account.
+ *
+ * Populates the profile form with the guest's current username/email, then
+ * loads both the students already assigned to this guest and the pool of
+ * students available to assign (those with no guest linked yet).
+ *
+ * @param {number} id - Guest account ID
+ */
+async function openGuestModal(id) {
+    const guest = guests.find(g => g.id === id);
+    if (!guest) return;
+
+    currentGuestId = id;
+    document.getElementById('editGuestId').value = id;
+    document.getElementById('editGuestUsername').value = guest.username;
+    document.getElementById('editGuestMail').value = guest.mail || '';
+
+    // Clear any leftover password input/search text from a previous time the modal was open
+    document.getElementById('editGuestPassword').value = '';
+    document.getElementById('confirmEditGuestPassword').value = '';
+    document.getElementById('editGuestPasswordMatch').classList.add('hidden');
+    document.getElementById('assignStudentSearch').value = '';
+
+    document.getElementById('guestModal').classList.add('open');
+
+    await refreshGuestModalStudents();
+}
+
+/**
+ * Close the guest detail/edit modal and clear its state.
+ */
+function closeGuestModal() {
+    document.getElementById('guestModal').classList.remove('open');
+    currentGuestId = null;
+}
+
+/**
+ * Reload and re-render both the assigned-students list and the unassigned-students
+ * dropdown for the guest currently open in the modal.
+ */
+async function refreshGuestModalStudents() {
+    if (!currentGuestId) return;
+
+    try {
+        const [assignedRes, unassignedRes] = await Promise.all([
+            fetch(`/api/admin/guests/${currentGuestId}/students`, { credentials: 'same-origin' }),
+            fetch('/api/admin/students/unassigned', { credentials: 'same-origin' })
+        ]);
+
+        const assigned = assignedRes.ok ? await assignedRes.json() : [];
+        const unassigned = unassignedRes.ok ? await unassignedRes.json() : [];
+
+        renderAssignedStudents(assigned);
+        renderUnassignedStudentsSelect(unassigned);
+    } catch (error) {
+        console.error('Error loading guest students:', error);
+        showToast('Error loading students', 'error');
+    }
+}
+
+/**
+ * Render the list of students currently assigned to the guest open in the modal,
+ * each with an "Unassign" button.
+ *
+ * @param {Array} students - Students linked to the current guest
+ */
+function renderAssignedStudents(students) {
+    const container = document.getElementById('assignedStudentsList');
+
+    if (students.length === 0) {
+        container.innerHTML = '<p class="text-sm text-muted-foreground py-2">No students assigned yet</p>';
+        return;
+    }
+
+    container.innerHTML = students.map(s => `
+        <div class="flex items-center gap-3 p-2.5 border border-border rounded-lg">
+            <div class="w-8 h-8 bg-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                <span class="text-xs font-medium text-foreground">${s.name.charAt(0)}${s.surname.charAt(0)}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm text-foreground truncate">${s.name} ${s.surname}</p>
+            </div>
+            <button onclick="unassignStudent(${s.id})" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-colors">
+                Unassign
+            </button>
+        </div>
+    `).join('');
+}
+
+// Full pool of unassigned students for the guest modal currently open, cached so the
+// search box can filter it locally without refetching on every keystroke.
+let unassignedStudentsCache = [];
+
+/**
+ * Populate the "Assign a Student" dropdown with students that have no guest
+ * linked yet - mandatorily filtered server-side (GET /api/admin/students/unassigned),
+ * so an already-assigned student can never appear here. Caches the full list so the
+ * search box (see filterUnassignedStudentsSelect) can filter it without refetching.
+ *
+ * @param {Array} students - Students with no guest account linked
+ */
+function renderUnassignedStudentsSelect(students) {
+    unassignedStudentsCache = students;
+    populateUnassignedStudentsSelect(students);
+}
+
+/**
+ * Fill the "Assign a Student" dropdown's options from a given (already-filtered) list.
+ *
+ * @param {Array} students - Students to show as options
+ */
+function populateUnassignedStudentsSelect(students) {
+    const select = document.getElementById('unassignedStudentsSelect');
+    select.innerHTML = '<option value="">Select a student...</option>' +
+        students.map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
+}
+
+/**
+ * Filter the cached unassigned-students pool by the search box's value (name + surname)
+ * and re-populate the dropdown with just the matches.
+ */
+function filterUnassignedStudentsSelect() {
+    const search = document.getElementById('assignStudentSearch').value.toLowerCase();
+    const filtered = unassignedStudentsCache.filter(s =>
+        `${s.name} ${s.surname}`.toLowerCase().includes(search)
+    );
+    populateUnassignedStudentsSelect(filtered);
+}
+
+/**
+ * Assign the student selected in the dropdown to the guest open in the modal.
+ */
+async function assignSelectedStudent() {
+    const select = document.getElementById('unassignedStudentsSelect');
+    const studentId = select.value;
+    if (!studentId || !currentGuestId) return;
+
+    try {
+        const response = await fetch(`/api/admin/students/${studentId}/guest`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentGuestId })
+        });
+
+        if (response.ok) {
+            await refreshGuestModalStudents();
+            showToast('Student assigned', 'success');
+        } else {
+            const error = await response.json();
+            showToast(error.error || 'Failed to assign student', 'error');
+        }
+    } catch (error) {
+        console.error('Error assigning student:', error);
+        showToast('Error assigning student', 'error');
+    }
+}
+
+/**
+ * Unassign a student from the guest open in the modal (clears the student's guest link).
+ *
+ * @param {number} studentId - Student ID to unassign
+ */
+async function unassignStudent(studentId) {
+    try {
+        const response = await fetch(`/api/admin/students/${studentId}/guest`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: null })
+        });
+
+        if (response.ok) {
+            await refreshGuestModalStudents();
+            showToast('Student unassigned', 'success');
+        } else {
+            const error = await response.json();
+            showToast(error.error || 'Failed to unassign student', 'error');
+        }
+    } catch (error) {
+        console.error('Error unassigning student:', error);
+        showToast('Error unassigning student', 'error');
+    }
+}
+
+/**
+ * Handle the guest profile edit form submission (username/email only).
+ *
+ * @param {Event} e - Form submit event
+ */
+async function handleEditGuestProfile(e) {
+    e.preventDefault();
+
+    const id = document.getElementById('editGuestId').value;
+    const username = document.getElementById('editGuestUsername').value.trim();
+    const mail = document.getElementById('editGuestMail').value.trim();
+    const password = document.getElementById('editGuestPassword').value;
+    const confirmPassword = document.getElementById('confirmEditGuestPassword').value;
+
+    // Password is optional here - only validate it if the admin actually typed one
+    if (password) {
+        if (password.length < 8) {
+            showToast('Password must be at least 8 characters', 'error');
+            return;
+        }
+        if (password !== confirmPassword) {
+            showToast('Passwords do not match', 'error');
+            return;
+        }
+    }
+
+    const payload = { username, mail };
+    if (password) payload.password = password;
+
+    try {
+        const response = await fetch(`/api/admin/guests/${id}`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            const updatedGuest = await response.json();
+
+            const idx = guests.findIndex(g => g.id === updatedGuest.id);
+            if (idx !== -1) guests[idx] = updatedGuest;
+            renderGuests();
+
+            // Clear password fields so the plaintext doesn't linger in the form
+            document.getElementById('editGuestPassword').value = '';
+            document.getElementById('confirmEditGuestPassword').value = '';
+            document.getElementById('editGuestPasswordMatch').classList.add('hidden');
+
+            showToast('Guest account updated', 'success');
+        } else {
+            const error = await response.json();
+            showToast(error.error || 'Failed to update guest account', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating guest account:', error);
+        showToast('Error updating guest account', 'error');
     }
 }
 

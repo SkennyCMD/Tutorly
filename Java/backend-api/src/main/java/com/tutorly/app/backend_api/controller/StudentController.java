@@ -1,7 +1,9 @@
 package com.tutorly.app.backend_api.controller;
 
 import com.tutorly.app.backend_api.entity.Student;
+import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.service.StudentService;
+import com.tutorly.app.backend_api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +28,10 @@ public class StudentController {
     
     @Autowired
     private StudentService studentService;
-    
+
+    @Autowired
+    private UserService userService;
+
     /**
      * Get all students
      * 
@@ -91,7 +96,64 @@ public class StudentController {
     public ResponseEntity<List<Student>> searchStudents(@RequestParam String q) {
         return ResponseEntity.ok(studentService.searchStudents(q));
     }
-    
+
+    /**
+     * Get students not linked to any GUEST account
+     *
+     * Used to populate the pool of students a GUEST account can be assigned to.
+     *
+     * @return List of students with no linked GUEST account
+     * @apiNote GET /api/students/unassigned
+     */
+    @GetMapping("/unassigned")
+    public ResponseEntity<List<Student>> getUnassignedStudents() {
+        return ResponseEntity.ok(studentService.getUnassignedStudents());
+    }
+
+    /**
+     * Get students linked to a specific GUEST account
+     *
+     * @param userId The GUEST account's user ID
+     * @return List of students linked to the specified GUEST account
+     * @apiNote GET /api/students/guest/{userId}
+     */
+    @GetMapping("/guest/{userId}")
+    public ResponseEntity<List<Student>> getStudentsByGuest(@PathVariable Long userId) {
+        return ResponseEntity.ok(studentService.getStudentsByGuest(userId));
+    }
+
+    /**
+     * Assign or unassign a student's GUEST account
+     *
+     * Sets (or clears, if userId is null) the student's linked GUEST account.
+     *
+     * @param id The student ID to update
+     * @param request Object containing the GUEST account's user ID (or null to unassign)
+     * @return Updated student if found, 404 Not Found if student/user don't exist
+     * @apiNote PATCH /api/students/{id}/guest
+     */
+    @PatchMapping("/{id}/guest")
+    public ResponseEntity<?> updateStudentGuest(@PathVariable Long id, @RequestBody GuestAssignRequest request) {
+        Optional<Student> studentOpt = studentService.getStudentById(id);
+        if (studentOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Student student = studentOpt.get();
+
+        if (request.getUserId() == null) {
+            student.setUser(null);
+        } else {
+            Optional<User> userOpt = userService.getUserById(request.getUserId());
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("User not found with ID: " + request.getUserId());
+            }
+            student.setUser(userOpt.get());
+        }
+
+        return ResponseEntity.ok(studentService.saveStudent(student));
+    }
+
     /**
      * Create a new student
      * 
@@ -136,5 +198,20 @@ public class StudentController {
         }
         studentService.deleteStudent(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Inner class for GUEST assignment request payload
+     */
+    public static class GuestAssignRequest {
+        private Long userId;
+
+        public Long getUserId() {
+            return userId;
+        }
+
+        public void setUserId(Long userId) {
+            this.userId = userId;
+        }
     }
 }

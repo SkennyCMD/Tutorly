@@ -45,4 +45,22 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
      * @return List of students whose name or surname contains the search term
      */
     List<Student> findByNameContainingOrSurnameContaining(String name, String surname);
+
+    /**
+     * Find students not linked to any GUEST account
+     *
+     * Used to populate the pool of students a GUEST account can be assigned to -
+     * a student already linked to one GUEST can't be assigned to another.
+     *
+     * @return List of students with no linked GUEST account (id_user IS NULL)
+     */
+    List<Student> findByUserIsNull();
+
+    /**
+     * Find students linked to a specific GUEST account
+     *
+     * @param userId The GUEST account's user ID
+     * @return List of students linked to the specified GUEST account
+     */
+    List<Student> findByUser_Id(Long userId);
 }
