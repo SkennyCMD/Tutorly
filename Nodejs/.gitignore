@@ -125,4 +125,5 @@ Thumbs.db
 *~
 .vscode/
 
-admin_login_attempts.txt
+# Locally-customized config (kept on disk, see config/subjects.example.json)
+config/subjects.json
