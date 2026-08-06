@@ -105,7 +105,8 @@ function computeHoursByMonth(lessons) {
     return result;
 }
 
-// Lifetime hours per month (unfiltered), used for the "Total Hours" profile stat
+// Lifetime hours per month (unfiltered), keyed by "YYYY-MM" - used to look up just the
+// current calendar month's hours for the "Month's Hours" profile stat
 const hoursByMonth = computeHoursByMonth(initialLessons);
 
 // Days that have a lesson (for calendar highlight), key: YYYY-MM-DD - unfiltered,
@@ -173,8 +174,10 @@ function getLastSeptemberFirst() {
 
 /**
  * Evaluations within the From/To date range (see #fromDate/#toDate), used by the
- * marks chart, its legend/average, and the "All Tests" list. Only the profile
- * header's lifetime stats (avg mark, total tests, total hours) stay unfiltered.
+ * marks chart, its legend/average, the "All Tests" list, and the profile header's
+ * "Avg mark"/"Tests" stats (see updateAvgMarkStat/updateTotalTestsStat). Defaults to
+ * the current school year (last Sept 1) through today. Only "Month's Hours" stays
+ * unaffected by this filter - it always reflects the real current calendar month.
  */
 function getFilteredEvaluations() {
     const from = document.getElementById('fromDate').value;
@@ -236,11 +239,12 @@ function renderProfile() {
     badge.style.background = c.bg;
     badge.style.border = `1px solid ${c.border}`;
 
-    const totalHours = Object.values(hoursByMonth).reduce((s, h) => s + h, 0);
-    document.getElementById('totalTests').textContent = evaluations.length;
-    document.getElementById('totalHours').textContent = formatHours(totalHours);
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    document.getElementById('totalHours').textContent = formatHours(hoursByMonth[currentMonthKey] || 0);
 
     updateAvgMarkStat();
+    updateTotalTestsStat();
 }
 
 // "Avg mark" profile stat follows the same From/To filter as the marks chart/list
@@ -249,6 +253,11 @@ function updateAvgMarkStat() {
     const avg = filtered.length ? filtered.reduce((s, e) => s + e.mark, 0) / filtered.length : 0;
     document.getElementById('avgMark').textContent = avg.toFixed(1);
     document.getElementById('avgMark').style.color = markColor(avg);
+}
+
+// "Tests" profile stat follows the same From/To filter as the marks chart/list
+function updateTotalTestsStat() {
+    document.getElementById('totalTests').textContent = getFilteredEvaluations().length;
 }
 
 function renderMarksChart() {
@@ -684,6 +693,7 @@ function setupEventListeners() {
     renderMarksList();
     renderHours();
     updateAvgMarkStat();
+    updateTotalTestsStat();
     });
 
     document.getElementById('editPrenotationForm').addEventListener('submit', async (e) => {
@@ -728,7 +738,7 @@ function setupEventListeners() {
     }
     });
 
-    document.getElementById('newPackBtn').addEventListener('click', openNewPackModal);
+    document.getElementById('newPackBtn').addEventListener('click', () => openNewPackModal());
 
     document.getElementById('newPackForm').addEventListener('submit', async (e) => {
     e.preventDefault();
