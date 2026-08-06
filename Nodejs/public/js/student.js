@@ -124,6 +124,14 @@ function markColor(mark) {
     return '#ef4444';
 }
 
+// Reads a theme CSS variable (see public/css/theme.css) so chart grid lines/labels/dot
+// outlines - unlike markColor's fixed accent colors - follow the active light/dark theme
+// instead of staying tuned for a single hardcoded dark palette.
+function themeColor(varName) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    return value ? `rgb(${value})` : '#a1a1aa';
+}
+
 function formatDate(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
     return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
@@ -287,11 +295,15 @@ function renderChart(evs, groups) {
     // Position of each evaluation within the shared, chronologically-sorted x axis
     const indexOf = new Map(evs.map((e, i) => [e.id, i]));
 
+    const gridStroke = themeColor('--color-border');
+    const labelFill = themeColor('--color-muted-foreground');
+    const dotStroke = themeColor('--color-card');
+
     let grid = '';
     for (let m = 0; m <= 10; m += 2) {
     const y = yFor(m);
-    grid += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#2e2e2e" stroke-width="1"/>`;
-    grid += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="#a1a1aa" font-size="11">${m}</text>`;
+    grid += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${gridStroke}" stroke-width="1"/>`;
+    grid += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="${labelFill}" font-size="11">${m}</text>`;
     }
 
     let lines = '';
@@ -304,7 +316,7 @@ function renderChart(evs, groups) {
     groupEvs.forEach(e => {
         const x = xFor(indexOf.get(e.id)), y = yFor(e.mark);
         const label = `${e.testId} - ${group.subject} (${group.tutorName}): ${e.mark}`;
-        dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" fill="${group.color}" stroke="#141414" stroke-width="2" onclick="showTestInfo(${e.id})"><title>${label}</title></circle>`;
+        dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" fill="${group.color}" stroke="${dotStroke}" stroke-width="2" onclick="showTestInfo(${e.id})"><title>${label}</title></circle>`;
     });
     });
 
@@ -320,7 +332,7 @@ function renderChart(evs, groups) {
     if (i % labelStep !== 0 && i !== n - 1) return;
     const x = xFor(i);
     const d = new Date(e.date + 'T00:00:00');
-    xLabels += `<text x="${x}" y="${H - padB + 20}" text-anchor="middle" fill="#a1a1aa" font-size="10">${d.getDate()} ${monthNames[d.getMonth()]}</text>`;
+    xLabels += `<text x="${x}" y="${H - padB + 20}" text-anchor="middle" fill="${labelFill}" font-size="10">${d.getDate()} ${monthNames[d.getMonth()]}</text>`;
     });
 
     return `

@@ -32,6 +32,14 @@ function markColor(mark) {
     return '#ef4444';
 }
 
+// Reads a theme CSS variable (see public/css/theme.css) so chart grid lines/labels/dot
+// outlines - unlike markColor's fixed accent colors - follow the active light/dark theme
+// instead of staying tuned for a single hardcoded dark palette.
+function themeColor(varName) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    return value ? `rgb(${value})` : '#a1a1aa';
+}
+
 function formatDate(dateStr) {
     const d = new Date(dateStr + 'T00:00:00');
     const monthNames = t('common.monthsShort');
@@ -207,7 +215,7 @@ function renderReports() {
             <span class="w-3 h-0.5 bg-primary inline-block rounded"></span> ${t('reports.marksLegend')}
             </div>
             <div class="flex items-center gap-1.5">
-            <span class="w-3 h-0.5 inline-block rounded" style="background:#a1a1aa;border-top:2px dashed #a1a1aa"></span> ${t('reports.runningAverageLegend')}
+            <span class="w-3 h-0.5 inline-block rounded" style="background:${themeColor('--color-muted-foreground')};border-top:2px dashed ${themeColor('--color-muted-foreground')}"></span> ${t('reports.runningAverageLegend')}
             </div>
             <span class="ml-auto">${t('reports.clickPointForDetails')}</span>
         </div>
@@ -237,11 +245,15 @@ function renderChart(evs) {
     });
 
     // Gridlines + Y labels (0,2,4,6,8,10)
+    const gridStroke = themeColor('--color-border');
+    const labelFill = themeColor('--color-muted-foreground');
+    const dotStroke = themeColor('--color-card');
+
     let grid = '';
     for (let m = 0; m <= 10; m += 2) {
     const y = yFor(m);
-    grid += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#2e2e2e" stroke-width="1"/>`;
-    grid += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="#a1a1aa" font-size="11">${m}</text>`;
+    grid += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="${gridStroke}" stroke-width="1"/>`;
+    grid += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="${labelFill}" font-size="11">${m}</text>`;
     }
 
     // Marks polyline
@@ -254,19 +266,19 @@ function renderChart(evs) {
     let xLabels = '';
     evs.forEach((e, i) => {
     const x = xFor(i), y = yFor(e.mark);
-    dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" fill="${markColor(e.mark)}" stroke="#141414" stroke-width="2" onclick="showTestInfo(${e.id})"><title>${e.testId}${e.subject ? ' - ' + e.subject : ''}: ${e.mark}</title></circle>`;
+    dots += `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" fill="${markColor(e.mark)}" stroke="${dotStroke}" stroke-width="2" onclick="showTestInfo(${e.id})"><title>${e.testId}${e.subject ? ' - ' + e.subject : ''}: ${e.mark}</title></circle>`;
     const d = new Date(e.date + 'T00:00:00');
-    xLabels += `<text x="${x}" y="${H - padB + 20}" text-anchor="middle" fill="#a1a1aa" font-size="10">${d.getDate()} ${monthNames[d.getMonth()]}</text>`;
+    xLabels += `<text x="${x}" y="${H - padB + 20}" text-anchor="middle" fill="${labelFill}" font-size="10">${d.getDate()} ${monthNames[d.getMonth()]}</text>`;
     });
 
     // Average dots (small)
-    let avgDots = avgPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="3" fill="#a1a1aa"/>`).join('');
+    let avgDots = avgPoints.map(p => `<circle cx="${p.x}" cy="${p.y}" r="3" fill="${labelFill}"/>`).join('');
 
     return `
     <div class="overflow-x-auto -mx-1">
         <svg viewBox="0 0 ${W} ${H}" class="w-full min-w-[420px]" preserveAspectRatio="xMidYMid meet">
         ${grid}
-        <polyline points="${avgPath}" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-dasharray="5 4"/>
+        <polyline points="${avgPath}" fill="none" stroke="${labelFill}" stroke-width="2" stroke-dasharray="5 4"/>
         <polyline points="${markPath}" fill="none" stroke="#14b8a6" stroke-width="2.5"/>
         ${avgDots}
         ${dots}
