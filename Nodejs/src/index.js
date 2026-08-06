@@ -44,7 +44,6 @@ const {
     fetchCalendarNotesByTutor,
     fetchCalendarNotesByDateRange,
     fetchLessonsByTutor,
-    fetchLessonsByTutorAndStudent,
     fetchAllLessons,
     fetchAllPrenotations,
     fetchPrenotationsByTutor,
@@ -916,13 +915,11 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
             });
         }
 
-        // Tests and prenotations span every tutor who has ever dealt with this student
-        // (full history). Lessons/hours stay scoped to the viewing tutor's own sessions for
-        // STAFF, but show the student's full lesson history for GUEST - a GUEST isn't a
-        // tutor, so "lessons taught by me" would always be empty.
+        // Tests, prenotations, and lessons/hours all span every tutor who has ever dealt
+        // with this student (full history) - not just the viewing tutor's own sessions
         const [tests, lessons, prenotationsData, allTutors, packsData] = await Promise.all([
             fetchTestsByStudent(studentId),
-            isGuest ? fetchFromJavaAPI(`/api/lessons/student/${studentId}`) : fetchLessonsByTutorAndStudent(tutorId, studentId),
+            fetchFromJavaAPI(`/api/lessons/student/${studentId}`),
             fetchPrenotationsByStudent(studentId),
             fetchFromJavaAPI('/api/users'),
             fetchPacksByStudent(studentId)

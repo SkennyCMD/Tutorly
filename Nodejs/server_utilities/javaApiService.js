@@ -236,28 +236,6 @@ function fetchLessonsByTutor(tutorId) {
 }
 
 /**
- * Fetch all lessons a specific tutor has held with a specific student.
- *
- * Returns empty array if no lessons found or on error.
- *
- * @param {number} tutorId - Unique tutor ID
- * @param {number} studentId - Unique student ID
- * @returns {Promise<Array>} Array of lesson objects for this tutor/student pair
- *
- * @example
- * const lessons = await fetchLessonsByTutorAndStudent(5, 10);
- * // Returns: [{ id: 1, tutorId: 5, studentId: 10, startTime: '...', endTime: '...' }]
- */
-function fetchLessonsByTutorAndStudent(tutorId, studentId) {
-    return fetchFromJavaAPI(`/api/lessons/tutor/${tutorId}/student/${studentId}`, 'GET')
-        .then(data => data || [])
-        .catch(error => {
-            console.error('Error fetching lessons by tutor and student:', error);
-            return [];
-        });
-}
-
-/**
  * Fetch all lessons from the entire database.
  * 
  * Used for generating comprehensive reports, statistics,
@@ -537,7 +515,6 @@ module.exports = {
     fetchCalendarNotesByTutor,
     fetchCalendarNotesByDateRange,
     fetchLessonsByTutor,
-    fetchLessonsByTutorAndStudent,
     fetchAllLessons,
     fetchAllPrenotations,
     fetchPrenotationsByTutor,
