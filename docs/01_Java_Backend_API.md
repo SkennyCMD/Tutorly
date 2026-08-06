@@ -194,62 +194,70 @@ This section details the internal structure of the Java backend component:
 ### Main Entities
 
 ```
-┌──────────────┐         ┌──────────────┐
-│    Admin     │────┐    │    Tutor     │
-│              │    │    │              │
-│ -id          │    │    │ -id          │
-│ -mail        │    │    │ -username    │
-│ -password    │    │    │ -password    │
-│ -username    │    │    │ -status      │
-└──────────────┘    │    │ -role        │
-                    │    └──────┬───────┘
-                    │           │
-      ┌─────────────┴────┐      │
-      │ AdminCreatesTutor│      │
-      │ -admin_id (FK)   │      │
-      │ -tutor_id (FK)   │      │
-      │ -timestamp       │      │
-      └──────────────────┘      │
-                                │
-    ┌─────────────┬─────────────┼─────────────┬─────────────┐
-    │             │             │             │             │
-    ▼             ▼             ▼             ▼             ▼
-┌────────┐  ┌───────────┐  ┌───────────┐  ┌──────┐  ┌──────────────┐
-│ Lesson │  │Prenotation│  │   Test    │  │      │  │ CalendarNote │
-│        │  │           │  │           │  │      │  │              │
-│ -id    │  │ -id       │  │ -id       │  │      │  │ -id          │
-│ -desc  │  │ -startTime│  │ -day      │  │      │  │ -description │
-│ -start │  │ -endTime  │  │ -desc     │  │      │  │ -startTime   │
-│ -end   │  │ -flag     │  │ -mark     │  │      │  │ -endTime     │
-│ -tutor ├──┤ -student  │  │ -tutor    ├──┘      │  │ -creator     │
-│ -student  │ -tutor    │  │ -student  │         │  │ -tutors      │
-└────┬───┘  │ -creator  │  └────┬──────┘         │  └──────────────┘
-     │      └───────────┘       │                │
-     │                          │                │
-     │         ┌────────────────┴────────────────┘
-     │         │
-     ▼         ▼
-┌─────────────────┐
-│    Student      │
-│                 │
-│ -id             │
-│ -name           │
-│ -surname        │
-│ -studentClass   │
-│ -description    │
-│ -status         │
-│                 │
-│ -lessons        │
-│ -prenotations   │
-│ -tests          │
-└─────────────────┘
+┌─────────────┐         ┌────────────────────────────────┐
+│Admin        │───┐     │User  (table: app_user)         │
+│             │   │     │                                │
+│-id          │   │     │-id                             │
+│-mail        │   │     │-username                       │
+│-password    │   │     │-password                       │
+│-username    │   │     │-mail                           │
+└─────────────┘   │     │-status                         │
+   ┌──────────────┴───┐ │-role (GENERIC | STAFF | GUEST) │
+   │AdminCreatesUser  │ └────────────────┬───────────────┘
+   │-admin_id (FK)    │                  │
+   │-user_id (FK)     │                  │
+   │-timestamp        │                  │
+   └──────────────────┘                  │
+                                         │
+                                         │
+         ┬───────────────────┬───────────┴───────┬───────────────────┬
+         │                   │                   │                   │
+┌────────────────┐  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐
+│Lesson          │  │Prenotation     │  │Test            │  │CalendarNote    │
+│                │  │                │  │                │  │                │
+│-id             │  │-id             │  │-id             │  │-id             │
+│-description    │  │-startTime      │  │-day            │  │-description    │
+│-startTime      │  │-endTime        │  │-description    │  │-startTime      │
+│-endTime        │  │-flag           │  │-subject        │  │-endTime        │
+│-user (tutor)   │  │-student        │  │-mark           │  │-creator        │
+│-student        │  │-user (tutor)   │  │-user (tutor)   │  │-users (M:N)    │
+│-pack (nullable)│  │-creator        │  │-student        │  └────────┬───────┘
+└────────┬───────┘  └────────┬───────┘  └────────┬───────┘           │
+         │                   │                   │                   │
+         │                   │                   │                   │
+         ┴───────────────────┴─────────┬─────────┴───────────────────┴
+                                       │
+                    ┌────────────────────────────────────┐
+                    │Student                             │
+                    │                                    │
+                    │-id                                 │
+                    │-name                               │
+                    │-surname                            │
+                    │-studentClass                       │
+                    │-description                        │
+                    │-status                             │
+                    │-user  (GUEST account, optional FK) │
+                    │                                    │
+                    │-lessons                            │
+                    │-prenotations                       │
+                    │-tests                              │
+                    │-packs                              │
+                    └──────────────────┬─────────────────┘
+                                       │
+                                       │
+                    ┌────────────────┐
+                    │Pack            │
+                    │                │
+                    │-id             │
+                    │-hours          │
+                    │-createdAt      │
+                    │-startTime      │
+                    │-closureDate    │
+                    │-student        │
+                    └────────────────┘
 ```
 
-> **Note:** This diagram is out of date and kept only for the broad shape of the relationships - redrawing it without breaking every neighboring box's alignment isn't worth the risk. What it doesn't show, as of the `tutor` → `app_user` migration (see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role)):
-> - **`Tutor` is now `User`** (table `app_user`, not `tutor`) - same relationships shown above (Lesson/Prenotation/Test/CalendarNote), plus a new `mail` field and a `GUEST` role value alongside `GENERIC`/`STAFF`. All the fields/relationships listed under the `Tutor` box below still apply to `User`, just under the new name.
-> - **New `Pack` entity** (id, createdAt, startTime, hours, closure date) - belongs to one `Student`, and a `Lesson` can optionally belong to one `Pack` (nullable `id_pack`, `ON DELETE SET NULL` - deleting a pack never deletes its lessons) - not shown in the diagram at all. See [Packs](#packs) below for the full REST API and business logic.
-> - **`Student` gained an optional `user` field** - links a student to the `GUEST` account (if any) allowed to view them.
-> - The `Test` box also doesn't show the `subject` field (a free-text subject/topic name, e.g. "Matematica") added earlier - adding a row would require re-aligning every neighboring box's border to match.
+> **Note:** Two relationships aren't drawn above because routing them would cross several other lines: the `User → Student` **GUEST link** (`Student.user`, optional - a `GUEST` account can be linked to one or more students) and the `Pack → Lesson` **optional draw-down link** (`Lesson.pack`, nullable - a lesson doesn't have to come from a package). Both are fully described in the numbered relationship list below.
 >
 > See [Tests](#tests) and [Users](#users) below for the full, up-to-date field lists.
 
