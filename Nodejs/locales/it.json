@@ -256,5 +256,54 @@
       "addEvaluationFailed": "Aggiunta valutazione non riuscita: {error}",
       "addEvaluationRetry": "Aggiunta valutazione non riuscita. Riprova."
     }
+  },
+  "student": {
+    "pageTitle": "Profilo Studente",
+    "tests": "Test",
+    "monthHours": "Ore del Mese",
+    "testMarks": "Voti dei Test",
+    "progressAcrossTests": "Andamento nei test recenti",
+    "chartCaption": "Medie per materia e tutor · clicca un punto per i dettagli",
+    "allTests": "Tutti i Test",
+    "hoursPerMonth": "Ore per Mese",
+    "packs": "Pacchetti",
+    "newPackage": "+ Nuovo Pacchetto",
+    "noActivePackages": "Nessun pacchetto attivo",
+    "lessonCalendar": "Calendario Lezioni",
+    "lessonDaysHighlighted": "Giorni con lezione evidenziati",
+    "dayWithLesson": "Giorno con una lezione",
+    "prenotations": "Prenotazioni",
+    "noPrenotationsFound": "Nessuna prenotazione trovata",
+    "newPackageModalTitle": "Nuovo Pacchetto",
+    "hoursLabel": "Ore",
+    "create": "Crea",
+    "tutorLabel": "Tutor",
+    "tutorFallback": "Tutor {id}",
+    "surnameLabel": "Cognome: {surname}",
+    "classLabel": "Classe {classType} - {className}",
+    "classBadge": "Classe {classType}",
+    "clickToShowLine": "Clicca per mostrare questa linea",
+    "clickToHideLine": "Clicca per nascondere questa linea",
+    "testCount": "{count} test",
+    "testCountPlural": "{count} test",
+    "noTestsInRange": "Nessun test in questo intervallo",
+    "noLessonsInRange": "Nessuna lezione in questo intervallo",
+    "noEvaluationsYet": "Ancora nessuna valutazione",
+    "expired": "Scaduta",
+    "unknownTutor": "Sconosciuto",
+    "unassignedHoursMessage": "{hours}h svolte fuori da qualsiasi pacchetto da quando si è esaurito",
+    "closePackage": "Chiudi Pacchetto",
+    "confirm": {
+      "closePackage": "Sei sicuro di voler chiudere questo pacchetto?"
+    },
+    "errors": {
+      "selectDateAndTimes": "Seleziona una data e gli orari di inizio/fine",
+      "invalidHours": "Inserisci un numero di ore valido",
+      "invalidStartDateTime": "Inserisci una data e un'ora di inizio valide",
+      "createPackageFailed": "Creazione pacchetto non riuscita: {error}",
+      "createPackageRetry": "Creazione pacchetto non riuscita. Riprova.",
+      "closePackageFailed": "Chiusura pacchetto non riuscita: {error}",
+      "closePackageRetry": "Chiusura pacchetto non riuscita. Riprova."
+    }
   }
 }

@@ -256,5 +256,54 @@
       "addEvaluationFailed": "Failed to add evaluation: {error}",
       "addEvaluationRetry": "Failed to add evaluation. Please try again."
     }
+  },
+  "student": {
+    "pageTitle": "Student Profile",
+    "tests": "Tests",
+    "monthHours": "Month's Hours",
+    "testMarks": "Test Marks",
+    "progressAcrossTests": "Progress across recent tests",
+    "chartCaption": "Averages by subject & tutor · click a point for details",
+    "allTests": "All Tests",
+    "hoursPerMonth": "Hours per Month",
+    "packs": "Packs",
+    "newPackage": "+ New Package",
+    "noActivePackages": "No active packages",
+    "lessonCalendar": "Lesson Calendar",
+    "lessonDaysHighlighted": "Lesson days highlighted",
+    "dayWithLesson": "Day with a lesson",
+    "prenotations": "Prenotations",
+    "noPrenotationsFound": "No prenotations found",
+    "newPackageModalTitle": "New Package",
+    "hoursLabel": "Hours",
+    "create": "Create",
+    "tutorLabel": "Tutor",
+    "tutorFallback": "Tutor {id}",
+    "surnameLabel": "Surname: {surname}",
+    "classLabel": "Class {classType} - {className}",
+    "classBadge": "Class {classType}",
+    "clickToShowLine": "Click to show this line",
+    "clickToHideLine": "Click to hide this line",
+    "testCount": "{count} test",
+    "testCountPlural": "{count} tests",
+    "noTestsInRange": "No tests in this range",
+    "noLessonsInRange": "No lessons in this range",
+    "noEvaluationsYet": "No evaluations yet",
+    "expired": "Expired",
+    "unknownTutor": "Unknown",
+    "unassignedHoursMessage": "{hours}h done outside any pack since it filled up",
+    "closePackage": "Close Package",
+    "confirm": {
+      "closePackage": "Are you sure you want to close this package?"
+    },
+    "errors": {
+      "selectDateAndTimes": "Please select a date and start/end times",
+      "invalidHours": "Please enter a valid number of hours",
+      "invalidStartDateTime": "Please enter a valid start date and time",
+      "createPackageFailed": "Failed to create package: {error}",
+      "createPackageRetry": "Failed to create package. Please try again.",
+      "closePackageFailed": "Failed to close package: {error}",
+      "closePackageRetry": "Failed to close package. Please try again."
+    }
   }
 }

@@ -6,7 +6,7 @@ const student = {
     classType: rawStudent.studentClass || 'M', // M = Middle School, S = Senior High, U = University
 };
 
-const classNames = { M: 'Middle School', S: 'Senior High', U: 'University' };
+const classNames = { M: t('lessons.middleSchool'), S: t('lessons.seniorHigh'), U: t('lessons.university') };
 const classColors = {
     M: { text: '#60a5fa', bg: 'rgba(96,165,250,0.15)', border: 'rgba(96,165,250,0.4)' },
     S: { text: '#4ade80', bg: 'rgba(74,222,128,0.15)', border: 'rgba(74,222,128,0.4)' },
@@ -22,7 +22,7 @@ let evaluations = (window.initialEvaluations || []).map(ev => ({
     subject: ev.subject || '',
     description: ev.description || '',
     tutorId: ev.tutorId,
-    tutorName: ev.tutorName || 'Unknown',
+    tutorName: ev.tutorName || t('student.unknownTutor'),
     testId: `TST-${String(ev.id).padStart(3, '0')}`
 }));
 
@@ -37,7 +37,7 @@ function groupEvaluationsBySubjectAndTutor(evs) {
     evs.forEach(ev => {
         const key = `${ev.subject}||${ev.tutorId}`;
         if (!groups.has(key)) {
-            groups.set(key, { key, subject: ev.subject || 'No subject', tutorName: ev.tutorName, evaluations: [] });
+            groups.set(key, { key, subject: ev.subject || t('reports.noSubject'), tutorName: ev.tutorName, evaluations: [] });
         }
         groups.get(key).evaluations.push(ev);
     });
@@ -79,7 +79,7 @@ const prenotations = (window.initialPrenotations || []).map(p => ({
     endTime: p.endTime,
     confirmed: !!p.flag,
     tutorId: p.tutorId,
-    tutorName: p.tutorName || 'Unknown'
+    tutorName: p.tutorName || t('student.unknownTutor')
 }));
 
 // Active lesson packages (no closure date) loaded from the server - see
@@ -115,8 +115,8 @@ const lessonDays = new Set(
     initialLessons.filter(l => l.startTime).map(l => l.startTime.split('T')[0])
 );
 
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const monthFull = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const monthNames = t('common.monthsShort');
+const monthFull = t('common.months');
 
 function markColor(mark) {
     if (mark >= 8) return '#14b8a6';
@@ -229,12 +229,12 @@ function renderProfile() {
     const initials = ((student.firstName.charAt(0) || '?') + (student.lastName.charAt(0) || '?')).toUpperCase();
     document.getElementById('studentInitials').textContent = initials;
     document.getElementById('studentName').textContent = `${student.firstName} ${student.lastName}`.trim();
-    document.getElementById('studentSurnameLabel').textContent = `Surname: ${student.lastName}`;
-    document.getElementById('studentClassLabel').textContent = `Class ${student.classType} - ${classNames[student.classType] || student.classType}`;
+    document.getElementById('studentSurnameLabel').textContent = t('student.surnameLabel', { surname: student.lastName });
+    document.getElementById('studentClassLabel').textContent = t('student.classLabel', { classType: student.classType, className: classNames[student.classType] || student.classType });
 
     const c = classColors[student.classType] || classColors.M;
     const badge = document.getElementById('studentClassBadge');
-    badge.textContent = `Class ${student.classType}`;
+    badge.textContent = t('student.classBadge', { classType: student.classType });
     badge.style.color = c.text;
     badge.style.background = c.bg;
     badge.style.border = `1px solid ${c.border}`;
@@ -340,7 +340,7 @@ function renderChartLegend(groups) {
     if (!container) return;
 
     if (groups.length === 0) {
-    container.innerHTML = '<p class="text-sm text-muted-foreground col-span-full">No evaluations yet</p>';
+    container.innerHTML = `<p class="text-sm text-muted-foreground col-span-full">${t('student.noEvaluationsYet')}</p>`;
     return;
     }
 
@@ -351,7 +351,7 @@ function renderChartLegend(groups) {
         + (isHidden ? ' opacity-40' : '');
     return `
         <div class="${cardClass}" onclick="toggleChartGroup('${encodeURIComponent(group.key)}')"
-        title="${isHidden ? 'Click to show this line' : 'Click to hide this line'}">
+        title="${isHidden ? t('student.clickToShowLine') : t('student.clickToHideLine')}">
         <div class="flex items-center gap-2 min-w-0">
             <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${group.color}"></span>
             <div class="min-w-0">
@@ -368,10 +368,12 @@ function renderChartLegend(groups) {
 function renderMarksList() {
     const container = document.getElementById('marksList');
     const sorted = [...getFilteredEvaluations()].sort((a, b) => new Date(b.date) - new Date(a.date));
-    document.getElementById('marksCount').textContent = `${sorted.length} test${sorted.length !== 1 ? 's' : ''}`;
+    document.getElementById('marksCount').textContent = sorted.length === 1
+        ? t('student.testCount', { count: sorted.length })
+        : t('student.testCountPlural', { count: sorted.length });
 
     if (sorted.length === 0) {
-    container.innerHTML = '<p class="text-sm text-muted-foreground">No tests in this range</p>';
+    container.innerHTML = `<p class="text-sm text-muted-foreground">${t('student.noTestsInRange')}</p>`;
     return;
     }
 
@@ -398,7 +400,7 @@ function renderHours() {
     const keys = Object.keys(filteredHours).sort().slice(-6);
 
     if (keys.length === 0) {
-    container.innerHTML = '<p class="text-sm text-muted-foreground">No lessons in this range</p>';
+    container.innerHTML = `<p class="text-sm text-muted-foreground">${t('student.noLessonsInRange')}</p>`;
     return;
     }
 
@@ -486,10 +488,10 @@ function renderPrenotations() {
     const end = formatDateTime(p.endTime);
     const isPast = p.startTime.split('T')[0] < todayKey;
     const statusBadge = p.confirmed
-        ? '<span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary ml-2">Confirmed</span>'
+        ? `<span class="text-xs px-2 py-0.5 rounded bg-primary/20 text-primary ml-2">${t('lessons.confirmed')}</span>`
         : isPast
-            ? '<span class="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400 ml-2">Expired</span>'
-            : '<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">Pending</span>';
+            ? `<span class="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400 ml-2">${t('student.expired')}</span>`
+            : `<span class="text-xs px-2 py-0.5 rounded bg-muted/20 text-muted-foreground ml-2">${t('lessons.pending')}</span>`;
     const cardClass = (isPast
         ? 'p-3 border border-red-500/50 bg-red-500/10 rounded-lg'
         : 'p-3 border border-border rounded-lg') + (canEdit ? ' cursor-pointer hover:border-primary/50 transition-colors' : '');
@@ -542,18 +544,18 @@ function renderPacks() {
         </div>
         ${isComplete ? `
         ${p.unassignedHours > 0 ? `
-        <p class="text-xs text-destructive">${p.unassignedHours}h done outside any pack since it filled up</p>
+        <p class="text-xs text-destructive">${t('student.unassignedHoursMessage', { hours: p.unassignedHours })}</p>
         ${isStaff ? `
         <button type="button" data-new-pack-start="${p.firstUnassignedLessonStart || ''}"
             class="new-pack-from-unassigned-btn w-full text-xs border border-destructive text-destructive px-3 py-1.5 rounded-lg font-medium hover:bg-destructive/10 transition-colors">
-            + New Package
+            ${t('student.newPackage')}
         </button>
         ` : ''}
         ` : ''}
         ${isStaff ? `
         <button type="button" data-close-pack-id="${p.id}"
             class="close-pack-btn w-full text-xs bg-destructive text-white px-3 py-1.5 rounded-lg font-medium hover:bg-destructive/90 transition-colors">
-            Close Package
+            ${t('student.closePackage')}
         </button>
         ` : ''}
         ` : ''}
@@ -596,7 +598,7 @@ function openEditPrenotationModal(id) {
     const allTutors = window.allTutors || [];
     container.innerHTML = allTutors.map(tutor => {
     const isAssigned = prenotation.tutorId === tutor.id;
-    const tutorName = tutor.username || `Tutor ${tutor.id}`;
+    const tutorName = tutor.username || t('student.tutorFallback', { id: tutor.id });
     return `
         <div class="flex items-center">
         <input type="radio" id="editTutor${tutor.id}" name="editAssignToTutor"
@@ -616,7 +618,7 @@ function closeEditPrenotationModal() {
 }
 
 async function deletePrenotation() {
-    if (!confirm('Are you sure you want to delete this prenotation?')) return;
+    if (!confirm(t('calendar.confirm.deletePrenotation'))) return;
 
     const prenotationId = document.getElementById('editPrenotationId').value;
 
@@ -631,11 +633,11 @@ async function deletePrenotation() {
             window.location.reload();
         } else {
             const error = await response.json();
-            alert(`Failed to delete prenotation: ${error.error || 'Unknown error'}`);
+            alert(t('calendar.errors.deletePrenotationFailed', { error: error.error || t('calendar.errors.unknownError') }));
         }
     } catch (error) {
         console.error('Error deleting prenotation:', error);
-        alert('Failed to delete prenotation. Please try again.');
+        alert(t('calendar.errors.deletePrenotationRetry'));
     }
 }
 
@@ -653,9 +655,9 @@ function showTestInfo(id) {
 
     document.getElementById('infoTestId').textContent = ev.testId;
     document.getElementById('infoDate').textContent = formatDate(ev.date);
-    document.getElementById('infoSubject').textContent = ev.subject || 'No subject';
+    document.getElementById('infoSubject').textContent = ev.subject || t('reports.noSubject');
     document.getElementById('infoTutor').textContent = ev.tutorName;
-    document.getElementById('infoDescription').textContent = ev.description || 'No description provided.';
+    document.getElementById('infoDescription').textContent = ev.description || t('reports.noDescriptionProvided');
 
     document.getElementById('testInfoModal').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -711,7 +713,7 @@ function setupEventListeners() {
     const endTime = document.getElementById('editPrenotationEndTime').value;
 
     if (!date || !startTime || !endTime) {
-        alert('Please select a date and start/end times');
+        alert(t('student.errors.selectDateAndTimes'));
         return;
     }
 
@@ -736,11 +738,11 @@ function setupEventListeners() {
         window.location.reload();
         } else {
         const error = await response.json();
-        alert(`Failed to update prenotation: ${error.error || 'Unknown error'}`);
+        alert(t('calendar.errors.updatePrenotationFailed', { error: error.error || t('calendar.errors.unknownError') }));
         }
     } catch (error) {
         console.error('Error updating prenotation:', error);
-        alert('Failed to update prenotation. Please try again.');
+        alert(t('calendar.errors.updatePrenotationRetry'));
     }
     });
 
@@ -755,11 +757,11 @@ function setupEventListeners() {
     const startDate = document.getElementById('newPackStartDate').value;
     const startTime = document.getElementById('newPackStartTime').value;
     if (!hours || parseFloat(hours) <= 0) {
-        alert('Please enter a valid number of hours');
+        alert(t('student.errors.invalidHours'));
         return;
     }
     if (!startDate || !startTime) {
-        alert('Please enter a valid start date and time');
+        alert(t('student.errors.invalidStartDateTime'));
         return;
     }
 
@@ -781,11 +783,11 @@ function setupEventListeners() {
         window.location.reload();
         } else {
         const error = await response.json();
-        alert(`Failed to create package: ${error.error || 'Unknown error'}`);
+        alert(t('student.errors.createPackageFailed', { error: error.error || t('calendar.errors.unknownError') }));
         }
     } catch (error) {
         console.error('Error creating package:', error);
-        alert('Failed to create package. Please try again.');
+        alert(t('student.errors.createPackageRetry'));
     }
     });
 
@@ -801,7 +803,7 @@ function setupEventListeners() {
     if (!btn) return;
 
     const packId = btn.getAttribute('data-close-pack-id');
-    if (!confirm('Are you sure you want to close this package?')) return;
+    if (!confirm(t('student.confirm.closePackage'))) return;
 
     try {
         const response = await fetch(`/api/packs/${packId}/close`, {
@@ -813,11 +815,11 @@ function setupEventListeners() {
         window.location.reload();
         } else {
         const error = await response.json();
-        alert(`Failed to close package: ${error.error || 'Unknown error'}`);
+        alert(t('student.errors.closePackageFailed', { error: error.error || t('calendar.errors.unknownError') }));
         }
     } catch (error) {
         console.error('Error closing package:', error);
-        alert('Failed to close package. Please try again.');
+        alert(t('student.errors.closePackageRetry'));
     }
     });
 }
