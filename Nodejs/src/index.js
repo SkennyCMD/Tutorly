@@ -74,7 +74,8 @@ const {
     TUTOR_SESSION_SECRET, 
     ADMIN_SESSION_SECRET,
     TUTOR_SESSION_DURATION,
-    ADMIN_SESSION_DURATION
+    ADMIN_SESSION_DURATION,
+    POWERED_BY_TEXT
 } = require('../server_utilities/config');
 
 function createJavaApiRequestOptions(pathname, method = 'GET', body = null) {
@@ -98,8 +99,12 @@ function createJavaApiRequestOptions(pathname, method = 'GET', body = null) {
 }
 
 //------------------------------------------------------------------------------------------------------
-// EXPRESS APP INITIALIZATION 
+// EXPRESS APP INITIALIZATION
 const app = express();
+
+// Tagline shown next to the Tutorly logo on every page (see config.js);
+// app.locals is merged into every EJS render automatically
+app.locals.poweredByText = POWERED_BY_TEXT;
 
 //------------------------------------------------------------------------------------------------------
 // MIDDLEWARE CONFIGURATION 

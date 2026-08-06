@@ -44,6 +44,7 @@
             </svg>
           </div>
           <span class="text-xl font-bold text-foreground">Tutorly</span>
+          <% if (poweredByText) { %><span class="text-xs text-muted-foreground ml-1"><%= poweredByText %></span><% } %>
           <span class="ml-2 text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">ADMIN</span>
         </a>
 
@@ -87,6 +88,7 @@
           </svg>
         </div>
         <span class="text-lg font-bold text-foreground">Tutorly</span>
+        <% if (poweredByText) { %><span class="text-xs text-muted-foreground ml-1"><%= poweredByText %></span><% } %>
         <span class="text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">ADMIN</span>
       </div>
       <button id="closeMenu" class="p-2 rounded-lg hover:bg-secondary transition-colors">

@@ -50,7 +50,7 @@ module.exports = {
      * Sent in X-API-Key header for all API calls
      * WARNING: Change this value in production
      */
-    JAVA_API_KEY: process.env.JAVA_API_KEY || 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu',
+    JAVA_API_KEY: process.env.JAVA_API_KEY,
 
 
     // Server Configuration
@@ -116,5 +116,15 @@ module.exports = {
      * Default: 1 hour (1000ms * 60s * 60m)
      * Shorter duration for security since admins have elevated privileges
      */
-    ADMIN_SESSION_DURATION: 1000 * 60 * 60 * 1 // 1 hour
+    ADMIN_SESSION_DURATION: 1000 * 60 * 60 * 1, // 1 hour
+
+
+    // Branding Configuration
+
+
+    /**
+     * Tagline shown next to the Tutorly logo in the header of every page
+     * (e.g. "Powered by Tutorly"). Set to an empty string ('') to hide it.
+     */
+    POWERED_BY_TEXT: process.env.POWERED_BY_TEXT !== undefined ? process.env.POWERED_BY_TEXT : 'Powered by Tutorly'
 };
