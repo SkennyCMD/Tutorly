@@ -456,13 +456,38 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
         const combinedLessons = [...todayLessons, ...todayPrenotations].sort((a, b) => {
             return a.startTime.localeCompare(b.startTime);
         });
-        
+
+        // GUEST-only: cards for the student(s) assigned to this guest, each with their
+        // average mark (same computation as the Staff Panel's student cards), linking
+        // through to the full student profile page
+        let guestStudents = [];
+        if (userRole === 'guest') {
+            const testsPerStudent = await Promise.all(
+                (assignedStudents || []).map(s => fetchTestsByStudent(s.id))
+            );
+            guestStudents = (assignedStudents || []).map((s, idx) => {
+                const marks = (testsPerStudent[idx] || [])
+                    .map(t => t.mark)
+                    .filter(m => m != null);
+                const avgMark = marks.length ? marks.reduce((sum, m) => sum + m, 0) / marks.length : null;
+                return {
+                    id: s.id,
+                    name: s.name,
+                    surname: s.surname,
+                    studentClass: s.studentClass,
+                    description: s.description || '',
+                    avgMark
+                };
+            });
+        }
+
         res.render('home', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             tasks: tasks,
             lessons: combinedLessons,
-            students: students || []
+            students: students || [],
+            guestStudents
         });
     } catch (error) {
         logError('Error fetching home data', req, { error: error.message });
@@ -472,7 +497,8 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             role: 'GENERIC',
             tasks: [],
             lessons: [],
-            students: []
+            students: [],
+            guestStudents: []
         });
     }
 });
@@ -849,7 +875,7 @@ app.get('/reports', tutorSession, isAuthenticated, blockGuest, async (req, res) 
  * Student profile page
  * GET /student/:id - Display a single student's profile page
  */
-app.get('/student/:id', tutorSession, isAuthenticated, blockGuest, async (req, res) => {
+app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
         const studentId = parseInt(req.params.id, 10);
@@ -866,8 +892,20 @@ app.get('/student/:id', tutorSession, isAuthenticated, blockGuest, async (req, r
             fetchStudentData(studentId)
         ]);
 
-        // Only STAFF tutors may view student profile pages
-        if (!tutorData || tutorData.role !== 'STAFF') {
+        const isStaff = tutorData && tutorData.role === 'STAFF';
+        const isGuest = tutorData && tutorData.role === 'GUEST';
+
+        // STAFF may view any student. GUEST accounts may only view students assigned
+        // to them (see Student.id_user) - everyone else is denied.
+        let isAuthorized = isStaff;
+        let assignedStudentIds = null;
+        if (isGuest) {
+            const assignedStudents = await fetchStudentsByGuest(tutorId);
+            assignedStudentIds = new Set((assignedStudents || []).map(s => s.id));
+            isAuthorized = assignedStudentIds.has(studentId);
+        }
+
+        if (!isAuthorized) {
             return res.redirect('/home');
         }
 
@@ -879,10 +917,12 @@ app.get('/student/:id', tutorSession, isAuthenticated, blockGuest, async (req, r
         }
 
         // Tests and prenotations span every tutor who has ever dealt with this student
-        // (STAFF sees the full history); lessons/hours stay scoped to the viewing tutor's own sessions
+        // (full history). Lessons/hours stay scoped to the viewing tutor's own sessions for
+        // STAFF, but show the student's full lesson history for GUEST - a GUEST isn't a
+        // tutor, so "lessons taught by me" would always be empty.
         const [tests, lessons, prenotationsData, allTutors, packsData] = await Promise.all([
             fetchTestsByStudent(studentId),
-            fetchLessonsByTutorAndStudent(tutorId, studentId),
+            isGuest ? fetchFromJavaAPI(`/api/lessons/student/${studentId}`) : fetchLessonsByTutorAndStudent(tutorId, studentId),
             fetchPrenotationsByStudent(studentId),
             fetchFromJavaAPI('/api/users'),
             fetchPacksByStudent(studentId)
@@ -934,7 +974,7 @@ app.get('/student/:id', tutorSession, isAuthenticated, blockGuest, async (req, r
             user: { username: req.session.username, role: tutorData.role },
             student,
             evaluations,
-            lessons,
+            lessons: lessons || [],
             prenotations,
             tutors: allTutors || [],
             packs: activePacks
@@ -1513,7 +1553,7 @@ app.delete('/api/tests/:id', tutorSession, isAuthenticated, async (req, res) => 
  * POST /api/packs
  * Body: { studentId, hours }
  */
-app.post('/api/packs', tutorSession, isAuthenticated, async (req, res) => {
+app.post('/api/packs', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { studentId, hours, startDate, startTime } = req.body;
 
@@ -1574,7 +1614,7 @@ app.post('/api/packs', tutorSession, isAuthenticated, async (req, res) => {
  * Close a lesson package (sets its closure date to today)
  * PUT /api/packs/:id/close
  */
-app.put('/api/packs/:id/close', tutorSession, isAuthenticated, async (req, res) => {
+app.put('/api/packs/:id/close', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
 

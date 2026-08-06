@@ -74,6 +74,8 @@
     "clickToEditLesson": "Click to edit this lesson",
     "lessonCount": "{count} lesson",
     "lessonCountPlural": "{count} lessons",
+    "myStudents": "My Students",
+    "noStudentsAssigned": "No students assigned yet",
     "success": {
       "studentAdded": "Student added successfully!"
     },

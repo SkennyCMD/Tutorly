@@ -203,6 +203,48 @@ Features:
       <% } %>
     </div>
 
+    <!-- My Students: GUEST-only card grid, one card per assigned student, linking to
+         their full profile page (mirrors the Staff Panel's student cards) -->
+    <% if (user && user.role==='GUEST' ) { %>
+    <div class="bg-card border border-border rounded-xl p-5 mb-6">
+      <h2 class="text-lg font-semibold text-foreground mb-4"><%= t('home.myStudents') %></h2>
+      <% if (!guestStudents || guestStudents.length===0) { %>
+        <p class="text-sm text-muted-foreground text-center py-4"><%= t('home.noStudentsAssigned') %></p>
+      <% } else { %>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <% guestStudents.forEach(function(student) {
+            var avgColor = '#a1a1aa';
+            var avgText = t('staffPanel.noMarks');
+            if (student.avgMark !== null) {
+              avgText = student.avgMark.toFixed(1);
+              if (student.avgMark >= 8) avgColor = '#14b8a6';
+              else if (student.avgMark >= 6) avgColor = '#eab308';
+              else avgColor = '#ef4444';
+            }
+          %>
+            <a href="/student/<%= student.id %>"
+              class="block bg-secondary/50 border border-border rounded-lg p-4 hover:border-primary/50 transition-colors">
+              <div class="mb-1.5">
+                <p class="font-semibold text-foreground truncate"><%= student.name %> <%= student.surname %></p>
+                <p class="text-xs text-muted-foreground">#<%= student.id %></p>
+              </div>
+              <% if (student.description) { %>
+                <p class="text-xs text-muted-foreground line-clamp-2 mb-2"><%= student.description %></p>
+              <% } %>
+              <div class="flex items-center justify-between">
+                <span class="text-xs px-2 py-0.5 rounded bg-primary/15 text-primary"><%= student.studentClass || '—' %></span>
+                <div class="w-10 h-10 rounded-full flex items-center justify-center border-2 flex-shrink-0"
+                  style="border-color:<%= avgColor %>; background:<%= avgColor %>26;">
+                  <span class="text-[11px] font-bold" style="color:<%= avgColor %>"><%= avgText %></span>
+                </div>
+              </div>
+            </a>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+    <% } %>
+
     <!-- Dashboard Grid: Calendar/Tasks Card (left) and Lessons Card (right) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 

@@ -522,6 +522,8 @@ function renderPacks() {
     }
     emptyState.classList.add('hidden');
 
+    const isStaff = window.userRole === 'STAFF';
+
     container.innerHTML = packs.map(p => {
     const pct = p.hours > 0 ? Math.min(100, (p.usedHours / p.hours) * 100) : 0;
     const isComplete = pct >= 100;
@@ -541,15 +543,19 @@ function renderPacks() {
         ${isComplete ? `
         ${p.unassignedHours > 0 ? `
         <p class="text-xs text-destructive">${p.unassignedHours}h done outside any pack since it filled up</p>
+        ${isStaff ? `
         <button type="button" data-new-pack-start="${p.firstUnassignedLessonStart || ''}"
             class="new-pack-from-unassigned-btn w-full text-xs border border-destructive text-destructive px-3 py-1.5 rounded-lg font-medium hover:bg-destructive/10 transition-colors">
             + New Package
         </button>
         ` : ''}
+        ` : ''}
+        ${isStaff ? `
         <button type="button" data-close-pack-id="${p.id}"
             class="close-pack-btn w-full text-xs bg-destructive text-white px-3 py-1.5 rounded-lg font-medium hover:bg-destructive/90 transition-colors">
             Close Package
         </button>
+        ` : ''}
         ` : ''}
         </div>
     `;
@@ -738,7 +744,9 @@ function setupEventListeners() {
     }
     });
 
-    document.getElementById('newPackBtn').addEventListener('click', () => openNewPackModal());
+    // Absent for GUEST accounts, which can't create/modify packs
+    const newPackBtn = document.getElementById('newPackBtn');
+    if (newPackBtn) newPackBtn.addEventListener('click', () => openNewPackModal());
 
     document.getElementById('newPackForm').addEventListener('submit', async (e) => {
     e.preventDefault();
