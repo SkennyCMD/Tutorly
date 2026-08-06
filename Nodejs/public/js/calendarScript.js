@@ -601,6 +601,9 @@ function renderAllDayNotesRow() {
   const container = document.getElementById('allDayNotesContainer');
   if (!row || !container) return;
 
+  // GUEST accounts can't modify anything - chips render read-only (no pointer cursor, no click handler)
+  const isGuest = window.serverData?.userRole === 'GUEST';
+
   const visibleEvents = filterEventsByTutor(events);
   let html = '';
   let hasAny = false;
@@ -616,7 +619,7 @@ function renderAllDayNotesRow() {
     html += `
       <div class="p-1 space-y-0.5 border-l border-border">
         ${notesForDay.map(note => `
-          <div class="event-note text-[10px] px-1.5 py-0.5 rounded truncate cursor-pointer" onclick="openEditNoteModal(${note.id})" title="${note.description}">${note.description}</div>
+          <div class="event-note text-[10px] px-1.5 py-0.5 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`} title="${note.description}">${note.description}</div>
         `).join('')}
       </div>
     `;
@@ -677,6 +680,9 @@ function renderTimeGrid() {
 function renderEventsOnGrid() {
   // Clear existing events from previous render
   document.querySelectorAll('.event').forEach(el => el.remove());
+
+  // GUEST accounts can't modify anything - events render read-only (no pointer cursor, no click handler)
+  const isGuest = window.serverData?.userRole === 'GUEST';
 
   // Apply the STAFF-only tutor filter (notes are unaffected, see filterEventsByTutor);
   // all-day notes are rendered separately in the all-day row, not in the hourly grid
@@ -755,24 +761,26 @@ function renderEventsOnGrid() {
       eventEl.style.width = `${widthPercent}%`;
       eventEl.style.left = `${leftPercent}%`;
       eventEl.style.right = 'auto';
-      eventEl.style.cursor = 'pointer';
 
-      // Add click handler based on event type
+      // Add click handler based on event type - GUEST accounts can't modify anything
       const eventId = event.id;
       const eventType = event.type;
-      console.log('[Desktop] Setting up click for:', eventType, 'ID:', eventId);
-      if (eventType === 'lesson') {
-        eventEl.addEventListener('click', (e) => {
-          console.log('[Desktop] Clicked lesson ID:', eventId);
-          e.stopPropagation();
-          openEditPrenotationModal(eventId);
-        });
-      } else if (eventType === 'note') {
-        eventEl.addEventListener('click', (e) => {
-          console.log('[Desktop] Clicked note ID:', eventId);
-          e.stopPropagation();
-          openEditNoteModal(eventId);
-        });
+      if (!isGuest) {
+        eventEl.style.cursor = 'pointer';
+        console.log('[Desktop] Setting up click for:', eventType, 'ID:', eventId);
+        if (eventType === 'lesson') {
+          eventEl.addEventListener('click', (e) => {
+            console.log('[Desktop] Clicked lesson ID:', eventId);
+            e.stopPropagation();
+            openEditPrenotationModal(eventId);
+          });
+        } else if (eventType === 'note') {
+          eventEl.addEventListener('click', (e) => {
+            console.log('[Desktop] Clicked note ID:', eventId);
+            e.stopPropagation();
+            openEditNoteModal(eventId);
+          });
+        }
       }
 
       if (event.type === 'lesson') {
@@ -827,11 +835,14 @@ function renderMobileAllDayNotes() {
   const row = document.getElementById('mobileAllDayRow');
   if (!row) return;
 
+  // GUEST accounts can't modify anything - chips render read-only (no pointer cursor, no click handler)
+  const isGuest = window.serverData?.userRole === 'GUEST';
+
   const dateStr = formatDate(currentMobileDate);
   const notesForDay = filterEventsByTutor(events).filter(e => isAllDayNote(e) && e.date === dateStr);
 
   row.innerHTML = notesForDay.map(note => `
-    <div class="event-note text-xs px-2 py-1 rounded truncate cursor-pointer" onclick="openEditNoteModal(${note.id})">${note.description}</div>
+    <div class="event-note text-xs px-2 py-1 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`}>${note.description}</div>
   `).join('');
   row.classList.toggle('hidden', notesForDay.length === 0);
 }
@@ -870,6 +881,8 @@ function renderMobileTimeGrid() {
  */
 function renderMobileEvents() {
   const dateStr = formatDate(currentMobileDate);
+  // GUEST accounts can't modify anything - events render read-only (no pointer cursor, no click handler)
+  const isGuest = window.serverData?.userRole === 'GUEST';
   // Apply the STAFF-only tutor filter (notes are unaffected, see filterEventsByTutor);
   // all-day notes are rendered separately in the all-day row, not in the hourly grid
   const dayEvents = filterEventsByTutor(events.filter(e => e.date === dateStr)).filter(e => !isAllDayNote(e));
@@ -942,21 +955,23 @@ function renderMobileEvents() {
       eventEl.style.width = `${widthPercent}%`;
       eventEl.style.left = `${leftPercent}%`;
       eventEl.style.right = 'auto';
-      eventEl.style.cursor = 'pointer';
 
-      // Add click handler based on event type
+      // Add click handler based on event type - GUEST accounts can't modify anything
       const eventId = event.id;
       const eventType = event.type;
-      if (eventType === 'lesson') {
-        eventEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openEditPrenotationModal(eventId);
-        });
-      } else if (eventType === 'note') {
-        eventEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openEditNoteModal(eventId);
-        });
+      if (!isGuest) {
+        eventEl.style.cursor = 'pointer';
+        if (eventType === 'lesson') {
+          eventEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditPrenotationModal(eventId);
+          });
+        } else if (eventType === 'note') {
+          eventEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openEditNoteModal(eventId);
+          });
+        }
       }
 
       if (event.type === 'lesson') {
@@ -1034,9 +1049,11 @@ function setupEventListeners() {
     renderMobileDayView();
   });
 
-  // Modal buttons
-  document.getElementById('addLessonBtn').addEventListener('click', openLessonModal);
-  document.getElementById('addNoteBtn').addEventListener('click', openNoteModal);
+  // Modal buttons - absent for GUEST accounts, which can't create anything
+  const addLessonBtn = document.getElementById('addLessonBtn');
+  if (addLessonBtn) addLessonBtn.addEventListener('click', openLessonModal);
+  const addNoteBtn = document.getElementById('addNoteBtn');
+  if (addNoteBtn) addNoteBtn.addEventListener('click', openNoteModal);
 
   // Forms
   document.getElementById('lessonForm').addEventListener('submit', handleLessonSubmit);
@@ -1239,6 +1256,13 @@ function handleGridPointerMove(e) {
  */
 function handleGridPointerUp() {
   if (!dragSelection) return;
+
+  // GUEST accounts can't create anything - don't open the slot chooser at all
+  if (window.serverData?.userRole === 'GUEST') {
+    removeDragOverlay();
+    dragSelection = null;
+    return;
+  }
 
   const { date } = dragSelection;
   const rangeStart = Math.min(dragSelection.startMinutes, dragSelection.currentMinutes);
@@ -2078,6 +2102,10 @@ async function handleNoteSubmit(e) {
  * @param {number} prenotationId - ID of prenotation to edit
  */
 window.openEditPrenotationModal = function (prenotationId) {
+  // GUEST accounts can't modify anything - events aren't even rendered with this handler
+  // wired up for them, but guard here too in case it's ever called directly
+  if (window.serverData?.userRole === 'GUEST') return;
+
   console.log('[PRENOTATION] Opening modal for ID:', prenotationId);
   console.log('[PRENOTATION] Available prenotations:', window.serverData.prenotations);
   const prenotation = window.serverData.prenotations.find(p => p.id === prenotationId);
@@ -2354,6 +2382,10 @@ function updateEditStudentDropdown(searchTerm) {
  * @param {number} noteId - ID of note to edit
  */
 window.openEditNoteModal = async function (noteId) {
+  // GUEST accounts can't modify anything - events aren't even rendered with this handler
+  // wired up for them, but guard here too in case it's ever called directly
+  if (window.serverData?.userRole === 'GUEST') return;
+
   console.log('[NOTE] Opening modal for ID:', noteId);
   const note = window.serverData.calendarNotes.find(n => n.id === noteId);
   console.log('[NOTE] Found in local data:', note);

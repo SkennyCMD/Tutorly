@@ -308,12 +308,16 @@ function renderLessons() {
 
   emptyState.classList.add('hidden');
 
+  // GUEST accounts can't modify/convert anything - rows are shown read-only, with
+  // no click handler, no pointer cursor, and no hover affordance/tooltip
+  const isGuest = window.userRole === 'GUEST';
+
   // Desktop table view - full details in table rows
-  // Every row is clickable: prenotations open the Add Lesson modal pre-filled,
-  // lessons open the Edit Lesson modal pre-filled (see handleTodayRowClick)
+  // Every row is clickable (unless GUEST): prenotations open the Add Lesson modal
+  // pre-filled, lessons open the Edit Lesson modal pre-filled (see handleTodayRowClick)
   tableBody.innerHTML = lessons.map(lesson => `
-    <tr class="group cursor-pointer hover:bg-secondary/50"
-      onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? t('home.clickToAddAsLesson') : t('home.clickToEditLesson')}">
+    <tr class="group ${isGuest ? '' : 'cursor-pointer hover:bg-secondary/50'}"
+      ${isGuest ? '' : `onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? t('home.clickToAddAsLesson') : t('home.clickToEditLesson')}"`}>
       <td class="py-4">
         <div class="flex items-center gap-3">
           <div class="w-9 h-9 bg-secondary rounded-full flex items-center justify-center">
@@ -334,8 +338,8 @@ function renderLessons() {
 
   // Mobile list view - card layout with avatars and compact info
   mobileList.innerHTML = lessons.map(lesson => `
-    <div class="flex items-center justify-between p-4 bg-secondary rounded-xl cursor-pointer hover:bg-secondary/70"
-      onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? t('home.clickToAddAsLesson') : t('home.clickToEditLesson')}">
+    <div class="flex items-center justify-between p-4 bg-secondary rounded-xl ${isGuest ? '' : 'cursor-pointer hover:bg-secondary/70'}"
+      ${isGuest ? '' : `onclick="handleTodayRowClick('${lesson.id}')" title="${lesson.type === 'prenotation' ? t('home.clickToAddAsLesson') : t('home.clickToEditLesson')}"`}>
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 bg-card rounded-full flex items-center justify-center border border-border">
           <span class="text-sm font-medium text-foreground">${lesson.firstName[0]}${lesson.lastName ? lesson.lastName[0] : ''}</span>
@@ -366,6 +370,10 @@ function renderLessons() {
  * @param {string} lessonId - The combined id (e.g. "prenotation-5" or "lesson-12") of the clicked row
  */
 function handleTodayRowClick(lessonId) {
+  // GUEST accounts can't modify/convert anything - the rows aren't even rendered with
+  // this handler wired up for them, but guard here too in case it's ever called directly
+  if (window.userRole === 'GUEST') return;
+
   const entry = lessons.find(l => l.id === lessonId);
   if (!entry) return;
 

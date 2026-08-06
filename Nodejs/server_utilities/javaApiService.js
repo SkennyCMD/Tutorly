@@ -489,6 +489,25 @@ function fetchPacksByStudent(studentId) {
         });
 }
 
+/**
+ * Fetch all students linked to a specific GUEST account.
+ *
+ * @param {number} guestId - The GUEST account's user ID
+ * @returns {Promise<Array>} Array of student objects linked to this guest
+ *
+ * @example
+ * const students = await fetchStudentsByGuest(17);
+ * // Returns: [{ id: 10, name: 'Mario', surname: 'Rossi', ... }, ...]
+ */
+function fetchStudentsByGuest(guestId) {
+    return fetchFromJavaAPI(`/api/students/guest/${guestId}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching students by guest:', error);
+            return [];
+        });
+}
+
 
 // Module Exports
 
@@ -528,5 +547,6 @@ module.exports = {
     fetchTestsByTutor,
     fetchTestsByStudent,
     fetchAllTests,
-    fetchPacksByStudent
+    fetchPacksByStudent,
+    fetchStudentsByGuest
 };

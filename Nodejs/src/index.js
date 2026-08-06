@@ -30,7 +30,7 @@ const { logAdminLoginAttempt } = require('../server_utilities/adminLogger');
 
 // Authentication services
 const { authenticateTutor, authenticateAdmin } = require('../server_utilities/authService');
-const { isAuthenticated, isAdmin, isStaff } = require('../server_utilities/authMiddleware');
+const { isAuthenticated, isAdmin, isStaff, blockGuest, blockGuestApi } = require('../server_utilities/authMiddleware');
 const { hashPassword, logAuthAttempt } = require('../server_utilities/passwordService');
 
 // Logging utilities
@@ -54,7 +54,8 @@ const {
     fetchTestsByTutor,
     fetchTestsByStudent,
     fetchAllTests,
-    fetchPacksByStudent
+    fetchPacksByStudent,
+    fetchStudentsByGuest
 } = require('../server_utilities/javaApiService');
 
 // Fixed reference list of subjects for the Evaluations ("Add Evaluation") form
@@ -382,15 +383,25 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             endTime: note.endTime
         }));
         
-        // Fetch lessons, prenotations and students
-        const [allLessons, allPrenotations, students] = await Promise.all([
+        // Fetch lessons, prenotations, students, and (GUEST only) the students assigned to this guest
+        const [allLessons, allPrenotations, students, assignedStudents] = await Promise.all([
             fetchAllLessons(),
             fetchAllPrenotations(),
-            fetchAllStudents()
+            fetchAllStudents(),
+            userRole === 'guest' ? fetchStudentsByGuest(tutorId) : Promise.resolve(null)
         ]);
-        
-        const lessons = allLessons.filter(lesson => lesson.tutorId === tutorId);
-        const prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId);
+
+        let lessons, prenotations;
+        if (userRole === 'guest') {
+            // GUEST accounts have no lessons/prenotations of their own - show their
+            // assigned student(s)' instead
+            const assignedStudentIds = new Set((assignedStudents || []).map(s => s.id));
+            lessons = allLessons.filter(lesson => assignedStudentIds.has(lesson.studentId));
+            prenotations = allPrenotations.filter(prenotation => assignedStudentIds.has(prenotation.studentId));
+        } else {
+            lessons = allLessons.filter(lesson => lesson.tutorId === tutorId);
+            prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId);
+        }
         
         // Filter to only today's lessons and fetch student data
         const todayLessonsPromises = lessons.filter(lesson => {
@@ -502,10 +513,12 @@ app.get('/api/dashboard/calendar-events', tutorSession, isAuthenticated, async (
             });
         }
 
-        // Fetch lessons and prenotations for the tutor, filtered to the month
-        const [allLessons, allPrenotations] = await Promise.all([
+        // Fetch lessons and prenotations, filtered to the month
+        const userRole = req.session.role;
+        const [allLessons, allPrenotations, assignedStudents] = await Promise.all([
             fetchAllLessons(),
-            fetchAllPrenotations()
+            fetchAllPrenotations(),
+            userRole === 'guest' ? fetchStudentsByGuest(tutorId) : Promise.resolve(null)
         ]);
 
         const isInMonth = (dateString) => {
@@ -513,8 +526,15 @@ app.get('/api/dashboard/calendar-events', tutorSession, isAuthenticated, async (
             return date >= startOfMonth && date <= endOfMonth;
         };
 
-        const lessons = allLessons.filter(lesson => lesson.tutorId === tutorId && isInMonth(lesson.startTime));
-        const prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId && isInMonth(prenotation.startTime));
+        let lessons, prenotations;
+        if (userRole === 'guest') {
+            const assignedStudentIds = new Set((assignedStudents || []).map(s => s.id));
+            lessons = allLessons.filter(lesson => assignedStudentIds.has(lesson.studentId) && isInMonth(lesson.startTime));
+            prenotations = allPrenotations.filter(prenotation => assignedStudentIds.has(prenotation.studentId) && isInMonth(prenotation.startTime));
+        } else {
+            lessons = allLessons.filter(lesson => lesson.tutorId === tutorId && isInMonth(lesson.startTime));
+            prenotations = allPrenotations.filter(prenotation => prenotation.tutorId === tutorId && isInMonth(prenotation.startTime));
+        }
 
         // Collect unique dates (YYYY-MM-DD) that have at least one event
         const dateSet = new Set();
@@ -564,20 +584,30 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
         // Fetch tutor data to get the role
         const tutorData = await fetchTutorData(tutorId);
         const isStaff = tutorData && tutorData.role === 'STAFF';
-        
-        // Fetch prenotations: all if STAFF, only own if not
-        const prenotationsEndpoint = isStaff 
-            ? '/api/prenotations' 
+        const isGuest = userRole === 'guest';
+
+        // Fetch prenotations: all if STAFF, only own if GENERIC, all (then filtered below
+        // to assigned students) if GUEST - a GUEST isn't a tutor on any prenotation
+        const prenotationsEndpoint = (isStaff || isGuest)
+            ? '/api/prenotations'
             : `/api/prenotations/tutor/${tutorId}`;
-        
+
         // Fetch all required data in parallel
-        const [prenotations, calendarNotes, students, tutors] = await Promise.all([
+        const [allPrenotations, calendarNotes, students, tutors, assignedStudents] = await Promise.all([
             fetchFromJavaAPI(prenotationsEndpoint),
             fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`),
             fetchFromJavaAPI('/api/students'),
-            fetchFromJavaAPI('/api/users')
+            fetchFromJavaAPI('/api/users'),
+            isGuest ? fetchStudentsByGuest(tutorId) : Promise.resolve(null)
         ]);
-        
+
+        // GUEST accounts only see their assigned student(s)' prenotations
+        let prenotations = allPrenotations;
+        if (isGuest) {
+            const assignedStudentIds = new Set((assignedStudents || []).map(s => s.id));
+            prenotations = (allPrenotations || []).filter(p => assignedStudentIds.has(p.studentId));
+        }
+
         // Enrich prenotations with student and tutor data
         const enrichedPrenotations = await Promise.all((prenotations || []).map(async prenotation => {
             const studentId = prenotation.studentId;
@@ -633,7 +663,7 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
  * GET /lessons - Display all lessons and prenotations for the logged-in tutor
  * Shows confirmed lessons and pending prenotations
  */
-app.get('/lessons', tutorSession, isAuthenticated, async (req, res) => {
+app.get('/lessons', tutorSession, isAuthenticated, blockGuest, async (req, res) => {
     try {
         const tutorId = req.session.userId;
         const userRole = req.session.role; 
@@ -710,7 +740,7 @@ app.get('/lessons', tutorSession, isAuthenticated, async (req, res) => {
  * GET /staffPanel - Display staff management panel (STAFF role only)
  * Allows viewing and managing all tutors
  */
-app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
+app.get('/staffPanel', tutorSession, isAuthenticated, blockGuest, async (req, res) => {
     try {
         const tutorId = req.session.userId;
         const userRole = req.session.role;
@@ -769,7 +799,7 @@ app.get('/staffPanel', tutorSession, isAuthenticated, async (req, res) => {
  * Evaluations page
  * GET /reports - Display student evaluations and marks tracking
  */
-app.get('/reports', tutorSession, isAuthenticated, async (req, res) => {
+app.get('/reports', tutorSession, isAuthenticated, blockGuest, async (req, res) => {
     try {
         const tutorId = req.session.userId;
 
@@ -819,7 +849,7 @@ app.get('/reports', tutorSession, isAuthenticated, async (req, res) => {
  * Student profile page
  * GET /student/:id - Display a single student's profile page
  */
-app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.get('/student/:id', tutorSession, isAuthenticated, blockGuest, async (req, res) => {
     try {
         const tutorId = req.session.userId;
         const studentId = parseInt(req.params.id, 10);
@@ -1131,7 +1161,7 @@ app.get('/api/auth/status', tutorSession, (req, res) => {
  * Body: { studentId, description, lessonDate, startTime, endTime }
  * Supports multiple date/time formats for flexibility
  */
-app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
+app.post('/api/lessons', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { studentId, description, lessonDate, startTime, endTime } = req.body;
         const tutorId = req.session.userId;
@@ -1231,7 +1261,7 @@ app.post('/api/lessons', tutorSession, isAuthenticated, async (req, res) => {
  * Body: { studentId, description, lessonDate, startTime, endTime }
  * Same date/time format support as creation
  */
-app.put('/api/lessons/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.put('/api/lessons/:id', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
         const { studentId, description, lessonDate, startTime, endTime } = req.body;
@@ -1591,7 +1621,7 @@ app.put('/api/packs/:id/close', tutorSession, isAuthenticated, async (req, res) 
  * Body: { studentId, startTime, endTime, tutorId (optional for STAFF) }
  * STAFF can create prenotations for other tutors
  */
-app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) => {
+app.post('/api/prenotations', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { studentId, startTime, endTime, tutorId: requestedTutorId } = req.body;
         const currentUserId = req.session.userId;
@@ -1683,7 +1713,7 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, async (req, res) =>
  * PUT /api/prenotations/:id
  * Body: { studentId, startTime, endTime, tutorId (optional for STAFF) }
  */
-app.put('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.put('/api/prenotations/:id', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
         const { studentId, startTime, endTime, tutorId: requestedTutorId } = req.body;
@@ -1796,7 +1826,7 @@ app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, r
  * Body: { description, startTime, endTime, tutorIds[] }
  * Can be shared with multiple tutors
  */
-app.post('/api/calendar-notes', tutorSession, isAuthenticated, async (req, res) => {
+app.post('/api/calendar-notes', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { description, startTime, endTime, tutorIds } = req.body;
         const creatorId = req.session.userId;
@@ -1883,7 +1913,7 @@ app.get('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, re
  * Body: { description, startTime, endTime, tutorIds[] }
  * Only the creator can edit the note (authorization check included)
  */
-app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
         const { description, startTime, endTime, tutorIds } = req.body;

@@ -57,8 +57,11 @@ Features:
         <nav class="hidden md:flex items-center gap-6">
           <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.dashboard') %></a>
           <a href="/calendar" class="text-foreground font-medium"><%= t('common.calendar') %></a>
+          <!-- GUEST accounts are restricted server-side to Dashboard/Calendar only - hide dead-end links -->
+          <% if (user && user.role!=='GUEST' ) { %>
           <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.myLessons') %></a>
           <a href="/reports" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('reports.navLabel') %></a>
+          <% } %>
           <!-- STAFF role-based link to Staff Panel -->
           <% if (user && user.role==='STAFF' ) { %>
             <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.staffPanel') %></a>
@@ -67,6 +70,8 @@ Features:
 
         <!-- Action Buttons: Add Prenotation, Add Note, Logout (Desktop only) -->
         <div class="hidden md:flex items-center gap-3">
+          <!-- GUEST accounts can't create anything -->
+          <% if (user && user.role!=='GUEST' ) { %>
           <button id="addLessonBtn"
             class="inline-flex items-center gap-2 bg-lesson text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-lesson/90 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,6 +86,7 @@ Features:
             </svg>
             <%= t('calendar.note') %>
           </button>
+          <% } %>
           <!-- Theme toggle and Logout form button -->
           <div class="hidden md:flex items-center gap-1">
             <%- include('partials/theme-toggle') %>
@@ -147,6 +153,8 @@ Features:
         </svg>
         <%= t('common.calendar') %>
       </a>
+      <!-- GUEST accounts are restricted server-side to Dashboard/Calendar only - hide dead-end links -->
+      <% if (user && user.role!=='GUEST' ) { %>
       <a href="/lessons"
         class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,6 +171,7 @@ Features:
         </svg>
         <%= t('reports.navLabel') %>
       </a>
+      <% } %>
       <!-- STAFF role-based link in mobile menu -->
       <% if (user && user.role==='STAFF' ) { %>
         <a href="/staffPanel"
@@ -179,6 +188,8 @@ Features:
     <!-- Mobile Action Buttons: Add Prenotation, Add Note, Logout -->
     <div class="p-4 border-t border-border mt-auto">
       <div class="flex flex-col gap-2">
+        <!-- GUEST accounts can't create anything -->
+        <% if (user && user.role!=='GUEST' ) { %>
         <button onclick="openLessonModal()"
           class="flex items-center justify-center gap-2 bg-lesson text-white px-4 py-2.5 rounded-lg font-medium">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,6 +204,7 @@ Features:
           </svg>
           <%= t('calendar.addNote') %>
         </button>
+        <% } %>
         <%- include('partials/theme-toggle-mobile') %>
         <form action="/logout" method="POST" class="mt-2">
           <button type="submit"
@@ -320,6 +332,8 @@ Features:
           </div>
 
           <!-- Mobile Quick Actions: Add Prenotation / Add Note, visible directly on the page -->
+          <!-- GUEST accounts can't create anything -->
+          <% if (user && user.role!=='GUEST' ) { %>
           <div class="flex items-center gap-2 px-4 py-2 border-t border-border">
             <button onclick="openLessonModal()"
               class="flex-1 inline-flex items-center justify-center gap-2 bg-lesson text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-lesson/90 transition-colors">
@@ -336,6 +350,7 @@ Features:
               <%= t('calendar.note') %>
             </button>
           </div>
+          <% } %>
 
           <!-- All-Day Notes: notes spanning the full viewed day, shown here instead of
                stretched across the hourly grid below. Hidden when the day has none. -->

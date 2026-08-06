@@ -57,8 +57,11 @@ Features:
         <nav class="hidden md:flex items-center gap-6">
           <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.dashboard') %></a>
           <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.calendar') %></a>
+          <!-- GUEST accounts are restricted server-side to Dashboard/Calendar only - hide dead-end links -->
+          <% if (user && user.role!=='GUEST' ) { %>
           <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.myLessons') %></a>
           <a href="/reports" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('reports.navLabel') %></a>
+          <% } %>
           <!-- STAFF role-based link to Staff Panel -->
           <% if (user && user.role==='STAFF' ) { %>
             <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.staffPanel') %></a>
@@ -130,6 +133,8 @@ Features:
         </svg>
         <%= t('common.calendar') %>
       </a>
+      <!-- GUEST accounts are restricted server-side to Dashboard/Calendar only - hide dead-end links -->
+      <% if (user && user.role!=='GUEST' ) { %>
       <a href="/lessons"
         class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,6 +151,7 @@ Features:
         </svg>
         <%= t('reports.navLabel') %>
       </a>
+      <% } %>
 
       <!-- STAFF role-based link in mobile menu -->
       <% if (user && user.role==='STAFF' ) { %>
@@ -185,6 +191,8 @@ Features:
         <h1 class="text-2xl sm:text-3xl font-bold text-foreground"><%= t('home.welcomeBack') %></h1>
         <p class="text-muted-foreground mt-1"><%= t('home.scheduleForToday') %></p>
       </div>
+      <!-- GUEST accounts can't create anything -->
+      <% if (user && user.role!=='GUEST' ) { %>
       <button id="addLessonBtn"
         class="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,6 +200,7 @@ Features:
         </svg>
         <%= t('home.addLesson') %>
       </button>
+      <% } %>
     </div>
 
     <!-- Dashboard Grid: Calendar/Tasks Card (left) and Lessons Card (right) -->
@@ -276,7 +285,9 @@ Features:
             </svg>
           </div>
           <p class="text-muted-foreground"><%= t('home.noLessonsToday') %></p>
+          <% if (user && user.role!=='GUEST' ) { %>
           <button onclick="openModal()" class="mt-4 text-primary hover:underline text-sm"><%= t('home.addFirstLesson') %></button>
+          <% } %>
         </div>
       </div>
     </div>
@@ -502,6 +513,7 @@ Features:
     window.allStudents = <%- JSON.stringify(students) %>;
     window.translations = <%- JSON.stringify(translations) %>;
     window.lang = <%- JSON.stringify(lang) %>;
+    window.userRole = <%- JSON.stringify(user && user.role) %>;
   </script>
   <script src="/js/theme.js"></script>
   <script src="/js/i18n.js"></script>

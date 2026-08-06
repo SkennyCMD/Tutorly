@@ -86,6 +86,44 @@ const isStaff = async (req, res, next) => {
 };
 
 /**
+ * Middleware to block GUEST-role accounts from a page
+ * GUEST accounts (e.g. a parent/guardian) are restricted to the Dashboard (/home) and
+ * Calendar (/calendar) pages only - every other authenticated page uses this to redirect
+ * them back to /home instead of rendering.
+ * Use: Apply after isAuthenticated on any page route that isn't /home or /calendar.
+ * @param {Object} req - Express request object with session
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns Redirects to /home if the session role is GUEST, otherwise calls next()
+ */
+const blockGuest = (req, res, next) => {
+    if (req.session && req.session.role === 'guest') {
+        return res.redirect('/home');
+    }
+    next();
+};
+
+/**
+ * Middleware to block GUEST-role accounts from a write API endpoint
+ * Same restriction as blockGuest, but returns a JSON 403 instead of redirecting -
+ * appropriate for fetch()-based creation endpoints (lessons, prenotations, calendar
+ * notes) rather than page navigations. This is the actual enforcement boundary - hiding
+ * the "Add" buttons in the UI is only a courtesy, since a GUEST could otherwise still
+ * call the endpoint directly.
+ * Use: Apply after isAuthenticated on any creation (POST) API route GUEST shouldn't reach.
+ * @param {Object} req - Express request object with session
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns 403 JSON if the session role is GUEST, otherwise calls next()
+ */
+const blockGuestApi = (req, res, next) => {
+    if (req.session && req.session.role === 'guest') {
+        return res.status(403).json({ error: 'GUEST accounts cannot perform this action' });
+    }
+    next();
+};
+
+/**
  * Middleware factory to verify specific roles
  * Creates a middleware that checks if user has one of the specified roles
  * Use: Flexible role-based access control (e.g., hasRole('admin', 'STAFF'))
@@ -151,6 +189,8 @@ module.exports = {
     isAuthenticated,   // Verify tutor login
     isAdmin,           // Verify admin login
     isStaff,           // Verify STAFF role (async, queries Java API)
+    blockGuest,        // Block GUEST-role accounts from non-Dashboard/Calendar pages
+    blockGuestApi,     // Block GUEST-role accounts from write API endpoints (JSON 403)
     hasRole,           // Verify specific role(s) - middleware factory
     isGuest,           // Verify user is NOT authenticated
     logAuthentication  // Log authenticated user activity
