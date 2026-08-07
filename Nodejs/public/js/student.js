@@ -160,6 +160,13 @@ function formatTimeForInput(date) {
     return `${h}:${m}`;
 }
 
+// Rounds down to the previous quarter-hour (e.g. 10:56 -> 10:45)
+function roundDownToQuarterHour(date) {
+    const rounded = new Date(date);
+    rounded.setMinutes(Math.floor(rounded.getMinutes() / 15) * 15, 0, 0);
+    return rounded;
+}
+
 // Parses an ISO datetime string (no timezone offset, as sent by the backend) directly
 // into a local Date object, avoiding UTC conversion shifting the displayed time.
 function parseAsLocalDate(dateString) {
@@ -579,7 +586,7 @@ function renderPacks() {
 // STAFF-only: open the "New Package" modal
 function openNewPackModal(defaultStart) {
     if (window.userRole !== 'STAFF') return;
-    const start = defaultStart || new Date();
+    const start = defaultStart || roundDownToQuarterHour(new Date());
     document.getElementById('newPackHours').value = 10;
     document.getElementById('newPackStartDate').value = formatDateForInput(start);
     document.getElementById('newPackStartTime').value = formatTimeForInput(start);
