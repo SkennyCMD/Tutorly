@@ -164,14 +164,18 @@ public class User {
      *
      * One-to-many relationship with CalendarNote entity.
      * Cascade ALL: operations on user cascade to created calendar notes.
-     * Uses @JsonManagedReference to manage bidirectional relationship serialization.
      * Mapped by "creator" field in the CalendarNote entity.
+     *
+     * No @JsonManagedReference here: CalendarNote.creator/tutors already break the
+     * cycle on their own side via @JsonIgnoreProperties, and pairing this with a
+     * (non-existent) @JsonBackReference on CalendarNote would make Jackson fail to
+     * build a deserializer for User - which breaks any endpoint deserializing a type
+     * that references User, e.g. POST /api/students (Student.user).
      *
      * Initialized as empty HashSet to avoid null pointer exceptions.
      * Represents calendar notes this user authored (as opposed to being assigned to).
      */
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL)
-    @JsonManagedReference("tutor-createdCalendarNotes")
     private Set<CalendarNote> createdCalendarNotes = new HashSet<>();
 
     /**
@@ -180,7 +184,8 @@ public class User {
      * Many-to-many relationship with CalendarNote entity.
      * The inverse side of the relationship - CalendarNote owns the association.
      * Mapped by "tutors" field in the CalendarNote entity.
-     * Uses @JsonManagedReference to manage bidirectional relationship serialization.
+     *
+     * No @JsonManagedReference here - see createdCalendarNotes above for why.
      *
      * Initialized as empty HashSet to avoid null pointer exceptions.
      * Represents calendar notes this user is assigned to or involved with,
@@ -188,7 +193,6 @@ public class User {
      * associated with the same calendar note (e.g., group meetings, shared events).
      */
     @ManyToMany(mappedBy = "tutors")
-    @JsonManagedReference("tutor-calendarNotes")
     private Set<CalendarNote> calendarNotes = new HashSet<>();
 
     /**
