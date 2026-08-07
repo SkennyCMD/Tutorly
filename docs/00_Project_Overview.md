@@ -775,14 +775,30 @@ We thank the following users for their fundamental contribution
 
 ## Roadmap
 
-### Sub-Version 1.1 (Next Release)
-- [x] Automation to add a lesson from a prenotation
-- [x] Filter by tutor in calendar
-- [x] Edit a Lesson
+### Version History
 
+| Version | Date | Highlights |
+|---|---|---|
+| **2.0.0** | 2026-08-07 | Evaluations page (`/reports`); Student Profile page (`/student/:id`) with marks chart, hours, and lesson packages (Pack); `GUEST` role fully implemented (backend `Tutor`→`User`/`app_user` rename, Admin Panel guest account management, data scoping); i18n and light/dark theme extended to Student Profile and Evaluations; configurable "Powered by" branding tagline. **⚠️ Breaking DB migration** - see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role). |
+| **1.3.0** | 2026-07-27 | Automatic English/Italian translation (i18n) for Dashboard, Calendar, Lessons, Staff Panel, and Login; weekly-repeat prenotations; "All day" flag and continuous multi-day calendar notes. |
+| **1.2.2** | 2026-07-21 | Light/dark theme toggle across all views; Calendar keeps the viewed day after editing or deleting an event. |
+| **1.2.1** | 2026-07-13 | Fixed a mobile drag-select/scroll conflict and a stale service-worker cache. |
+| **1.2.0** | 2026-07-13 | Calendar: drag-to-select multi-hour time slots, click-to-add slots, mobile quick actions; mini-calendar days link to the Calendar page. |
+| **1.1.0** | 2026-07-09 | Lesson editing from the Dashboard and My Lessons; STAFF-only tutor filter in Calendar; automatic lesson creation from a prenotation. |
+| **1.0.4** | 2026-07-08 | Deduplicated overlapping hours in monthly stats; mini-calendar event dots; lesson IDs shown on history cards. |
+| **1.0.3** | 2026-07-07 | 30-day persisted tutor sessions; scrollable dashboard modal on small screens; newest-first lesson history; Calendar defaults to an 8:00 start. |
+| **1.0.2** | 2026-07-06 | "Remember me for 30 days" login option; calendar wording fix ("Add Prenotation"). |
+| **1.0.1** | 2026-07-02 | Centralized Java backend config; lesson stats now include booked/in-progress lessons. |
+| **1.0.0** | 2026-04-29 | Initial stable release: full three-tier architecture (Spring Boot + PostgreSQL + Node.js/Express/EJS), authentication, Dashboard, Calendar, Lessons, and Staff Panel. |
 
-### Version 2.0
-- [x] Student evaluation system (Evaluations page at `/reports`, backed by the `Test` entity)
+### What's Next
+
+- E2E testing with Playwright
+- Redis session storage for horizontal scaling
+- Real-time notifications with WebSockets
+- Mobile-responsive design improvements
+- Email notifications for lesson confirmations
+- Advanced reporting dashboard
 
 
 ---
