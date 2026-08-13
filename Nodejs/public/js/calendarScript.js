@@ -210,8 +210,10 @@ let currentWeekStart = getWeekStart(getInitialCalendarDate());
 // Current date for mobile day view
 let currentMobileDate = getInitialCalendarDate();
 
-// Tutor filter (STAFF only): 'all' shows every tutor's prenotations, otherwise a tutor ID
-let tutorFilterId = 'all';
+// Tutor filter (STAFF only): 'all' shows every tutor's prenotations, otherwise a tutor ID.
+// Restored from sessionStorage so it survives a page refresh/reload (e.g. after
+// adding or editing a note/prenotation, which redirects back to /calendar).
+let tutorFilterId = sessionStorage.getItem('calendarTutorFilter') || 'all';
 
 // Date/start/end time of the grid slot last clicked or dragged, pending a Note
 // vs Prenotation choice from the slot chooser modal (see handleGridPointerUp)
@@ -498,8 +500,20 @@ function setupTutorFilter() {
   select.innerHTML = `<option value="all">${t('calendar.allTutors')}</option>` +
     tutors.map(tutor => `<option value="${tutor.id}">${tutor.username}</option>`).join('');
 
+  // Restore the previously selected tutor, if it still exists in the list
+  if (tutorFilterId !== 'all' && !tutors.some(tutor => String(tutor.id) === String(tutorFilterId))) {
+    tutorFilterId = 'all';
+    sessionStorage.removeItem('calendarTutorFilter');
+  }
+  select.value = tutorFilterId;
+
   select.addEventListener('change', (e) => {
     tutorFilterId = e.target.value;
+    if (tutorFilterId === 'all') {
+      sessionStorage.removeItem('calendarTutorFilter');
+    } else {
+      sessionStorage.setItem('calendarTutorFilter', tutorFilterId);
+    }
     renderWeekView();
     renderMobileDayView();
   });
