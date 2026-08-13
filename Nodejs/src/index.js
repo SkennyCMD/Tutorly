@@ -2282,7 +2282,8 @@ app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
             username: username,
             password: hashedPassword,
             role: role,
-            status: 'ACTIVE'
+            status: 'ACTIVE',
+            adminId: req.session.adminId
         };
 
         const newTutor = await fetchFromJavaAPI('/api/users', 'POST', tutorData);
@@ -2331,7 +2332,8 @@ app.post('/api/admin/guests', adminSession, isAdmin, async (req, res) => {
             password: hashedPassword,
             mail: mail,
             role: 'GUEST',
-            status: 'ACTIVE'
+            status: 'ACTIVE',
+            adminId: req.session.adminId
         };
 
         const newGuest = await fetchFromJavaAPI('/api/users', 'POST', guestData);

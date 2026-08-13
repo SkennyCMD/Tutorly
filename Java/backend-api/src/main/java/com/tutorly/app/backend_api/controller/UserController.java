@@ -1,6 +1,10 @@
 package com.tutorly.app.backend_api.controller;
 
+import com.tutorly.app.backend_api.entity.Admin;
+import com.tutorly.app.backend_api.entity.AdminCreatesUser;
 import com.tutorly.app.backend_api.entity.User;
+import com.tutorly.app.backend_api.repository.AdminCreatesUserRepository;
+import com.tutorly.app.backend_api.service.AdminService;
 import com.tutorly.app.backend_api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,6 +30,12 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AdminService adminService;
+
+    @Autowired
+    private AdminCreatesUserRepository adminCreatesUserRepository;
 
     /**
      * Get all users
@@ -97,7 +107,9 @@ public class UserController {
     /**
      * Create a new user
      *
-     * Validates that username is unique before creation.
+     * Validates that username is unique before creation. If adminId is provided,
+     * also records an AdminCreatesUser audit entry linking the creating admin to
+     * the new user - see the admin_creates_user table.
      *
      * @param userRequest The user data to create
      * @return Created user with 201 Created status, or 409 Conflict if username already exists
@@ -117,6 +129,13 @@ public class UserController {
         user.setMail(userRequest.getMail());
 
         User savedUser = userService.saveUser(user);
+
+        if (userRequest.getAdminId() != null) {
+            Optional<Admin> adminOpt = adminService.getAdminById(userRequest.getAdminId());
+            adminOpt.ifPresent(admin ->
+                adminCreatesUserRepository.save(new AdminCreatesUser(admin, savedUser)));
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
     }
 
@@ -265,6 +284,7 @@ public class UserController {
         private String role;
         private String status;
         private String mail;
+        private Long adminId;
 
         public String getUsername() {
             return username;
@@ -304,6 +324,14 @@ public class UserController {
 
         public void setMail(String mail) {
             this.mail = mail;
+        }
+
+        public Long getAdminId() {
+            return adminId;
+        }
+
+        public void setAdminId(Long adminId) {
+            this.adminId = adminId;
         }
     }
 
