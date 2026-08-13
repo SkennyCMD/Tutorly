@@ -95,7 +95,13 @@ Features:
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <label for="password" class="block text-sm font-medium text-foreground"><%= t('login.password') %></label>
-                  <a href="#" class="text-sm text-primary hover:text-primary-hover transition-colors"><%= t('login.forgotPassword') %></a>
+                  <div class="relative group">
+                    <a href="#" onclick="return false;" class="text-sm text-primary hover:text-primary-hover transition-colors"><%= t('login.forgotPassword') %></a>
+                    <div class="pointer-events-none absolute right-0 bottom-full mb-2 z-10 hidden whitespace-nowrap rounded-lg border border-border bg-card px-3 py-2 text-xs text-foreground shadow-lg group-hover:block">
+                      <%= t('login.contactAdmin') %>
+                      <div class="absolute right-3 top-full -mt-1 h-2 w-2 rotate-45 border-b border-r border-border bg-card"></div>
+                    </div>
+                  </div>
                 </div>
                 <input type="password" id="password" name="password" placeholder="••••••••"
                   class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
