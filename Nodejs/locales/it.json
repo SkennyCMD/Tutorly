@@ -169,7 +169,6 @@
   "staffPanel": {
     "pageTitle": "Gestione Staff",
     "subtitle": "Scarica report mensili per tutor e studenti",
-    "navLabel": "Staff",
     "allTutorsHours": "Ore di tutti i Tutor",
     "allTutorsHoursDesc": "Ore mensili per ogni tutor",
     "selectMonth": "Seleziona Mese",

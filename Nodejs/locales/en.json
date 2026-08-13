@@ -169,7 +169,6 @@
   "staffPanel": {
     "pageTitle": "Staff Management",
     "subtitle": "Download monthly reports for tutors and students",
-    "navLabel": "Staff",
     "allTutorsHours": "All Tutors Hours",
     "allTutorsHoursDesc": "Monthly hours for every tutor",
     "selectMonth": "Select Month",

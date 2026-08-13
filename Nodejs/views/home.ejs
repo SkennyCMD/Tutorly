@@ -56,7 +56,7 @@ Features:
 
         <!-- Desktop Navigation: Dashboard, Calendar, My Lessons, Staff Panel (STAFF only) -->
         <nav class="hidden md:flex items-center gap-6">
-          <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.dashboard') %></a>
+          <a href="/home" class="text-foreground font-medium"><%= t('common.dashboard') %></a>
           <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.calendar') %></a>
           <!-- GUEST accounts are restricted server-side to Dashboard/Calendar only - hide dead-end links -->
           <% if (user && user.role!=='GUEST' ) { %>
