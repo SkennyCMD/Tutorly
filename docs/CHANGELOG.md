@@ -9,6 +9,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- E2E testing with Playwright
+- Redis session storage for horizontal scaling
+- Real-time notifications with WebSockets
+- Mobile-responsive design improvements
+- Email notifications for lesson confirmations
+- Advanced reporting dashboard
+
+---
+
+## [2.0.3] - 2026-08-13
+
+### Fixed
+- **Calendar**: the STAFF-only tutor filter reset back to "All tutors" on every page reload, including the redirects that follow adding or editing a note/prenotation - meaning it had to be re-selected after every single change. Now persisted via `sessionStorage`, with a fallback to "all" if the previously selected tutor no longer exists.
+- **Navigation**: the Dashboard and Evaluations pages didn't highlight their own nav link when active (stayed styled like an unvisited link) - Calendar and My Lessons already did. Fixed to use the same active style everywhere.
+- **Navigation**: the Staff Panel page showed just "Staff" for its own active nav link instead of "Staff Panel" / "Pannello Staff" - it was using a separate, never-translated `staffPanel.navLabel` key instead of the existing, correctly-translated `common.staffPanel` key already used everywhere else. Removed the now-unused key from both locale files.
+- **Admin Panel**: creating a new tutor or `GUEST` account never recorded an `admin_creates_user` row - the join table (and its entity/repository) existed but nothing in the codebase ever wrote to it. `POST /api/users` now accepts an optional `adminId`; if present, an `AdminCreatesUser` audit record is created. The Node.js Admin Panel now sends the logged-in admin's session ID on both tutor and GUEST creation. See [01_Java_Backend_API.md - Users](01_Java_Backend_API.md#users).
+
+### Added
+- **Login**: hovering "Forgot password?" now shows a tooltip pointing users to contact an administrator, since the link never had a real reset flow behind it (`href="#"`). The link no longer navigates anywhere on click.
+
+---
+
+## [2.0.2] - 2026-08-07
+
+### Fixed
+- Creating a new student failed with a generic `500 Internal Server Error` from every entry point (the "Add Student" form and the Java API directly). Root cause: `User.createdCalendarNotes` and `User.calendarNotes` carried an unpaired Jackson `@JsonManagedReference` - `CalendarNote` never had the matching `@JsonBackReference` (it already prevents circular serialization its own way, via `@JsonIgnoreProperties`), so Jackson refused to build a deserializer for the `User` type. This only started failing once `Student` gained a `user` field for the GUEST-account link (2.0.0), since `POST /api/students` now has to resolve a `User` deserializer as part of `Student`'s. Fixed by removing the two orphaned annotations from `User.java` - no behavioral change on serialization, `GET /api/students` and friends were unaffected.
+
+---
+
+## [2.0.1] - 2026-08-07
+
+### Fixed
+- **Student Profile**: the "New Package" modal defaulted its start time to the exact current time (e.g. `10:56`) instead of following the app's 15-minute slot convention used everywhere else. Now rounds down to the previous quarter-hour (`10:56` → `10:45`) via a new `roundDownToQuarterHour()` helper. Only applies to the "now" fallback - opening the modal from an unassigned lesson still pre-fills that lesson's real start time unchanged.
+
+---
+
+## [2.0.0] - 2026-08-07
+
 ### Added
 
 **Internationalization (i18n)**
@@ -87,14 +126,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - `Database/POSTGRE_DB_CONFIG.TXT`: redundant near-duplicate of `Database/init.sql`'s schema (with plain-text passwords and no longer up to date).
-
-### Planned
-- E2E testing with Playwright
-- Redis session storage for horizontal scaling
-- Real-time notifications with WebSockets
-- Mobile-responsive design improvements
-- Email notifications for lesson confirmations
-- Advanced reporting dashboard
 
 ---
 
@@ -212,8 +243,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Known Issues
 
-### Current Issues (v1.3.0)
-- [ ] No automated tests for frontend routes (planned for v1.4.0)
+### Current Issues (v2.0.3)
+- [ ] No automated tests for frontend routes
 - [ ] Self-signed certificates show browser warnings (expected in development)
 - [ ] Large Excel exports may timeout (optimization planned)
 
@@ -243,4 +274,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: August 6, 2026
+**Last Updated**: August 13, 2026

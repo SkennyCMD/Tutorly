@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: August 6, 2026  
+**Last Updated**: August 13, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -995,6 +995,8 @@ Entity `User` (table `app_user`, not `user` - `user` is a reserved SQL keyword i
 ```
 
 `mail` (optional `String`, no format check unlike `Admin.mail`) can be set on creation (`POST /users`) or updated later via `PUT /{id}` or `PATCH /{id}/profile`.
+
+`POST /users` also accepts an optional `adminId` (the creating admin's ID) - if present, an `AdminCreatesUser` audit record is created linking that admin to the new user (see [Data Model](#data-model) above). The Node.js Admin Panel always sends the logged-in admin's session ID; any other caller that omits it simply skips the audit record, same behavior as before this field existed.
 
 **`PATCH /{id}/profile`** (`UserController.ProfileUpdate`: `username`, `mail`, `password`, all optional) updates only the fields present in the request body - in particular, `password` is left untouched unless explicitly provided, unlike the raw `PUT /{id}` endpoint (which deserializes a full `User` and would null out the password if the request body omits it). Returns `409 Conflict` if the new `username` is already taken by a different user. The password is expected to already be bcrypt-hashed by the caller, same convention as `POST /users` - the Node.js Admin Panel hashes it before forwarding (see [03_Nodejs_Frontend.md - Admin Panel - Guest Accounts](03_Nodejs_Frontend.md#admin-panel---guest-accounts)).
 

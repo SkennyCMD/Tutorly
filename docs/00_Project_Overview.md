@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: August 6, 2026  
+**Last Updated**: August 13, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -779,6 +779,9 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.0.3** | 2026-08-13 | Calendar tutor filter now persists across refreshes; Dashboard/Evaluations nav links and the Staff Panel label now highlight/read correctly; admin-created tutor/GUEST accounts are now recorded in `admin_creates_user`; "Forgot password?" shows a contact-an-administrator tooltip. |
+| **2.0.2** | 2026-08-07 | Fixed a `500` error on every student creation, caused by an unpaired Jackson reference on the `User` entity exposed by the 2.0.0 GUEST-role changes. |
+| **2.0.1** | 2026-08-07 | The "New Package" modal's default start time now rounds down to the previous quarter-hour instead of using the exact current time. |
 | **2.0.0** | 2026-08-07 | Evaluations page (`/reports`); Student Profile page (`/student/:id`) with marks chart, hours, and lesson packages (Pack); `GUEST` role fully implemented (backend `Tutor`→`User`/`app_user` rename, Admin Panel guest account management, data scoping); i18n and light/dark theme extended to Student Profile and Evaluations; configurable "Powered by" branding tagline. **⚠️ Breaking DB migration** - see [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role). |
 | **1.3.0** | 2026-07-27 | Automatic English/Italian translation (i18n) for Dashboard, Calendar, Lessons, Staff Panel, and Login; weekly-repeat prenotations; "All day" flag and continuous multi-day calendar notes. |
 | **1.2.2** | 2026-07-21 | Light/dark theme toggle across all views; Calendar keeps the viewed day after editing or deleting an event. |
