@@ -9,9 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- The "Add Lesson" modal (Dashboard, My Lessons) and the "Add Lesson"/"Add Note" modals opened from Calendar's header buttons (as opposed to clicking/dragging a grid slot, which keeps prefilling the clicked time) now default their date/time fields to today and the current time rounded down to the previous quarter-hour (e.g. `10:56` → `10:45`), matching the `step="900"` 15-minute increment every time input in the app already enforced. Previously these fields were either left blank or kept whatever value was last in them from an earlier session.
-
 ### Planned
 - E2E testing with Playwright
 - Redis session storage for horizontal scaling
@@ -19,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mobile-responsive design improvements
 - Email notifications for lesson confirmations
 - Advanced reporting dashboard
+
+---
+
+## [2.0.4] - 2026-08-20
+
+### Added
+- The "Add Lesson" modal (Dashboard, My Lessons) and the "Add Lesson"/"Add Note" modals opened from Calendar's header buttons (as opposed to clicking/dragging a grid slot, which keeps prefilling the clicked time) now default their date/time fields to today and the current time rounded down to the previous quarter-hour (e.g. `10:56` → `10:45`), matching the `step="900"` 15-minute increment every time input in the app already enforced. Previously these fields were either left blank or kept whatever value was last in them from an earlier session.
 
 ---
 
@@ -246,7 +250,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Known Issues
 
-### Current Issues (v2.0.3)
+### Current Issues (v2.0.4)
 - [ ] No automated tests for frontend routes
 - [ ] Self-signed certificates show browser warnings (expected in development)
 - [ ] Large Excel exports may timeout (optimization planned)
@@ -277,4 +281,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: August 13, 2026
+**Last Updated**: August 20, 2026
