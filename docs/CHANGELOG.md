@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- The "Add Lesson" modal (Dashboard, My Lessons) and the "Add Lesson"/"Add Note" modals opened from Calendar's header buttons (as opposed to clicking/dragging a grid slot, which keeps prefilling the clicked time) now default their date/time fields to today and the current time rounded down to the previous quarter-hour (e.g. `10:56` → `10:45`), matching the `step="900"` 15-minute increment every time input in the app already enforced. Previously these fields were either left blank or kept whatever value was last in them from an earlier session.
+
 ### Planned
 - E2E testing with Playwright
 - Redis session storage for horizontal scaling

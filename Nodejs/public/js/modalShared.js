@@ -44,6 +44,35 @@ let sourcePrenotationId = null;
 let editingLessonId = null;
 
 
+// Time Helpers
+
+
+/**
+ * Format a Date object as a HH:mm string for a <input type="time"> value.
+ *
+ * @param {Date} date - Date to format
+ * @returns {string} Time string in HH:mm format
+ */
+function formatTimeForInput(date) {
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+/**
+ * Rounds down to the previous quarter-hour (e.g. 10:56 -> 10:45), matching
+ * the 15-minute step every time input in the app uses.
+ *
+ * @param {Date} date - Date to round down
+ * @returns {Date} A new Date rounded down to the nearest quarter-hour
+ */
+function roundDownToQuarterHour(date) {
+  const rounded = new Date(date);
+  rounded.setMinutes(Math.floor(rounded.getMinutes() / 15) * 15, 0, 0);
+  return rounded;
+}
+
+
 // Data Loading
 
 
@@ -168,6 +197,17 @@ function openModal() {
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     dateInput.value = today;
+  }
+
+  // Default the start/end time to the previous quarter-hour (e.g. 10:56 -> 10:45),
+  // matching the 15-minute step every time input in the app uses
+  const startTimeInput = document.getElementById('startTime');
+  const endTimeInput = document.getElementById('endTime');
+  if (startTimeInput && endTimeInput) {
+    const defaultStart = roundDownToQuarterHour(new Date());
+    const defaultEnd = new Date(defaultStart.getTime() + 60 * 60 * 1000);
+    startTimeInput.value = formatTimeForInput(defaultStart);
+    endTimeInput.value = formatTimeForInput(defaultEnd);
   }
 
   // Reset student filter to show all

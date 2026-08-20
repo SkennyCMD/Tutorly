@@ -1477,7 +1477,7 @@ function chooseSlotOption(type) {
  *
  * @param {{date: string, startTime: string, endTime: string}} [prefill] - Optional
  *   date/time to prefill the form with (e.g. from clicking a calendar time slot).
- *   When omitted, the date/time fields keep whatever setDefaultDates() last set.
+ *   When omitted, defaults to today and the previous quarter-hour.
  */
 function openLessonModal(prefill) {
   document.getElementById('addLessonModal').classList.add('open');
@@ -1499,6 +1499,14 @@ function openLessonModal(prefill) {
     document.getElementById('lessonDate').value = prefill.date;
     document.getElementById('lessonStartTime').value = prefill.startTime;
     document.getElementById('lessonEndTime').value = prefill.endTime;
+  } else {
+    // Not opened from a grid slot (e.g. the "+ Add Lesson" header button) -
+    // default to today and the previous quarter-hour, +1 hour for the end time
+    const defaultStart = roundDownToQuarterHour(new Date());
+    const defaultEnd = new Date(defaultStart.getTime() + 60 * 60 * 1000);
+    document.getElementById('lessonDate').value = getTodayString();
+    document.getElementById('lessonStartTime').value = formatTimeForInput(defaultStart);
+    document.getElementById('lessonEndTime').value = formatTimeForInput(defaultEnd);
   }
 
   // Auto-assign to current user
@@ -1578,7 +1586,7 @@ function setupLessonRepeatToggle() {
  *
  * @param {{date: string, startTime: string, endTime: string}} [prefill] - Optional
  *   date/time to prefill the form with (e.g. from clicking a calendar time slot).
- *   When omitted, the date/time fields keep whatever setDefaultDates() last set.
+ *   When omitted, defaults to today and the previous quarter-hour.
  */
 function openNoteModal(prefill) {
   document.getElementById('addNoteModal').classList.add('open');
@@ -1593,6 +1601,16 @@ function openNoteModal(prefill) {
     document.getElementById('noteEndDate').value = prefill.date;
     document.getElementById('noteStartTime').value = prefill.startTime;
     document.getElementById('noteEndTime').value = prefill.endTime;
+  } else {
+    // Not opened from a grid slot (e.g. the "+ Add Note" header button) -
+    // default to today and the previous quarter-hour, +1 hour for the end time
+    const defaultStart = roundDownToQuarterHour(new Date());
+    const defaultEnd = new Date(defaultStart.getTime() + 60 * 60 * 1000);
+    const today = getTodayString();
+    document.getElementById('noteStartDate').value = today;
+    document.getElementById('noteEndDate').value = today;
+    document.getElementById('noteStartTime').value = formatTimeForInput(defaultStart);
+    document.getElementById('noteEndTime').value = formatTimeForInput(defaultEnd);
   }
 
   // Auto-assign to current user
@@ -2702,4 +2720,17 @@ function formatTimeForInput(date) {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+/**
+ * Rounds down to the previous quarter-hour (e.g. 10:56 -> 10:45), matching
+ * the 15-minute step every time input in the app uses.
+ *
+ * @param {Date} date - Date to round down
+ * @returns {Date} A new Date rounded down to the nearest quarter-hour
+ */
+function roundDownToQuarterHour(date) {
+  const rounded = new Date(date);
+  rounded.setMinutes(Math.floor(rounded.getMinutes() / 15) * 15, 0, 0);
+  return rounded;
 }

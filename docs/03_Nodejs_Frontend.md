@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: August 6, 2026  
+**Last Updated**: August 13, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -1413,7 +1413,7 @@ Below the "Hours per Month" card, a "Packs" card lists the student's still-activ
 - **Once full** (`usedHours >= hours`), the card turns red (border + tinted background + red progress bar) and gains a **"Close Package"** button, which calls `PUT /api/packs/:id/close` (a thin proxy to the Java endpoint of the same shape) and reloads the page on success.
 - **If the pack is full, still open, and the student has hours outside any pack** (`unassignedHours > 0` - lessons booked once the pack ran out, with no other pack available to absorb them), the card also shows that hour count and a **"+ New Package"** button. Clicking it opens the New Package modal pre-filled with the *first* such unassigned lesson's date/time (`firstUnassignedLessonStart`, both computed server-side by `PackService`) instead of "now" - so the new pack, once created, retroactively absorbs those lessons (see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs) for `assignUnassignedLessonsSince`).
 
-**New Package modal:** Hours, Start Date, and Start Time fields. Hours defaults to `10`; Start Date/Time default to right now (or, per above, to the first unassigned lesson's date/time when opened from a full pack's "+ New Package" button). Submits via `POST /api/packs` with `{ studentId, hours, startDate, startTime }`; the Node.js route combines `startDate`+`startTime` into a single ISO datetime string before forwarding to the Java API, same convention as prenotations elsewhere in the app. The header's own "+ New Package" button (next to the card title) opens the same modal with plain "now" defaults.
+**New Package modal:** Hours, Start Date, and Start Time fields. Hours defaults to `10`; Start Date/Time default to today and the current time rounded down to the previous quarter-hour (e.g. `10:56` → `10:45`, via `roundDownToQuarterHour()` - matches the `step="900"` 15-minute increment every time input in the app uses), or, per above, to the first unassigned lesson's date/time when opened from a full pack's "+ New Package" button. Submits via `POST /api/packs` with `{ studentId, hours, startDate, startTime }`; the Node.js route combines `startDate`+`startTime` into a single ISO datetime string before forwarding to the Java API, same convention as prenotations elsewhere in the app. The header's own "+ New Package" button (next to the card title) opens the same modal with the same rounded-down-to-now defaults.
 
 All of the click handlers above (`close-pack-btn`, `new-pack-from-unassigned-btn`, the header button, and the form submit) are gated by `window.userRole === 'STAFF'`, same as the Prenotations card. Now that GUEST accounts can reach this page, this check is the *actual* enforcement, not just defense-in-depth: `renderPacks()` doesn't even render the action buttons for a non-STAFF viewer (only the read-only progress bar/hours), and the header "+ New Package" button isn't rendered by the EJS template at all unless `user.role === 'STAFF'`. Server-side, `blockGuestApi` on `POST /api/packs` and `PUT /api/packs/:id/close` backs this up regardless of what the client does.
 
