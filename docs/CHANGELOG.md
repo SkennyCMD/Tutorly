@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.5] - 2026-09-01
+
+### Fixed
+- **Staff Panel**: the header's Tutorly logo linked to a static `home.html` file (a leftover from before the page was wired up to real routes) instead of `/home`, matching every other page's logo link.
+
+### Removed
+- **Login**: the dead "Become a Tutor" nav link, which pointed to `href="#"` with no actual signup flow behind it.
+
+---
+
 ## [2.0.4] - 2026-08-20
 
 ### Added
@@ -250,7 +260,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Known Issues
 
-### Current Issues (v2.0.4)
+### Current Issues (v2.0.5)
 - [ ] No automated tests for frontend routes
 - [ ] Self-signed certificates show browser warnings (expected in development)
 - [ ] Large Excel exports may timeout (optimization planned)
@@ -281,4 +291,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: August 20, 2026
+**Last Updated**: September 1, 2026

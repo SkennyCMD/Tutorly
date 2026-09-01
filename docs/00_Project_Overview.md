@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: August 20, 2026  
+**Last Updated**: September 1, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -779,6 +779,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.0.5** | 2026-09-01 | Staff Panel's logo now links to `/home` instead of a static `home.html` leftover; removed the dead "Become a Tutor" link from the login page. |
 | **2.0.4** | 2026-08-20 | The "Add Lesson"/"Add Note" modals on Dashboard, My Lessons, and Calendar (header buttons) now default their date/time to today and the previous quarter-hour, instead of a blank or stale value. |
 | **2.0.3** | 2026-08-13 | Calendar tutor filter now persists across refreshes; Dashboard/Evaluations nav links and the Staff Panel label now highlight/read correctly; admin-created tutor/GUEST accounts are now recorded in `admin_creates_user`; "Forgot password?" shows a contact-an-administrator tooltip. |
 | **2.0.2** | 2026-08-07 | Fixed a `500` error on every student creation, caused by an unpaired Jackson reference on the `User` entity exposed by the 2.0.0 GUEST-role changes. |
