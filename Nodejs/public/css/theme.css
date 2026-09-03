@@ -28,6 +28,65 @@
     --color-lesson: 37 99 235;
     --color-note: 217 119 6;
 
+    /* Per-tutor palette for STAFF's Calendar view (other tutors' prenotations -
+       the logged-in tutor's own always stay --color-lesson). Cycled by tutor ID,
+       see getTutorColorVar() in calendarScript.js. 12 well-separated hues
+       (~24 degrees apart, excluding only --color-note's amber/orange and
+       --color-destructive's red - blue is included, since the logged-in
+       tutor's own events never draw from this palette) x 4 lightness/
+       saturation tiers = 48 colors 1-12 deep, 13-24 rich, 25-36 bright,
+       37-48 pale, so any run of 12 consecutive tutor colors is a full,
+       clearly distinct hue sweep. Regenerate with scripts/gen-tutor-palette.js
+       if the count needs to grow further. */
+    --color-tutor-1: 182 168 12;
+    --color-tutor-2: 128 182 12;
+    --color-tutor-3: 59 182 12;
+    --color-tutor-4: 12 182 33;
+    --color-tutor-5: 12 182 102;
+    --color-tutor-6: 12 182 170;
+    --color-tutor-7: 12 125 182;
+    --color-tutor-8: 12 57 182;
+    --color-tutor-9: 35 12 182;
+    --color-tutor-10: 104 12 182;
+    --color-tutor-11: 173 12 182;
+    --color-tutor-12: 182 12 123;
+    --color-tutor-13: 238 242 13;
+    --color-tutor-14: 146 242 13;
+    --color-tutor-15: 53 242 13;
+    --color-tutor-16: 13 242 65;
+    --color-tutor-17: 13 242 157;
+    --color-tutor-18: 13 235 242;
+    --color-tutor-19: 13 143 242;
+    --color-tutor-20: 13 50 242;
+    --color-tutor-21: 68 13 242;
+    --color-tutor-22: 160 13 242;
+    --color-tutor-23: 242 13 232;
+    --color-tutor-24: 242 13 139;
+    --color-tutor-25: 221 240 76;
+    --color-tutor-26: 155 240 76;
+    --color-tutor-27: 88 240 76;
+    --color-tutor-28: 76 240 130;
+    --color-tutor-29: 76 240 196;
+    --color-tutor-30: 76 219 240;
+    --color-tutor-31: 76 152 240;
+    --color-tutor-32: 76 86 240;
+    --color-tutor-33: 132 76 240;
+    --color-tutor-34: 198 76 240;
+    --color-tutor-35: 240 76 216;
+    --color-tutor-36: 240 76 150;
+    --color-tutor-37: 217 235 152;
+    --color-tutor-38: 184 235 152;
+    --color-tutor-39: 152 235 154;
+    --color-tutor-40: 152 235 188;
+    --color-tutor-41: 152 235 221;
+    --color-tutor-42: 152 216 235;
+    --color-tutor-43: 152 183 235;
+    --color-tutor-44: 155 152 235;
+    --color-tutor-45: 189 152 235;
+    --color-tutor-46: 222 152 235;
+    --color-tutor-47: 235 152 215;
+    --color-tutor-48: 235 152 181;
+
     color-scheme: light;
 }
 
@@ -48,6 +107,56 @@
     --color-destructive: 239 68 68;
     --color-lesson: 59 130 246;
     --color-note: 245 158 11;
+
+    /* Per-tutor palette for STAFF's Calendar view - see the light theme above */
+    --color-tutor-1: 230 213 25;
+    --color-tutor-2: 164 230 25;
+    --color-tutor-3: 82 230 25;
+    --color-tutor-4: 25 230 51;
+    --color-tutor-5: 25 230 133;
+    --color-tutor-6: 25 230 215;
+    --color-tutor-7: 25 161 230;
+    --color-tutor-8: 25 79 230;
+    --color-tutor-9: 54 25 230;
+    --color-tutor-10: 136 25 230;
+    --color-tutor-11: 218 25 230;
+    --color-tutor-12: 230 25 159;
+    --color-tutor-13: 237 240 66;
+    --color-tutor-14: 167 240 66;
+    --color-tutor-15: 97 240 66;
+    --color-tutor-16: 66 240 105;
+    --color-tutor-17: 66 240 175;
+    --color-tutor-18: 66 234 240;
+    --color-tutor-19: 66 164 240;
+    --color-tutor-20: 66 95 240;
+    --color-tutor-21: 108 66 240;
+    --color-tutor-22: 178 66 240;
+    --color-tutor-23: 240 66 232;
+    --color-tutor-24: 240 66 162;
+    --color-tutor-25: 224 238 119;
+    --color-tutor-26: 176 238 119;
+    --color-tutor-27: 128 238 119;
+    --color-tutor-28: 119 238 158;
+    --color-tutor-29: 119 238 206;
+    --color-tutor-30: 119 222 238;
+    --color-tutor-31: 119 174 238;
+    --color-tutor-32: 119 126 238;
+    --color-tutor-33: 159 119 238;
+    --color-tutor-34: 208 119 238;
+    --color-tutor-35: 238 119 221;
+    --color-tutor-36: 238 119 173;
+    --color-tutor-37: 225 238 181;
+    --color-tutor-38: 202 238 181;
+    --color-tutor-39: 181 238 182;
+    --color-tutor-40: 181 238 205;
+    --color-tutor-41: 181 238 228;
+    --color-tutor-42: 181 224 238;
+    --color-tutor-43: 181 201 238;
+    --color-tutor-44: 183 181 238;
+    --color-tutor-45: 206 181 238;
+    --color-tutor-46: 229 181 238;
+    --color-tutor-47: 238 181 224;
+    --color-tutor-48: 238 181 201;
 
     color-scheme: dark;
 }

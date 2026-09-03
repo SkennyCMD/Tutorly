@@ -802,6 +802,8 @@ function renderEventsOnGrid() {
         const isStaff = window.serverData?.userRole === 'STAFF';
         const showTutor = isStaff && event.tutorId !== currentUserId;
 
+        applyTutorColor(eventEl, event.tutorId);
+
         eventEl.innerHTML = `
           <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
           <div class="opacity-75 truncate">${event.classType} · ${event.startTime}</div>
@@ -992,6 +994,8 @@ function renderMobileEvents() {
         const currentUserId = window.serverData?.currentUserId;
         const isStaff = window.serverData?.userRole === 'STAFF';
         const showTutor = isStaff && event.tutorId !== currentUserId;
+
+        applyTutorColor(eventEl, event.tutorId);
 
         eventEl.innerHTML = `
           <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
@@ -2733,4 +2737,51 @@ function roundDownToQuarterHour(date) {
   const rounded = new Date(date);
   rounded.setMinutes(Math.floor(rounded.getMinutes() / 15) * 15, 0, 0);
   return rounded;
+}
+
+// Per-tutor color palette (STAFF Calendar view only) - see theme.css. The
+// logged-in tutor's own prenotations always keep the default --color-lesson
+// blue (event-lesson class, untouched); this is only for other tutors'.
+const TUTOR_COLOR_VARS = [
+  '--color-tutor-1', '--color-tutor-2', '--color-tutor-3', '--color-tutor-4', '--color-tutor-5', '--color-tutor-6',
+  '--color-tutor-7', '--color-tutor-8', '--color-tutor-9', '--color-tutor-10', '--color-tutor-11', '--color-tutor-12',
+  '--color-tutor-13', '--color-tutor-14', '--color-tutor-15', '--color-tutor-16', '--color-tutor-17', '--color-tutor-18',
+  '--color-tutor-19', '--color-tutor-20', '--color-tutor-21', '--color-tutor-22', '--color-tutor-23', '--color-tutor-24',
+  '--color-tutor-25', '--color-tutor-26', '--color-tutor-27', '--color-tutor-28', '--color-tutor-29', '--color-tutor-30',
+  '--color-tutor-31', '--color-tutor-32', '--color-tutor-33', '--color-tutor-34', '--color-tutor-35', '--color-tutor-36',
+  '--color-tutor-37', '--color-tutor-38', '--color-tutor-39', '--color-tutor-40', '--color-tutor-41', '--color-tutor-42',
+  '--color-tutor-43', '--color-tutor-44', '--color-tutor-45', '--color-tutor-46', '--color-tutor-47', '--color-tutor-48'
+];
+
+/**
+ * Get a deterministic, theme-aware CSS color variable for a tutor, so the
+ * same tutor always gets the same color across renders/reloads.
+ *
+ * @param {number} tutorId - Tutor's user ID
+ * @returns {string} CSS custom property name (e.g. '--color-tutor-3')
+ */
+function getTutorColorVar(tutorId) {
+  const index = Math.abs(Number(tutorId)) % TUTOR_COLOR_VARS.length;
+  return TUTOR_COLOR_VARS[index];
+}
+
+/**
+ * Apply a tutor's palette color to a lesson/prenotation event box's
+ * background/border, unless it belongs to the currently logged-in tutor
+ * (who always stays blue). Text color is left alone - see .event-lesson in
+ * calendar.css, which always uses --color-foreground for readability.
+ *
+ * @param {HTMLElement} eventEl - The rendered event box
+ * @param {number} tutorId - The event's tutor ID
+ */
+function applyTutorColor(eventEl, tutorId) {
+  const currentUserId = window.serverData?.currentUserId;
+  const isStaff = window.serverData?.userRole === 'STAFF';
+  if (!isStaff || tutorId === currentUserId) return;
+
+  const colorVar = getTutorColorVar(tutorId);
+  eventEl.style.backgroundColor = `rgb(var(${colorVar}) / 0.2)`;
+  eventEl.style.borderLeftColor = `rgb(var(${colorVar}))`;
+  // Text stays --color-foreground (black in light theme, white in dark) for
+  // readability - only the background/border carry the tutor's color.
 }

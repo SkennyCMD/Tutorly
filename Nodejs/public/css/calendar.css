@@ -54,7 +54,13 @@ body {
     .event-lesson {
       background-color: rgb(var(--color-lesson) / 0.2);
       border-left: 3px solid rgb(var(--color-lesson));
-      color: rgb(var(--color-lesson));
+      color: rgb(var(--color-foreground));
+    }
+    /* Softer, less stark white than --color-foreground (250 250 250) for
+       lesson/prenotation text specifically, easier on the eyes against the
+       tinted event backgrounds in dark theme. */
+    :root[data-theme="dark"] .event-lesson {
+      color: rgb(220 220 224);
     }
     .event-note {
       background-color: rgb(var(--color-note) / 0.2);
