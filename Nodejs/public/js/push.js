@@ -4,14 +4,17 @@
  *
  *
  * Client-side subscribe/unsubscribe flow for the bell toggle(s) in
- * partials/push-toggle.ejs (desktop) and partials/push-toggle-mobile.ejs
- * (mobile menu), both included on home.ejs only (see push-toggle.ejs for
- * why one page covers both the GUEST and tutor notification scenarios).
+ * partials/push-toggle-mobile.ejs, included (via settings-menu.ejs and
+ * settings-menu-mobile.ejs) in the settings gear menu on every page that has
+ * one - home, calendar, lessons, reports, staffPanel, student. Covers both
+ * the GUEST scenario (a lesson booked for their student) and the tutor
+ * scenario (a prenotation/note assigned to them), from wherever the user
+ * happens to be in the app.
  *
  * Subscription state is per-browser, not per-button, so it's reflected via
  * [data-push-subscribed] on <html> (same pattern theme.js uses for
- * [data-theme]) - this keeps the desktop and mobile toggle in sync
- * automatically since both read the same shared CSS state.
+ * [data-theme]) - this keeps every toggle instance on the page in sync
+ * automatically since they all read the same shared CSS state.
  *
  * - On load: checks the current subscription state (no permission prompt -
  *   only reads it) to set the toggles' initial icon, then unhides them.

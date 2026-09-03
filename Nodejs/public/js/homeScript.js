@@ -434,6 +434,9 @@ function setupEventListeners() {
   closeMenu.addEventListener('click', closeMenuFn);
   menuOverlay.addEventListener('click', closeMenuFn);
 
+  // Settings menu (gear icon: theme/notifications/logout) open/close wiring
+  // lives in settingsMenu.js - shared across every page that has it.
+
   // Calendar navigation - previous month
   document.getElementById('prevMonth').addEventListener('click', () => {
     calendarDate.setMonth(calendarDate.getMonth() - 1);

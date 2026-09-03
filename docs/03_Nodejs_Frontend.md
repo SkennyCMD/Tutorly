@@ -1235,6 +1235,8 @@ Client-side JavaScript is organized by page/feature:
 | `modalShared.js` | Shared modal utilities (open, close, populate) |
 | `theme.js` | Light/dark theme toggle and OS-preference syncing |
 | `i18n.js` | Client-side `t()` translation helper, reading from `window.translations` |
+| `settingsMenu.js` | Open/close wiring for the gear-icon Settings Menu - see [Settings Menu](#settings-menu-theme-notifications-logout) |
+| `push.js` | Web Push subscribe/unsubscribe flow for the bell toggle - see [Web Push Notifications](#web-push-notifications) |
 | `404.js` | Error page interactions |
 
 ### Common Patterns
@@ -1322,6 +1324,42 @@ Every page supports a light and dark theme, toggled by a sun/moon icon button in
 3. The active theme is reflected as `data-theme="light"|"dark"` on `<html>`, which both the CSS variables and Tailwind's generated classes key off of.
 
 To add theming to a new page, include `partials/theme-init.ejs` (early in `<head>`, before the Tailwind CDN `<script>` tag), link `css/theme.css`, then include `partials/theme-config.ejs` (right after the Tailwind CDN `<script>` tag, so it can extend `tailwind.config`), load `js/theme.js`, and drop in `partials/theme-toggle.ejs` (and `theme-toggle-mobile.ejs` if the page has a mobile menu).
+
+`theme-toggle.ejs` used standalone like this is now only found on the pre-auth pages (`login.ejs`, `privacy.ejs`, `cookies.ejs`) and the separate admin panel (`admin.ejs`, `adminLogin.ejs`). The six main app pages instead nest `theme-toggle-mobile.ejs` inside the gear-icon [Settings Menu](#settings-menu-theme-notifications-logout).
+
+---
+
+## Settings Menu (Theme, Notifications, Logout)
+
+The six main app pages (`home.ejs`, `calendar.ejs`, `lessons.ejs`, `reports.ejs`, `staffPanel.ejs`, `student.ejs`) consolidate the theme toggle, the push-notification toggle (see [Web Push Notifications](#web-push-notifications)), and logout into a single gear-icon menu, replacing what used to be three separate items in the header and mobile menu.
+
+**Files:**
+- `views/partials/settings-menu.ejs` - Desktop header: a gear button that opens an absolutely-positioned dropdown (`#settingsMenuBtn` / `#settingsMenu`), closed on an outside click - the same button+panel+outside-click-close pattern as the Calendar's tutor filter dropdown (`calendarScript.js`). Reuses `theme-toggle-mobile.ejs` and `push-toggle-mobile.ejs`'s existing full-width "row" markup as the dropdown's menu items instead of duplicating their icons/markup, followed by a divider and a logout row.
+- `views/partials/settings-menu-mobile.ejs` - Mobile sidebar: a full-width gear row (`#settingsMenuBtnMobile`) that expands an inline accordion (`#settingsMenuMobile`) with the same three rows - an accordion rather than a popup, since the sidebar already scrolls in its own flow.
+- `public/js/settingsMenu.js` - Shared open/close wiring for both variants, loaded on all six pages right after `i18n.js`. The mobile accordion is also auto-collapsed whenever the mobile sidebar itself closes (`#closeMenu` / `#menuOverlay`), so it starts closed again the next time it's opened.
+
+**Not used here:** `admin.ejs` / `adminLogin.ejs` is a structurally separate admin area (its own `/adminLogout` route and session, no linked `app_user` row and therefore no push subscriptions), and the pre-auth pages `login.ejs` / `privacy.ejs` / `cookies.ejs` have no logout to consolidate - all of these keep the plain, standalone `theme-toggle.ejs` icon button instead.
+
+---
+
+## Web Push Notifications
+
+Standard Web Push (a VAPID keypair), not Firebase Cloud Messaging. Notifies a `GUEST` account when a lesson is booked for their linked student, and notifies a tutor (`STAFF` or `GENERIC`) when a prenotation or calendar note is assigned to them. Available from every page that has the [Settings Menu](#settings-menu-theme-notifications-logout) - the bell toggle works the same wherever the user happens to be in the app.
+
+**Storage:** subscriptions (`endpoint`, `p256dh`, `auth`, `userAgent`) are stored in Postgres via the Java backend's `push_subscription` table, one row per browser/device a user has subscribed on - not a Node-side file store. See [01_Java_Backend_API.md - Push Subscriptions](01_Java_Backend_API.md#push-subscriptions) and [06_Database_Migrations.md](06_Database_Migrations.md).
+
+**Files:**
+- `server_utilities/config.js` - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (env-configured; the one-time keypair is generated with `node -e "console.log(require('web-push').generateVAPIDKeys())"`). Push silently becomes a no-op if the keys are unset.
+- `server_utilities/javaApiService.js` - `fetchPushSubscriptionsByUser`, `upsertPushSubscription`, `deletePushSubscriptionByEndpoint` wrap the Java `/api/push-subscriptions` endpoints.
+- `server_utilities/pushService.js` - `sendPushToUser(userId, payload)`: fetches a user's subscriptions, sends to each via the `web-push` package, and prunes any subscription the push service reports as gone (HTTP 404/410). Never throws, so callers can fire-and-forget it.
+- `src/index.js` - `GET /api/push/vapid-public-key`, `POST /api/push/subscribe`, `POST /api/push/unsubscribe` (all `isAuthenticated` only, deliberately **not** behind `blockGuestApi` - a `GUEST` must be able to register their own device). The two triggers: inside `POST /api/prenotations`'s success branch (notifies the assigned tutor, and - via a student lookup - the student's linked `GUEST`, if any) and inside `POST /api/calendar-notes`'s success branch (notifies each assigned tutor except the creator). Both fire *after* `res.json(...)`, so a slow or failed send can never delay or break the HTTP response.
+- `public/service-worker.js` - the `push` event shows a notification from the server's JSON payload (`{ title, body, url, tag }`); `notificationclick` focuses an existing tab or opens a new one at `url` (always `/calendar`, where both prenotations and notes are rendered).
+- `public/js/push.js` - client-side subscribe/unsubscribe flow for the bell toggle: `Notification.requestPermission()` → `pushManager.subscribe()` → `POST /api/push/subscribe`, or the reverse to unsubscribe. Subscription state is per-browser, reflected as `[data-push-subscribed]` on `<html>` (same pattern as `[data-theme]` for the theme toggle), so every toggle instance on the page stays in sync. Feature-detects `serviceWorker`/`PushManager`/`Notification` support and leaves the toggle hidden entirely if any is missing.
+- `views/partials/push-toggle-mobile.ejs` - the toggle's row markup, included in both the desktop and mobile [Settings Menu](#settings-menu-theme-notifications-logout).
+
+**Caveats:**
+- `pushManager.subscribe()` requires a secure context - `localhost` is exempt regardless of port/scheme, but a real hostname needs a trusted HTTPS certificate.
+- iOS Safari only supports Web Push once the app is added to the home screen as a PWA - it does not work from Safari-in-tab, even on iOS 16.4+.
 
 ---
 

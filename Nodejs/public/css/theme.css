@@ -180,12 +180,12 @@ body {
     display: none;
 }
 
-/* Bell/bell-off icon swap for .push-toggle buttons (partials/push-toggle.ejs,
-   partials/push-toggle-mobile.ejs). Default (not subscribed): show bell.
-   Driven by [data-push-subscribed] on <html> - same pattern as [data-theme]
-   for the theme toggle - so both the desktop and mobile toggle buttons stay
-   in sync, set once by push.js after it confirms the current subscription
-   state. */
+/* Bell/bell-off icon swap for .push-toggle buttons (partials/push-toggle-mobile.ejs,
+   included in the settings gear menu on every page that has one). Default
+   (not subscribed): show bell. Driven by [data-push-subscribed] on <html> -
+   same pattern as [data-theme] for the theme toggle - so every toggle
+   instance across every page stays in sync, set once by push.js after it
+   confirms the current subscription state. */
 .push-toggle .icon-bell-off {
     display: none;
 }

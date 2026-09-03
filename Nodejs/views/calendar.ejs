@@ -88,19 +88,9 @@ Features:
             <%= t('calendar.note') %>
           </button>
           <% } %>
-          <!-- Theme toggle and Logout form button -->
+          <!-- Settings menu (theme/notifications/logout) -->
           <div class="hidden md:flex items-center gap-1">
-            <%- include('partials/theme-toggle') %>
-            <form action="/logout" method="POST" class="inline">
-              <button type="submit"
-                class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span class="text-sm font-medium"><%= t('common.logout') %></span>
-              </button>
-            </form>
+            <%- include('partials/settings-menu') %>
           </div>
         </div>
 
@@ -207,17 +197,7 @@ Features:
           <%= t('calendar.addNote') %>
         </button>
         <% } %>
-        <%- include('partials/theme-toggle-mobile') %>
-        <form action="/logout" method="POST" class="mt-2">
-          <button type="submit"
-            class="w-full flex items-center justify-center gap-2 border border-destructive text-destructive px-4 py-2.5 rounded-lg font-medium hover:bg-destructive hover:text-white transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            <%= t('common.logout') %>
-          </button>
-        </form>
+        <%- include('partials/settings-menu-mobile') %>
       </div>
     </div>
   </aside>
@@ -834,6 +814,8 @@ Features:
   </script>
   <script src="/js/theme.js"></script>
   <script src="/js/i18n.js"></script>
+  <script src="/js/settingsMenu.js"></script>
+  <script src="/js/push.js"></script>
   <!-- JavaScript for calendar rendering, event management, and modal interactions -->
   <script src="/js/calendarScript.js"></script>
 </body>

@@ -5,7 +5,7 @@ This document outlines the architecture, setup, and caching strategies of the Pr
 ---
 
 **Document**: 12_PWA_Guide.md  
-**Last Updated**: March 21, 2026  
+**Last Updated**: September 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -18,6 +18,7 @@ This document outlines the architecture, setup, and caching strategies of the Pr
 - [Caching Strategies](#caching-strategies)
 - [Offline Experience](#offline-experience)
 - [Update Mechanism](#update-mechanism)
+- [Web Push Notifications](#web-push-notifications)
 - [Testing the PWA](#testing-the-pwa)
 
 ---
@@ -50,6 +51,12 @@ The core script running in the background. It intercepts network requests, manag
 
 ### 3. Client Registration (`views/partials/pwa-setup.ejs`)
 Injected in the `<head>` of all primary EJS views. It links the `manifest.json`, sets Apple touch icons, and handles the lifecycle and registration of the `service-worker.js`.
+
+---
+
+## Web Push Notifications
+
+The same `service-worker.js` registered here also backs standard Web Push (VAPID, not Firebase Cloud Messaging): a `push` event handler shows OS-level notifications, and a `notificationclick` handler focuses/opens the app. This is a separate feature from the caching/offline behavior described above - full details (VAPID setup, the subscribe/unsubscribe flow, the bell toggle in the Settings Menu, and the two server-side triggers) are documented in [03_Nodejs_Frontend.md - Web Push Notifications](03_Nodejs_Frontend.md#web-push-notifications).
 
 ---
 
