@@ -106,6 +106,13 @@ const app = express();
 // app.locals is merged into every EJS render automatically
 app.locals.poweredByText = POWERED_BY_TEXT;
 
+// Trust the first hop reverse proxy (e.g. nginx terminating HTTPS in front of
+// this Node process on a VPS deploy). Without this, Express ignores the
+// X-Forwarded-Proto header, so req.secure (and therefore the session
+// cookie's `secure: 'auto'` below) would always read as plain HTTP even when
+// the public-facing connection is actually HTTPS.
+app.set('trust proxy', 1);
+
 //------------------------------------------------------------------------------------------------------
 // MIDDLEWARE CONFIGURATION 
 // Parse JSON request bodies
@@ -132,8 +139,23 @@ const sessionMiddleware = session({
     cookie: {
         maxAge: TUTOR_SESSION_DURATION, // 30 days - longer duration for tutors
         httpOnly: true,                  // Prevent XSS attacks
-        secure: USE_HTTPS,               // Enable secure cookies only with HTTPS
-        sameSite: 'strict'               // CSRF protection
+        // 'auto' marks the cookie Secure whenever the request is actually HTTPS,
+        // whether Node terminates TLS itself (USE_HTTPS=true) or a trusted
+        // reverse proxy does and forwards X-Forwarded-Proto (see 'trust proxy'
+        // above) - unlike the previous `secure: USE_HTTPS`, which stayed false
+        // (no Secure flag) behind a proxy even though the public connection
+        // was HTTPS.
+        secure: 'auto',
+        // 'strict' (the previous value) withholds the cookie on any top-level
+        // navigation that isn't initiated from within the same site's browsing
+        // context - including a PWA's "cold start" when relaunched from its
+        // home-screen icon after being fully closed, since that has no
+        // referring page. That silently dropped the "remember me" session on
+        // mobile: the cookie was still valid and unexpired, the browser just
+        // wouldn't attach it to that first request. 'lax' still blocks the
+        // cookie on cross-site POST/PUT/DELETE (the actual CSRF risk) while
+        // allowing it on top-level GET navigations like a PWA relaunch.
+        sameSite: 'lax'                  // CSRF protection without breaking PWA relaunch
     }
 });
 
