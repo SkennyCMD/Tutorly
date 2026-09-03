@@ -86,8 +86,9 @@
     }
   },
   "calendar": {
-    "prenotation": "Prenotation",
-    "note": "Note",
+    "prenotation": "Your Prenotation",
+    "note": "Your Note",
+    "assignedNote": "Assigned by someone else",
     "today": "Today",
     "tutor": "Tutor:",
     "allTutors": "All Tutors",

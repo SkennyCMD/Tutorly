@@ -86,8 +86,9 @@
     }
   },
   "calendar": {
-    "prenotation": "Prenotazione",
-    "note": "Nota",
+    "prenotation": "La Tua Prenotazione",
+    "note": "La Tua Nota",
+    "assignedNote": "Assegnata da qualcun altro",
     "today": "Oggi",
     "tutor": "Tutor:",
     "allTutors": "Tutti i Tutor",

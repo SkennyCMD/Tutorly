@@ -488,36 +488,94 @@ function setDefaultDates() {
 
 
 /**
- * Populate the tutor filter dropdown (STAFF only) and wire up its change
- * handler to re-render the calendar showing only the selected tutor's
- * prenotations. Not present in the DOM for non-STAFF users.
+ * Populate the tutor filter dropdown (STAFF only) and wire up selection to
+ * re-render the calendar showing only the selected tutor's prenotations.
+ * Not present in the DOM for non-STAFF users.
+ *
+ * Custom dropdown (button + popover list), not a native <select>: each row
+ * shows a small swatch in that tutor's actual prenotation color (blue for
+ * the logged-in tutor, their palette color otherwise - see
+ * applyTutorColor()) next to their name in plain white text - only the
+ * swatch carries color, a plain <option> can't mix the two.
  */
 function setupTutorFilter() {
-  const select = document.getElementById('tutorFilter');
-  if (!select) return;
+  const btn = document.getElementById('tutorFilterBtn');
+  const menu = document.getElementById('tutorFilterMenu');
+  const swatch = document.getElementById('tutorFilterSwatch');
+  const label = document.getElementById('tutorFilterLabel');
+  if (!btn || !menu || !swatch || !label) return;
 
   const tutors = window.serverData?.tutors || [];
+  const currentUserId = window.serverData?.currentUserId;
 
-  select.innerHTML = `<option value="all">${t('calendar.allTutors')}</option>` +
-    tutors.map(tutor => `<option value="${tutor.id}">${tutor.username}</option>`).join('');
+  const colorVarFor = (tutorId) =>
+    tutorId === currentUserId ? '--color-lesson' : getTutorColorVar(tutorId);
+
+  function optionRow(value, text, colorVar) {
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-2 px-3 py-1.5 text-sm text-white cursor-pointer hover:bg-secondary';
+    row.dataset.value = value;
+    if (colorVar) {
+      const dot = document.createElement('span');
+      dot.className = 'w-2.5 h-2.5 rounded-sm shrink-0';
+      dot.style.backgroundColor = `rgb(var(${colorVar}))`;
+      row.appendChild(dot);
+    } else {
+      // Keep "All Tutors" aligned with the swatched rows below it
+      const spacer = document.createElement('span');
+      spacer.className = 'w-2.5 h-2.5 shrink-0';
+      row.appendChild(spacer);
+    }
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = text;
+    row.appendChild(nameSpan);
+    return row;
+  }
+
+  menu.innerHTML = '';
+  menu.appendChild(optionRow('all', t('calendar.allTutors'), null));
+  tutors.forEach(tutor => {
+    menu.appendChild(optionRow(String(tutor.id), tutor.username, colorVarFor(tutor.id)));
+  });
 
   // Restore the previously selected tutor, if it still exists in the list
   if (tutorFilterId !== 'all' && !tutors.some(tutor => String(tutor.id) === String(tutorFilterId))) {
     tutorFilterId = 'all';
     sessionStorage.removeItem('calendarTutorFilter');
   }
-  select.value = tutorFilterId;
 
-  select.addEventListener('change', (e) => {
-    tutorFilterId = e.target.value;
+  function selectTutor(value) {
+    tutorFilterId = value;
     if (tutorFilterId === 'all') {
       sessionStorage.removeItem('calendarTutorFilter');
+      swatch.classList.add('hidden');
+      label.textContent = t('calendar.allTutors');
     } else {
       sessionStorage.setItem('calendarTutorFilter', tutorFilterId);
+      const tutor = tutors.find(t2 => String(t2.id) === String(tutorFilterId));
+      swatch.classList.remove('hidden');
+      swatch.style.backgroundColor = `rgb(var(${colorVarFor(Number(tutorFilterId))}))`;
+      label.textContent = tutor ? tutor.username : t('calendar.allTutors');
     }
+  }
+
+  selectTutor(tutorFilterId);
+
+  menu.addEventListener('click', (e) => {
+    const row = e.target.closest('[data-value]');
+    if (!row) return;
+    selectTutor(row.dataset.value);
+    menu.classList.add('hidden');
     renderWeekView();
     renderMobileDayView();
   });
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', () => menu.classList.add('hidden'));
 }
 
 /**

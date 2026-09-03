@@ -251,18 +251,29 @@ Features:
         </div>
 
         <div class="flex items-center gap-4">
-          <!-- Tutor filter (STAFF only): shows only the selected tutor's prenotations -->
+          <!-- Tutor filter (STAFF only): shows only the selected tutor's prenotations.
+               Custom dropdown (not a native <select>) so each row can show a small
+               swatch in that tutor's prenotation color next to their name in plain
+               white text - <option> elements can't mix a colored icon with
+               separately-colored text. -->
           <% if (user && user.role==='STAFF' ) { %>
-            <div class="flex items-center gap-2">
-              <label for="tutorFilter" class="text-sm text-muted-foreground"><%= t('calendar.tutor') %></label>
-              <select id="tutorFilter"
-                class="px-2 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-                <option value="all"><%= t('calendar.allTutors') %></option>
-              </select>
+            <div class="flex items-center gap-2 relative">
+              <span class="text-sm text-muted-foreground"><%= t('calendar.tutor') %></span>
+              <button type="button" id="tutorFilterBtn"
+                class="flex items-center gap-2 px-2 py-1.5 bg-secondary border border-border rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-ring">
+                <span id="tutorFilterSwatch" class="w-2.5 h-2.5 rounded-sm hidden"></span>
+                <span id="tutorFilterLabel"><%= t('calendar.allTutors') %></span>
+                <svg class="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div id="tutorFilterMenu"
+                class="hidden absolute top-full left-0 mt-1 z-30 w-48 max-h-64 overflow-y-auto bg-card border border-border rounded-lg shadow-lg py-1">
+              </div>
             </div>
             <% } %>
 
-              <!-- Color legend for event types (Prenotation = blue, Note = orange) -->
+              <!-- Color legend for event types (own prenotation = blue, own note = orange, note assigned by someone else = red) -->
               <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2">
                   <span class="w-3 h-3 rounded-sm bg-lesson"></span>
@@ -271,6 +282,10 @@ Features:
                 <div class="flex items-center gap-2">
                   <span class="w-3 h-3 rounded-sm bg-note"></span>
                   <span class="text-sm text-muted-foreground"><%= t('calendar.note') %></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm bg-destructive"></span>
+                  <span class="text-sm text-muted-foreground"><%= t('calendar.assignedNote') %></span>
                 </div>
               </div>
         </div>
