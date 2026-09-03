@@ -71,6 +71,7 @@ Features:
 
         <!-- Logout form button (Desktop) -->
         <div class="hidden md:flex items-center gap-1">
+          <%- include('partials/push-toggle') %>
           <%- include('partials/theme-toggle') %>
           <form action="/logout" method="POST" class="inline">
             <button type="submit"
@@ -167,8 +168,9 @@ Features:
         </a>
         <% } %>
 
-          <!-- Theme toggle and Logout in mobile menu -->
+          <!-- Push toggle, theme toggle, and Logout in mobile menu -->
           <div class="mt-4 pt-4 border-t border-border space-y-1">
+            <%- include('partials/push-toggle-mobile') %>
             <%- include('partials/theme-toggle-mobile') %>
             <form action="/logout" method="POST">
               <button type="submit"
@@ -561,6 +563,7 @@ Features:
   </script>
   <script src="/js/theme.js"></script>
   <script src="/js/i18n.js"></script>
+  <script src="/js/push.js"></script>
   <script src="/js/modalShared.js"></script>
   <script src="/js/homeScript.js"></script>
 </body>

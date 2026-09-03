@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: August 13, 2026  
+**Last Updated**: September 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -1173,6 +1173,31 @@ Also known as **Evaluations** in the Node.js frontend (`/reports` page) — same
 | POST | `/admins` | Create new admin |
 | PUT | `/admins/{id}` | Update admin |
 | DELETE | `/admins/{id}` | Delete admin |
+
+---
+
+### Push Subscriptions
+
+Backs the Web Push notification feature (standard Push API + VAPID, not Firebase) - one row per browser/device a user has subscribed on. Used to notify a `GUEST` when a lesson is booked for their linked student, and to notify a tutor when a prenotation or calendar note is assigned to them. See [03_Nodejs_Frontend.md - Web Push Notifications](03_Nodejs_Frontend.md#web-push-notifications) for the Node.js side (VAPID config, the `pushService.js` sender, and where the two notification triggers fire from).
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/push-subscriptions/user/{userId}` | All subscriptions (devices) for a user |
+| POST | `/push-subscriptions` | Create or update a subscription (upsert by `endpoint`) |
+| DELETE | `/push-subscriptions/by-endpoint?endpoint={endpoint}` | Delete a subscription by endpoint |
+
+**Example Request Body (POST) - with DTO:**
+```json
+{
+  "endpoint": "https://fcm.googleapis.com/fcm/send/...",
+  "p256dh": "BNcRd...",
+  "auth": "tBHI...",
+  "userAgent": "Mozilla/5.0 ...",
+  "userId": 5
+}
+```
+
+`endpoint`/`p256dh`/`auth` come straight from the browser's `PushSubscription.toJSON()`; `userAgent` is optional, kept only for debugging which device a subscription belongs to. `POST` upserts by `endpoint` (unique in the DB) - re-subscribing the same browser (e.g. after the push service rotates its keys) updates the existing row instead of creating a duplicate. See [06_Database_Migrations.md - Automatic: `push_subscription` table added](06_Database_Migrations.md#automatic-push_subscription-table-added).
 
 ---
 

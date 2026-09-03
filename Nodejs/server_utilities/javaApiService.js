@@ -487,6 +487,77 @@ function fetchStudentsByGuest(guestId) {
 }
 
 
+// Push Subscription Operations
+
+
+/**
+ * Fetch all Web Push subscriptions (one per subscribed device) for a user.
+ *
+ * @param {number|string} userId - The user's ID (tutor or GUEST)
+ * @returns {Promise<Array>} Array of subscription objects, empty array on error
+ *
+ * @example
+ * const subscriptions = await fetchPushSubscriptionsByUser(5);
+ * // Returns: [{ id: 1, endpoint: '...', p256dh: '...', auth: '...', userId: 5 }, ...]
+ */
+function fetchPushSubscriptionsByUser(userId) {
+    return fetchFromJavaAPI(`/api/push-subscriptions/user/${userId}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching push subscriptions:', error);
+            return [];
+        });
+}
+
+/**
+ * Create or update a Web Push subscription for a user.
+ *
+ * Upserts by endpoint - re-subscribing the same browser (e.g. after the push
+ * service rotates its keys) updates the existing row instead of creating a
+ * duplicate.
+ *
+ * @param {number|string} userId - The user's ID (tutor or GUEST)
+ * @param {object} subscription - PushSubscription.toJSON() shape: { endpoint, keys: { p256dh, auth } }
+ * @param {string} [userAgent] - The subscribing browser's User-Agent, kept only for debugging
+ * @returns {Promise<object|null>} The saved subscription, or null on error
+ *
+ * @example
+ * await upsertPushSubscription(5, subscription, req.headers['user-agent']);
+ */
+function upsertPushSubscription(userId, subscription, userAgent) {
+    return fetchFromJavaAPI('/api/push-subscriptions', 'POST', {
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys && subscription.keys.p256dh,
+        auth: subscription.keys && subscription.keys.auth,
+        userAgent: userAgent || null,
+        userId: userId
+    }).catch(error => {
+        console.error('Error saving push subscription:', error);
+        return null;
+    });
+}
+
+/**
+ * Delete a Web Push subscription by its endpoint URL.
+ *
+ * Used both for explicit unsubscribe requests and to prune subscriptions the
+ * push service reports as dead (404/410 on send) - a no-op if no matching
+ * subscription exists.
+ *
+ * @param {string} endpoint - The push service endpoint URL
+ * @returns {Promise<void>}
+ *
+ * @example
+ * await deletePushSubscriptionByEndpoint('https://fcm.googleapis.com/fcm/send/...');
+ */
+function deletePushSubscriptionByEndpoint(endpoint) {
+    return fetchFromJavaAPI(`/api/push-subscriptions/by-endpoint?endpoint=${encodeURIComponent(endpoint)}`, 'DELETE')
+        .catch(error => {
+            console.error('Error deleting push subscription:', error);
+        });
+}
+
+
 // Module Exports
 
 
@@ -503,6 +574,7 @@ function fetchStudentsByGuest(guestId) {
  * - Prenotations: fetchAllPrenotations, fetchPrenotationsByTutor
  * - Calendar Notes: fetchCalendarNotesByTutor, fetchCalendarNotesByDateRange
  * - Tests (Evaluations): fetchTestsByTutor
+ * - Push Subscriptions: fetchPushSubscriptionsByUser, upsertPushSubscription, deletePushSubscriptionByEndpoint
  *
  * Usage Pattern:
  * All functions return Promises that resolve to data or reject with errors.
@@ -525,5 +597,8 @@ module.exports = {
     fetchTestsByStudent,
     fetchAllTests,
     fetchPacksByStudent,
-    fetchStudentsByGuest
+    fetchStudentsByGuest,
+    fetchPushSubscriptionsByUser,
+    upsertPushSubscription,
+    deletePushSubscriptionByEndpoint
 };

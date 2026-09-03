@@ -119,6 +119,29 @@ module.exports = {
     ADMIN_SESSION_DURATION: 1000 * 60 * 60 * 1, // 1 hour
 
 
+    // Web Push (VAPID) Configuration
+
+
+    /**
+     * VAPID public key, sent to the browser so it can create a push subscription
+     * tied to this server's identity. Safe to expose to the client.
+     * Generate a keypair with: node -e "console.log(require('web-push').generateVAPIDKeys())"
+     */
+    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+
+    /**
+     * VAPID private key, used server-side to sign push messages.
+     * WARNING: Never expose this to the client. Change this value in production.
+     */
+    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+
+    /**
+     * Contact URI (mailto: or https:) included in the VAPID JWT so push
+     * services can reach the app owner if a subscription is flagged as abusive.
+     */
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
+
+
     // Branding Configuration
 
 

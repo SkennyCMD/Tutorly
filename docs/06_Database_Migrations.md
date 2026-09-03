@@ -5,7 +5,7 @@ This file explain how to migrate the database.
 ---
 
 **Document**: 06_Database_Migrations.md  
-**Last Updated**: August 6, 2026  
+**Last Updated**: September 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -277,6 +277,16 @@ ALTER TABLE lesson ADD CONSTRAINT lesson_id_pack_fkey FOREIGN KEY (id_pack) REFE
 
 ---
 
+### Automatic: `push_subscription` table added
+
+**No manual action needed** - like the `test.subject` column above, this was picked up automatically by `spring.jpa.hibernate.ddl-auto=update` on the next Java backend restart after the new `PushSubscription` entity was added. Hibernate's schema update *can* create missing tables (not just columns), so no SQL had to be run by hand.
+
+**What changed:** new `push_subscription` table (id, endpoint, p256dh, auth, user_agent, created_at, id_user) backing the Web Push notification feature - see [01_Java_Backend_API.md - Push Subscriptions](01_Java_Backend_API.md#push-subscriptions). One row per subscribed browser/device; `endpoint` is unique so re-subscribing the same browser updates its existing row. `id_user` FKs to `app_user(id)` with `ON DELETE CASCADE` (deleting a user cleans up their subscriptions automatically).
+
+**`Database/init.sql`** was updated to match (added the `push_subscription` table after `test`) - relevant only if you're bootstrapping a fresh database from that script rather than letting Hibernate create the schema.
+
+---
+
 ## Creating New Migrations
 
 When creating a new migration script:
@@ -318,4 +328,4 @@ migrate();
 
 ---
 
-**Last Updated**: August 6, 2026  
+**Last Updated**: September 3, 2026  

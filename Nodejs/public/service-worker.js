@@ -109,3 +109,46 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
+// Push Event: Display a notification when a push message arrives.
+// Payload is JSON sent by the server via server_utilities/pushService.js -
+// { title, body, url, tag? }.
+self.addEventListener('push', (event) => {
+    let data = { title: 'Tutorly', body: 'You have a new notification.', url: '/home' };
+    try {
+        if (event.data) {
+            data = { ...data, ...event.data.json() };
+        }
+    } catch (error) {
+        console.error('Push event: failed to parse payload as JSON', error);
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: '/icons/icon.svg',
+            badge: '/icons/icon.svg',
+            tag: data.tag,          // same tag replaces an existing unread notification instead of stacking
+            data: { url: data.url } // carried through to notificationclick
+        })
+    );
+});
+
+// Notification Click Event: Focus an existing Tutorly window/tab and navigate
+// it to the relevant page, or open a new one if none is open.
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const targetUrl = (event.notification.data && event.notification.data.url) || '/home';
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            for (const client of clientList) {
+                if ('focus' in client) {
+                    if ('navigate' in client) client.navigate(targetUrl);
+                    return client.focus();
+                }
+            }
+            return self.clients.openWindow(targetUrl);
+        })
+    );
+});

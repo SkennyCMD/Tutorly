@@ -54,8 +54,13 @@ const {
     fetchTestsByStudent,
     fetchAllTests,
     fetchPacksByStudent,
-    fetchStudentsByGuest
+    fetchStudentsByGuest,
+    upsertPushSubscription,
+    deletePushSubscriptionByEndpoint
 } = require('../server_utilities/javaApiService');
+
+// Web Push notification sender (VAPID, not Firebase) - see server_utilities/pushService.js
+const { sendPushToUser } = require('../server_utilities/pushService');
 
 // Fixed reference list of subjects for the Evaluations ("Add Evaluation") form
 const subjectsList = require('../config/subjects.json');
@@ -75,7 +80,8 @@ const {
     ADMIN_SESSION_SECRET,
     TUTOR_SESSION_DURATION,
     ADMIN_SESSION_DURATION,
-    POWERED_BY_TEXT
+    POWERED_BY_TEXT,
+    VAPID_PUBLIC_KEY
 } = require('../server_utilities/config');
 
 function createJavaApiRequestOptions(pathname, method = 'GET', body = null) {
@@ -1715,6 +1721,65 @@ app.put('/api/packs/:id/close', tutorSession, isAuthenticated, blockGuestApi, as
     }
 });
 
+// !!! PUSH NOTIFICATIONS API ROUTES !!!
+// Web Push (VAPID, not Firebase). GUEST accounts must be able to subscribe
+// too (to receive notifications for their own device), so none of these are
+// behind blockGuestApi - only isAuthenticated.
+
+/**
+ * Get the VAPID public key so the client can create a push subscription
+ * GET /api/push/vapid-public-key
+ */
+app.get('/api/push/vapid-public-key', tutorSession, isAuthenticated, (req, res) => {
+    res.json({ publicKey: VAPID_PUBLIC_KEY || null });
+});
+
+/**
+ * Save (or update) the current user's push subscription for this device
+ * POST /api/push/subscribe
+ * Body: { subscription: PushSubscription.toJSON() }
+ */
+app.post('/api/push/subscribe', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { subscription } = req.body;
+        if (!subscription || !subscription.endpoint || !subscription.keys) {
+            return res.status(400).json({ error: 'Invalid subscription' });
+        }
+
+        const saved = await upsertPushSubscription(req.session.userId, subscription, req.headers['user-agent']);
+        if (!saved) {
+            return res.status(500).json({ error: 'Failed to save subscription' });
+        }
+
+        logInfo('Push subscription saved', req);
+        res.status(201).json({ success: true });
+    } catch (error) {
+        logError('Error saving push subscription', req, { error: error.message });
+        res.status(500).json({ error: 'Failed to save subscription' });
+    }
+});
+
+/**
+ * Remove a push subscription for this device (explicit opt-out)
+ * POST /api/push/unsubscribe
+ * Body: { endpoint }
+ */
+app.post('/api/push/unsubscribe', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { endpoint } = req.body;
+        if (!endpoint) {
+            return res.status(400).json({ error: 'endpoint is required' });
+        }
+
+        await deletePushSubscriptionByEndpoint(endpoint);
+        logInfo('Push subscription removed', req);
+        res.json({ success: true });
+    } catch (error) {
+        logError('Error removing push subscription', req, { error: error.message });
+        res.status(500).json({ error: 'Failed to remove subscription' });
+    }
+});
+
 // !!! PRENOTATIONS (BOOKINGS) API ROUTES !!!
 
 /**
@@ -1786,6 +1851,27 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, blockGuestApi, asyn
                     try {
                         const prenotation = JSON.parse(data);
                         res.json(prenotation);
+
+                        // Fire-and-forget push notifications - never awaited, so a slow/failed
+                        // send can't delay or break the response above.
+                        if (parseInt(tutorId) !== parseInt(currentUserId)) {
+                            sendPushToUser(tutorId, {
+                                title: 'New lesson booked',
+                                body: `A lesson was booked for you: ${startDateTime} - ${endDateTime}`,
+                                url: '/calendar',
+                                tag: `prenotation-${prenotation.id}`
+                            });
+                        }
+                        fetchStudentData(studentId).then((student) => {
+                            if (student && student.userId) {
+                                sendPushToUser(student.userId, {
+                                    title: 'New lesson booked',
+                                    body: `A new lesson was booked for ${student.name} ${student.surname}`,
+                                    url: '/calendar',
+                                    tag: `prenotation-${prenotation.id}`
+                                });
+                            }
+                        }).catch((error) => logError('Error looking up student for push notification', req, { error: error.message }));
                     } catch (e) {
                         res.json({ success: true, message: 'Prenotation created' });
                     }
@@ -1965,6 +2051,19 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, blockGuestApi, as
                     try {
                         const note = JSON.parse(data);
                         res.json(note);
+
+                        // Fire-and-forget: notify each assigned tutor except the creator.
+                        // Never awaited, so a slow/failed send can't delay or break the response above.
+                        (tutorIds || []).forEach((assignedTutorId) => {
+                            if (parseInt(assignedTutorId) !== parseInt(creatorId)) {
+                                sendPushToUser(assignedTutorId, {
+                                    title: 'New task assigned',
+                                    body: description,
+                                    url: '/calendar',
+                                    tag: `calendar-note-${note.id}`
+                                });
+                            }
+                        });
                     } catch (e) {
                         res.json({ success: true, message: 'Calendar note created' });
                     }

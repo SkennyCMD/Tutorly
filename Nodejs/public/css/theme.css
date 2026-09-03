@@ -179,3 +179,21 @@ body {
 :root[data-theme="dark"] .theme-toggle .icon-moon {
     display: none;
 }
+
+/* Bell/bell-off icon swap for .push-toggle buttons (partials/push-toggle.ejs,
+   partials/push-toggle-mobile.ejs). Default (not subscribed): show bell.
+   Driven by [data-push-subscribed] on <html> - same pattern as [data-theme]
+   for the theme toggle - so both the desktop and mobile toggle buttons stay
+   in sync, set once by push.js after it confirms the current subscription
+   state. */
+.push-toggle .icon-bell-off {
+    display: none;
+}
+
+:root[data-push-subscribed="true"] .push-toggle .icon-bell {
+    display: none;
+}
+
+:root[data-push-subscribed="true"] .push-toggle .icon-bell-off {
+    display: block;
+}
