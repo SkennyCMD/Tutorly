@@ -180,6 +180,23 @@ app.get('/login', tutorSession, (req, res) => {
 });
 
 /**
+ * Privacy policy page
+ * GET /privacy - Public page explaining that privacy consent is handled by the
+ * tutoring center at enrollment, not by this platform. Linked from the login footer
+ */
+app.get('/privacy', (req, res) => {
+    res.render('privacy');
+});
+
+/**
+ * Cookie policy page
+ * GET /cookies - Public page explaining cookie usage, linked from the login footer
+ */
+app.get('/cookies', (req, res) => {
+    res.render('cookies');
+});
+
+/**
  * Admin login page
  * GET /adminLogin - Display admin login form
  */

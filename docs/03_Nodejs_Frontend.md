@@ -709,6 +709,17 @@ A `GUEST` account (e.g. a parent/guardian, created via the [Admin Panel - Guest 
 
 ---
 
+## Privacy and Cookie Policy Pages
+
+Two public, unauthenticated pages (`GET /privacy`, `GET /cookies`) linked from the login page footer, sharing the same header/footer chrome as `login.ejs` for visual consistency. Both are static, translated content pages - neither reads from the Java API or `req.session`.
+
+- **`/privacy`** (`views/privacy.ejs`): states that privacy consent is collected by the tutoring center itself, in person at enrollment, before any account on this platform is created - Tutorly is the software the center uses, not the data controller. Points users to the center's own website or a direct request to the center to review the full policy.
+- **`/cookies`** (`views/cookies.ejs`): documents the single cookie the app sets, `tutorly.sid` (the session cookie - see [Session Management](#session-management) below for its `httpOnly`/`sameSite` settings), and states plainly that there are no third-party, advertising, or tracking cookies. Also notes that the light/dark theme preference is stored in `localStorage`, not a cookie - see [Theming (Light/Dark Mode)](#theming-lightdark-mode).
+
+The login footer's previous dead "Terms" and "Help" links (`href="#"`, no real destination) were removed rather than pointed anywhere, since there was no content to link them to; the "Privacy" link now points to `/privacy` instead of `href="#"`.
+
+---
+
 ## Session Management
 
 ### Configuration
@@ -1013,6 +1024,8 @@ Default admin account (created via Java API):
 | POST | `/login` | Tutor authentication |
 | GET | `/adminLogin` | Admin login page |
 | POST | `/adminLogin` | Admin authentication |
+| GET | `/privacy` | Privacy policy page (linked from the login footer) |
+| GET | `/cookies` | Cookie policy page (linked from the login footer) |
 
 ---
 
