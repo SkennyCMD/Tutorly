@@ -10,27 +10,31 @@
  * - All students monthly hours report (by month)
  * - Single tutor detailed hours report (all history)
  * - Tutors monthly statistics report (by year)
+ * - On-page tutors monthly hours table (STAFF/GENERIC), overlap-aware M/S/U
+ *   breakdown - same algorithm as the My Lessons page's statistics card
  * - Tutor search with real-time filtering
  * - Recent downloads tracking (last 5)
  * - Toast notifications for user feedback
  * - Mobile responsive sidebar
- * 
+ *
  * Report Categories:
  * - Tutor reports: Aggregated hours by tutor for a specific month
  * - Student reports: Aggregated hours by student for a specific month
  * - Single reports: Detailed lesson history for individual tutor
  * - Stats reports: Monthly breakdown for all tutors by year
- * 
+ *
  * Data Sources:
  * - window.allTutors: Array of tutor objects from server
- * 
+ * - GET /api/reports/tutor-monthly-hours: on-page monthly hours table data
+ *
  * Dependencies:
  * - XLSX library (SheetJS) for Excel file generation
  * - Backend API endpoints:
  *   - GET /api/reports/lessons-by-month
  *   - GET /api/reports/lessons-by-student
  *   - GET /api/reports/tutors-monthly-stats
- * 
+ *   - GET /api/reports/tutor-monthly-hours
+ *
  * Used By:
  * - staffPanel.ejs (staff management page)
  */
@@ -669,3 +673,283 @@ function downloadSingleTutorHours() {
     addRecentDownload(filename, 'single');
     showToast(`Downloaded: ${filename}`);
 }
+
+
+
+// Tutors Monthly Hours Table (on-page, live view)
+
+
+// Currently selected month for the table, defaults to the current month
+let tutorHoursDate = new Date();
+
+// Current search term for filtering table rows by tutor name
+let tutorHoursSearchTerm = '';
+
+// Last fetch from the server, cached so the search box can re-filter without a refetch
+let tutorHoursData = { tutors: [], lessonsByTutor: {} };
+
+// Class level hierarchy used to resolve overlapping lessons of different class
+// types: the higher-priority class absorbs the overlapping time.
+// Copied from lessonsScript.js (My Lessons page) - same algorithm, no shared
+// module system in this codebase, so page scripts duplicate small pure helpers
+// like this one rather than importing them.
+const TUTOR_HOURS_CLASS_PRIORITY = { M: 1, S: 2, U: 3 };
+
+/**
+ * Calculate total and per-class taught minutes for a set of lessons,
+ * resolving overlapping (concomitant) lessons on the same day so that:
+ * - Overlapping time is only counted once towards the total.
+ * - Overlapping time between two different class types is credited only
+ *   to the higher-priority class (see TUTOR_HOURS_CLASS_PRIORITY).
+ *
+ * Copied from calculateOverlapAwareStats() in lessonsScript.js.
+ *
+ * @param {Array} lessons - Lessons to analyze (each with date, startTime, endTime, classType)
+ * @returns {{totalMinutes: number, minutesM: number, minutesS: number, minutesU: number, overlapMinutes: number, overlapFrom: Object}}
+ */
+function calculateTutorOverlapAwareStats(lessons) {
+    const toMinutes = (time) => {
+        const [h, m] = time.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    // Group lessons by date, since only same-day lessons can overlap
+    const byDate = {};
+    lessons.forEach(lesson => {
+        (byDate[lesson.date] = byDate[lesson.date] || []).push(lesson);
+    });
+
+    let totalMinutes = 0;
+    let rawMinutes = 0;
+    const classMinutes = { M: 0, S: 0, U: 0 };
+    // overlapFrom[higherClass][lowerClass] = minutes credited to higherClass that overlapped with lowerClass
+    const overlapFrom = { M: {}, S: {}, U: {} };
+
+    Object.values(byDate).forEach(dayLessons => {
+        dayLessons.forEach(lesson => {
+            rawMinutes += toMinutes(lesson.endTime) - toMinutes(lesson.startTime);
+        });
+
+        // Split the day into non-overlapping segments using every start/end time as a boundary
+        const boundaries = new Set();
+        dayLessons.forEach(lesson => {
+            boundaries.add(toMinutes(lesson.startTime));
+            boundaries.add(toMinutes(lesson.endTime));
+        });
+        const sortedBoundaries = Array.from(boundaries).sort((a, b) => a - b);
+
+        for (let i = 0; i < sortedBoundaries.length - 1; i++) {
+            const segmentStart = sortedBoundaries[i];
+            const segmentEnd = sortedBoundaries[i + 1];
+            const segmentDuration = segmentEnd - segmentStart;
+            if (segmentDuration <= 0) continue;
+
+            // Class types with a lesson covering this segment
+            const activeClasses = [...new Set(
+                dayLessons
+                    .filter(lesson => toMinutes(lesson.startTime) <= segmentStart && toMinutes(lesson.endTime) >= segmentEnd)
+                    .map(lesson => lesson.classType)
+            )];
+
+            if (activeClasses.length === 0) continue;
+
+            // Segment is only counted once towards the total, no matter how many lessons cover it
+            totalMinutes += segmentDuration;
+
+            // Credit the segment to the highest-priority class active during it
+            const winner = activeClasses.reduce((best, classType) =>
+                (TUTOR_HOURS_CLASS_PRIORITY[classType] || 0) > (TUTOR_HOURS_CLASS_PRIORITY[best] || 0) ? classType : best, activeClasses[0]);
+            classMinutes[winner] = (classMinutes[winner] || 0) + segmentDuration;
+
+            // Record which lower-priority classes this segment overlapped with
+            activeClasses.forEach(classType => {
+                if (classType !== winner) {
+                    overlapFrom[winner][classType] = (overlapFrom[winner][classType] || 0) + segmentDuration;
+                }
+            });
+        }
+    });
+
+    return {
+        totalMinutes,
+        minutesM: classMinutes.M,
+        minutesS: classMinutes.S,
+        minutesU: classMinutes.U,
+        overlapMinutes: rawMinutes - totalMinutes,
+        overlapFrom
+    };
+}
+
+/**
+ * Build a short label describing overlapping hours absorbed into a class's
+ * total, whether from a lower-priority class (e.g. "1h overlapped (M)") or
+ * from another lesson of the same class type (e.g. "1h overlapped (same class)").
+ *
+ * Copied from buildOverlapLabel() in lessonsScript.js.
+ *
+ * @param {Object} overlapSources - Map of classType -> overlapping minutes (may include ownClass itself)
+ * @param {string} ownClass - The class type this label is being built for
+ * @returns {string} Label, or empty string if there is no overlap to report
+ */
+function buildTutorOverlapLabel(overlapSources, ownClass) {
+    const entries = Object.entries(overlapSources).filter(([, minutes]) => minutes > 0);
+    if (entries.length === 0) return '';
+
+    const totalOverlapMinutes = entries.reduce((sum, [, minutes]) => sum + minutes, 0);
+    const sources = entries.map(([classType]) => classType === ownClass ? t('lessons.sameClass') : classType).join(', ');
+    return `${formatTutorHours(totalOverlapMinutes)} ${t('lessons.overlapped')} (${sources})`;
+}
+
+/**
+ * Format minutes as hours and minutes (e.g. 90 -> "1h 30m"). Copied from
+ * formatHours() in lessonsScript.js.
+ *
+ * @param {number} minutes
+ * @returns {string}
+ */
+function formatTutorHours(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = Math.round(minutes % 60);
+    if (h === 0 && m === 0) return '0h';
+    if (m === 0) return `${h}h`;
+    if (h === 0) return `${m}m`;
+    return `${h}h ${m}m`;
+}
+
+/**
+ * Update the month/year label above the tutor hours table.
+ */
+function updateTutorHoursMonthLabel() {
+    const monthNames = t('common.months');
+    document.getElementById('tutorHoursMonthLabel').textContent = `${monthNames[tutorHoursDate.getMonth()]} ${tutorHoursDate.getFullYear()}`;
+}
+
+/**
+ * Fetch monthly hours for every STAFF/GENERIC tutor from the server for the
+ * currently selected month, then render the table.
+ *
+ * Backend Endpoint: GET /api/reports/tutor-monthly-hours?month=YYYY-MM
+ *
+ * @async
+ */
+async function loadTutorHoursStats() {
+    const month = `${tutorHoursDate.getFullYear()}-${String(tutorHoursDate.getMonth() + 1).padStart(2, '0')}`;
+    updateTutorHoursMonthLabel();
+
+    try {
+        const response = await fetch(`/api/reports/tutor-monthly-hours?month=${month}`, { credentials: 'same-origin' });
+        if (!response.ok) throw new Error('Failed to fetch tutor monthly hours');
+        tutorHoursData = await response.json();
+    } catch (error) {
+        console.error('Error loading tutor monthly hours:', error);
+        tutorHoursData = { tutors: [], lessonsByTutor: {} };
+    }
+
+    renderTutorHoursTable();
+}
+
+/**
+ * Render one table row per tutor (filtered by the current search term),
+ * with total hours and the overlap-aware M/S/U breakdown.
+ */
+function renderTutorHoursTable() {
+    const body = document.getElementById('tutorHoursBody');
+    const noMatchEl = document.getElementById('noTutorHoursMatch');
+    body.innerHTML = '';
+
+    const filteredTutors = tutorHoursData.tutors.filter(tutor =>
+        tutor.username.toLowerCase().includes(tutorHoursSearchTerm)
+    );
+
+    noMatchEl.classList.toggle('hidden', filteredTutors.length !== 0);
+
+    filteredTutors.forEach(tutor => {
+        const rawLessons = tutorHoursData.lessonsByTutor[tutor.id] || [];
+
+        // Same ISO -> local HH:MM transform loadLessons() uses in lessonsScript.js
+        const lessons = rawLessons.map(l => ({
+            date: l.startTime.split('T')[0],
+            startTime: new Date(l.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            endTime: new Date(l.endTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            classType: l.classType
+        }));
+
+        const { totalMinutes, minutesM, minutesS, minutesU, overlapFrom } = calculateTutorOverlapAwareStats(lessons);
+
+        // Same-class overlaps (e.g. two M lessons overlapping each other) aren't reported by
+        // overlapFrom (which only tracks overlap absorbed from a *lower* class) - fold them in,
+        // same approach as renderStatistics() in lessonsScript.js.
+        ['M', 'S', 'U'].forEach(classType => {
+            const classLessons = lessons.filter(l => l.classType === classType);
+            const selfOverlapMinutes = calculateTutorOverlapAwareStats(classLessons).overlapMinutes;
+            if (selfOverlapMinutes > 0) {
+                overlapFrom[classType][classType] = selfOverlapMinutes;
+            }
+        });
+
+        const row = document.createElement('tr');
+        row.className = 'border-b border-border last:border-0';
+
+        const classCell = (hoursMinutes, overlapLabel) => {
+            const td = document.createElement('td');
+            td.className = 'py-2.5 px-4';
+            const hoursSpan = document.createElement('div');
+            hoursSpan.className = 'text-foreground';
+            hoursSpan.textContent = formatTutorHours(hoursMinutes);
+            td.appendChild(hoursSpan);
+            if (overlapLabel) {
+                const overlapSpan = document.createElement('div');
+                overlapSpan.className = 'text-xs text-muted-foreground';
+                overlapSpan.textContent = overlapLabel;
+                td.appendChild(overlapSpan);
+            }
+            return td;
+        };
+
+        const tutorCell = document.createElement('td');
+        tutorCell.className = 'py-2.5 pr-4 font-medium text-foreground';
+        tutorCell.textContent = tutor.username;
+        row.appendChild(tutorCell);
+
+        row.appendChild(classCell(totalMinutes, ''));
+        row.appendChild(classCell(minutesM, buildTutorOverlapLabel(overlapFrom.M, 'M')));
+        row.appendChild(classCell(minutesS, buildTutorOverlapLabel(overlapFrom.S, 'S')));
+        row.appendChild(classCell(minutesU, buildTutorOverlapLabel(overlapFrom.U, 'U')));
+
+        body.appendChild(row);
+    });
+}
+
+document.getElementById('prevTutorHoursMonth').addEventListener('click', () => {
+    tutorHoursDate.setMonth(tutorHoursDate.getMonth() - 1);
+    loadTutorHoursStats();
+});
+
+document.getElementById('nextTutorHoursMonth').addEventListener('click', () => {
+    tutorHoursDate.setMonth(tutorHoursDate.getMonth() + 1);
+    loadTutorHoursStats();
+});
+
+document.getElementById('tutorHoursSearchInput').addEventListener('input', function () {
+    tutorHoursSearchTerm = this.value.trim().toLowerCase();
+    renderTutorHoursTable();
+});
+
+// Show/hide toggle: collapses the search bar + table, leaving just the section header
+// (with the month navigator) visible. Purely a display toggle - collapsing doesn't stop
+// month navigation from still fetching/updating the (hidden) table underneath.
+document.getElementById('toggleTutorHoursTable').addEventListener('click', function () {
+    const content = document.getElementById('tutorHoursContent');
+    const icon = document.getElementById('tutorHoursToggleIcon');
+    const isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+    content.classList.toggle('hidden', isExpanded);
+    icon.classList.toggle('rotate-180', isExpanded);
+    this.setAttribute('aria-expanded', String(!isExpanded));
+
+    const label = isExpanded ? t('staffPanel.expandTable') : t('staffPanel.collapseTable');
+    this.setAttribute('aria-label', label);
+    this.title = label;
+});
+
+loadTutorHoursStats();

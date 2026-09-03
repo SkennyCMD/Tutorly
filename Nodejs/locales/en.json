@@ -203,7 +203,15 @@
     "studentsListDesc": "Click a student to open their profile",
     "avgMark": "Avg mark",
     "noMarks": "N/A",
-    "noStudentsFound": "No students found"
+    "noStudentsFound": "No students found",
+    "tutorsHoursOverview": "Tutors Hours Overview",
+    "tutorsHoursOverviewDesc": "Monthly hours per tutor, by class type",
+    "searchTutors": "Search tutors...",
+    "tutorColumn": "Tutor",
+    "totalColumn": "Total",
+    "noTutorsFound": "No tutors found",
+    "expandTable": "Show table",
+    "collapseTable": "Hide table"
   },
   "login": {
     "pageTitle": "Login | Tutorly",

@@ -203,7 +203,15 @@
     "studentsListDesc": "Clicca su uno studente per aprire il suo profilo",
     "avgMark": "Media voti",
     "noMarks": "N/D",
-    "noStudentsFound": "Nessuno studente trovato"
+    "noStudentsFound": "Nessuno studente trovato",
+    "tutorsHoursOverview": "Panoramica Ore Tutor",
+    "tutorsHoursOverviewDesc": "Ore mensili per tutor, per tipo di classe",
+    "searchTutors": "Cerca tutor...",
+    "tutorColumn": "Tutor",
+    "totalColumn": "Totale",
+    "noTutorsFound": "Nessun tutor trovato",
+    "expandTable": "Mostra tabella",
+    "collapseTable": "Nascondi tabella"
   },
   "login": {
     "pageTitle": "Accedi | Tutorly",

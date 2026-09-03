@@ -7,6 +7,7 @@ Features:
   - Download all tutors monthly hours report (Excel)
   - Download all students monthly hours report (Excel)
   - Download tutors monthly statistics with U/M/S breakdown and overlaps (Excel)
+  - On-page monthly tutor hours table (STAFF/GENERIC), same overlap-aware M/S/U stats as My Lessons
   - Month/year selection for report generation
   - Recent downloads tracking
   - Toast notifications for download feedback
@@ -283,6 +284,82 @@ Features:
       <div id="recentDownloads">
         <!-- Recent download items will be rendered dynamically by JavaScript -->
         <p class="text-sm text-muted-foreground text-center py-4"><%= t('staffPanel.noRecentDownloads') %></p>
+      </div>
+    </div>
+
+    <!-- Tutors Monthly Hours Table: on-page, live view of every STAFF/GENERIC tutor's
+         hours for a selected month, with the same overlap-aware M/S/U breakdown as the
+         My Lessons page's own statistics card (see public/js/lessonsScript.js). -->
+    <div class="mt-6 bg-card border border-border rounded-xl p-5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-foreground"><%= t('staffPanel.tutorsHoursOverview') %></h2>
+            <p class="text-sm text-muted-foreground"><%= t('staffPanel.tutorsHoursOverviewDesc') %></p>
+          </div>
+        </div>
+
+        <!-- Month navigator: same prev/label/next pattern as My Lessons' statistics card -->
+        <div class="flex items-center gap-2">
+          <button id="prevTutorHoursMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+            <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span id="tutorHoursMonthLabel" class="text-sm font-medium text-foreground min-w-28 text-center"></span>
+          <button id="nextTutorHoursMonth" class="p-1.5 rounded-lg hover:bg-secondary transition-colors">
+            <svg class="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          <!-- Show/hide toggle for the table below - collapses everything except this header.
+               Starts collapsed by default (hidden on #tutorHoursContent, rotate-180 on the
+               icon, aria-expanded="false"). -->
+          <button id="toggleTutorHoursTable" type="button" class="p-1.5 rounded-lg hover:bg-secondary transition-colors ml-1"
+            aria-expanded="false" aria-label="<%= t('staffPanel.expandTable') %>" title="<%= t('staffPanel.expandTable') %>">
+            <svg id="tutorHoursToggleIcon" class="w-4 h-4 text-muted-foreground transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="tutorHoursContent" class="hidden">
+        <!-- Search Bar: Filter table rows by tutor name -->
+        <div class="relative w-full mb-4">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text" id="tutorHoursSearchInput" placeholder="<%= t('staffPanel.searchTutors') %>"
+            class="w-full pl-10 pr-4 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+
+        <div class="overflow-x-auto">
+          <table id="tutorHoursTable" class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-muted-foreground border-b border-border">
+                <th class="py-2 pr-4 font-medium"><%= t('staffPanel.tutorColumn') %></th>
+                <th class="py-2 px-4 font-medium"><%= t('staffPanel.totalColumn') %></th>
+                <th class="py-2 px-4 font-medium">M</th>
+                <th class="py-2 px-4 font-medium">S</th>
+                <th class="py-2 px-4 font-medium">U</th>
+              </tr>
+            </thead>
+            <tbody id="tutorHoursBody">
+              <!-- One row per tutor, rendered dynamically by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+        <p id="noTutorHoursMatch" class="hidden text-sm text-muted-foreground text-center py-4"><%= t('staffPanel.noTutorsFound') %></p>
       </div>
     </div>
 

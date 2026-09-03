@@ -1221,6 +1221,59 @@ app.get('/api/reports/tutors-monthly-stats', tutorSession, isAuthenticated, isSt
     }
 });
 
+/**
+ * Monthly hours per tutor, for the on-page Staff Panel table (JSON, not an Excel download).
+ * GET /api/reports/tutor-monthly-hours?month=YYYY-MM
+ * Returns: { tutors: [{id, username}], lessonsByTutor: { [tutorId]: [{classType, startTime, endTime}] } }
+ * Covers STAFF and GENERIC tutors only (GUEST accounts never teach).
+ */
+app.get('/api/reports/tutor-monthly-hours', tutorSession, isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { month } = req.query; // Format: YYYY-MM (e.g., "2026-02")
+
+        if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+            return res.status(400).json({ error: 'Invalid month format. Use YYYY-MM (e.g., 2026-02)' });
+        }
+
+        const [year, monthNum] = month.split('-').map(Number);
+        const startDate = new Date(year, monthNum - 1, 1, 0, 0, 0);
+        const endDate = new Date(year, monthNum, 0, 23, 59, 59);
+
+        const startTime = startDate.toISOString().slice(0, 19);
+        const endTime = endDate.toISOString().slice(0, 19);
+
+        const [lessons, allUsers] = await Promise.all([
+            fetchFromJavaAPI(`/api/lessons/date-range?start=${startTime}&end=${endTime}`),
+            fetchFromJavaAPI('/api/users')
+        ]);
+
+        const tutors = (allUsers || []).filter(u => u.role === 'STAFF' || u.role === 'GENERIC');
+
+        // Fetch each unique student referenced this month only once, not once per lesson
+        const uniqueStudentIds = [...new Set((lessons || []).map(l => l.studentId).filter(Boolean))];
+        const studentEntries = await Promise.all(uniqueStudentIds.map(async id => [id, await fetchStudentData(id)]));
+        const studentById = new Map(studentEntries);
+
+        const lessonsByTutor = {};
+        (lessons || []).forEach(lesson => {
+            const student = lesson.studentId ? studentById.get(lesson.studentId) : null;
+            (lessonsByTutor[lesson.tutorId] = lessonsByTutor[lesson.tutorId] || []).push({
+                classType: student?.studentClass || 'M',
+                startTime: lesson.startTime,
+                endTime: lesson.endTime
+            });
+        });
+
+        res.json({
+            tutors: tutors.map(t => ({ id: t.id, username: t.username })),
+            lessonsByTutor
+        });
+    } catch (error) {
+        logError('Error fetching tutor monthly hours', req, { month: req.query.month, error: error.message });
+        res.status(500).json({ error: 'Failed to fetch tutor monthly hours' });
+    }
+});
+
 app.get('/logout', tutorSession, (req, res) => {
     req.session.destroy((err) => {
         if (err) {
