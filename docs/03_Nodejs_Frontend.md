@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: August 13, 2026  
+**Last Updated**: September 3, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -705,6 +705,8 @@ A `GUEST` account (e.g. a parent/guardian, created via the [Admin Panel - Guest 
 
 **UI hardening for GUEST:** on `/home` and `/calendar`, the "Add Lesson"/"Add Prenotation"/"Add Note" buttons aren't rendered, and every lesson/prenotation/note row is rendered without its click handler or pointer cursor (no edit/convert-to-lesson modal reachable) - covering grid clicks, drag-to-select, and all-day note chips, not just the obvious buttons. Nav links to pages a GUEST can't reach (`My Lessons`, `Reports`, `Staff Panel`) are hidden rather than left as dead ends.
 
+**GUEST accounts excluded from tutor-assignment lists:** a `GUEST` isn't a tutor - they don't teach and shouldn't be selectable when a STAFF tutor assigns a lesson/prenotation's tutor or a note's assignees. `/calendar` and `/student/:id` both filter `role !== 'GUEST'` out of the `tutors` list fetched from `GET /api/users` before rendering it (same filter `GET /api/admin/tutors` already applied for the Admin Panel), so a `GUEST` account never appears in the Calendar's tutor filter/assignment UI or the Student Profile page's prenotation tutor-reassignment list.
+
 ---
 
 ## Session Management
@@ -1338,6 +1340,25 @@ The "Add Prenotation" form has a "Repeat weekly" checkbox with a Repeat From / R
 
 ### Continuous Multi-Day Notes and All-Day Notes
 Calendar notes are a single record spanning a Start Date/Time to an End Date/Time, rather than one record per day - e.g. a note from Monday 14:00 to Wednesday 10:00 is one note that renders across all three days. Checking "All day" sets the time range to `00:00`-`23:59` for the selected day(s) instead of requiring manual times. All-day notes are rendered in a dedicated all-day row above the hourly time grid (desktop week view and mobile day view) instead of being stretched across the 24-hour grid like timed events, and that row is hidden entirely when the visible week/day has no all-day notes.
+
+### Per-Tutor Prenotation Colors (STAFF)
+
+In STAFF's Calendar view, every tutor's prenotations get their own color instead of all rendering in the same blue - useful once several tutors' slots are visible at once. Implemented entirely client-side in `calendarScript.js`:
+
+- **Palette:** 48 colors defined as CSS custom properties in `theme.css` (`--color-tutor-1` through `--color-tutor-48`, both light and dark theme variants) - 12 hues spaced ~24° apart around the color wheel (excluding only the ranges already used by `--color-note` and `--color-destructive`; blue is included, since the logged-in tutor's own events never draw from this palette) x 4 lightness/saturation tiers, laid out so any run of 12 consecutive palette slots sweeps the full set of distinct hues. Regenerate with `Nodejs/scripts/gen-tutor-palette.js` if the tutor count outgrows 48.
+- **Assignment:** `getTutorColorVar(tutorId)` picks a palette slot deterministically (`tutorId % 48`), so a given tutor always gets the same color across reloads. `applyTutorColor()` applies it (background + left border only) to a prenotation's event box, but only when the viewer is STAFF **and** the event's tutor isn't the logged-in user - the logged-in tutor's own prenotations always keep the default `--color-lesson` blue.
+- **Text color** is intentionally decoupled from the assigned color for readability: `.event-lesson` always uses `--color-foreground` (black in light theme), with a softer off-white override (`rgb(220 220 224)`, less stark than `--color-foreground`'s `250 250 250`) specifically in dark theme.
+
+### Note Coloring by Creator
+
+Calendar notes render in one of two colors depending on who created them, computed client-side from each note's `creatorId` (added to the event objects `buildNoteSegments()` produces, sourced from the note's `creator.id` field) versus `window.serverData.currentUserId`:
+
+- **Orange** (`--color-note`, unchanged from before) if the viewing tutor is the note's creator.
+- **Red** (`--color-destructive`, via an `.event-note-other` class added alongside `.event-note`) if it was created by someone else and merely assigned to the viewer - most relevant for STAFF, since only STAFF can assign a note to a tutor other than themselves.
+
+The `isOwnNote()` helper defaults to "own" (orange) if a note's creator is somehow unknown, rather than flagging it red. Both note text color and background opacity (`0.45`, up from the original `0.2`) were tuned per-theme and per-category (own vs. other) directly in `calendar.css` for contrast against the more opaque background - not derived from `--color-note`/`--color-destructive` directly.
+
+**Fetching notes by creator, not just by assignment:** `/calendar` previously fetched a tutor's notes only via `GET /api/calendar-notes/tutor/:id` (assignment-based - the `tutors` many-to-many side). A STAFF tutor who created a note for someone else, without also assigning it to themselves, never saw that note on their own calendar. The route now also calls `GET /api/calendar-notes/creator/:id` (an existing Java endpoint the Node route never used before) and merges the two lists, deduplicated by note `id`.
 
 ---
 
