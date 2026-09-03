@@ -627,7 +627,7 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
         // the creator) - a STAFF tutor who creates a note for someone else should
         // still see it on their own calendar, even if they didn't assign it to
         // themselves too. Merged and deduplicated below.
-        const [allPrenotations, assignedNotes, createdNotes, students, tutors, assignedStudents] = await Promise.all([
+        const [allPrenotations, assignedNotes, createdNotes, students, allUsers, assignedStudents] = await Promise.all([
             fetchFromJavaAPI(prenotationsEndpoint),
             fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`),
             fetchFromJavaAPI(`/api/calendar-notes/creator/${tutorId}`),
@@ -641,6 +641,10 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             calendarNotesById.set(note.id, note);
         });
         const calendarNotes = Array.from(calendarNotesById.values());
+
+        // GUEST accounts aren't tutors - exclude them from the tutor filter dropdown
+        // and every "assign to" list (lesson/prenotation tutor, note assignees)
+        const tutors = (allUsers || []).filter(u => u.role !== 'GUEST');
 
         // GUEST accounts only see their assigned student(s)' prenotations
         let prenotations = allPrenotations;
@@ -935,13 +939,17 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
 
         // Tests, prenotations, and lessons/hours all span every tutor who has ever dealt
         // with this student (full history) - not just the viewing tutor's own sessions
-        const [tests, lessons, prenotationsData, allTutors, packsData] = await Promise.all([
+        const [tests, lessons, prenotationsData, allUsers, packsData] = await Promise.all([
             fetchTestsByStudent(studentId),
             fetchFromJavaAPI(`/api/lessons/student/${studentId}`),
             fetchPrenotationsByStudent(studentId),
             fetchFromJavaAPI('/api/users'),
             fetchPacksByStudent(studentId)
         ]);
+
+        // GUEST accounts aren't tutors - exclude them from the prenotation
+        // reassignment tutor list
+        const allTutors = (allUsers || []).filter(u => u.role !== 'GUEST');
 
         // A pack is still active if it has no closure date
         const activePacks = (packsData || [])
