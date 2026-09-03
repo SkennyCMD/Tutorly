@@ -622,14 +622,25 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             ? '/api/prenotations'
             : `/api/prenotations/tutor/${tutorId}`;
 
-        // Fetch all required data in parallel
-        const [allPrenotations, calendarNotes, students, tutors, assignedStudents] = await Promise.all([
+        // Fetch all required data in parallel. Calendar notes are fetched both by
+        // assignment (tutor is in the note's assignees) and by authorship (tutor is
+        // the creator) - a STAFF tutor who creates a note for someone else should
+        // still see it on their own calendar, even if they didn't assign it to
+        // themselves too. Merged and deduplicated below.
+        const [allPrenotations, assignedNotes, createdNotes, students, tutors, assignedStudents] = await Promise.all([
             fetchFromJavaAPI(prenotationsEndpoint),
             fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`),
+            fetchFromJavaAPI(`/api/calendar-notes/creator/${tutorId}`),
             fetchFromJavaAPI('/api/students'),
             fetchFromJavaAPI('/api/users'),
             isGuest ? fetchStudentsByGuest(tutorId) : Promise.resolve(null)
         ]);
+
+        const calendarNotesById = new Map();
+        [...(assignedNotes || []), ...(createdNotes || [])].forEach(note => {
+            calendarNotesById.set(note.id, note);
+        });
+        const calendarNotes = Array.from(calendarNotesById.values());
 
         // GUEST accounts only see their assigned student(s)' prenotations
         let prenotations = allPrenotations;
@@ -662,9 +673,11 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             };
         }));
         
-        // Calendar notes - pass as-is since API doesn't return creator info in list
-        // Creator verification will be done server-side on PUT/DELETE operations
-        const enrichedCalendarNotes = calendarNotes || [];
+        // Calendar notes - pass as-is; each note already includes its creator (used
+        // client-side to color notes assigned by someone else differently, see
+        // isOwnNote() in calendarScript.js). Creator authorization for PUT/DELETE is
+        // still re-checked server-side regardless of what the client sends.
+        const enrichedCalendarNotes = calendarNotes;
         
         res.render('calendar', {
             userId: req.session.userId,

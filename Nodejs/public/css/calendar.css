@@ -63,9 +63,25 @@ body {
       color: rgb(220 220 224);
     }
     .event-note {
-      background-color: rgb(var(--color-note) / 0.2);
+      background-color: rgb(var(--color-note) / 0.45);
       border-left: 3px solid rgb(var(--color-note));
-      color: rgb(var(--color-note));
+      /* Text color tuned separately from --color-note (used for the
+         border/left-edge) for readability against the opaque tinted
+         background: darker in light theme, lighter in dark theme. */
+      color: rgb(133 77 14);
+    }
+    :root[data-theme="dark"] .event-note {
+      color: rgb(253 186 116);
+    }
+    /* Notes created by someone else (id_creator != the viewing tutor) - own
+       notes stay --color-note (orange). */
+    .event-note.event-note-other {
+      background-color: rgb(var(--color-destructive) / 0.45);
+      border-left: 3px solid rgb(var(--color-destructive));
+      color: rgb(127 29 29);
+    }
+    :root[data-theme="dark"] .event-note.event-note-other {
+      color: rgb(252 165 165);
     }
     .day-column {
       position: relative;

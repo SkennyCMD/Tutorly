@@ -144,7 +144,8 @@ function buildNoteSegments(note) {
       startTime: isFirstDay ? startMoment.toTimeString().slice(0, 5) : '00:00',
       endTime: isLastDay ? endMoment.toTimeString().slice(0, 5) : '23:59',
       isMultiDay: !(isFirstDay && isLastDay),
-      assignees: ['myself'] // Default assignees
+      assignees: ['myself'], // Default assignees
+      creatorId: note.creator?.id
     });
 
     cursor.setDate(cursor.getDate() + 1);
@@ -633,7 +634,7 @@ function renderAllDayNotesRow() {
     html += `
       <div class="p-1 space-y-0.5 border-l border-border">
         ${notesForDay.map(note => `
-          <div class="event-note text-[10px] px-1.5 py-0.5 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`} title="${note.description}">${note.description}</div>
+          <div class="event-note${isOwnNote(note) ? '' : ' event-note-other'} text-[10px] px-1.5 py-0.5 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`} title="${note.description}">${note.description}</div>
         `).join('')}
       </div>
     `;
@@ -768,7 +769,7 @@ function renderEventsOnGrid() {
     if (cell) {
       // Create event element with calculated position and size
       const eventEl = document.createElement('div');
-      eventEl.className = `event event-${event.type}`;
+      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}`;
       eventEl.style.top = `${topOffset}px`;
       eventEl.style.height = `${heightPx}px`;
       eventEl.style.minHeight = '20px';
@@ -858,7 +859,7 @@ function renderMobileAllDayNotes() {
   const notesForDay = filterEventsByTutor(events).filter(e => isAllDayNote(e) && e.date === dateStr);
 
   row.innerHTML = notesForDay.map(note => `
-    <div class="event-note text-xs px-2 py-1 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`}>${note.description}</div>
+    <div class="event-note${isOwnNote(note) ? '' : ' event-note-other'} text-xs px-2 py-1 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`}>${note.description}</div>
   `).join('');
   row.classList.toggle('hidden', notesForDay.length === 0);
 }
@@ -964,7 +965,7 @@ function renderMobileEvents() {
 
     if (cell) {
       const eventEl = document.createElement('div');
-      eventEl.className = `event event-${event.type}`;
+      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}`;
       eventEl.style.top = `${topOffset}px`;
       eventEl.style.height = `${heightPx}px`;
       eventEl.style.minHeight = '20px';
@@ -2784,4 +2785,17 @@ function applyTutorColor(eventEl, tutorId) {
   eventEl.style.borderLeftColor = `rgb(var(${colorVar}))`;
   // Text stays --color-foreground (black in light theme, white in dark) for
   // readability - only the background/border carry the tutor's color.
+}
+
+/**
+ * Whether a calendar note was created by the currently logged-in tutor.
+ * Notes with no known creator (shouldn't happen - id_creator is required
+ * server-side) default to "own" rather than flagging them as assigned.
+ *
+ * @param {Object} noteEvent - A 'note'-type event (see buildNoteSegments)
+ * @returns {boolean}
+ */
+function isOwnNote(noteEvent) {
+  const currentUserId = window.serverData?.currentUserId;
+  return noteEvent.creatorId == null || noteEvent.creatorId === currentUserId;
 }
