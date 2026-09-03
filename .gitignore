@@ -1,3 +1,4 @@
 # Files kept locally but not tracked in the repo
 Nodejs/admin_login_attempts.txt
 Database/old_init.sql
+.claude/
