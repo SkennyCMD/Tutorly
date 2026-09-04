@@ -780,6 +780,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.1.0** | 2026-09-03 | Web Push Notifications (VAPID, not Firebase) for GUEST lesson bookings and tutor prenotation/note assignments; theme toggle, notifications, and logout consolidated into a single gear-icon Settings Menu across all main pages; Staff Panel gained a live monthly tutor-hours table (STAFF/GENERIC, overlap-aware M/S/U breakdown); Calendar per-tutor prenotation colors and note-coloring-by-creator with a custom tutor-filter dropdown; new public Privacy/Cookies pages. |
 | **2.0.5** | 2026-09-01 | Staff Panel's logo now links to `/home` instead of a static `home.html` leftover; removed the dead "Become a Tutor" link from the login page. |
 | **2.0.4** | 2026-08-20 | The "Add Lesson"/"Add Note" modals on Dashboard, My Lessons, and Calendar (header buttons) now default their date/time to today and the previous quarter-hour, instead of a blank or stale value. |
 | **2.0.3** | 2026-08-13 | Calendar tutor filter now persists across refreshes; Dashboard/Evaluations nav links and the Staff Panel label now highlight/read correctly; admin-created tutor/GUEST accounts are now recorded in `admin_creates_user`; "Forgot password?" shows a contact-an-administrator tooltip. |
@@ -796,15 +797,6 @@ We thank the following users for their fundamental contribution
 | **1.0.2** | 2026-07-06 | "Remember me for 30 days" login option; calendar wording fix ("Add Prenotation"). |
 | **1.0.1** | 2026-07-02 | Centralized Java backend config; lesson stats now include booked/in-progress lessons. |
 | **1.0.0** | 2026-04-29 | Initial stable release: full three-tier architecture (Spring Boot + PostgreSQL + Node.js/Express/EJS), authentication, Dashboard, Calendar, Lessons, and Staff Panel. |
-
-### What's Next
-
-- E2E testing with Playwright
-- Redis session storage for horizontal scaling
-- Real-time notifications with WebSockets
-- Mobile-responsive design improvements
-- Email notifications for lesson confirmations
-- Advanced reporting dashboard
 
 
 ---
