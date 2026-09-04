@@ -327,6 +327,29 @@ function fetchPrenotationsByStudent(studentId) {
         });
 }
 
+/**
+ * Fetch all prenotations (bookings) starting within a date/time range, across every tutor.
+ *
+ * Used by the daily reminder job (server_utilities/reminderScheduler.js) to find every
+ * prenotation starting "today", regardless of who it's assigned to.
+ * Returns empty array if no prenotations found or on error.
+ *
+ * @param {string} startTime - ISO datetime string (inclusive)
+ * @param {string} endTime - ISO datetime string (inclusive)
+ * @returns {Promise<Array>} Array of prenotation objects starting in that range
+ *
+ * @example
+ * const today = await fetchPrenotationsByDateRange('2026-09-04T00:00:00', '2026-09-04T23:59:59');
+ */
+function fetchPrenotationsByDateRange(startTime, endTime) {
+    return fetchFromJavaAPI(`/api/prenotations/date-range?start=${startTime}&end=${endTime}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching prenotations by date range:', error);
+            return [];
+        });
+}
+
 
 // Student Data Operations
 
@@ -571,7 +594,7 @@ function deletePushSubscriptionByEndpoint(endpoint) {
  * - Tutors: fetchTutorData
  * - Students: fetchStudentData, fetchAllStudents
  * - Lessons: fetchLessonsByTutor, fetchAllLessons
- * - Prenotations: fetchAllPrenotations, fetchPrenotationsByTutor
+ * - Prenotations: fetchAllPrenotations, fetchPrenotationsByTutor, fetchPrenotationsByDateRange
  * - Calendar Notes: fetchCalendarNotesByTutor, fetchCalendarNotesByDateRange
  * - Tests (Evaluations): fetchTestsByTutor
  * - Push Subscriptions: fetchPushSubscriptionsByUser, upsertPushSubscription, deletePushSubscriptionByEndpoint
@@ -591,6 +614,7 @@ module.exports = {
     fetchAllPrenotations,
     fetchPrenotationsByTutor,
     fetchPrenotationsByStudent,
+    fetchPrenotationsByDateRange,
     fetchStudentData,
     fetchAllStudents,
     fetchTestsByTutor,

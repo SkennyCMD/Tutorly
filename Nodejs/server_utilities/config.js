@@ -142,6 +142,22 @@ module.exports = {
     VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:admin@example.com',
 
 
+    // Daily Reminder Notifications
+
+
+    /**
+     * Local time of day (24h "HH:MM") the daily reminder job runs at - one push
+     * per prenotation/calendar note starting that day. See server_utilities/reminderScheduler.js.
+     */
+    REMINDER_TIME: process.env.REMINDER_TIME || '07:00',
+
+    /**
+     * IANA timezone the reminder job's REMINDER_TIME (and DST) is evaluated in -
+     * intentionally independent of the server's own OS timezone.
+     */
+    TIMEZONE: process.env.TIMEZONE || 'Europe/Rome',
+
+
     // Branding Configuration
 
 

@@ -62,6 +62,10 @@ const {
 // Web Push notification sender (VAPID, not Firebase) - see server_utilities/pushService.js
 const { sendPushToUser } = require('../server_utilities/pushService');
 
+// Daily reminder job (prenotations/notes starting today) - self-initializes on require,
+// see server_utilities/reminderScheduler.js
+require('../server_utilities/reminderScheduler');
+
 /**
  * Format a local "YYYY-MM-DDTHH:MM:SS" datetime string as "DD/MM/YYYY HH:MM"
  * for push notification bodies. String-sliced rather than parsed into a Date
