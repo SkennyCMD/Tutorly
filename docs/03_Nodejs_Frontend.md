@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: September 3, 2026  
+**Last Updated**: September 4, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -1350,12 +1350,23 @@ Standard Web Push (a VAPID keypair), not Firebase Cloud Messaging. Notifies a `G
 
 **Files:**
 - `server_utilities/config.js` - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (env-configured; the one-time keypair is generated with `node -e "console.log(require('web-push').generateVAPIDKeys())"`). Push silently becomes a no-op if the keys are unset.
-- `server_utilities/javaApiService.js` - `fetchPushSubscriptionsByUser`, `upsertPushSubscription`, `deletePushSubscriptionByEndpoint` wrap the Java `/api/push-subscriptions` endpoints.
+- `server_utilities/javaApiService.js` - `fetchPushSubscriptionsByUser`, `upsertPushSubscription`, `deletePushSubscriptionByEndpoint` wrap the Java `/api/push-subscriptions` endpoints; `fetchPrenotationsByDateRange`/`fetchCalendarNotesByDateRange` back the daily reminder job below.
 - `server_utilities/pushService.js` - `sendPushToUser(userId, payload)`: fetches a user's subscriptions, sends to each via the `web-push` package, and prunes any subscription the push service reports as gone (HTTP 404/410). Never throws, so callers can fire-and-forget it.
-- `src/index.js` - `GET /api/push/vapid-public-key`, `POST /api/push/subscribe`, `POST /api/push/unsubscribe` (all `isAuthenticated` only, deliberately **not** behind `blockGuestApi` - a `GUEST` must be able to register their own device). The two triggers: inside `POST /api/prenotations`'s success branch (notifies the assigned tutor, and - via a student lookup - the student's linked `GUEST`, if any) and inside `POST /api/calendar-notes`'s success branch (notifies each assigned tutor except the creator). Both fire *after* `res.json(...)`, so a slow or failed send can never delay or break the HTTP response.
+- `src/index.js` - `GET /api/push/vapid-public-key`, `POST /api/push/subscribe`, `POST /api/push/unsubscribe` (all `isAuthenticated` only, deliberately **not** behind `blockGuestApi` - a `GUEST` must be able to register their own device). Two creation-time triggers: inside `POST /api/prenotations`'s success branch and inside `POST /api/calendar-notes`'s success branch, both firing *after* `res.json(...)` so a slow or failed send can never delay or break the HTTP response - see message formats below.
 - `public/service-worker.js` - the `push` event shows a notification from the server's JSON payload (`{ title, body, url, tag }`); `notificationclick` focuses an existing tab or opens a new one at `url` (always `/calendar`, where both prenotations and notes are rendered).
 - `public/js/push.js` - client-side subscribe/unsubscribe flow for the bell toggle: `Notification.requestPermission()` → `pushManager.subscribe()` → `POST /api/push/subscribe`, or the reverse to unsubscribe. Subscription state is per-browser, reflected as `[data-push-subscribed]` on `<html>` (same pattern as `[data-theme]` for the theme toggle), so every toggle instance on the page stays in sync. Feature-detects `serviceWorker`/`PushManager`/`Notification` support and leaves the toggle hidden entirely if any is missing.
 - `views/partials/push-toggle-mobile.ejs` - the toggle's row markup, included in both the desktop and mobile [Settings Menu](#settings-menu-theme-notifications-logout).
+
+**Message formats (creation-time triggers):**
+- Prenotation created: title `New Prenotation Assigned by <username>`, body `For: <student>` / `At: <DD/MM/YYYY HH:MM>` (formatted by `formatNotificationDateTime()` in `src/index.js`). Sent to the assigned tutor and, identically, to the student's linked GUEST if any - both built from a single student lookup, not two.
+- Calendar note created: title `New Note Assigned by <username>`, body is the note's own description. Sent to every assigned tutor except the creator.
+
+**Daily reminders:** the app's first scheduled/recurring job. `server_utilities/reminderScheduler.js` uses `node-cron` to fire once a day at a configurable local time, sending a push for every prenotation/calendar note whose `startTime` falls on that same day.
+- Self-initializes at require-time (one `require('../server_utilities/reminderScheduler')` in `src/index.js`, same convention `pushService.js` already uses for VAPID setup) - no explicit "start" call needed.
+- `REMINDER_TIME` (`"HH:MM"`, default `07:00`) and `TIMEZONE` (an IANA name, default `Europe/Rome`) are both `.env`-configurable in `config.js`, not hardcoded - `node-cron`'s `timezone` option keeps the schedule correct across the CET/CEST switch regardless of the server's own OS timezone.
+- Titles: `Reminder: Prenotation Today` (body `For: <student>` / `At: <HH:MM>`) and `Reminder: Note Today` (body is the note's description). Prenotation reminders go to the assigned tutor and the student's linked GUEST; note reminders go to every assigned tutor - with no exclusions (unlike the creation-time trigger, there's no "creator" to skip since this is a same-day reminder for everyone concerned).
+- Student lookups are deduped to one fetch per unique student across the whole day's prenotations, not one per prenotation (same optimization as the Staff Panel monthly-hours route - see [Client-Side JavaScript](#client-side-javascript)).
+- Exports `sendDailyReminders()` for manual/on-demand triggering (e.g. from a Node REPL) without waiting for the schedule.
 
 **Caveats:**
 - `pushManager.subscribe()` requires a secure context - `localhost` is exempt regardless of port/scheme, but a real hostname needs a trusted HTTPS certificate.

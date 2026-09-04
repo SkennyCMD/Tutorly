@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: September 3, 2026  
+**Last Updated**: September 4, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -158,7 +158,7 @@ User-friendly web interface that handles authentication, sessions and presents d
 - ✅ **Server-side rendering** with EJS templates
 - ✅ **Progressive Web App (PWA)**: Offline fallback support and caching via service workers (`manifest.json`, `service-worker.js`).
 - ✅ **Light/Dark Theme**: User-toggleable theme (sun/moon icon in every view) with the preference persisted in `localStorage` and synced to the OS `prefers-color-scheme` when no preference is set.
-- ✅ **Web Push Notifications**: standard Web Push (VAPID, not Firebase) - notifies a GUEST when a lesson is booked for their linked student, and notifies a tutor when a prenotation or calendar note is assigned to them.
+- ✅ **Web Push Notifications**: standard Web Push (VAPID, not Firebase) - notifies a GUEST when a lesson is booked for their linked student, and notifies a tutor when a prenotation or calendar note is assigned to them. A daily reminder job (configurable time/timezone) also pushes a notice for every prenotation/note starting that same day.
 - ✅ **Excel export** for reports and statistics
 - ✅ **Advanced logging** with colors and timestamps
 - ✅ **Middleware chain** for authentication and authorization
@@ -780,6 +780,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.2.0** | 2026-09-04 | Web Push Notifications gained a daily reminder job (configurable time/timezone) for prenotations and calendar notes starting that day; creation-time push titles now name who made the change; `package-lock.json` is now tracked in git so `npm ci` deploys stay reliable. |
 | **2.1.0** | 2026-09-03 | Web Push Notifications (VAPID, not Firebase) for GUEST lesson bookings and tutor prenotation/note assignments; theme toggle, notifications, and logout consolidated into a single gear-icon Settings Menu across all main pages; Staff Panel gained a live monthly tutor-hours table (STAFF/GENERIC, overlap-aware M/S/U breakdown); Calendar per-tutor prenotation colors and note-coloring-by-creator with a custom tutor-filter dropdown; new public Privacy/Cookies pages. |
 | **2.0.5** | 2026-09-01 | Staff Panel's logo now links to `/home` instead of a static `home.html` leftover; removed the dead "Become a Tutor" link from the login page. |
 | **2.0.4** | 2026-08-20 | The "Add Lesson"/"Add Note" modals on Dashboard, My Lessons, and Calendar (header buttons) now default their date/time to today and the previous quarter-hour, instead of a blank or stale value. |

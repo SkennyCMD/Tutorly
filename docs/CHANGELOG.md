@@ -19,6 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] - 2026-09-04
+
+### Added
+- **Web Push Notifications**: a daily reminder job (the app's first scheduled/recurring task) now sends a push at a configurable local time (`REMINDER_TIME`, default `07:00`, evaluated in a configurable `TIMEZONE`, default `Europe/Rome` - both in `.env`) for every prenotation and calendar note starting that same day. Prenotations remind the assigned tutor and the student's linked GUEST (if any); notes remind every assigned tutor, with no exclusions this time since it's a same-day reminder for everyone concerned rather than a "someone else did this" notice.
+
+### Changed
+- **Web Push Notifications**: prenotation/note push titles now name who made the change - "New Prenotation Assigned by \<username\>" (body: "For: \<student\>" / "At: \<DD/MM/YYYY HH:MM\>") and "New Note Assigned by \<username\>" - instead of the previous generic "New lesson booked"/"New task assigned". The tutor and the student's linked GUEST now get an identical prenotation payload (previously worded differently) from a single student lookup instead of two.
+
+### Fixed
+- **Deployment**: `Nodejs/package-lock.json` was gitignored, so it never traveled with `git pull` - each environment kept its own local copy, which silently drifted out of sync with `package.json` whenever a new dependency was added (as happened with `web-push`), causing `npm ci` to fail on the next deploy. Now tracked in git so every environment gets an already-synced lock file.
+
+---
+
 ## [2.1.0] - 2026-09-03
 
 ### Added
@@ -278,7 +291,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Known Issues
 
-### Current Issues (v2.1.0)
+### Current Issues (v2.2.0)
 - [ ] No automated tests for frontend routes
 - [ ] Self-signed certificates show browser warnings (expected in development)
 - [ ] Large Excel exports may timeout (optimization planned)
@@ -309,4 +322,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: September 3, 2026
+**Last Updated**: September 4, 2026
