@@ -62,6 +62,22 @@ const {
 // Web Push notification sender (VAPID, not Firebase) - see server_utilities/pushService.js
 const { sendPushToUser } = require('../server_utilities/pushService');
 
+/**
+ * Format a local "YYYY-MM-DDTHH:MM:SS" datetime string as "DD/MM/YYYY HH:MM"
+ * for push notification bodies. String-sliced rather than parsed into a Date
+ * object, since these datetime strings are already local wall-clock values
+ * (see POST /api/prenotations) - going through Date would risk a timezone
+ * shift depending on the server's own timezone.
+ * @param {string} dateTimeStr
+ * @returns {string}
+ */
+function formatNotificationDateTime(dateTimeStr) {
+    const [datePart, timePart] = dateTimeStr.split('T');
+    const [year, month, day] = datePart.split('-');
+    const [hour, minute] = timePart.split(':');
+    return `${day}/${month}/${year} ${hour}:${minute}`;
+}
+
 // Fixed reference list of subjects for the Evaluations ("Add Evaluation") form
 const subjectsList = require('../config/subjects.json');
 
@@ -1906,23 +1922,22 @@ app.post('/api/prenotations', tutorSession, isAuthenticated, blockGuestApi, asyn
                         res.json(prenotation);
 
                         // Fire-and-forget push notifications - never awaited, so a slow/failed
-                        // send can't delay or break the response above.
-                        if (parseInt(tutorId) !== parseInt(currentUserId)) {
-                            sendPushToUser(tutorId, {
-                                title: 'New lesson booked',
-                                body: `A lesson was booked for you: ${startDateTime} - ${endDateTime}`,
+                        // send can't delay or break the response above. Both recipients (the
+                        // assigned tutor and the student's linked GUEST, if any) get the same
+                        // payload, so the student is fetched once and reused for both.
+                        fetchStudentData(studentId).then((student) => {
+                            const studentName = student ? `${student.name} ${student.surname}` : 'Unknown';
+                            const pushPayload = {
+                                title: `New Prenotation Assigned by ${req.session.username}`,
+                                body: `For: ${studentName}\nAt: ${formatNotificationDateTime(startDateTime)}`,
                                 url: '/calendar',
                                 tag: `prenotation-${prenotation.id}`
-                            });
-                        }
-                        fetchStudentData(studentId).then((student) => {
+                            };
+                            if (parseInt(tutorId) !== parseInt(currentUserId)) {
+                                sendPushToUser(tutorId, pushPayload);
+                            }
                             if (student && student.userId) {
-                                sendPushToUser(student.userId, {
-                                    title: 'New lesson booked',
-                                    body: `A new lesson was booked for ${student.name} ${student.surname}`,
-                                    url: '/calendar',
-                                    tag: `prenotation-${prenotation.id}`
-                                });
+                                sendPushToUser(student.userId, pushPayload);
                             }
                         }).catch((error) => logError('Error looking up student for push notification', req, { error: error.message }));
                     } catch (e) {
@@ -2110,7 +2125,7 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, blockGuestApi, as
                         (tutorIds || []).forEach((assignedTutorId) => {
                             if (parseInt(assignedTutorId) !== parseInt(creatorId)) {
                                 sendPushToUser(assignedTutorId, {
-                                    title: 'New task assigned',
+                                    title: `New Note Assigned by ${req.session.username}`,
                                     body: description,
                                     url: '/calendar',
                                     tag: `calendar-note-${note.id}`
