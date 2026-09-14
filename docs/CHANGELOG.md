@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.1] - 2026-09-14
+
+### Fixed
+- **Erased accounts still selectable**: an erased (`anonymizedAt`-set) tutor or student kept showing up in every page's own "pick one" list, even though the admin-panel routes were already guarded against mutating one. `/home`, `/lessons`, and `/calendar` now exclude erased students from their Add Lesson/Prenotation/Note student dropdowns; `/calendar` and `/staffPanel` exclude erased tutors from their tutor filter/assign-to dropdowns and tutor list; `/reports` excludes erased students from its Add Evaluation dropdown; `/staffPanel` excludes erased students from its own student list too. Historical records that already reference an erased account (past lessons, prenotations, evaluations) are unaffected - only the selection lists are filtered. See [03_Nodejs_Frontend.md - GDPR Right to Erasure](03_Nodejs_Frontend.md#gdpr-right-to-erasure-admin-panel).
+
+---
+
 ## [2.3.0] - 2026-09-14
 
 ### Added

@@ -1484,6 +1484,8 @@ The admin panel wires the Java-side anonymize-on-erase feature (see [01_Java_Bac
 
 **Login rejection:** `authenticateTutor()` (`server_utilities/authService.js`) denies login for an erased account by checking `anonymizedAt` directly rather than the `DISCONTINUED` status string it happens to also set - `status` is a business-state flag that erasure incidentally touches, not the actual erasure signal, so checking it directly avoids coupling this security check to that side effect. See [GDPR Right to Erasure](01_Java_Backend_API.md#erasure-gdpr-style-delete-instead-of-hard-delete) for why `Users`/`Students`/`Admins` are anonymized in place instead of hard-deleted in the first place, and [08_Testing_Guide.md - Node.js Frontend Testing](08_Testing_Guide.md#nodejs-frontend-testing) for the automated regression coverage on all of the above.
 
+**Hidden from tutor-facing selection lists:** an erased account isn't only guarded against mutation - it's also filtered out of every list a tutor picks *from*, so an erased tutor/student can't be newly assigned anything even where no admin-panel guard applies. `anonymizedAt`-set records are excluded from the `students` array passed to `/home`, `/lessons`, `/calendar` (Add Lesson/Prenotation/Note modals), and `/reports` (Add Evaluation modal), and from the `tutors` array passed to `/calendar` (tutor filter + assign-to dropdowns) and `/staffPanel` (tutor list, alongside its own already-filtered student list). This only hides an erased account from being *picked*; existing historical records that already reference one (a past lesson, prenotation, or evaluation) still resolve and display it - typically as "Erased"/"Student `<id>`" - rather than disappearing.
+
 ---
 
 ## Student Profile Page
