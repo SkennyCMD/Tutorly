@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: August 6, 2026  
+**Last Updated**: September 14, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -61,7 +61,7 @@ Authenticates a tutor user against the Java backend API.
 1. Hash the attempted password with bcrypt
 2. Fetch all tutors from Java API
 3. Find tutor by username
-4. Check account status (blocked check)
+4. Check account status - rejects if `status === 'BLOCKED'` **or** `anonymizedAt` is set (a GDPR-erased account, see [03_Nodejs_Frontend.md - GDPR Right to Erasure](03_Nodejs_Frontend.md#gdpr-right-to-erasure-admin-panel)). `anonymizedAt` is checked directly rather than relying on the `DISCONTINUED` status string erasure happens to also set, since `status` is a business-state flag that erasure incidentally touches, not the actual erasure signal.
 5. Verify password with bcrypt comparison
 6. Return authentication result with tutor data
 

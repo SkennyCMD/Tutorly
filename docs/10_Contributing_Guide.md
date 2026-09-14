@@ -547,6 +547,8 @@ void shouldThrowExceptionForInvalidStudent() {
 - [ ] Integration tests for routes
 - [ ] Test authentication/authorization
 
+A real Jest/Supertest suite now exists at `Nodejs/test/` (one file per route group under `test/routes/`, shared helpers under `test/helpers/`) - see [08_Testing_Guide.md - Node.js Frontend Testing](08_Testing_Guide.md#nodejs-frontend-testing) for how the Java backend is mocked and how to add a new route's tests following the same pattern.
+
 ```javascript
 describe('authenticateTutor', () => {
     it('should return tutor data for valid credentials', async () => {

@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: September 8, 2026  
+**Last Updated**: September 14, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -598,6 +598,7 @@ Each component has its own detailed documentation:
 
 ### Data Privacy
 - **GDPR-style account erasure**: deleting a `User`, `Student`, or `Admin` (`DELETE /api/{users,students,admins}/{id}`) anonymizes the row rather than hard-deleting it - identifying fields are scrubbed and the row is stamped `anonymized_at`, but the record itself (and everything referencing it - lessons, prenotations, tests, packs, a GUEST's linked student) survives, so no `ON DELETE CASCADE` chain deletes still-needed data as a side effect. See [01_Java_Backend_API.md - Erasure](01_Java_Backend_API.md#erasure-gdpr-style-delete-instead-of-hard-delete).
+- **Admin panel erasure UI**: an "Erase" button on every tutor/guest/student card, gated by a type-the-username/name-to-confirm modal, an `anonymizedAt` guard on every route that could otherwise mutate an already-erased account (role/status/class/profile/guest-assignment), and login rejection for erased tutor accounts. See [03_Nodejs_Frontend.md - GDPR Right to Erasure](03_Nodejs_Frontend.md#gdpr-right-to-erasure-admin-panel).
 
 ### Best Practices
 - ✅ Never store passwords in plain text
@@ -625,16 +626,17 @@ cd Java/backend-api
 ./mvnw test jacoco:report
 ```
 
-### Frontend Testing (WIP)
+### Frontend Testing
 
 ```bash
 cd Nodejs
 
-# Note: Tests are a Work In Progress.
-# You can add a testing framework (example: Jest):
-npm install --save-dev jest
+# Run the full Jest/Supertest suite (162 tests across 14 files, covering
+# every route in src/index.js - see 08_Testing_Guide.md for details)
+npm test
 
-# Currently npm test will exit with an error.
+# Watch mode
+npm run test:watch
 ```
 
 ---
@@ -772,7 +774,7 @@ Contributions, issues and feature requests are welcome!
 ### Contributors
 
 We thank the following users for their fundamental contribution
-- Gorlix (Alessandro Gorla) -> for PWA support implementation
+- Gorlix (Alessandro Gorla) -> for PWA support and GRPR ereasure implementation
 - GabrieleGroppo (Gabriele Groppo) -> for dynamic light/dark theme implementation with toggle across all views
 
 ---

@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: September 8, 2026  
+**Last Updated**: September 14, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -1097,7 +1097,7 @@ Body: {
 This is the only Node-side `/api/students` route that actually exists - there's no generic get-by-id/update/delete/search route on this path (confirmed against `src/index.js`; a get/update/delete/search table was previously (and incorrectly) documented here). Everything else students-related is either:
 - server-rendered page data (`/staffPanel`, `/student/:id`), not a JSON API a client calls directly, or
 - STAFF-only student management, under the separate `/api/admin/students/*` namespace - see [Admin Panel - Guest Accounts](#admin-panel---guest-accounts) below (list, filter by class, assign/unassign a `GUEST`), or
-- direct erasure via the Java backend's own `DELETE /api/students/{id}` (anonymizes, doesn't hard-delete) - see [01_Java_Backend_API.md - Erasure](01_Java_Backend_API.md#erasure-gdpr-style-delete-instead-of-hard-delete) - which nothing on the Node side currently calls.
+- GDPR right-to-erasure, under `/api/admin/{tutors,guests,students}/:id/erasure` - see [GDPR Right to Erasure (Admin Panel)](#gdpr-right-to-erasure-admin-panel) below.
 
 ---
 
@@ -1152,6 +1152,8 @@ Every route below requires an admin session (`isAdmin`) and proxies to the Java 
 | PATCH | `/api/admin/tutors/:id/status` | Update a tutor's status (e.g. block/unblock) |
 | GET | `/api/admin/students` | List all students |
 | PATCH | `/api/admin/students/:id/class` | Update a student's class (`M`/`S`/`U`) |
+| DELETE | `/api/admin/tutors/:id/erasure` | GDPR right-to-erasure for a `GENERIC`/`STAFF` account - see [GDPR Right to Erasure (Admin Panel)](#gdpr-right-to-erasure-admin-panel) |
+| DELETE | `/api/admin/students/:id/erasure` | GDPR right-to-erasure for a student - see [GDPR Right to Erasure (Admin Panel)](#gdpr-right-to-erasure-admin-panel) |
 
 **Guest Accounts** (see [Admin Panel - Guest Accounts](#admin-panel---guest-accounts) below):
 
@@ -1163,6 +1165,7 @@ Every route below requires an admin session (`isAdmin`) and proxies to the Java 
 | GET | `/api/admin/guests/:id/students` | List the students currently assigned to a guest account |
 | GET | `/api/admin/students/unassigned` | List students with no guest assigned (`id_user IS NULL`) - the pool a guest can be assigned from |
 | PATCH | `/api/admin/students/:id/guest` | Assign or unassign a student's guest account; body `{ userId }` (`null` to unassign) |
+| DELETE | `/api/admin/guests/:id/erasure` | GDPR right-to-erasure for a `GUEST` account - see [GDPR Right to Erasure (Admin Panel)](#gdpr-right-to-erasure-admin-panel) |
 
 **Example - Create Guest Account:**
 ```javascript
@@ -1456,6 +1459,30 @@ The `/admin` page (`views/admin.ejs` + `public/js/admin.js`) manages tutors, stu
 - **"Assign a Student" dropdown**, populated from `GET /api/admin/students/unassigned` - **mandatorily filtered server-side** to students with no guest linked yet, so an already-assigned student can never appear as a choice regardless of what the client does. A client-side search box filters this already-fetched pool locally by name (no extra requests per keystroke). Selecting a student and clicking "Assign" calls `PATCH /api/admin/students/:id/guest` with `{ userId: <this guest's id> }`.
 
 See [01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students) for the underlying `Student.id_user` relationship and Java endpoints, and [GUEST Role Access Control](#guest-role-access-control) above for what a guest account can actually do once it logs in.
+
+---
+
+## GDPR Right to Erasure (Admin Panel)
+
+The admin panel wires the Java-side anonymize-on-erase feature (see [01_Java_Backend_API.md - Erasure](01_Java_Backend_API.md#erasure-gdpr-style-delete-instead-of-hard-delete)) into three admin-facing routes - `DELETE /api/admin/{tutors,guests,students}/:id/erasure` - and into the tutor/guest/student cards in `views/admin.ejs` + `public/js/admin.js`.
+
+**UI:** every tutor, guest, and student card gets an "Erase" button. Clicking it opens a type-to-confirm modal (`showConfirmModal(..., typeToConfirmWord)` in `admin.js`) requiring the admin to type the account's exact username (tutor/guest) or full name (student) before the confirm button enables - the same friction pattern used for other irreversible actions in the panel, deliberately harder to trigger by accident than a plain "Are you sure?" dialog. Once erased, the row shows an **ERASED** badge and every control on it (role/status/class dropdowns, edit, guest-assignment) is disabled client-side.
+
+**Role-mismatch guards:** `Student` erasure has no role check, but `Users` (tutors and guests share the same `app_user` table and the same Java `DELETE /api/users/{id}`) do - the tutor-erasure route rejects a `GUEST` id with `400` ("use the guest erasure endpoint") and the guest-erasure route rejects a non-`GUEST` id with `400` ("use the tutor erasure endpoint"), so the wrong admin-panel button can't erase the wrong kind of account.
+
+**Idempotency:** re-erasing an already-erased account returns `409` (mapped from the Java backend's own `409`, see [01_Java_Backend_API.md - Erasure](01_Java_Backend_API.md#erasure-gdpr-style-delete-instead-of-hard-delete)) rather than re-scrambling it or silently succeeding.
+
+**Post-erasure immutability:** every route that can mutate a tutor, guest, or student checks `anonymizedAt` before writing and returns `409` if it's set, since an anonymized account's whole point is that it stays anonymized - the GDPR erasure guard on the tutor role/status routes was originally the only one that existed, and three more PATCH routes were found (via a code review pass on the PR that added this feature) to be missing the same guard and had it added afterward:
+
+| Route | What it guards against |
+|-------|-------------------------|
+| `PATCH /api/admin/tutors/:id/role` | Reactivating (role change) an erased tutor |
+| `PATCH /api/admin/tutors/:id/status` | Reactivating (block/unblock) an erased tutor |
+| `PATCH /api/admin/guests/:id` | Repopulating an erased guest's username/mail/password |
+| `PATCH /api/admin/students/:id/class` | Changing an erased student's class |
+| `PATCH /api/admin/students/:id/guest` | Linking/unlinking either side of an erased student or an erased guest |
+
+**Login rejection:** `authenticateTutor()` (`server_utilities/authService.js`) denies login for an erased account by checking `anonymizedAt` directly rather than the `DISCONTINUED` status string it happens to also set - `status` is a business-state flag that erasure incidentally touches, not the actual erasure signal, so checking it directly avoids coupling this security check to that side effect. See [GDPR Right to Erasure](01_Java_Backend_API.md#erasure-gdpr-style-delete-instead-of-hard-delete) for why `Users`/`Students`/`Admins` are anonymized in place instead of hard-deleted in the first place, and [08_Testing_Guide.md - Node.js Frontend Testing](08_Testing_Guide.md#nodejs-frontend-testing) for the automated regression coverage on all of the above.
 
 ---
 

@@ -5,7 +5,7 @@ Comprehensive guide for testing the Tutorly application including unit tests, in
 ---
 
 **Document**: 08_Testing_Guide.md  
-**Last Updated**: September 8, 2026  
+**Last Updated**: September 14, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -67,7 +67,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
 | Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 139 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🔴 Planned |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (162 tests total, see `Nodejs/test/routes/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -241,162 +241,126 @@ cd Java/backend-api
 
 ### Setup
 
-The Node.js frontend uses **Jest** and **Supertest** for testing.
-
-#### Installation
+The Node.js frontend uses **Jest**, **Supertest**, and **nock** - all already in `package.json`'s `devDependencies` and wired up via `jest.config.js`, nothing to add.
 
 ```bash
 cd Nodejs
-npm install --save-dev jest supertest @types/jest
+npm install --save-dev jest supertest nock
 ```
 
-#### Configuration (package.json)
+**Why nock, not just mocking `javaApiService`:** most routes reach the Java backend through `fetchFromJavaAPI()` (`server_utilities/javaApiService.js`), but several older routes (lessons, prenotations, packs, tests, calendar notes) build their own `https.request()` call directly in `src/index.js` via a local `createJavaApiRequestOptions()` helper instead of going through that module. Mocking `javaApiService` would only cover the first group. `nock` intercepts at the `https`/`http` module level - the one boundary both call styles actually share - so a single mocking approach covers every route without needing to special-case either one.
 
-```json
-{
-  "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "coverageDirectory": "coverage",
-    "collectCoverageFrom": [
-      "src/**/*.js",
-      "server_utilities/**/*.js",
-      "!src/index.js"
-    ]
-  }
+**Two side-effecting modules are swapped for test doubles**, via Jest's manual-mock convention (a same-named file under a sibling `__mocks__/` directory, picked up automatically wherever `jest.mock('../../server_utilities/<name>')` is called):
+
+| Module | Why it needs a mock | Replaced with |
+|--------|---------------------|----------------|
+| `server_utilities/fileSessionStore.js` | Reads/writes the real `data/session-store.json` on every session read/write - would pollute real session state on every test run | `express-session`'s built-in in-memory `MemoryStore` |
+| `server_utilities/reminderScheduler.js` | Self-registers a `node-cron` job as a `require()` side effect | A no-op (`module.exports = {}`) |
+
+**`src/index.js` needed one change to be testable.** The bottom of the file used to call `app.listen(...)` (or the HTTPS variant) unconditionally at module load - `require()`ing it for a test would have tried to bind a real port every time. It's now guarded:
+
+```javascript
+// Only bind real ports when this file is run directly (`node src/index.js`) -
+// not when it's require()d, e.g. by the test suite via supertest, which
+// drives the exported `app` in-process without needing a listening socket.
+if (require.main === module) {
+    // ...the same USE_HTTPS / SSL-certificate / app.listen(...) logic as before
+}
+
+module.exports = app;
+```
+
+### Test Organization
+
+```
+Nodejs/
+├── jest.config.js
+├── server_utilities/__mocks__/
+│   ├── fileSessionStore.js   # swaps in express-session's MemoryStore
+│   └── reminderScheduler.js  # no-op
+└── test/
+    ├── helpers/
+    │   ├── setup.js           # nock.disableNetConnect() + loopback allowance; silences console noise
+    │   ├── javaApi.js         # nock scope factory for the Java backend host:port (from config.js)
+    │   ├── testApp.js         # requires src/index.js with the two __mocks__ above applied
+    │   ├── auth.js            # loginAsTutor()/loginAsAdmin() - drives the real /login, /adminLogin flow
+    │   └── fixtures.js        # plain-object fixtures matching the Java API's JSON shapes
+    └── routes/
+        ├── auth.test.js           # /login, /adminLogin, /logout, /api/auth/status
+        ├── pages.test.js          # page-render routes: auth/role gating + happy-path 200
+        ├── adminTutors.test.js    # /api/admin/tutors, incl. GDPR erasure
+        ├── adminGuests.test.js    # /api/admin/guests, incl. GDPR erasure
+        ├── adminStudents.test.js  # /api/admin/students, incl. GDPR erasure
+        ├── lessons.test.js
+        ├── tests.test.js          # evaluations
+        ├── packs.test.js
+        ├── prenotations.test.js
+        ├── calendarNotes.test.js
+        ├── students.test.js       # POST /api/students (the "quick add student" modal)
+        ├── push.test.js
+        ├── reports.test.js        # Excel downloads + the one JSON report endpoint
+        └── dashboard.test.js      # GET /api/dashboard/calendar-events
+```
+
+Every route in `src/index.js` (58 total) has at least one test - **162 tests across 14 files.**
+
+### Login Helper
+
+**✅ Real, verified example** - `test/helpers/auth.js`. Logs a `supertest` agent in through the *real* `POST /login`/`POST /adminLogin` route, bcrypt verification included (not stubbed) - only the Java API response the login route itself fetches (`GET /api/users` or `GET /api/admins`) is mocked, so a test gets a genuine session cookie exactly as a browser would. The password hash is precomputed once (bcrypt is deliberately slow) rather than re-hashed on every call.
+
+```javascript
+const TEST_PASSWORD = 'TestPass123!';
+const TEST_PASSWORD_HASH = '$2b$10$...'; // bcrypt.hashSync(TEST_PASSWORD, 10), computed once
+
+async function loginAsTutor(agent, tutor = tutorFixture()) {
+    javaApi().get('/api/users').reply(200, [tutor]);
+    return agent.post('/login').type('form').send({ username: tutor.username, password: TEST_PASSWORD });
+}
+
+async function loginAsAdmin(agent, admin = adminFixture()) {
+    javaApi().get('/api/admins').reply(200, [admin]);
+    return agent.post('/adminLogin').type('form').send({ username: admin.username, password: TEST_PASSWORD });
 }
 ```
 
-### Unit Testing
+### A Route Test
 
-#### Service Module Tests
-
-```javascript
-// server_utilities/__tests__/passwordService.test.js
-const passwordService = require('../passwordService');
-
-describe('passwordService', () => {
-    describe('hashPassword', () => {
-        it('should hash a plain text password', async () => {
-            const password = 'mySecretPassword123';
-            const hashedPassword = await passwordService.hashPassword(password);
-            
-            expect(hashedPassword).toBeDefined();
-            expect(hashedPassword).not.toBe(password);
-            expect(hashedPassword.startsWith('$2b$')).toBe(true);
-        });
-    });
-    
-    describe('comparePassword', () => {
-        it('should return true for matching passwords', async () => {
-            const password = 'testPassword123';
-            const hashedPassword = await passwordService.hashPassword(password);
-            
-            const isMatch = await passwordService.comparePassword(password, hashedPassword);
-            
-            expect(isMatch).toBe(true);
-        });
-        
-        it('should return false for non-matching passwords', async () => {
-            const hashedPassword = await passwordService.hashPassword('correctPassword');
-            
-            const isMatch = await passwordService.comparePassword('wrongPassword', hashedPassword);
-            
-            expect(isMatch).toBe(false);
-        });
-    });
-});
-```
-
-#### Logger Tests
+**✅ Real, verified example** - condensed from `test/routes/adminGuests.test.js`, regression coverage for an erasure-bypass gap fixed on this branch: `PATCH /api/admin/guests/:id` originally had no guard at all, so an already-erased guest's username/mail/password could be fully repopulated - see [03_Nodejs_Frontend.md - GDPR Right to Erasure](03_Nodejs_Frontend.md#gdpr-right-to-erasure-admin-panel).
 
 ```javascript
-// server_utilities/__tests__/logger.test.js
-const logger = require('../logger');
-
-describe('logger', () => {
-    let consoleSpy;
-    
-    beforeEach(() => {
-        consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-    });
-    
-    afterEach(() => {
-        consoleSpy.mockRestore();
-    });
-    
-    it('should log success messages in green', () => {
-        logger.logSuccess('Test message', '127.0.0.1', 'testUser');
-        
-        expect(consoleSpy).toHaveBeenCalled();
-        expect(consoleSpy.mock.calls[0][0]).toContain('[SUCCESS]');
-    });
-    
-    it('should log error messages in red', () => {
-        logger.logError('Error occurred', '127.0.0.1', 'testUser');
-        
-        expect(consoleSpy).toHaveBeenCalled();
-        expect(consoleSpy.mock.calls[0][0]).toContain('[ERROR]');
-    });
-});
-```
-
-### Integration Tests
-
-```javascript
-// __tests__/routes.test.js
 const request = require('supertest');
-const app = require('../src/index'); // Export app from index.js
+const app = require('../helpers/testApp');
+const { javaApi } = require('../helpers/javaApi');
+const { loginAsAdmin, tutorFixture } = require('../helpers/auth');
 
-describe('Authentication Routes', () => {
-    describe('POST /login', () => {
-        it('should login with valid credentials', async () => {
-            const response = await request(app)
-                .post('/login')
-                .send({
-                    username: 'tutor1',
-                    password: 'password123'
-                });
-            
-            expect(response.status).toBe(302); // Redirect
-            expect(response.headers['set-cookie']).toBeDefined();
-        });
-        
-        it('should reject invalid credentials', async () => {
-            const response = await request(app)
-                .post('/login')
-                .send({
-                    username: 'invalid',
-                    password: 'wrong'
-                });
-            
-            expect(response.status).toBe(302);
-            // Should redirect back to login
-        });
-    });
+test('blocks profile changes on an erased guest with 409', async () => {
+    const agent = request.agent(app);
+    await loginAsAdmin(agent);
+    javaApi().get('/api/users/21').reply(200, tutorFixture({ id: 21, role: 'GUEST', anonymizedAt: '2026-01-01T00:00:00' }));
+
+    const res = await agent.patch('/api/admin/guests/21').send({ username: 'newname', mail: 'new@example.com' });
+    expect(res.status).toBe(409);
 });
 ```
+
+This test (and the equivalent ones for the other two gaps - erased-student class changes, erased student/guest link changes) was verified to actually catch the regression, not just pass vacuously: temporarily removing the `anonymizedAt` guard from the route made it fail (`500`, since the un-mocked follow-up call to Java has no matching `nock` interceptor - not `409`) before the guard was restored.
 
 ### Running Tests
 
-> **Note**: Frontend testing is currently a Work In Progress (WIP). The following commands outline the planned implementation.
-
 ```bash
-# Run all tests (WIP - not yet implemented)
-# npm test
+cd Nodejs
 
-# Run with coverage (WIP)
-# npm run test:coverage
+# Run all tests
+npm test
 
-# Run in watch mode (WIP)
-# npm run test:watch
+# Watch mode
+npm run test:watch
 
-# Run specific test file (WIP)
-# npm test -- passwordService.test.js
+# Run one file
+npx jest test/routes/adminGuests.test.js
+
+# Run tests matching a name
+npx jest -t "blocks profile changes"
 ```
 
 ---
@@ -619,32 +583,34 @@ open target/site/jacoco/index.html
 
 #### Node.js (Jest)
 
+**Not run yet** - Jest bundles Istanbul, so `--coverage` works out of the box, but no `collectCoverageFrom`/`coverageThreshold` is set in `jest.config.js` yet:
+
 ```bash
-npm run test:coverage
+cd Nodejs
+npx jest --coverage
 open coverage/lcov-report/index.html
 ```
 
 ### Coverage Thresholds
 
-```json
-// package.json
-{
-  "jest": {
-    "coverageThreshold": {
-      "global": {
-        "branches": 70,
-        "functions": 70,
-        "lines": 70,
-        "statements": 70
-      }
+Not enforced yet on either side (no `jacoco:report` goal on the Java side, no `coverageThreshold` in `jest.config.js` on the Node side - see above). To add one on the Node side:
+
+```javascript
+// jest.config.js
+module.exports = {
+    // ...existing config
+    collectCoverageFrom: ['src/**/*.js', 'server_utilities/**/*.js'],
+    coverageThreshold: {
+        global: { branches: 70, functions: 70, lines: 70, statements: 70 }
     }
-  }
-}
+};
 ```
 
 ---
 
 ## Continuous Integration
+
+**Not set up yet** - there is no `.github/workflows/` directory in this repo today, on either side. The workflow below is illustrative of how the two suites *would* be wired into CI, not a file that currently exists. Both `./mvnw test` (Java) and `npm test` (Node, see [Node.js Frontend Testing](#nodejs-frontend-testing) above) are real, runnable commands as of this writing - only the CI wiring itself is missing.
 
 ### GitHub Actions Workflow
 
@@ -680,10 +646,10 @@ jobs:
         run: |
           cd Nodejs
           npm install
-      - name: Run Frontend Tests (WIP)
+      - name: Run Frontend Tests
         run: |
           cd Nodejs
-          # npm test (Not yet implemented)
+          npm test
 ```
 
 ---
@@ -735,9 +701,11 @@ Java/backend-api/src/test/java/
 │   └── integration/         # Integration tests - not created yet
 
 Nodejs/
-├── __tests__/               # Integration tests
-├── server_utilities/__tests__/  # Unit tests for services
-└── e2e/                     # E2E tests
+├── server_utilities/__mocks__/  # Manual Jest mocks (fileSessionStore, reminderScheduler)
+└── test/
+    ├── helpers/              # Shared test app, login, nock, and fixture helpers
+    └── routes/               # One file per route group - see full list above
+                               # under Node.js Frontend Testing > Test Organization
 ```
 
 **Why no repository-layer tests yet:** `@DataJpaTest` needs a database to actually run queries against, and this project has no embedded test database (no H2 or similar - see the Setup section above). Without one, `@DataJpaTest` either fails outright (no embedded driver on the classpath) or - via `@AutoConfigureTestDatabase(replace = Replace.NONE)` - falls back to whatever `application.properties` points at, which today is the same real Postgres database the app itself uses. Neither is acceptable to add casually: the first doesn't work, the second would write and delete real rows in a real (dev) database on every test run. Adding a proper embedded test database is a reasonable next step, but it's an infrastructure decision (which database, whether to keep parity with Postgres-specific behavior) that's out of scope for just writing more tests.
