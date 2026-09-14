@@ -9,14 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **GDPR-style account erasure**: `DELETE /api/{users,students,admins}/{id}` no longer hard-deletes the row - it anonymizes it in place (scrubs identifying fields, stamps a new `anonymized_at` column) and leaves everything else, including every `ON DELETE CASCADE` chain hanging off these tables, untouched. Prevents a GUEST erasure from cascading away their linked student's prenotations/lessons/tests/packs, which a hard delete would have done. Idempotent (`200` first time, `409` if already erased, `404` if the id doesn't exist). Contributed via a community PR.
-- **Admin Panel: GDPR erasure UI**: the Java-side erasure above is now reachable from the admin panel - an "Erase" button on every tutor/guest/student card (`DELETE /api/admin/{tutors,guests,students}/:id/erasure`), gated by a type-the-username/name-to-confirm modal, with an **ERASED** badge and disabled controls once erased. Role-mismatch guards keep the tutor/guest erasure buttons from being used on the wrong kind of account. Also contributed via the same community PR; see [03_Nodejs_Frontend.md - GDPR Right to Erasure](03_Nodejs_Frontend.md#gdpr-right-to-erasure-admin-panel).
-- **Node.js test suite**: the Node BFF had zero automated tests until now (no CI, no pre-commit hooks, `npm test` was a stub). Added a Jest/Supertest suite - 162 tests across 14 files - covering every route in `src/index.js` (58 total), with the Java backend mocked at the HTTP layer via `nock` since several routes call `https.request` directly rather than going through `javaApiService`. See [08_Testing_Guide.md - Node.js Frontend Testing](08_Testing_Guide.md#nodejs-frontend-testing).
-
-### Fixed
-- **Admin Panel erasure**: the `anonymizedAt` guard added on the tutor role/status PATCH routes above didn't cover three other routes that could still mutate an already-erased account: `PATCH /api/admin/guests/:id` could fully repopulate an erased guest's username/mail/password, `PATCH /api/admin/students/:id/class` could still change an erased student's class, and `PATCH /api/admin/students/:id/guest` could still link/unlink either side of an erased student or guest. All three now return `409`, matching the existing guard pattern.
-
 ### Planned
 - E2E testing with Playwright
 - Redis session storage for horizontal scaling
@@ -24,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mobile-responsive design improvements
 - Email notifications for lesson confirmations
 - Advanced reporting dashboard
+
+---
+
+## [2.3.0] - 2026-09-14
+
+### Added
+- **GDPR-style account erasure**: `DELETE /api/{users,students,admins}/{id}` no longer hard-deletes the row - it anonymizes it in place (scrubs identifying fields, stamps a new `anonymized_at` column) and leaves everything else, including every `ON DELETE CASCADE` chain hanging off these tables, untouched. Prevents a GUEST erasure from cascading away their linked student's prenotations/lessons/tests/packs, which a hard delete would have done. Idempotent (`200` first time, `409` if already erased, `404` if the id doesn't exist). Contributed via a community PR.
+- **Admin Panel: GDPR erasure UI**: the Java-side erasure above is now reachable from the admin panel - an "Erase" button on every tutor/guest/student card (`DELETE /api/admin/{tutors,guests,students}/:id/erasure`), gated by a type-the-username/name-to-confirm modal, with an **ERASED** badge and disabled controls once erased. Role-mismatch guards keep the tutor/guest erasure buttons from being used on the wrong kind of account. Also contributed via the same community PR; see [03_Nodejs_Frontend.md - GDPR Right to Erasure](03_Nodejs_Frontend.md#gdpr-right-to-erasure-admin-panel).
+- **Node.js test suite**: the Node BFF had zero automated tests until now (no CI, no pre-commit hooks, `npm test` was a stub). Added a Jest/Supertest suite - 162 tests across 14 files - covering every route in `src/index.js` (58 total), with the Java backend mocked at the HTTP layer via `nock` since several routes call `https.request` directly rather than going through `javaApiService`. See [08_Testing_Guide.md - Node.js Frontend Testing](08_Testing_Guide.md#nodejs-frontend-testing).
+
+### Fixed
+- **Admin Panel erasure**: the `anonymizedAt` guard added on the tutor role/status PATCH routes above didn't cover three other routes that could still mutate an already-erased account: `PATCH /api/admin/guests/:id` could fully repopulate an erased guest's username/mail/password, `PATCH /api/admin/students/:id/class` could still change an erased student's class, and `PATCH /api/admin/students/:id/guest` could still link/unlink either side of an erased student or guest. All three now return `409`, matching the existing guard pattern.
+- **Calendar**: on mobile, the toolbar's tutor-filter + color-legend row didn't wrap - the combined width of the tutor filter and all three legend items (including the longer Italian label "Assegnata da qualcun altro") exceeded the viewport, making the entire page horizontally scrollable. Both the outer row and the legend's own inner row now wrap onto additional lines on narrow screens instead.
 
 ---
 
