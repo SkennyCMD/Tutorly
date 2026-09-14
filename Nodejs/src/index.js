@@ -555,7 +555,8 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             tasks: tasks,
             lessons: combinedLessons,
-            students: students || [],
+            // Erased students shouldn't be offered when creating a new lesson
+            students: (students || []).filter(s => !s.anonymizedAt),
             guestStudents
         });
     } catch (error) {
@@ -708,8 +709,9 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
         const calendarNotes = Array.from(calendarNotesById.values());
 
         // GUEST accounts aren't tutors - exclude them from the tutor filter dropdown
-        // and every "assign to" list (lesson/prenotation tutor, note assignees)
-        const tutors = (allUsers || []).filter(u => u.role !== 'GUEST');
+        // and every "assign to" list (lesson/prenotation tutor, note assignees).
+        // Erased tutors are excluded too - they shouldn't be assignable anymore.
+        const tutors = (allUsers || []).filter(u => u.role !== 'GUEST' && !u.anonymizedAt);
 
         // GUEST accounts only see their assigned student(s)' prenotations
         let prenotations = allPrenotations;
@@ -753,7 +755,8 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             prenotations: enrichedPrenotations,
             calendarNotes: enrichedCalendarNotes,
-            students: students || [],
+            // Erased students shouldn't be offered when creating a new prenotation
+            students: (students || []).filter(s => !s.anonymizedAt),
             tutors: tutors || []
         });
     } catch (error) {
@@ -828,7 +831,8 @@ app.get('/lessons', tutorSession, isAuthenticated, blockGuest, async (req, res) 
         res.render('lessons', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
-            students: students || [],
+            // Erased students shouldn't be offered when creating a new lesson
+            students: (students || []).filter(s => !s.anonymizedAt),
             lessons: lessonsWithStudents,
             totalLessons: allLessons.length,
             prenotations: prenotationsWithStudents
@@ -880,7 +884,8 @@ app.get('/staffPanel', tutorSession, isAuthenticated, blockGuest, async (req, re
             marksByStudent[test.studentId].push(test.mark);
         });
 
-        const studentsWithAvg = (allStudents || []).map(student => {
+        // Erased students shouldn't show up in the Staff Panel's student list
+        const studentsWithAvg = (allStudents || []).filter(student => !student.anonymizedAt).map(student => {
             const marks = marksByStudent[student.id] || [];
             const avgMark = marks.length
                 ? marks.reduce((sum, m) => sum + m, 0) / marks.length
@@ -898,7 +903,8 @@ app.get('/staffPanel', tutorSession, isAuthenticated, blockGuest, async (req, re
         res.render('staffPanel', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData.role },
-            tutors: allTutors || [],
+            // Erased tutors shouldn't show up in the Staff Panel's tutor list either
+            tutors: (allTutors || []).filter(t => !t.anonymizedAt),
             students: studentsWithAvg
         });
     } catch (error) {
@@ -941,7 +947,8 @@ app.get('/reports', tutorSession, isAuthenticated, blockGuest, async (req, res) 
         res.render('reports', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
-            students: students || [],
+            // Erased students shouldn't be offered when adding a new evaluation
+            students: (students || []).filter(s => !s.anonymizedAt),
             evaluations: evaluationsWithStudents,
             subjects: subjectsList
         });
