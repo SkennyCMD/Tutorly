@@ -495,8 +495,8 @@ function setDefaultDates() {
  * Custom dropdown (button + popover list), not a native <select>: each row
  * shows a small swatch in that tutor's actual prenotation color (blue for
  * the logged-in tutor, their palette color otherwise - see
- * applyTutorColor()) next to their name in plain white text - only the
- * swatch carries color, a plain <option> can't mix the two.
+ * applyTutorColor()) next to their name in the theme's plain text color -
+ * only the swatch carries color, a plain <option> can't mix the two.
  */
 function setupTutorFilter() {
   const btn = document.getElementById('tutorFilterBtn');
@@ -513,7 +513,7 @@ function setupTutorFilter() {
 
   function optionRow(value, text, colorVar) {
     const row = document.createElement('div');
-    row.className = 'flex items-center gap-2 px-3 py-1.5 text-sm text-white cursor-pointer hover:bg-secondary';
+    row.className = 'flex items-center gap-2 px-3 py-1.5 text-sm text-foreground cursor-pointer hover:bg-secondary';
     row.dataset.value = value;
     if (colorVar) {
       const dot = document.createElement('span');
