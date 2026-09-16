@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: September 14, 2026  
+**Last Updated**: September 16, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -785,6 +785,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.3.2** | 2026-09-16 | Fixed the Calendar's tutor filter (button + dropdown) using hardcoded white text, unreadable in light theme; switched to the theme-aware text color used everywhere else. Also replaced the app icon SVG. |
 | **2.3.1** | 2026-09-14 | Erased tutors/students no longer show up in the "pick one" lists on Dashboard, My Lessons, Calendar, Evaluations, and Staff Panel - only the admin-panel mutation guards existed before, not this. |
 | **2.3.0** | 2026-09-14 | GDPR right-to-erasure (anonymize-in-place on `DELETE /api/{users,students,admins}/{id}`) is now reachable from the Admin Panel - an "Erase" button gated by a type-to-confirm modal, with post-erasure immutability guards on every tutor/guest/student route; three erasure-bypass gaps in those guards were found and fixed. The Node.js frontend gained its first automated test suite (Jest/Supertest/nock, 162 tests across every route). Fixed a mobile Calendar bug where the color-legend row could overflow the viewport and make the whole page horizontally scrollable. |
 | **2.2.0** | 2026-09-04 | Web Push Notifications gained a daily reminder job (configurable time/timezone) for prenotations and calendar notes starting that day; creation-time push titles now name who made the change; `package-lock.json` is now tracked in git so `npm ci` deploys stay reliable. |
