@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.2] - 2026-09-16
+
+### Fixed
+- **Calendar**: the tutor filter button and its dropdown list used a hardcoded white text color, making tutor names unreadable in light theme. Both now use the theme-aware `text-foreground` token (black in light theme, white in dark theme) already used everywhere else in the app.
+
+### Changed
+- **Branding**: replaced the app icon SVG (`Nodejs/public/icons/icon.svg`) with a redrawn version.
+
+---
+
 ## [2.3.1] - 2026-09-14
 
 ### Fixed
