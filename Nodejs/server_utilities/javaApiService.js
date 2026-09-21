@@ -36,6 +36,11 @@
 const https = require('https');
 const { JAVA_API_HOST, JAVA_API_PORT, JAVA_API_KEY } = require('./config');
 
+// Reused across every call instead of opening a fresh TCP+TLS connection per
+// request - matters most for range-bounded calendar/report fetches, which
+// can fire many requests back-to-back as a tutor navigates.
+const keepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
+
 
 // Core API Communication
 
@@ -79,7 +84,8 @@ function fetchFromJavaAPI(path, method = 'GET', data = null) {
             headers: {
                 'X-API-Key': JAVA_API_KEY         // API key authentication
             },
-            rejectUnauthorized: false            // Accept self-signed SSL certificate
+            rejectUnauthorized: false,           // Accept self-signed SSL certificate
+            agent: keepAliveAgent                // Reuse connections instead of a new handshake per call
         };
 
         // Add Content-Type and Content-Length headers for requests with body

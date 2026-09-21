@@ -87,14 +87,87 @@ describe('GET /calendar', () => {
     test('renders for an authenticated GENERIC tutor', async () => {
         const agent = await tutorAgent();
         javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
-        javaApi().get('/api/prenotations/tutor/1').reply(200, []);
-        javaApi().get('/api/calendar-notes/tutor/1').reply(200, []);
-        javaApi().get('/api/calendar-notes/creator/1').reply(200, []);
+        // GET /calendar now fetches a bounded ±7-day window via the date-range
+        // endpoints instead of everything - see calendarDataService.js.
+        const prenotationsScope = javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        const notesScope = javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
         javaApi().get('/api/students').reply(200, []);
         javaApi().get('/api/users').reply(200, []);
 
         const res = await agent.get('/calendar');
         expect(res.status).toBe(200);
+        // Confirms the real success path was taken, not the catch-fallback
+        // (which would also render 200 with empty data).
+        expect(prenotationsScope.isDone()).toBe(true);
+        expect(notesScope.isDone()).toBe(true);
+    });
+});
+
+describe('GET /api/calendar/data', () => {
+    test('redirects to /login when not authenticated', async () => {
+        const res = await request(app).get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/login');
+    });
+
+    test('rejects a missing or malformed start/end with 400', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+
+        const res = await agent.get('/api/calendar/data').query({ start: 'not-a-date', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(400);
+    });
+
+    test('returns prenotations and calendar notes for a GENERIC tutor, scoped to their own', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, [
+            { id: 1, studentId: 10, tutorId: 1, startTime: '2026-09-01T10:00:00', endTime: '2026-09-01T11:00:00', flag: false },
+            { id: 2, studentId: 10, tutorId: 2, startTime: '2026-09-01T12:00:00', endTime: '2026-09-01T13:00:00', flag: false }
+        ]);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.prenotations).toHaveLength(1);
+        expect(res.body.prenotations[0].tutorId).toBe(1);
+    });
+
+    test('a STAFF tutor sees every tutor\'s prenotations in range', async () => {
+        const agent = await tutorAgent({ role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, [
+            { id: 1, studentId: 10, tutorId: 1, startTime: '2026-09-01T10:00:00', endTime: '2026-09-01T11:00:00', flag: false },
+            { id: 2, studentId: 10, tutorId: 2, startTime: '2026-09-01T12:00:00', endTime: '2026-09-01T13:00:00', flag: false }
+        ]);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+        javaApi().get('/api/users/2').reply(200, tutorFixture({ id: 2, username: 'other.tutor' }));
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.prenotations).toHaveLength(2);
+    });
+
+    test('a GUEST sees only prenotations for their assigned student(s)', async () => {
+        const agent = await tutorAgent({ id: 21, role: 'GUEST' });
+        javaApi().get('/api/users/21').reply(200, tutorFixture({ id: 21, role: 'GUEST' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, [
+            { id: 1, studentId: 10, tutorId: 1, startTime: '2026-09-01T10:00:00', endTime: '2026-09-01T11:00:00', flag: false },
+            { id: 2, studentId: 99, tutorId: 1, startTime: '2026-09-01T12:00:00', endTime: '2026-09-01T13:00:00', flag: false }
+        ]);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students/guest/21').reply(200, [{ id: 10 }]);
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.prenotations).toHaveLength(1);
+        expect(res.body.prenotations[0].studentId).toBe(10);
     });
 });
 

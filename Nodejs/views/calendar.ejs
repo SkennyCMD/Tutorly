@@ -228,6 +228,7 @@ Features:
             </button>
           </div>
           <h2 id="currentWeekLabel" class="hidden md:block text-lg font-semibold text-foreground"></h2>
+          <span class="calendar-loading-indicator hidden text-xs text-muted-foreground animate-pulse"><%= t('calendar.loading') %></span>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 sm:gap-4">
@@ -323,6 +324,7 @@ Features:
             <div class="text-center">
               <p id="mobileDateLabel" class="font-semibold text-foreground"></p>
               <p id="mobileDayLabel" class="text-sm text-muted-foreground"></p>
+              <span class="calendar-loading-indicator hidden text-xs text-muted-foreground animate-pulse"><%= t('calendar.loading') %></span>
             </div>
             <button id="nextDay" class="p-2 rounded-lg hover:bg-secondary transition-colors">
               <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -810,7 +812,9 @@ Features:
       students: <%- JSON.stringify(students) %>,
       tutors: <%- JSON.stringify(tutors) %>,
       currentUserId: <%= userId %>,
-      userRole: '<%= user.role %>'
+      userRole: '<%= user.role %>',
+      initialRangeStart: <%- JSON.stringify(initialRangeStart) %>,
+      initialRangeEnd: <%- JSON.stringify(initialRangeEnd) %>
     };
     window.translations = <%- JSON.stringify(translations) %>;
     window.lang = <%- JSON.stringify(lang) %>;

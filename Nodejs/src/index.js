@@ -59,6 +59,10 @@ const {
     deletePushSubscriptionByEndpoint
 } = require('../server_utilities/javaApiService');
 
+// Shared range-bounded fetch/enrich logic for the Calendar page - see
+// server_utilities/calendarDataService.js
+const { getCalendarDataForRange } = require('../server_utilities/calendarDataService');
+
 // Web Push notification sender (VAPID, not Firebase) - see server_utilities/pushService.js
 const { sendPushToUser } = require('../server_utilities/pushService');
 
@@ -676,88 +680,54 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
     try {
         const tutorId = req.session.userId;
         const userRole = req.session.role;
-        
+
         // Fetch tutor data to get the role
         const tutorData = await fetchTutorData(tutorId);
         const isStaff = tutorData && tutorData.role === 'STAFF';
         const isGuest = userRole === 'guest';
 
-        // Fetch prenotations: all if STAFF, only own if GENERIC, all (then filtered below
-        // to assigned students) if GUEST - a GUEST isn't a tutor on any prenotation
-        const prenotationsEndpoint = (isStaff || isGuest)
-            ? '/api/prenotations'
-            : `/api/prenotations/tutor/${tutorId}`;
+        // Only the initially-displayed window is fetched/enriched server-side -
+        // everything else is fetched on demand as the tutor navigates (see
+        // GET /api/calendar/data below). ±7 days around the requested/today's
+        // date is deliberately not an exact replica of the client's Monday-
+        // aligned week (see getWeekStart() in calendarScript.js) - it's cheaper
+        // to keep one date-math implementation correct than two in sync, and
+        // the client's own fetch-on-navigate silently fills in the exact week
+        // on first navigation if the boundaries don't line up perfectly.
+        const dateParam = req.query.date;
+        const initialDate = (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam))
+            ? (() => { const [y, m, d] = dateParam.split('-').map(Number); return new Date(y, m - 1, d); })()
+            : new Date();
+        const rangeStart = new Date(initialDate);
+        rangeStart.setDate(rangeStart.getDate() - 7);
+        rangeStart.setHours(0, 0, 0);
+        const rangeEnd = new Date(initialDate);
+        rangeEnd.setDate(rangeEnd.getDate() + 7);
+        rangeEnd.setHours(23, 59, 59);
+        const startTime = rangeStart.toISOString().slice(0, 19);
+        const endTime = rangeEnd.toISOString().slice(0, 19);
 
-        // Fetch all required data in parallel. Calendar notes are fetched both by
-        // assignment (tutor is in the note's assignees) and by authorship (tutor is
-        // the creator) - a STAFF tutor who creates a note for someone else should
-        // still see it on their own calendar, even if they didn't assign it to
-        // themselves too. Merged and deduplicated below.
-        const [allPrenotations, assignedNotes, createdNotes, students, allUsers, assignedStudents] = await Promise.all([
-            fetchFromJavaAPI(prenotationsEndpoint),
-            fetchFromJavaAPI(`/api/calendar-notes/tutor/${tutorId}`),
-            fetchFromJavaAPI(`/api/calendar-notes/creator/${tutorId}`),
+        const [calendarData, students, allUsers] = await Promise.all([
+            getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime }),
             fetchFromJavaAPI('/api/students'),
-            fetchFromJavaAPI('/api/users'),
-            isGuest ? fetchStudentsByGuest(tutorId) : Promise.resolve(null)
+            fetchFromJavaAPI('/api/users')
         ]);
-
-        const calendarNotesById = new Map();
-        [...(assignedNotes || []), ...(createdNotes || [])].forEach(note => {
-            calendarNotesById.set(note.id, note);
-        });
-        const calendarNotes = Array.from(calendarNotesById.values());
 
         // GUEST accounts aren't tutors - exclude them from the tutor filter dropdown
         // and every "assign to" list (lesson/prenotation tutor, note assignees).
         // Erased tutors are excluded too - they shouldn't be assignable anymore.
         const tutors = (allUsers || []).filter(u => u.role !== 'GUEST' && !u.anonymizedAt);
 
-        // GUEST accounts only see their assigned student(s)' prenotations
-        let prenotations = allPrenotations;
-        if (isGuest) {
-            const assignedStudentIds = new Set((assignedStudents || []).map(s => s.id));
-            prenotations = (allPrenotations || []).filter(p => assignedStudentIds.has(p.studentId));
-        }
-
-        // Enrich prenotations with student and tutor data
-        const enrichedPrenotations = await Promise.all((prenotations || []).map(async prenotation => {
-            const studentId = prenotation.studentId;
-            const prenotationTutorId = prenotation.tutorId;
-            const student = studentId ? await fetchStudentData(studentId) : null;
-            const tutor = prenotationTutorId ? await fetchTutorData(prenotationTutorId) : null;
-            
-            return {
-                id: prenotation.id,
-                startTime: prenotation.startTime,
-                endTime: prenotation.endTime,
-                createdAt: prenotation.createdAt,
-                flag: prenotation.flag,
-                studentId: studentId,
-                student: student,
-                studentName: student?.name || 'Unknown',
-                studentSurname: student?.surname || '',
-                studentClass: student?.studentClass || '',
-                tutorId: prenotationTutorId,
-                tutor: tutor,
-                tutorUsername: tutor?.username || 'Unknown'
-            };
-        }));
-        
-        // Calendar notes - pass as-is; each note already includes its creator (used
-        // client-side to color notes assigned by someone else differently, see
-        // isOwnNote() in calendarScript.js). Creator authorization for PUT/DELETE is
-        // still re-checked server-side regardless of what the client sends.
-        const enrichedCalendarNotes = calendarNotes;
-        
         res.render('calendar', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
-            prenotations: enrichedPrenotations,
-            calendarNotes: enrichedCalendarNotes,
+            prenotations: calendarData.prenotations,
+            calendarNotes: calendarData.calendarNotes,
             // Erased students shouldn't be offered when creating a new prenotation
             students: (students || []).filter(s => !s.anonymizedAt),
-            tutors: tutors || []
+            tutors: tutors || [],
+            initialRangeStart: startTime,
+            initialRangeEnd: endTime
         });
     } catch (error) {
         logError('Error fetching calendar data', req, { error: error.message });
@@ -768,8 +738,39 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             prenotations: [],
             calendarNotes: [],
             students: [],
-            tutors: []
+            tutors: [],
+            initialRangeStart: '',
+            initialRangeEnd: ''
         });
+    }
+});
+
+/**
+ * On-demand calendar data for a date range
+ * GET /api/calendar/data?start=YYYY-MM-DDTHH:MM:SS&end=YYYY-MM-DDTHH:MM:SS
+ * Fetched by calendarScript.js when the tutor navigates to a week that
+ * hasn't been loaded yet - see the initial GET /calendar handler above for
+ * the same role-based visibility rules applied server-side on first load.
+ */
+app.get('/api/calendar/data', tutorSession, isAuthenticated, async (req, res) => {
+    try {
+        const { start, end } = req.query;
+        const isValidDateTime = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value);
+        if (!isValidDateTime(start) || !isValidDateTime(end)) {
+            return res.status(400).json({ error: 'start and end are required, in YYYY-MM-DDTHH:MM:SS format' });
+        }
+
+        const tutorId = req.session.userId;
+        const userRole = req.session.role;
+        const tutorData = await fetchTutorData(tutorId);
+        const isStaff = tutorData && tutorData.role === 'STAFF';
+        const isGuest = userRole === 'guest';
+
+        const calendarData = await getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime: start, endTime: end });
+        res.json(calendarData);
+    } catch (error) {
+        logError('Error fetching calendar range data', req, { error: error.message });
+        res.status(500).json({ error: 'Failed to fetch calendar data' });
     }
 });
 

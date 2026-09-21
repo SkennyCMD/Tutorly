@@ -72,41 +72,6 @@ console.log('Prenotations:', window.serverData?.prenotations);
 console.log('Calendar Notes:', window.serverData?.calendarNotes);
 
 /**
- * Convert server prenotations (lessons) to unified event format.
- * 
- * Each prenotation becomes a 'lesson' type event with:
- * - Student information
- * - Tutor assignment
- * - Date and time range
- */
-if (window.serverData && window.serverData.prenotations) {
-  console.log('Converting', window.serverData.prenotations.length, 'prenotations');
-  window.serverData.prenotations.forEach(prenotation => {
-    const startDate = parseAsLocalDate(prenotation.startTime);
-    const endDate = parseAsLocalDate(prenotation.endTime);
-
-    // Format date in local timezone to avoid timezone shifts
-    const year = startDate.getFullYear();
-    const month = String(startDate.getMonth() + 1).padStart(2, '0');
-    const day = String(startDate.getDate()).padStart(2, '0');
-    const localDateStr = `${year}-${month}-${day}`;
-
-    events.push({
-      id: prenotation.id,
-      type: 'lesson',
-      firstName: prenotation.studentName || 'Unknown',
-      lastName: prenotation.studentSurname || '',
-      classType: prenotation.studentClass || '',
-      tutorUsername: prenotation.tutorUsername || '',
-      tutorId: prenotation.tutorId,
-      date: localDateStr,
-      startTime: startDate.toTimeString().slice(0, 5),
-      endTime: endDate.toTimeString().slice(0, 5)
-    });
-  });
-}
-
-/**
  * Build one grid event per day a note spans, so a continuous multi-day note
  * (e.g. Mon 14:00 to Wed 10:00) renders on every day it covers instead of
  * only appearing on its start day.
@@ -168,20 +133,82 @@ function isAllDayNote(event) {
 }
 
 /**
- * Convert server calendar notes to unified event format.
+ * Convert a range's worth of server prenotations/notes into the unified
+ * event format and merge them into the shared `events` array, skipping any
+ * event already present (by id+type) - matters once ranges are fetched
+ * on demand (see ensureRangeLoaded below), since a re-visited or slightly
+ * overlapping range must not duplicate events already loaded.
  *
- * Each note becomes one or more 'note' type events (one per day it spans -
- * see buildNoteSegments) with:
- * - Description text
- * - Date and time range
- * - Assignees (tutors)
+ * Called once at startup with window.serverData (the range the server
+ * pre-loaded), and again each time ensureRangeLoaded fetches a new week.
+ *
+ * @param {Object} data
+ * @param {Array} [data.prenotations] - Raw prenotations from the server
+ * @param {Array} [data.calendarNotes] - Raw calendar notes from the server
  */
-if (window.serverData && window.serverData.calendarNotes) {
-  console.log('Converting', window.serverData.calendarNotes.length, 'calendar notes');
-  window.serverData.calendarNotes.forEach(note => {
-    events.push(...buildNoteSegments(note));
-  });
+function mergeServerDataIntoEvents(data) {
+  if (data && data.prenotations && data.prenotations.length) {
+    console.log('Converting', data.prenotations.length, 'prenotations');
+    const existingLessonIds = new Set(events.filter(e => e.type === 'lesson').map(e => e.id));
+
+    // Also keep window.serverData.prenotations/calendarNotes (the raw,
+    // unflattened shape) up to date - openEditPrenotationModal/openEditNoteModal
+    // look prenotations/notes up there by id to populate the edit form, not in
+    // the flattened `events` array below (which drops fields like studentId
+    // and the full tutor/student objects that only the raw shape has).
+    const existingRawPrenotationIds = new Set((window.serverData.prenotations || []).map(p => p.id));
+    data.prenotations.forEach(prenotation => {
+      if (!existingRawPrenotationIds.has(prenotation.id)) {
+        window.serverData.prenotations.push(prenotation);
+      }
+    });
+
+    data.prenotations.forEach(prenotation => {
+      if (existingLessonIds.has(prenotation.id)) return;
+
+      const startDate = parseAsLocalDate(prenotation.startTime);
+      const endDate = parseAsLocalDate(prenotation.endTime);
+
+      // Format date in local timezone to avoid timezone shifts
+      const year = startDate.getFullYear();
+      const month = String(startDate.getMonth() + 1).padStart(2, '0');
+      const day = String(startDate.getDate()).padStart(2, '0');
+      const localDateStr = `${year}-${month}-${day}`;
+
+      events.push({
+        id: prenotation.id,
+        type: 'lesson',
+        firstName: prenotation.studentName || 'Unknown',
+        lastName: prenotation.studentSurname || '',
+        classType: prenotation.studentClass || '',
+        tutorUsername: prenotation.tutorUsername || '',
+        tutorId: prenotation.tutorId,
+        date: localDateStr,
+        startTime: startDate.toTimeString().slice(0, 5),
+        endTime: endDate.toTimeString().slice(0, 5)
+      });
+    });
+  }
+
+  if (data && data.calendarNotes && data.calendarNotes.length) {
+    console.log('Converting', data.calendarNotes.length, 'calendar notes');
+    const existingNoteIds = new Set(events.filter(e => e.type === 'note').map(e => e.id));
+
+    const existingRawNoteIds = new Set((window.serverData.calendarNotes || []).map(n => n.id));
+    data.calendarNotes.forEach(note => {
+      if (!existingRawNoteIds.has(note.id)) {
+        window.serverData.calendarNotes.push(note);
+      }
+    });
+
+    data.calendarNotes.forEach(note => {
+      if (existingNoteIds.has(note.id)) return;
+      events.push(...buildNoteSegments(note));
+    });
+  }
 }
+
+mergeServerDataIntoEvents(window.serverData);
 
 console.log('Total events loaded:', events.length);
 console.log('Events:', events);
@@ -262,6 +289,66 @@ function formatDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+// Set of "YYYY-MM-DD_YYYY-MM-DD" full-week range keys already fetched this
+// session - always a Monday-Sunday week, even when triggered by mobile
+// day-stepping, so cache granularity stays consistent and request count
+// stays bounded. Best-effort seeded from the range the server pre-loaded;
+// if it doesn't line up exactly with a Monday-aligned week (it's a ±7-day
+// window, not necessarily week-aligned), the first navigation just fetches
+// once more - not a bug, see GET /calendar in index.js for why.
+const fetchedRanges = new Set();
+if (window.serverData && window.serverData.initialRangeStart && window.serverData.initialRangeEnd) {
+  fetchedRanges.add(`${window.serverData.initialRangeStart}_${window.serverData.initialRangeEnd}`);
+}
+
+/**
+ * Show/hide the loading indicator(s) and disable the week/day nav controls
+ * while a range fetch is in flight, so rapid clicking can't stack
+ * overlapping requests.
+ *
+ * @param {boolean} isLoading
+ */
+function setCalendarLoading(isLoading) {
+  document.querySelectorAll('.calendar-loading-indicator').forEach(el => el.classList.toggle('hidden', !isLoading));
+  ['prevWeek', 'nextWeek', 'todayBtn', 'prevDay', 'nextDay'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = isLoading;
+  });
+}
+
+/**
+ * Ensure the full Monday-Sunday week containing `weekStartDate` has been
+ * fetched, fetching it from GET /api/calendar/data if it hasn't been yet.
+ * Fetched events are merged into the shared `events` array (see
+ * mergeServerDataIntoEvents) - callers should re-render after this resolves.
+ *
+ * @param {Date} weekStartDate - Any date; the containing Monday-Sunday week is fetched
+ */
+async function ensureRangeLoaded(weekStartDate) {
+  const weekStart = getWeekStart(weekStartDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  const rangeKey = `${formatDate(weekStart)}_${formatDate(weekEnd)}`;
+  if (fetchedRanges.has(rangeKey)) return;
+
+  setCalendarLoading(true);
+  try {
+    const start = `${formatDate(weekStart)}T00:00:00`;
+    const end = `${formatDate(weekEnd)}T23:59:59`;
+    const response = await fetch(`/api/calendar/data?start=${start}&end=${end}`, { credentials: 'same-origin' });
+    if (!response.ok) throw new Error(`Failed to load calendar data (${response.status})`);
+    const data = await response.json();
+    mergeServerDataIntoEvents(data);
+    fetchedRanges.add(rangeKey);
+  } catch (error) {
+    console.error('Error loading calendar range:', error);
+    // rangeKey is deliberately left out of fetchedRanges so the next
+    // navigation into this week retries instead of showing it empty forever.
+  } finally {
+    setCalendarLoading(false);
+  }
 }
 
 /**
@@ -1097,32 +1184,40 @@ function setupEventListeners() {
   document.getElementById('closeMenu').addEventListener('click', closeMenu);
   document.getElementById('menuOverlay').addEventListener('click', closeMenu);
 
-  // Week navigation
-  document.getElementById('prevWeek').addEventListener('click', () => {
+  // Week navigation - fetches the target week first if it hasn't been
+  // loaded yet (see ensureRangeLoaded)
+  document.getElementById('prevWeek').addEventListener('click', async () => {
     currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+    await ensureRangeLoaded(currentWeekStart);
     renderWeekView();
   });
 
-  document.getElementById('nextWeek').addEventListener('click', () => {
+  document.getElementById('nextWeek').addEventListener('click', async () => {
     currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    await ensureRangeLoaded(currentWeekStart);
     renderWeekView();
   });
 
-  document.getElementById('todayBtn').addEventListener('click', () => {
+  document.getElementById('todayBtn').addEventListener('click', async () => {
     currentWeekStart = getWeekStart(new Date());
     currentMobileDate = new Date();
+    await ensureRangeLoaded(currentWeekStart);
     renderWeekView();
     renderMobileDayView();
   });
 
-  // Mobile day navigation
-  document.getElementById('prevDay').addEventListener('click', () => {
+  // Mobile day navigation - still cached/fetched by full week (see
+  // ensureRangeLoaded) even though this steps a day at a time, so crossing
+  // into a new week triggers at most one fetch, not one per day.
+  document.getElementById('prevDay').addEventListener('click', async () => {
     currentMobileDate.setDate(currentMobileDate.getDate() - 1);
+    await ensureRangeLoaded(currentMobileDate);
     renderMobileDayView();
   });
 
-  document.getElementById('nextDay').addEventListener('click', () => {
+  document.getElementById('nextDay').addEventListener('click', async () => {
     currentMobileDate.setDate(currentMobileDate.getDate() + 1);
+    await ensureRangeLoaded(currentMobileDate);
     renderMobileDayView();
   });
 
