@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.3] - 2026-09-21
+
+### Changed
+- **Calendar performance**: `GET /calendar` used to fetch every prenotation and calendar note ever created (no date filter at all) and enrich each one with two uncached HTTP calls (student + tutor lookup) - the page got slower for STAFF the more prenotations accumulated over time, regardless of how few distinct students/tutors they actually referenced. Switched to on-demand per-week loading: the page now loads only a ±7-day window up front, using the Java backend's existing date-range endpoints (`/api/prenotations/date-range`, `/api/calendar-notes/date-range`, previously only used by the daily reminder job) instead of the unbounded ones, with a promise-memoized student/tutor lookup cache to eliminate the duplicate calls. Navigating to a week not yet loaded fetches it on demand from a new `GET /api/calendar/data` endpoint, cached client-side so an already-visited week isn't refetched. Also added HTTP keep-alive to every Java API call (`javaApiService.js`), instead of opening a fresh TCP+TLS connection per request.
+
+### Fixed
+- **Calendar**: editing or deleting a prenotation/note loaded via the on-demand fetch above silently failed - the edit-modal lookup read from `window.serverData.prenotations`/`calendarNotes` (the raw arrays), which only ever held the initial page load's data and was never updated by the new on-demand fetch. Both arrays are now kept in sync.
+
+---
+
 ## [2.3.2] - 2026-09-16
 
 ### Fixed

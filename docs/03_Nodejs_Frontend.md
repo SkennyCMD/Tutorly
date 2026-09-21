@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: September 14, 2026  
+**Last Updated**: September 21, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -1179,6 +1179,14 @@ Body: {
 
 ---
 
+### API Endpoint - On-Demand Calendar Data
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/calendar/data?start=<ISO>&end=<ISO>` | Tutor | Prenotations + calendar notes for a date range, fetched by the Calendar page as the tutor navigates to a week not yet loaded - see [Calendar Performance: On-Demand Per-Week Loading](#calendar-performance-on-demand-per-week-loading) |
+
+---
+
 ### API Endpoints - Calendar Notes
 
 | Method | Route | Auth | Description |
@@ -1413,7 +1421,7 @@ In STAFF's Calendar view, every tutor's prenotations get their own color instead
 - **Palette:** 48 colors defined as CSS custom properties in `theme.css` (`--color-tutor-1` through `--color-tutor-48`, both light and dark theme variants) - 12 hues spaced ~24° apart around the color wheel (excluding only the ranges already used by `--color-note` and `--color-destructive`; blue is included, since the logged-in tutor's own events never draw from this palette) x 4 lightness/saturation tiers, laid out so any run of 12 consecutive palette slots sweeps the full set of distinct hues. Regenerate with `Nodejs/scripts/gen-tutor-palette.js` if the tutor count outgrows 48.
 - **Assignment:** `getTutorColorVar(tutorId)` picks a palette slot deterministically (`tutorId % 48`), so a given tutor always gets the same color across reloads. `applyTutorColor()` applies it (background + left border only) to a prenotation's event box, but only when the viewer is STAFF **and** the event's tutor isn't the logged-in user - the logged-in tutor's own prenotations always keep the default `--color-lesson` blue.
 - **Text color** is intentionally decoupled from the assigned color for readability: `.event-lesson` always uses `--color-foreground` (black in light theme), with a softer off-white override (`rgb(220 220 224)`, less stark than `--color-foreground`'s `250 250 250`) specifically in dark theme.
-- **Tutor filter dropdown:** the STAFF-only tutor filter is a custom dropdown (button + popover list, `#tutorFilterBtn`/`#tutorFilterMenu` in `calendar.ejs`, built by `setupTutorFilter()`) rather than a native `<select>` - a plain `<option>` can't mix a colored icon with separately-colored text. Each row shows a small square in that tutor's color (same rule as above: blue for the logged-in tutor, palette color otherwise) next to their name in plain white text. The popover is positioned `absolute` with `z-30`, above the calendar grid's sticky day-header row (`z-20`) so it doesn't render underneath it.
+- **Tutor filter dropdown:** the STAFF-only tutor filter is a custom dropdown (button + popover list, `#tutorFilterBtn`/`#tutorFilterMenu` in `calendar.ejs`, built by `setupTutorFilter()`) rather than a native `<select>` - a plain `<option>` can't mix a colored icon with separately-colored text. Each row shows a small square in that tutor's color (same rule as above: blue for the logged-in tutor, palette color otherwise) next to their name, in the theme's normal text color (`text-foreground` - originally hardcoded white, unreadable in light theme, fixed in 2.3.2). The popover is positioned `absolute` with `z-30`, above the calendar grid's sticky day-header row (`z-20`) so it doesn't render underneath it.
 
 ### Note Coloring by Creator
 
@@ -1424,9 +1432,25 @@ Calendar notes render in one of two colors depending on who created them, comput
 
 The `isOwnNote()` helper defaults to "own" (orange) if a note's creator is somehow unknown, rather than flagging it red. Both note text color and background opacity (`0.45`, up from the original `0.2`) were tuned per-theme and per-category (own vs. other) directly in `calendar.css` for contrast against the more opaque background - not derived from `--color-note`/`--color-destructive` directly.
 
-**Fetching notes by creator, not just by assignment:** `/calendar` previously fetched a tutor's notes only via `GET /api/calendar-notes/tutor/:id` (assignment-based - the `tutors` many-to-many side). A STAFF tutor who created a note for someone else, without also assigning it to themselves, never saw that note on their own calendar. The route now also calls `GET /api/calendar-notes/creator/:id` (an existing Java endpoint the Node route never used before) and merges the two lists, deduplicated by note `id`.
+**Fetching notes by creator, not just by assignment:** a STAFF tutor who created a note for someone else, without also assigning it to themselves, still needs to see that note on their own calendar. `calendarDataService.js`'s shared range fetch (see [Calendar Performance: On-Demand Per-Week Loading](#calendar-performance-on-demand-per-week-loading) below) filters the date-bounded note fetch to `note.tutors.some(t => t.id === tutorId) || note.creator?.id === tutorId` - assignment OR authorship, regardless of role.
 
 **Legend:** the Calendar toolbar's color legend now has three swatches instead of two - blue "Your Prenotation" (`calendar.prenotation`, renamed from "Prenotation"), orange "Your Note" (`calendar.note`, renamed from "Note"), and a new red "Assigned by someone else" (`calendar.assignedNote`) covering the case above.
+
+### Calendar Performance: On-Demand Per-Week Loading
+
+`GET /calendar` used to fetch every prenotation and calendar note ever created (`GET /api/prenotations` / two unfiltered by-tutor/by-creator note calls, no date bound at all) and enrich each prenotation with two separate, uncached `fetchStudentData`/`fetchTutorData` calls - the page got slower the more prenotations accumulated over time, since N prenotations cost up to 2N Java API round-trips regardless of how few distinct students/tutors they actually referenced.
+
+**Shared range fetch/enrich helper:** `server_utilities/calendarDataService.js` exports `getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime })`, used by both the page load and the on-demand endpoint below:
+- Fetches prenotations and notes via the Java backend's existing date-range endpoints (`fetchPrenotationsByDateRange`/`fetchCalendarNotesByDateRange` in `javaApiService.js` - previously only used by the daily reminder job, see [05_Service_Modules.md](05_Service_Modules.md)) instead of the unbounded ones, pushing the date filtering down to the database.
+- Applies the same role-based visibility as before (STAFF/GUEST see every tutor's prenotations in range; GENERIC only their own; GUEST further filtered to their assigned student(s)) - now as an in-Node filter over the date-bounded result, since no Java endpoint combines tutor + date-range filtering.
+- Enriches prenotations with student/tutor lookups through a promise-memoizing cache (dedupes repeat lookups for the same id, same pattern as the `tutorCache` on the Student Profile page) instead of fetching every reference from scratch.
+
+**Two data-loading points now share this helper:**
+- `GET /calendar` loads only a fixed ±7-day window around the requested/today's date on initial page render (not an exact replica of the client's Monday-aligned week - the client's own fetch-on-navigate corrects any boundary mismatch, at most one extra request).
+- `GET /api/calendar/data?start=<ISO>&end=<ISO>` (new) is fetched by `calendarScript.js`'s `ensureRangeLoaded()` whenever the tutor navigates (prev/next week, Today, mobile day-stepping) to a week that hasn't been loaded yet this session, tracked in a client-side `fetchedRanges` cache (always keyed by full Monday-Sunday week, even when triggered by mobile day-stepping) so an already-visited week isn't refetched. `mergeServerDataIntoEvents()` merges the response into both the flattened `events` array used for rendering *and* the raw `window.serverData.prenotations`/`calendarNotes` arrays that `openEditPrenotationModal`/`openEditNoteModal` look records up in by id - both need to stay in sync, or editing/deleting a record loaded via the on-demand fetch silently fails (a real bug hit and fixed while building this).
+- No explicit cache-invalidation logic is needed: every create/edit/delete flow already ends in a full `window.location.href = /calendar?date=...` reload, which naturally resets the client-side cache.
+
+**Also added:** a shared `https.Agent({ keepAlive: true })` in `javaApiService.js`, reused across every Java API call instead of a fresh TCP+TLS handshake per request - benefits every route, not just the calendar.
 
 ---
 

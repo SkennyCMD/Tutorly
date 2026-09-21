@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: September 14, 2026  
+**Last Updated**: September 21, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -272,6 +272,7 @@ Service for interaction with the Java Backend API.
 - JSON serialization/deserialization
 - Error handling and logging
 - Support for GET, POST, PUT, PATCH, DELETE methods
+- HTTP keep-alive (a shared `https.Agent({ keepAlive: true })`, reused by every call instead of a fresh TCP+TLS handshake per request - added in 2.3.3 to reduce the cost of range-bounded calls that can fire in quick succession, e.g. calendar week navigation)
 
 **Example:**
 ```javascript
@@ -334,6 +335,7 @@ JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu'
 - `fetchAllPrenotations()`: Fetches all bookings
 - `fetchPrenotationsByTutor(tutorId)`: Fetches bookings for a tutor
 - `fetchPrenotationsByStudent(studentId)`: Fetches bookings for a student, across every tutor
+- `fetchPrenotationsByDateRange(startTime, endTime)`: Fetches bookings within a date range, across every tutor - used by `calendarDataService.js` (see below) and the daily reminder job
 - `fetchStudentData(studentId)`: Fetches student data (resolves `null` if not found)
 - `fetchAllStudents()`: Fetches all students
 - `fetchTestsByTutor(tutorId)`: Fetches tests (evaluations) for a tutor
@@ -351,6 +353,16 @@ const student = await fetchStudentData(123);
 // Fetch all lessons
 const lessons = await fetchAllLessons();
 ```
+
+---
+
+### `calendarDataService.js`
+Shared range-bounded fetch/enrich logic for the Calendar page, added in 2.3.3 to fix a performance problem where `GET /calendar` fetched every prenotation/note ever created instead of only the visible week - see [03_Nodejs_Frontend.md - Calendar Performance: On-Demand Per-Week Loading](03_Nodejs_Frontend.md#calendar-performance-on-demand-per-week-loading) for the full picture.
+
+**Role:** the one place both `GET /calendar` (initial page load) and `GET /api/calendar/data` (on-demand fetch as a tutor navigates) get their prenotations/notes from, so the two stay in sync instead of duplicating the same role-filtering and enrichment logic.
+
+**Exports:**
+- `getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime })`: fetches prenotations and notes bounded to `[startTime, endTime]` via `fetchPrenotationsByDateRange`/`fetchCalendarNotesByDateRange`, applies the same STAFF/GENERIC/GUEST visibility rules the Calendar page has always used, and enriches each prenotation's student/tutor references through a promise-memoizing lookup cache (dedupes repeat lookups for the same id, instead of firing a fresh HTTP call every time) before returning `{ prenotations, calendarNotes }`.
 
 ---
 

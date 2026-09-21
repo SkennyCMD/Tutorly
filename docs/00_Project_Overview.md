@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: September 16, 2026  
+**Last Updated**: September 21, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -631,7 +631,7 @@ cd Java/backend-api
 ```bash
 cd Nodejs
 
-# Run the full Jest/Supertest suite (162 tests across 14 files, covering
+# Run the full Jest/Supertest suite (167 tests across 14 files, covering
 # every route in src/index.js - see 08_Testing_Guide.md for details)
 npm test
 
@@ -785,6 +785,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.3.3** | 2026-09-21 | Calendar performance: switched from loading every prenotation/note ever created to on-demand per-week loading (new `GET /api/calendar/data`, date-range Java endpoints, deduped student/tutor lookups, HTTP keep-alive) - fixes the page slowing down as prenotations accumulate. Fixed a bug found while verifying it: editing/deleting a prenotation or note loaded via the new on-demand fetch silently failed. |
 | **2.3.2** | 2026-09-16 | Fixed the Calendar's tutor filter (button + dropdown) using hardcoded white text, unreadable in light theme; switched to the theme-aware text color used everywhere else. Also replaced the app icon SVG. |
 | **2.3.1** | 2026-09-14 | Erased tutors/students no longer show up in the "pick one" lists on Dashboard, My Lessons, Calendar, Evaluations, and Staff Panel - only the admin-panel mutation guards existed before, not this. |
 | **2.3.0** | 2026-09-14 | GDPR right-to-erasure (anonymize-in-place on `DELETE /api/{users,students,admins}/{id}`) is now reachable from the Admin Panel - an "Erase" button gated by a type-to-confirm modal, with post-erasure immutability guards on every tutor/guest/student route; three erasure-bypass gaps in those guards were found and fixed. The Node.js frontend gained its first automated test suite (Jest/Supertest/nock, 162 tests across every route). Fixed a mobile Calendar bug where the color-legend row could overflow the viewport and make the whole page horizontally scrollable. |
