@@ -124,4 +124,19 @@ describe('GET /api/reports/tutor-monthly-hours', () => {
         expect(res.body.tutors).toEqual([{ id: 1, username: 'test.tutor' }]);
         expect(res.body.lessonsByTutor['1']).toHaveLength(1);
     });
+
+    test('excludes an erased tutor from the table', async () => {
+        const agent = await tutorAgent({ role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get(/\/api\/lessons\/date-range/).reply(200, [lessonFixture({ tutorId: 2 })]);
+        javaApi().get('/api/users').reply(200, [
+            tutorFixture({ id: 1, role: 'STAFF' }),
+            tutorFixture({ id: 2, role: 'GENERIC', anonymizedAt: '2026-01-01T00:00:00' })
+        ]);
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+
+        const res = await agent.get('/api/reports/tutor-monthly-hours').query({ month: '2026-09' });
+        expect(res.status).toBe(200);
+        expect(res.body.tutors).toEqual([{ id: 1, username: 'test.tutor' }]);
+    });
 });

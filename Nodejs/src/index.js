@@ -1275,7 +1275,8 @@ app.get('/api/reports/tutor-monthly-hours', tutorSession, isAuthenticated, isSta
             fetchFromJavaAPI('/api/users')
         ]);
 
-        const tutors = (allUsers || []).filter(u => u.role === 'STAFF' || u.role === 'GENERIC');
+        // Erased tutors shouldn't show up in the Staff Panel's hours table either
+        const tutors = (allUsers || []).filter(u => (u.role === 'STAFF' || u.role === 'GENERIC') && !u.anonymizedAt);
 
         // Fetch each unique student referenced this month only once, not once per lesson
         const uniqueStudentIds = [...new Set((lessons || []).map(l => l.studentId).filter(Boolean))];
