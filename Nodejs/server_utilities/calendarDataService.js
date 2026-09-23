@@ -88,13 +88,17 @@ async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, e
         prenotations = prenotations.filter(p => assignedStudentIds.has(p.studentId));
     }
 
-    // Calendar notes assigned to or created by this tutor - there's no
-    // combined tutor+date-range Java endpoint, so filter the date-bounded
-    // fetch in Node instead of issuing two separate by-tutor/by-creator
-    // calls and merging (as the old unbounded code did).
-    const calendarNotes = (rawNotes || []).filter(note =>
-        (note.tutors || []).some(t => t.id === tutorId) || note.creator?.id === tutorId
-    );
+    // Calendar notes: STAFF sees every note in range (same "see everything"
+    // rule prenotations already get above), everyone else only notes
+    // assigned to or created by them. There's no combined tutor+date-range
+    // Java endpoint, so this filter runs in Node instead of issuing two
+    // separate by-tutor/by-creator calls and merging (as the old unbounded
+    // code did).
+    const calendarNotes = isStaff
+        ? (rawNotes || [])
+        : (rawNotes || []).filter(note =>
+            (note.tutors || []).some(t => t.id === tutorId) || note.creator?.id === tutorId
+        );
 
     const getStudent = makeLookupCache(fetchStudentData);
     const getTutor = makeLookupCache(fetchTutorData);

@@ -110,7 +110,8 @@ function buildNoteSegments(note) {
       endTime: isLastDay ? endMoment.toTimeString().slice(0, 5) : '23:59',
       isMultiDay: !(isFirstDay && isLastDay),
       assignees: ['myself'], // Default assignees
-      creatorId: note.creator?.id
+      creatorId: note.creator?.id,
+      creatorUsername: note.creator?.username || null
     });
 
     cursor.setDate(cursor.getDate() + 1);
@@ -764,6 +765,9 @@ function renderAllDayNotesRow() {
   // GUEST accounts can't modify anything - chips render read-only (no pointer cursor, no click handler)
   const isGuest = window.serverData?.userRole === 'GUEST';
 
+  const currentUserId = window.serverData?.currentUserId;
+  const isStaff = window.serverData?.userRole === 'STAFF';
+
   const visibleEvents = filterEventsByTutor(events);
   let html = '';
   let hasAny = false;
@@ -778,9 +782,13 @@ function renderAllDayNotesRow() {
 
     html += `
       <div class="p-1 space-y-0.5 border-l border-border">
-        ${notesForDay.map(note => `
-          <div class="event-note${isOwnNote(note) ? '' : ' event-note-other'} text-[10px] px-1.5 py-0.5 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`} title="${note.description}">${note.description}</div>
-        `).join('')}
+        ${notesForDay.map(note => {
+          const showCreator = isStaff && note.creatorId !== currentUserId && note.creatorUsername;
+          const label = showCreator ? `${note.description} (👤 ${note.creatorUsername})` : note.description;
+          return `
+          <div class="event-note${isOwnNote(note) ? '' : ' event-note-other'} text-[10px] px-1.5 py-0.5 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`} title="${label}">${label}</div>
+        `;
+        }).join('')}
       </div>
     `;
   }
@@ -956,9 +964,14 @@ function renderEventsOnGrid() {
           ${showTutor ? `<div class="opacity-60 text-xs truncate">👤 ${event.tutorUsername}</div>` : ''}
         `;
       } else {
+        const currentUserId = window.serverData?.currentUserId;
+        const isStaff = window.serverData?.userRole === 'STAFF';
+        const showCreator = isStaff && event.creatorId !== currentUserId && event.creatorUsername;
+
         eventEl.innerHTML = `
           <div class="font-medium truncate">${event.description}</div>
           <div class="opacity-75 truncate">${event.startTime}</div>
+          ${showCreator ? `<div class="opacity-60 text-xs truncate">👤 ${event.creatorUsername}</div>` : ''}
         `;
       }
 
@@ -999,13 +1012,19 @@ function renderMobileAllDayNotes() {
 
   // GUEST accounts can't modify anything - chips render read-only (no pointer cursor, no click handler)
   const isGuest = window.serverData?.userRole === 'GUEST';
+  const currentUserId = window.serverData?.currentUserId;
+  const isStaff = window.serverData?.userRole === 'STAFF';
 
   const dateStr = formatDate(currentMobileDate);
   const notesForDay = filterEventsByTutor(events).filter(e => isAllDayNote(e) && e.date === dateStr);
 
-  row.innerHTML = notesForDay.map(note => `
-    <div class="event-note${isOwnNote(note) ? '' : ' event-note-other'} text-xs px-2 py-1 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`}>${note.description}</div>
-  `).join('');
+  row.innerHTML = notesForDay.map(note => {
+    const showCreator = isStaff && note.creatorId !== currentUserId && note.creatorUsername;
+    const label = showCreator ? `${note.description} (👤 ${note.creatorUsername})` : note.description;
+    return `
+    <div class="event-note${isOwnNote(note) ? '' : ' event-note-other'} text-xs px-2 py-1 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`} title="${label}">${label}</div>
+  `;
+  }).join('');
   row.classList.toggle('hidden', notesForDay.length === 0);
 }
 
@@ -1149,9 +1168,14 @@ function renderMobileEvents() {
           ${showTutor ? `<div class="opacity-60 text-xs truncate">👤 ${event.tutorUsername}</div>` : ''}
         `;
       } else {
+        const currentUserId = window.serverData?.currentUserId;
+        const isStaff = window.serverData?.userRole === 'STAFF';
+        const showCreator = isStaff && event.creatorId !== currentUserId && event.creatorUsername;
+
         eventEl.innerHTML = `
           <div class="font-medium truncate">${event.description}</div>
           <div class="opacity-75 truncate">${event.startTime} - ${event.endTime}</div>
+          ${showCreator ? `<div class="opacity-60 text-xs truncate">👤 ${event.creatorUsername}</div>` : ''}
         `;
       }
 

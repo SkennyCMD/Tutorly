@@ -6,7 +6,7 @@ const request = require('supertest');
 const app = require('../helpers/testApp');
 const { javaApi } = require('../helpers/javaApi');
 const { loginAsTutor, loginAsAdmin, tutorFixture } = require('../helpers/auth');
-const { studentFixture } = require('../helpers/fixtures');
+const { studentFixture, calendarNoteFixture } = require('../helpers/fixtures');
 
 async function tutorAgent(overrides = {}) {
     const agent = request.agent(app);
@@ -150,6 +150,33 @@ describe('GET /api/calendar/data', () => {
         const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
         expect(res.status).toBe(200);
         expect(res.body.prenotations).toHaveLength(2);
+    });
+
+    test('a STAFF tutor sees every note in range, including ones neither assigned to nor created by them', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, [
+            calendarNoteFixture({ id: 500, creator: { id: 2, username: 'other.tutor' }, tutors: [{ id: 2 }] })
+        ]);
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.calendarNotes).toHaveLength(1);
+        expect(res.body.calendarNotes[0].creator.username).toBe('other.tutor');
+    });
+
+    test('a GENERIC tutor only sees notes assigned to or created by them', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, [
+            calendarNoteFixture({ id: 500, creator: { id: 2, username: 'other.tutor' }, tutors: [{ id: 2 }] })
+        ]);
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.calendarNotes).toHaveLength(0);
     });
 
     test('a GUEST sees only prenotations for their assigned student(s)', async () => {
