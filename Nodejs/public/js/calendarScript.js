@@ -244,6 +244,12 @@ let currentMobileDate = getInitialCalendarDate();
 // adding or editing a note/prenotation, which redirects back to /calendar).
 let tutorFilterId = sessionStorage.getItem('calendarTutorFilter') || 'all';
 
+// Show/hide toggles for prenotations and notes (STAFF only, see #hideLessonsCheckbox/
+// #hideNotesCheckbox in calendar.ejs) - independent of the tutor filter above.
+// Same sessionStorage-persistence pattern as tutorFilterId.
+let hideLessons = sessionStorage.getItem('calendarHideLessons') === 'true';
+let hideNotes = sessionStorage.getItem('calendarHideNotes') === 'true';
+
 // Date/start/end time of the grid slot last clicked or dragged, pending a Note
 // vs Prenotation choice from the slot chooser modal (see handleGridPointerUp)
 let pendingSlot = null;
@@ -667,20 +673,29 @@ function setupTutorFilter() {
 }
 
 /**
- * Filter events for rendering based on the selected tutor (STAFF only).
+ * Filter events for rendering based on the selected tutor and the
+ * show/hide-prenotations/notes toggles (all STAFF only).
  *
- * Only prenotations ('lesson' type events) are affected - calendar notes
- * are always shown regardless of the tutor filter.
+ * A prenotation ('lesson' type) is matched against its assigned tutor;
+ * a note is matched against its creator - so selecting a tutor in the
+ * filter scopes both to that tutor's own prenotations and their own notes.
+ * The hideLessons/hideNotes toggles apply independently of the tutor filter.
  *
  * @param {Array} eventsToFilter - Events to filter
- * @returns {Array} Events visible under the current tutor filter
+ * @returns {Array} Events visible under the current tutor filter + toggles
  */
 function filterEventsByTutor(eventsToFilter) {
-  if (tutorFilterId === 'all') return eventsToFilter;
-
-  return eventsToFilter.filter(event =>
-    event.type !== 'lesson' || String(event.tutorId) === String(tutorFilterId)
-  );
+  return eventsToFilter.filter(event => {
+    if (event.type === 'lesson') {
+      if (hideLessons) return false;
+      return tutorFilterId === 'all' || String(event.tutorId) === String(tutorFilterId);
+    }
+    if (event.type === 'note') {
+      if (hideNotes) return false;
+      return tutorFilterId === 'all' || String(event.creatorId) === String(tutorFilterId);
+    }
+    return true;
+  });
 }
 
 
@@ -1244,6 +1259,38 @@ function setupEventListeners() {
     await ensureRangeLoaded(currentMobileDate);
     renderMobileDayView();
   });
+
+  // Show/hide prenotations/notes toggles (STAFF only - absent from the DOM
+  // for every other role, see calendar.ejs)
+  const hideLessonsCheckbox = document.getElementById('hideLessonsCheckbox');
+  if (hideLessonsCheckbox) {
+    hideLessonsCheckbox.checked = hideLessons;
+    hideLessonsCheckbox.addEventListener('change', () => {
+      hideLessons = hideLessonsCheckbox.checked;
+      if (hideLessons) {
+        sessionStorage.setItem('calendarHideLessons', 'true');
+      } else {
+        sessionStorage.removeItem('calendarHideLessons');
+      }
+      renderWeekView();
+      renderMobileDayView();
+    });
+  }
+
+  const hideNotesCheckbox = document.getElementById('hideNotesCheckbox');
+  if (hideNotesCheckbox) {
+    hideNotesCheckbox.checked = hideNotes;
+    hideNotesCheckbox.addEventListener('change', () => {
+      hideNotes = hideNotesCheckbox.checked;
+      if (hideNotes) {
+        sessionStorage.setItem('calendarHideNotes', 'true');
+      } else {
+        sessionStorage.removeItem('calendarHideNotes');
+      }
+      renderWeekView();
+      renderMobileDayView();
+    });
+  }
 
   // Modal buttons - absent for GUEST accounts, which can't create anything
   const addLessonBtn = document.getElementById('addLessonBtn');

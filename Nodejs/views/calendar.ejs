@@ -252,6 +252,20 @@ Features:
                 class="hidden absolute top-full left-0 mt-1 z-30 w-48 max-h-64 overflow-y-auto bg-card border border-border rounded-lg shadow-lg py-1">
               </div>
             </div>
+
+            <!-- Show/hide toggles for prenotations and notes (STAFF only) - independent
+                 of the tutor filter above, e.g. to see every tutor's notes with none of
+                 the prenotation clutter, or vice versa. -->
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="hideLessonsCheckbox"
+                class="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer">
+              <span class="text-sm text-muted-foreground"><%= t('calendar.hidePrenotations') %></span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" id="hideNotesCheckbox"
+                class="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer">
+              <span class="text-sm text-muted-foreground"><%= t('calendar.hideNotes') %></span>
+            </label>
             <% } %>
 
               <!-- Color legend for event types (own prenotation = blue, own note = orange, note assigned by someone else = red).
