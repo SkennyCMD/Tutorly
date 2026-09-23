@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.5] - 2026-09-23
+
+### Added
+- **Calendar**: STAFF now sees every tutor's calendar notes in the visible range, not just their own (assigned-to-or-created-by) - the same "see everything" visibility prenotations already had. A note that isn't the viewing STAFF's own shows the creator's username (👤 `<username>`), on both desktop and mobile, timed and all-day notes alike.
+- **Calendar**: two new STAFF-only checkboxes next to the tutor filter - "Hide prenotations" and "Hide notes" - toggle each event type off independently, persisted the same way the tutor filter already is (`sessionStorage`, survives a page reload).
+
+### Changed
+- **Calendar**: the STAFF-only tutor filter dropdown now also scopes notes to the selected tutor (matched by creator), not just prenotations (matched by assigned tutor) - selecting a tutor previously still showed every tutor's notes.
+
+---
+
 ## [2.3.4] - 2026-09-23
 
 ### Added

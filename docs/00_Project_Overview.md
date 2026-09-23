@@ -785,6 +785,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.3.5** | 2026-09-23 | Calendar: STAFF now sees every tutor's notes (with the creator's username shown), not just their own; the tutor filter dropdown now scopes notes to the selected tutor too; two new checkboxes let STAFF hide prenotations and/or notes independently of the tutor filter. |
 | **2.3.4** | 2026-09-23 | Added a show/hide password toggle to the tutor login page. Fixed the Staff Panel's monthly hours table still showing erased tutors (a separate data source from the page-load list already fixed in 2.3.1), and a typo'd Calendar link in the mobile sidebar. |
 | **2.3.3** | 2026-09-21 | Calendar performance: switched from loading every prenotation/note ever created to on-demand per-week loading (new `GET /api/calendar/data`, date-range Java endpoints, deduped student/tutor lookups, HTTP keep-alive) - fixes the page slowing down as prenotations accumulate. Fixed a bug found while verifying it: editing/deleting a prenotation or note loaded via the new on-demand fetch silently failed. |
 | **2.3.2** | 2026-09-16 | Fixed the Calendar's tutor filter (button + dropdown) using hardcoded white text, unreadable in light theme; switched to the theme-aware text color used everywhere else. Also replaced the app icon SVG. |
