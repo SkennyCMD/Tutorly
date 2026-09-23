@@ -102,9 +102,17 @@ Features:
                     </div>
                   </div>
                 </div>
-                <input type="password" id="password" name="password" placeholder="••••••••"
-                  class="w-full px-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                  required>
+                <div class="relative">
+                  <input type="password" id="password" name="password" placeholder="••••••••"
+                    class="w-full px-4 py-3 pr-12 rounded-lg border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    required>
+                  <button type="button" id="togglePw" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                    <svg id="pwEye" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <!-- Remember Me Checkbox: Keep user logged in for 30 days -->
@@ -139,6 +147,7 @@ Features:
   </footer>
 
   <script src="/js/theme.js"></script>
+  <script src="/js/loginScript.js"></script>
 </body>
 
 </html>
