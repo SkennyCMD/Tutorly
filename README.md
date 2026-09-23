@@ -16,9 +16,10 @@ Tutorly is a full-stack web application that allows you to:
 - **Manage lessons**: Create, edit, and delete lessons with specific students
 - **Organize students**: Complete registry with information on classes and subjects
 - **Track bookings**: Lesson booking system with confirmation
-- **Plan activities**: Integrated calendar with notes and reminders
+- **Plan activities**: Integrated calendar with notes and reminders, and web push notifications
 - **Generate reports**: Excel export of lessons, monthly statistics, and student reports
 - **Control access**: Dual authentication system (tutors and administrators) with differentiated roles
+- **GDPR right to erasure**: Anonymize-in-place account deletion, reachable from the Admin Panel
 
 ---
 
@@ -28,6 +29,7 @@ Tutorly is a full-stack web application that allows you to:
 - **Frontend**: Node.js 18+, Express.js, EJS
 - **Security**: HTTPS/SSL, bcrypt, API Key authentication
 - **Architecture**: Three-tier (Client → Presentation → Business Logic → Data)
+- **Testing**: JUnit 5 + Mockito (Java backend), Jest + Supertest (Node.js frontend)
 
 ---
 
@@ -83,6 +85,7 @@ Access the application at `http://localhost:3000`
 - **[🚀 Deployment Guide](docs/09_Deployment_Guide.md)** - Production deployment
 - **[🤝 Contributing Guide](docs/10_Contributing_Guide.md)** - How to contribute
 - **[📖 Glossary](docs/11_Glossary.md)** - Technical terms reference
+- **[📱 PWA Guide](docs/12_PWA_Guide.md)** - Progressive Web App, service worker, and caching
 - **[📝 Changelog](docs/CHANGELOG.md)** - Version history
 
 ### Quick Links
@@ -130,6 +133,6 @@ For questions, support, or feedback:
 
 ---
 
-**Version**: 1.3.0  
-**Last Updated**: February 26, 2026
+**Version**: 2.3.4  
+**Last Updated**: September 23, 2026
 

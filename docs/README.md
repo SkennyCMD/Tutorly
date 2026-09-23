@@ -5,8 +5,8 @@ This directory contains all the documentation for the Tutorly project, organized
 ---
 
 **Document**: README.md  
-**Last Updated**: February 25, 2026  
-**Version**: 1.1.0  
+**Last Updated**: September 23, 2026  
+**Version**: 2.3.4  
 **Maintained by**: Tutorly Development Team  
 
 ---
@@ -74,7 +74,7 @@ This directory contains all the documentation for the Tutorly project, organized
 | Document | Description |
 |----------|-------------|
 | **[11_Glossary.md](11_Glossary.md)** | Technical terms, acronyms, and definitions used in the project |
-| **[CHANGELOG.md](../CHANGELOG.md)** | Project version history and release notes |
+| **[CHANGELOG.md](CHANGELOG.md)** | Project version history and release notes |
 
 ---
 
@@ -160,7 +160,7 @@ This directory contains all the documentation for the Tutorly project, organized
 
 ### Reference
 - **Glossary**: [11_Glossary.md](11_Glossary.md)
-- **Changelog**: [CHANGELOG.md](../CHANGELOG.md)
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 - **Quick Reference (Backend)**: [01_Java_Backend_API.md](01_Java_Backend_API.md#quick-reference)
 - **Quick Reference (Frontend)**: [03_Nodejs_Frontend.md](03_Nodejs_Frontend.md#quick-reference)
 
@@ -198,5 +198,5 @@ For questions or support:
 
 ---
 
-**Last Updated**: February 25, 2026  
-**Version**: 1.1.0
+**Last Updated**: September 23, 2026  
+**Version**: 2.3.4

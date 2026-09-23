@@ -5,7 +5,7 @@ Comprehensive guide for testing the Tutorly application including unit tests, in
 ---
 
 **Document**: 08_Testing_Guide.md  
-**Last Updated**: September 21, 2026  
+**Last Updated**: September 23, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -67,7 +67,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
 | Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 139 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (167 tests total, see `Nodejs/test/routes/`); no coverage tool run yet, target is a goal not a measurement |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (168 tests total, see `Nodejs/test/routes/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -302,7 +302,7 @@ Nodejs/
         └── dashboard.test.js      # GET /api/dashboard/calendar-events
 ```
 
-Every route in `src/index.js` (58 total) has at least one test - **167 tests across 14 files.**
+Every route in `src/index.js` (58 total) has at least one test - **168 tests across 14 files.**
 
 ### Login Helper
 

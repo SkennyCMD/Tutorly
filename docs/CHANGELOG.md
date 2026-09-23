@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.4] - 2026-09-23
+
+### Added
+- **Login**: the tutor login page's password field now has a show/hide toggle (eye icon), matching the one already on the admin login page.
+
+### Fixed
+- **Staff Panel**: the on-page monthly tutor hours table (`GET /api/reports/tutor-monthly-hours`) still showed erased tutors - a separate, AJAX-fetched data source from `/staffPanel`'s own page-load tutor list, which was already fixed for this. Now excludes `anonymizedAt`-set tutors too.
+- **Staff Panel**: the mobile sidebar's Calendar link pointed at a typo'd `/calendat` instead of `/calendar`.
+
+---
+
 ## [2.3.3] - 2026-09-21
 
 ### Changed
