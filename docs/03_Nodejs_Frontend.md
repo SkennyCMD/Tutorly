@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: September 23, 2026  
+**Last Updated**: September 24, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -1441,7 +1441,7 @@ The `isOwnNote()` helper defaults to "own" (orange) if a note's creator is someh
 Added in 2.3.5, alongside the STAFF/GENERIC prenotation-visibility split that already existed (see [Calendar Performance](#calendar-performance-on-demand-per-week-loading) above):
 
 - **Every note, not just assigned-or-created:** `calendarDataService.js`'s `getCalendarDataForRange` skips the assignment/authorship filter entirely when `isStaff` - STAFF gets every calendar note in the requested range, the same "see everything" rule prenotations already had.
-- **Creator's username on notes that aren't the viewer's own:** `buildNoteSegments()` (`calendarScript.js`) now carries `creatorUsername` (from `note.creator.username`) into each note event. All four note-rendering call sites (desktop/mobile × timed/all-day) show `👤 <username>` when `isStaff && event.creatorId !== currentUserId && event.creatorUsername` - the same condition shape already used for a lesson's assigned-tutor username (see [Per-Tutor Prenotation Colors](#per-tutor-prenotation-colors-staff) above), just for notes.
+- **Creator's username on notes that aren't the viewer's own:** `buildNoteSegments()` (`calendarScript.js`) now carries `creatorUsername` (from `note.creator.username`) into each note event. All four note-rendering call sites (desktop/mobile × timed/all-day) show `👤 <username>` when `isStaff && event.creatorId !== currentUserId && event.creatorUsername` - the same condition shape already used for a lesson's assigned-tutor username (see [Per-Tutor Prenotation Colors](#per-tutor-prenotation-colors-staff) above), just for notes. This longer label exposed a pre-existing layout bug (fixed in 2.3.6): the desktop all-day notes row's per-day cells are direct children of `.calendar-grid` with no width constraint, so a grid item's default `min-width: auto` let a long label force its column wider than the others, misaligning the whole row - `min-w-0 overflow-hidden` on each day's cell (`renderAllDayNotesRow()`) fixes it, letting the existing `truncate` on individual notes actually apply.
 - **Hide-prenotations / hide-notes checkboxes:** two STAFF-only checkboxes (`#hideLessonsCheckbox`/`#hideNotesCheckbox` in `calendar.ejs`, next to the tutor filter) let a STAFF tutor toggle each event type off independently of the tutor filter - e.g. hide prenotations to see only notes across every tutor. Backed by `hideLessons`/`hideNotes` module-level flags in `calendarScript.js`, checked inside `filterEventsByTutor()` alongside the tutor-id match, and persisted in `sessionStorage` (`calendarHideLessons`/`calendarHideNotes`) the same way the tutor filter selection already is. Both checkboxes are simply absent from the DOM for non-STAFF roles, so no additional role check is needed in the filtering logic itself.
 
 ### Calendar Performance: On-Demand Per-Week Loading

@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.6] - 2026-09-24
+
+### Fixed
+- **Calendar**: a long all-day note (especially one now showing "(👤 username)" for STAFF, see 2.3.5) could force its day's column wider than the week grid's other columns, misaligning the whole all-day notes row. The row's per-day cells are CSS grid items with no width constraint, so they refused to shrink below their content's size (`min-width: auto`, the grid default) - added `min-w-0 overflow-hidden` so each column respects the grid track width and the existing text truncation actually applies.
+
+---
+
 ## [2.3.5] - 2026-09-23
 
 ### Added
