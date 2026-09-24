@@ -796,7 +796,7 @@ function renderAllDayNotesRow() {
     if (notesForDay.length > 0) hasAny = true;
 
     html += `
-      <div class="p-1 space-y-0.5 border-l border-border">
+      <div class="p-1 space-y-0.5 border-l border-border min-w-0 overflow-hidden">
         ${notesForDay.map(note => {
           const showCreator = isStaff && note.creatorId !== currentUserId && note.creatorUsername;
           const label = showCreator ? `${note.description} (👤 ${note.creatorUsername})` : note.description;
