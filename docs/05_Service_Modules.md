@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: September 21, 2026  
+**Last Updated**: October 2, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -452,6 +452,8 @@ const result = await generateStudentsLessonsExcel(
 - Separate sheet per student
 - Summary statistics per student
 - Class-based sorting
+
+**Sheet naming (2.3.7):** each sheet is named after the student's full name, deduplicated (the student's id is appended on collision) and sanitized against the characters Excel forbids in a sheet name (`\ / ? * [ ] :`) - student names have no database uniqueness constraint, so two different students sharing a name (e.g. two "Mario Rossi") previously crashed report generation with "Worksheet name already exists". `generateTutorMonthlyReport`'s tutor-username sheet names get the same character sanitization, as defensive hardening against the same class of bug.
 
 **3. Tutor Monthly Report**
 ```javascript
