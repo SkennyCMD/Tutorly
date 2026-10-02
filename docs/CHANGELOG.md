@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.7] - 2026-10-02
+
+### Fixed
+- **Reports**: `GET /api/reports/lessons-by-student` (the "Download Students Report" button on the Staff Panel) crashed with a `500` in production for a real month's data. Root cause: `generateStudentsLessonsExcel` (`excel.js`) names each worksheet after a student's full name, but ExcelJS requires every sheet name in a workbook to be unique, and student full names have no database uniqueness constraint - two different students sharing a name (e.g. two "Mario Rossi") crashed `addWorksheet()` with "Worksheet name already exists". Sheet names are now deduplicated (the student's id is appended on collision) and sanitized against the characters Excel forbids in a sheet name (`\ / ? * [ ] :`). The same character sanitization was also applied to `generateTutorMonthlyReport`'s tutor-username sheet names as defensive hardening, even though usernames are already enforced unique so weren't at risk of the duplicate-name crash specifically.
+
+---
+
 ## [2.3.6] - 2026-09-24
 
 ### Fixed

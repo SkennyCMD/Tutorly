@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: September 24, 2026  
+**Last Updated**: October 2, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -631,7 +631,7 @@ cd Java/backend-api
 ```bash
 cd Nodejs
 
-# Run the full Jest/Supertest suite (168 tests across 14 files, covering
+# Run the full Jest/Supertest suite (173 tests across 15 files, covering
 # every route in src/index.js - see 08_Testing_Guide.md for details)
 npm test
 
@@ -785,6 +785,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.3.7** | 2026-10-02 | Fixed a production crash (`500`) in the Staff Panel's "Download Students Report" - two students sharing a full name produced a duplicate Excel sheet name, which ExcelJS rejects. Sheet names are now deduplicated and sanitized. |
 | **2.3.6** | 2026-09-24 | Fixed a long all-day note (e.g. one showing the creator's username) forcing its calendar column wider than the rest, misaligning the whole all-day notes row. |
 | **2.3.5** | 2026-09-23 | Calendar: STAFF now sees every tutor's notes (with the creator's username shown), not just their own; the tutor filter dropdown now scopes notes to the selected tutor too; two new checkboxes let STAFF hide prenotations and/or notes independently of the tutor filter. |
 | **2.3.4** | 2026-09-23 | Added a show/hide password toggle to the tutor login page. Fixed the Staff Panel's monthly hours table still showing erased tutors (a separate data source from the page-load list already fixed in 2.3.1), and a typo'd Calendar link in the mobile sidebar. |

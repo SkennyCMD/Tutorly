@@ -5,7 +5,7 @@ Comprehensive guide for testing the Tutorly application including unit tests, in
 ---
 
 **Document**: 08_Testing_Guide.md  
-**Last Updated**: September 23, 2026  
+**Last Updated**: October 2, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -67,7 +67,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
 | Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 139 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (168 tests total, see `Nodejs/test/routes/`); no coverage tool run yet, target is a goal not a measurement |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (173 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -285,24 +285,26 @@ Nodejs/
     │   ├── testApp.js         # requires src/index.js with the two __mocks__ above applied
     │   ├── auth.js            # loginAsTutor()/loginAsAdmin() - drives the real /login, /adminLogin flow
     │   └── fixtures.js        # plain-object fixtures matching the Java API's JSON shapes
-    └── routes/
-        ├── auth.test.js           # /login, /adminLogin, /logout, /api/auth/status
-        ├── pages.test.js          # page-render routes: auth/role gating + happy-path 200
-        ├── adminTutors.test.js    # /api/admin/tutors, incl. GDPR erasure
-        ├── adminGuests.test.js    # /api/admin/guests, incl. GDPR erasure
-        ├── adminStudents.test.js  # /api/admin/students, incl. GDPR erasure
-        ├── lessons.test.js
-        ├── tests.test.js          # evaluations
-        ├── packs.test.js
-        ├── prenotations.test.js
-        ├── calendarNotes.test.js
-        ├── students.test.js       # POST /api/students (the "quick add student" modal)
-        ├── push.test.js
-        ├── reports.test.js        # Excel downloads + the one JSON report endpoint
-        └── dashboard.test.js      # GET /api/dashboard/calendar-events
+    ├── routes/
+    │   ├── auth.test.js           # /login, /adminLogin, /logout, /api/auth/status
+    │   ├── pages.test.js          # page-render routes: auth/role gating + happy-path 200
+    │   ├── adminTutors.test.js    # /api/admin/tutors, incl. GDPR erasure
+    │   ├── adminGuests.test.js    # /api/admin/guests, incl. GDPR erasure
+    │   ├── adminStudents.test.js  # /api/admin/students, incl. GDPR erasure
+    │   ├── lessons.test.js
+    │   ├── tests.test.js          # evaluations
+    │   ├── packs.test.js
+    │   ├── prenotations.test.js
+    │   ├── calendarNotes.test.js
+    │   ├── students.test.js       # POST /api/students (the "quick add student" modal)
+    │   ├── push.test.js
+    │   ├── reports.test.js        # Excel downloads + the one JSON report endpoint
+    │   └── dashboard.test.js      # GET /api/dashboard/calendar-events
+    └── excel.test.js              # server_utilities/excel.js directly - worksheet naming
+                                    # (dedup/sanitization), not a route, so it sits outside test/routes/
 ```
 
-Every route in `src/index.js` (58 total) has at least one test - **168 tests across 14 files.**
+Every route in `src/index.js` (58 total) has at least one test, plus a direct unit-test file for `excel.js`'s worksheet-naming logic - **173 tests across 15 files.**
 
 ### Login Helper
 
