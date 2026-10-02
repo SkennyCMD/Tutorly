@@ -631,7 +631,7 @@ cd Java/backend-api
 ```bash
 cd Nodejs
 
-# Run the full Jest/Supertest suite (173 tests across 15 files, covering
+# Run the full Jest/Supertest suite (181 tests across 15 files, covering
 # every route in src/index.js - see 08_Testing_Guide.md for details)
 npm test
 
@@ -785,6 +785,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.3.8** | 2026-10-02 | Fixed a second Excel sheet-naming crash found right after 2.3.7 shipped - a student surname ending in an apostrophe hit a different ExcelJS rule (no leading/trailing quote in a sheet name). Sheet-name sanitization is now a single shared helper covering both rules. |
 | **2.3.7** | 2026-10-02 | Fixed a production crash (`500`) in the Staff Panel's "Download Students Report" - two students sharing a full name produced a duplicate Excel sheet name, which ExcelJS rejects. Sheet names are now deduplicated and sanitized. |
 | **2.3.6** | 2026-09-24 | Fixed a long all-day note (e.g. one showing the creator's username) forcing its calendar column wider than the rest, misaligning the whole all-day notes row. |
 | **2.3.5** | 2026-09-23 | Calendar: STAFF now sees every tutor's notes (with the creator's username shown), not just their own; the tutor filter dropdown now scopes notes to the selected tutor too; two new checkboxes let STAFF hide prenotations and/or notes independently of the tutor filter. |

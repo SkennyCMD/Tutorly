@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.8] - 2026-10-02
+
+### Fixed
+- **Reports**: the 2.3.7 fix for the students report crash wasn't the whole story - a real production student crashed `generateStudentsLessonsExcel` again with a different ExcelJS error: "The first or last character of worksheet name cannot be a single quotation mark." Excel's sheet-naming rules forbid a name starting or ending with an apostrophe, independently of the forbidden-character and uniqueness rules already handled. The inline sanitization in both `generateStudentsLessonsExcel` and `generateTutorMonthlyReport` was replaced with a shared `sanitizeSheetName()` helper (`excel.js`) that strips leading/trailing apostrophes too - including ones newly exposed by the 31-character truncation itself, which the previous version didn't account for either.
+
+---
+
 ## [2.3.7] - 2026-10-02
 
 ### Fixed
