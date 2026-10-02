@@ -453,7 +453,7 @@ const result = await generateStudentsLessonsExcel(
 - Summary statistics per student
 - Class-based sorting
 
-**Sheet naming (2.3.7):** each sheet is named after the student's full name, deduplicated (the student's id is appended on collision) and sanitized against the characters Excel forbids in a sheet name (`\ / ? * [ ] :`) - student names have no database uniqueness constraint, so two different students sharing a name (e.g. two "Mario Rossi") previously crashed report generation with "Worksheet name already exists". `generateTutorMonthlyReport`'s tutor-username sheet names get the same character sanitization, as defensive hardening against the same class of bug.
+**Sheet naming (2.3.7/2.3.8):** each sheet is named after the student's full name, deduplicated (the student's id is appended on collision) and run through a shared `sanitizeSheetName()` helper that enforces Excel's sheet-naming rules: strips the characters Excel forbids in a sheet name (`\ / ? * [ ] :`), strips a leading or trailing single quote (`'`) - a separate rule from the forbidden-character list, missed in the first pass and caught by a real production student surname ending in one - truncates to 31 characters, and re-strips any quote the truncation itself exposes. `generateTutorMonthlyReport`'s tutor-username sheet names go through the same helper, as defensive hardening against the same class of bug (usernames are enforced unique at the API level, so only the character/quote rules apply there, not the dedup).
 
 **3. Tutor Monthly Report**
 ```javascript

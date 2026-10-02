@@ -31,6 +31,32 @@
 
 const ExcelJS = require('exceljs');
 
+/**
+ * Sanitize an arbitrary string (student full name, tutor username, ...) into
+ * a valid Excel worksheet name. Excel's own rules, none of which are
+ * enforced anywhere upstream of this function:
+ * - Max 31 characters.
+ * - Can't be empty.
+ * - Can't contain \ / ? * [ ] :
+ * - Can't start or end with a single quote (').
+ * Deduplication against other sheets already in the workbook is the
+ * caller's responsibility (names collide more easily than you'd expect -
+ * neither a student's full name nor a tutor's username is guaranteed
+ * unique/clean at the source).
+ *
+ * @param {string} rawName
+ * @param {string} [fallback='Unknown'] - Used if rawName sanitizes to empty
+ * @returns {string}
+ */
+function sanitizeSheetName(rawName, fallback = 'Unknown') {
+    let name = (rawName || '').replace(/[\\/?*[\]:]/g, '-').trim();
+    name = name.substring(0, 31);
+    // Re-strip after truncation too, in case the 31-char cut exposes a new
+    // leading/trailing quote that wasn't one before.
+    name = name.replace(/^'+/, '').replace(/'+$/, '');
+    return name || fallback;
+}
+
 
 // Constants
 
@@ -236,12 +262,13 @@ async function generateStudentsLessonsExcel(lessons, fetchStudentData, fetchTuto
     // Create a separate worksheet for each student
     const usedSheetNames = new Set();
     for (const [studentId, studentData] of sortedStudents) {
-        // Create worksheet named after student. Excel forbids \ / ? * [ ] :
-        // in sheet names and requires every sheet name in the workbook to be
-        // unique - student full names have no DB uniqueness constraint, so
-        // two different students sharing a name (e.g. two "Mario Rossi")
-        // would otherwise crash addWorksheet() with "duplicate sheet name".
-        let sheetName = studentData.name.replace(/[\\/?*[\]:]/g, '-').substring(0, 31) || 'Unknown';
+        // Create worksheet named after student (see sanitizeSheetName for
+        // Excel's character/quote rules). Also requires every sheet name in
+        // the workbook to be unique - student full names have no DB
+        // uniqueness constraint, so two different students sharing a name
+        // (e.g. two "Mario Rossi") would otherwise crash addWorksheet()
+        // with "duplicate sheet name".
+        let sheetName = sanitizeSheetName(studentData.name);
         if (usedSheetNames.has(sheetName)) {
             const suffix = ` (${studentId})`;
             sheetName = sheetName.substring(0, 31 - suffix.length) + suffix;
@@ -500,9 +527,9 @@ async function generateTutorMonthlyReport(allLessons, tutors, fetchStudentData, 
         
         // Create worksheet named after tutor's username - usernames are
         // enforced unique at the API level, but not restricted from
-        // containing characters Excel forbids in sheet names (\ / ? * [ ] :),
-        // so sanitize defensively the same way generateStudentsLessonsExcel does.
-        const sheetName = tutor.username.replace(/[\\/?*[\]:]/g, '-').substring(0, 31) || 'Unknown';
+        // containing characters/quote placement Excel forbids in sheet
+        // names (see sanitizeSheetName), so sanitize defensively.
+        const sheetName = sanitizeSheetName(tutor.username);
         const worksheet = workbook.addWorksheet(sheetName);
         
         // Define column structure for monthly statistics table
@@ -756,5 +783,6 @@ async function generateTutorMonthlyReport(allLessons, tutors, fetchStudentData, 
 module.exports = {
     generateLessonsExcel,
     generateStudentsLessonsExcel,
-    generateTutorMonthlyReport
+    generateTutorMonthlyReport,
+    sanitizeSheetName
 };
