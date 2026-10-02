@@ -234,9 +234,19 @@ async function generateStudentsLessonsExcel(lessons, fetchStudentData, fetchTuto
     });
 
     // Create a separate worksheet for each student
+    const usedSheetNames = new Set();
     for (const [studentId, studentData] of sortedStudents) {
-        // Create worksheet named after student (Excel limit: 31 characters)
-        const sheetName = studentData.name.substring(0, 31);
+        // Create worksheet named after student. Excel forbids \ / ? * [ ] :
+        // in sheet names and requires every sheet name in the workbook to be
+        // unique - student full names have no DB uniqueness constraint, so
+        // two different students sharing a name (e.g. two "Mario Rossi")
+        // would otherwise crash addWorksheet() with "duplicate sheet name".
+        let sheetName = studentData.name.replace(/[\\/?*[\]:]/g, '-').substring(0, 31) || 'Unknown';
+        if (usedSheetNames.has(sheetName)) {
+            const suffix = ` (${studentId})`;
+            sheetName = sheetName.substring(0, 31 - suffix.length) + suffix;
+        }
+        usedSheetNames.add(sheetName);
         const worksheet = workbook.addWorksheet(sheetName);
 
         // Define columns
@@ -488,8 +498,12 @@ async function generateTutorMonthlyReport(allLessons, tutors, fetchStudentData, 
             });
         }
         
-        // Create worksheet named after tutor's username
-        const worksheet = workbook.addWorksheet(tutor.username);
+        // Create worksheet named after tutor's username - usernames are
+        // enforced unique at the API level, but not restricted from
+        // containing characters Excel forbids in sheet names (\ / ? * [ ] :),
+        // so sanitize defensively the same way generateStudentsLessonsExcel does.
+        const sheetName = tutor.username.replace(/[\\/?*[\]:]/g, '-').substring(0, 31) || 'Unknown';
+        const worksheet = workbook.addWorksheet(sheetName);
         
         // Define column structure for monthly statistics table
         worksheet.columns = [
