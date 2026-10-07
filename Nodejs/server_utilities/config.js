@@ -157,6 +157,12 @@ module.exports = {
      */
     TIMEZONE: process.env.TIMEZONE || 'Europe/Rome',
 
+    /**
+     * Minutes before a prenotation's startTime that the "upcoming lesson" push
+     * goes out to its tutor and student. See server_utilities/reminderScheduler.js.
+     */
+    UPCOMING_LESSON_REMINDER_MINUTES: parseInt(process.env.UPCOMING_LESSON_REMINDER_MINUTES, 10) || 30,
+
 
     // Branding Configuration
 
