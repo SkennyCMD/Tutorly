@@ -135,6 +135,38 @@ describe('GET /api/calendar/data', () => {
         expect(res.body.prenotations[0].tutorId).toBe(1);
     });
 
+    test('a GENERIC tutor cannot modify a prenotation STAFF created on their behalf', async () => {
+        const agent = await tutorAgent({ id: 1 });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, [
+            { id: 1, studentId: 10, tutorId: 1, creatorId: 99, startTime: '2026-09-01T10:00:00', endTime: '2026-09-01T11:00:00', flag: false }
+        ]);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+        javaApi().get('/api/users/99').reply(200, tutorFixture({ id: 99, role: 'STAFF', username: 'staff.member' }));
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.prenotations[0].canModify).toBe(false);
+        expect(res.body.prenotations[0].creatorUsername).toBe('staff.member');
+    });
+
+    test('a GENERIC tutor can modify a prenotation they created themselves', async () => {
+        const agent = await tutorAgent({ id: 1 });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, [
+            { id: 1, studentId: 10, tutorId: 1, creatorId: 1, startTime: '2026-09-01T10:00:00', endTime: '2026-09-01T11:00:00', flag: false }
+        ]);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.prenotations[0].canModify).toBe(true);
+    });
+
     test('a STAFF tutor sees every tutor\'s prenotations in range', async () => {
         const agent = await tutorAgent({ role: 'STAFF' });
         javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
@@ -150,6 +182,8 @@ describe('GET /api/calendar/data', () => {
         const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
         expect(res.status).toBe(200);
         expect(res.body.prenotations).toHaveLength(2);
+        // STAFF can modify any prenotation regardless of who created it.
+        expect(res.body.prenotations.every(p => p.canModify)).toBe(true);
     });
 
     test('a STAFF tutor sees every note in range, including ones neither assigned to nor created by them', async () => {

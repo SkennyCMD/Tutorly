@@ -26,6 +26,7 @@
     --color-ring: 13 148 136;
     --color-destructive: 220 38 38;
     --color-lesson: 37 99 235;
+    --color-lesson-staff: 29 78 216;
     --color-note: 217 119 6;
 
     /* Per-tutor palette for STAFF's Calendar view (other tutors' prenotations -
@@ -106,6 +107,7 @@
     --color-ring: 20 184 166;
     --color-destructive: 239 68 68;
     --color-lesson: 59 130 246;
+    --color-lesson-staff: 37 99 235;
     --color-note: 245 158 11;
 
     /* Per-tutor palette for STAFF's Calendar view - see the light theme above */

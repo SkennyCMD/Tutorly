@@ -73,9 +73,12 @@ describe('PUT /api/prenotations/:id', () => {
         expect(res.status).toBe(403);
     });
 
-    test('updates the prenotation', async () => {
+    test('updates the prenotation it created itself', async () => {
         const agent = await tutorAgent();
-        javaApi().put('/api/prenotations/200').reply(200, prenotationFixture({ startTime: '2026-09-12T10:00:00' }));
+        javaApi().get('/api/prenotations/200').reply(200, prenotationFixture());
+        let forwardedBody;
+        javaApi().put('/api/prenotations/200', body => { forwardedBody = body; return true; })
+            .reply(200, (uri, body) => ({ ...prenotationFixture(), ...body }));
 
         const res = await agent.put('/api/prenotations/200').send({
             studentId: 10,
@@ -84,12 +87,62 @@ describe('PUT /api/prenotations/:id', () => {
         });
         expect(res.status).toBe(200);
         expect(res.body.startTime).toBe('2026-09-12T10:00:00');
+        expect(forwardedBody.creatorId).toBe(1);
+    });
+
+    test('a GENERIC tutor cannot edit a prenotation STAFF created on their behalf', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/prenotations/200').reply(200, prenotationFixture({ creatorId: 99 }));
+
+        const res = await agent.put('/api/prenotations/200').send({
+            studentId: 10,
+            startTime: '2026-09-12T10:00:00',
+            endTime: '2026-09-12T11:00:00'
+        });
+        expect(res.status).toBe(403);
+    });
+
+    test('STAFF can edit a prenotation created by someone else', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/prenotations/200').reply(200, prenotationFixture({ tutorId: 9, creatorId: 9 }));
+        let forwardedBody;
+        javaApi().put('/api/prenotations/200', body => { forwardedBody = body; return true; })
+            .reply(200, (uri, body) => ({ ...prenotationFixture(), ...body }));
+
+        const res = await agent.put('/api/prenotations/200').send({
+            studentId: 10,
+            tutorId: 9,
+            startTime: '2026-09-12T10:00:00',
+            endTime: '2026-09-12T11:00:00'
+        });
+        expect(res.status).toBe(200);
+        // The original creator (9) is preserved, not overwritten with the editing STAFF's id.
+        expect(forwardedBody.creatorId).toBe(9);
+    });
+
+    test('404s when the prenotation does not exist', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/prenotations/999').reply(404);
+
+        const res = await agent.put('/api/prenotations/999').send({
+            studentId: 10,
+            startTime: '2026-09-12T10:00:00',
+            endTime: '2026-09-12T11:00:00'
+        });
+        expect(res.status).toBe(404);
     });
 });
 
 describe('DELETE /api/prenotations/:id', () => {
-    test('deletes the prenotation', async () => {
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        const res = await agent.delete('/api/prenotations/200');
+        expect(res.status).toBe(403);
+    });
+
+    test('deletes the prenotation it created itself', async () => {
         const agent = await tutorAgent();
+        javaApi().get('/api/prenotations/200').reply(200, prenotationFixture());
         javaApi().delete('/api/prenotations/200').reply(200);
 
         const res = await agent.delete('/api/prenotations/200');
@@ -97,9 +150,35 @@ describe('DELETE /api/prenotations/:id', () => {
         expect(res.body.success).toBe(true);
     });
 
+    test('a GENERIC tutor cannot delete a prenotation STAFF created on their behalf', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/prenotations/200').reply(200, prenotationFixture({ creatorId: 99 }));
+
+        const res = await agent.delete('/api/prenotations/200');
+        expect(res.status).toBe(403);
+    });
+
+    test('STAFF can delete a prenotation created by someone else', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/prenotations/200').reply(200, prenotationFixture({ tutorId: 9, creatorId: 9 }));
+        javaApi().delete('/api/prenotations/200').reply(200);
+
+        const res = await agent.delete('/api/prenotations/200');
+        expect(res.status).toBe(200);
+    });
+
     test('propagates a Java API error', async () => {
         const agent = await tutorAgent();
+        javaApi().get('/api/prenotations/999').reply(200, prenotationFixture({ id: 999 }));
         javaApi().delete('/api/prenotations/999').reply(404, 'Prenotation not found');
+
+        const res = await agent.delete('/api/prenotations/999');
+        expect(res.status).toBe(404);
+    });
+
+    test('404s when the prenotation does not exist', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/prenotations/999').reply(404);
 
         const res = await agent.delete('/api/prenotations/999');
         expect(res.status).toBe(404);

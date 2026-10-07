@@ -108,6 +108,7 @@ async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, e
         const prenotationTutorId = prenotation.tutorId;
         const student = studentId ? await getStudent(studentId) : null;
         const tutor = prenotationTutorId ? await getTutor(prenotationTutorId) : null;
+        const creator = prenotation.creatorId ? await getTutor(prenotation.creatorId) : null;
 
         return {
             id: prenotation.id,
@@ -122,7 +123,13 @@ async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, e
             studentClass: student?.studentClass || '',
             tutorId: prenotationTutorId,
             tutor: tutor,
-            tutorUsername: tutor?.username || 'Unknown'
+            tutorUsername: tutor?.username || 'Unknown',
+            creatorId: prenotation.creatorId,
+            creatorUsername: creator?.username || 'Unknown',
+            // STAFF can always modify any prenotation; a GENERIC tutor only their own -
+            // one STAFF created on their behalf is view-only. GUEST never edits (no such
+            // UI exists for that role), so this is irrelevant for them either way.
+            canModify: isStaff || prenotation.creatorId === tutorId
         };
     }));
 

@@ -184,6 +184,11 @@ function mergeServerDataIntoEvents(data) {
         classType: prenotation.studentClass || '',
         tutorUsername: prenotation.tutorUsername || '',
         tutorId: prenotation.tutorId,
+        creatorId: prenotation.creatorId,
+        creatorUsername: prenotation.creatorUsername || '',
+        // False only for a GENERIC tutor viewing a prenotation STAFF created on their
+        // behalf - gates whether clicking the event opens the edit/delete modal at all.
+        canModify: prenotation.canModify !== false,
         date: localDateStr,
         startTime: startDate.toTimeString().slice(0, 5),
         endTime: endDate.toTimeString().slice(0, 5)
@@ -937,7 +942,7 @@ function renderEventsOnGrid() {
     if (cell) {
       // Create event element with calculated position and size
       const eventEl = document.createElement('div');
-      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}`;
+      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}${event.type === 'lesson' && !event.canModify ? ' event-lesson-staff-assigned' : ''}`;
       eventEl.style.top = `${topOffset}px`;
       eventEl.style.height = `${heightPx}px`;
       eventEl.style.minHeight = '20px';
@@ -945,10 +950,12 @@ function renderEventsOnGrid() {
       eventEl.style.left = `${leftPercent}%`;
       eventEl.style.right = 'auto';
 
-      // Add click handler based on event type - GUEST accounts can't modify anything
+      // Add click handler based on event type - GUEST accounts can't modify anything,
+      // and a lesson STAFF created on a GENERIC tutor's behalf can't be clicked by them.
       const eventId = event.id;
       const eventType = event.type;
-      if (!isGuest) {
+      const canClick = eventType === 'lesson' ? event.canModify : true;
+      if (!isGuest && canClick) {
         eventEl.style.cursor = 'pointer';
         console.log('[Desktop] Setting up click for:', eventType, 'ID:', eventId);
         if (eventType === 'lesson') {
@@ -970,6 +977,9 @@ function renderEventsOnGrid() {
         const currentUserId = window.serverData?.currentUserId;
         const isStaff = window.serverData?.userRole === 'STAFF';
         const showTutor = isStaff && event.tutorId !== currentUserId;
+        // GENERIC viewing a lesson STAFF assigned to them - canModify is already
+        // false only in that case (never for their own, never for STAFF viewers).
+        const showAssignedBy = !event.canModify && event.creatorUsername;
 
         applyTutorColor(eventEl, event.tutorId);
 
@@ -977,6 +987,7 @@ function renderEventsOnGrid() {
           <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
           <div class="opacity-75 truncate">${event.classType} · ${event.startTime}</div>
           ${showTutor ? `<div class="opacity-60 text-xs truncate">👤 ${event.tutorUsername}</div>` : ''}
+          ${showAssignedBy ? `<div class="opacity-60 text-xs truncate">👤 ${event.creatorUsername}</div>` : ''}
         `;
       } else {
         const currentUserId = window.serverData?.currentUserId;
@@ -1144,7 +1155,7 @@ function renderMobileEvents() {
 
     if (cell) {
       const eventEl = document.createElement('div');
-      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}`;
+      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}${event.type === 'lesson' && !event.canModify ? ' event-lesson-staff-assigned' : ''}`;
       eventEl.style.top = `${topOffset}px`;
       eventEl.style.height = `${heightPx}px`;
       eventEl.style.minHeight = '20px';
@@ -1152,10 +1163,12 @@ function renderMobileEvents() {
       eventEl.style.left = `${leftPercent}%`;
       eventEl.style.right = 'auto';
 
-      // Add click handler based on event type - GUEST accounts can't modify anything
+      // Add click handler based on event type - GUEST accounts can't modify anything,
+      // and a lesson STAFF created on a GENERIC tutor's behalf can't be clicked by them.
       const eventId = event.id;
       const eventType = event.type;
-      if (!isGuest) {
+      const canClick = eventType === 'lesson' ? event.canModify : true;
+      if (!isGuest && canClick) {
         eventEl.style.cursor = 'pointer';
         if (eventType === 'lesson') {
           eventEl.addEventListener('click', (e) => {
@@ -1174,6 +1187,9 @@ function renderMobileEvents() {
         const currentUserId = window.serverData?.currentUserId;
         const isStaff = window.serverData?.userRole === 'STAFF';
         const showTutor = isStaff && event.tutorId !== currentUserId;
+        // GENERIC viewing a lesson STAFF assigned to them - canModify is already
+        // false only in that case (never for their own, never for STAFF viewers).
+        const showAssignedBy = !event.canModify && event.creatorUsername;
 
         applyTutorColor(eventEl, event.tutorId);
 
@@ -1181,6 +1197,7 @@ function renderMobileEvents() {
           <div class="font-medium truncate">${event.firstName} ${event.lastName}</div>
           <div class="opacity-75 truncate">${event.classType} · ${event.startTime} - ${event.endTime}</div>
           ${showTutor ? `<div class="opacity-60 text-xs truncate">👤 ${event.tutorUsername}</div>` : ''}
+          ${showAssignedBy ? `<div class="opacity-60 text-xs truncate">👤 ${event.creatorUsername}</div>` : ''}
         `;
       } else {
         const currentUserId = window.serverData?.currentUserId;
@@ -2375,6 +2392,11 @@ window.openEditPrenotationModal = function (prenotationId) {
     console.error('Prenotation not found for ID:', prenotationId);
     return;
   }
+
+  // A GENERIC tutor can't open the edit/delete modal for a prenotation STAFF
+  // created on their behalf - the click handler already filters these out, but
+  // this guards any other path that might call this function directly.
+  if (prenotation.canModify === false) return;
 
   console.log('[PRENOTATION] Step 1: Setting prenotation ID');
   // Populate form fields

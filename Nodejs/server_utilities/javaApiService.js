@@ -290,6 +290,28 @@ function fetchAllPrenotations() {
 }
 
 /**
+ * Fetch a single prenotation (booking) by its ID.
+ *
+ * Used to check a prenotation's existing `tutorId`/`creatorId` before an edit or
+ * delete request is forwarded, since the update/delete endpoints don't return the
+ * prior state themselves.
+ *
+ * @param {number} id - Prenotation ID
+ * @returns {Promise<Object|null>} The prenotation object, or null if not found/on error
+ *
+ * @example
+ * const prenotation = await fetchPrenotationById(42);
+ * // Returns: { id: 42, tutorId: 5, studentId: 10, creatorId: 2, startTime: '...', ... }
+ */
+function fetchPrenotationById(id) {
+    return fetchFromJavaAPI(`/api/prenotations/${id}`, 'GET')
+        .catch(error => {
+            console.error('Error fetching prenotation by id:', error);
+            return null;
+        });
+}
+
+/**
  * Fetch all prenotations (bookings) for a specific tutor.
  * 
  * Returns empty array if no prenotations found or on error.
@@ -618,6 +640,7 @@ module.exports = {
     fetchLessonsByTutor,
     fetchAllLessons,
     fetchAllPrenotations,
+    fetchPrenotationById,
     fetchPrenotationsByTutor,
     fetchPrenotationsByStudent,
     fetchPrenotationsByDateRange,

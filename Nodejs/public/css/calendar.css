@@ -62,6 +62,13 @@ body {
     :root[data-theme="dark"] .event-lesson {
       color: rgb(220 220 224);
     }
+    /* A lesson STAFF created on a GENERIC tutor's behalf - a slightly darker
+       blue than --color-lesson, so it's recognizable at a glance without
+       looking like an unrelated event type (note/other tutor's note). */
+    .event-lesson.event-lesson-staff-assigned {
+      background-color: rgb(var(--color-lesson-staff) / 0.3);
+      border-left: 3px solid rgb(var(--color-lesson-staff));
+    }
     .event-note {
       background-color: rgb(var(--color-note) / 0.45);
       border-left: 3px solid rgb(var(--color-note));

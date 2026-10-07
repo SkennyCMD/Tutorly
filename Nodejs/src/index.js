@@ -46,6 +46,7 @@ const {
     fetchLessonsByTutor,
     fetchAllLessons,
     fetchAllPrenotations,
+    fetchPrenotationById,
     fetchPrenotationsByTutor,
     fetchPrenotationsByStudent,
     fetchStudentData,
@@ -1987,18 +1988,31 @@ app.put('/api/prenotations/:id', tutorSession, isAuthenticated, blockGuestApi, a
         const { id } = req.params;
         const { studentId, startTime, endTime, tutorId: requestedTutorId } = req.body;
         const currentUserId = req.session.userId;
-        
+
+        // A GENERIC tutor can only edit prenotations they created themselves - one STAFF
+        // created on their behalf is off-limits, so the existing creator must be checked
+        // against the session before anything is forwarded to Java.
+        const existingPrenotation = await fetchPrenotationById(id);
+        if (!existingPrenotation) {
+            return res.status(404).json({ error: 'Prenotation not found' });
+        }
+        if (req.session.role === 'generic' && parseInt(existingPrenotation.creatorId) !== parseInt(currentUserId)) {
+            logError('GENERIC tutor attempted to edit a staff-created prenotation', req, { id, creatorId: existingPrenotation.creatorId });
+            return res.status(403).json({ error: 'This prenotation was created by staff and cannot be modified' });
+        }
+
         // Use requested tutorId if provided (for STAFF), otherwise use current user
         const tutorId = requestedTutorId || currentUserId;
-        
-        // Build prenotation DTO with IDs
+
+        // Build prenotation DTO with IDs - the original creator is preserved rather than
+        // reassigned to whoever edits it, so this check stays correct across future edits.
         const prenotationData = {
             startTime: startTime,
             endTime: endTime,
             flag: false,
             studentId: parseInt(studentId),
             tutorId: parseInt(tutorId),
-            creatorId: parseInt(currentUserId)
+            creatorId: parseInt(existingPrenotation.creatorId)
         };
         
         logInfo('Updating prenotation', req, { id, studentId, tutorId, startTime, endTime });
@@ -2048,10 +2062,22 @@ app.put('/api/prenotations/:id', tutorSession, isAuthenticated, blockGuestApi, a
  * Delete a prenotation
  * DELETE /api/prenotations/:id
  */
-app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
-        
+        const currentUserId = req.session.userId;
+
+        // Same rule as the PUT handler above: a GENERIC tutor can only delete a
+        // prenotation they created themselves, not one STAFF created on their behalf.
+        const existingPrenotation = await fetchPrenotationById(id);
+        if (!existingPrenotation) {
+            return res.status(404).json({ error: 'Prenotation not found' });
+        }
+        if (req.session.role === 'generic' && parseInt(existingPrenotation.creatorId) !== parseInt(currentUserId)) {
+            logError('GENERIC tutor attempted to delete a staff-created prenotation', req, { id, creatorId: existingPrenotation.creatorId });
+            return res.status(403).json({ error: 'This prenotation was created by staff and cannot be deleted' });
+        }
+
         logInfo('Deleting prenotation', req, { id });
         
         const options = createJavaApiRequestOptions(`/api/prenotations/${id}`, 'DELETE');
