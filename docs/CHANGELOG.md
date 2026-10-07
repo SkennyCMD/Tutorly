@@ -19,9 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.3.9] - 2026-10-07
+## [2.4.0] - 2026-10-07
 
 ### Added
+- **Notifications**: a push notification now goes out 30 minutes before a prenotation starts (configurable via `UPCOMING_LESSON_REMINDER_MINUTES`), to both the assigned tutor and the student's linked account - checked every minute, independent of the existing once-daily reminder job. Sent prenotation ids are tracked in memory to avoid re-notifying the same lesson on a later check.
 - **Calendar**: a GENERIC tutor can no longer edit or delete a prenotation that STAFF created on their behalf - `PUT`/`DELETE /api/prenotations/:id` now check the prenotation's original creator (a field the `Prenotation` entity already tracked, just never enforced) and return `403` for anyone else with the GENERIC role. On the Calendar itself, such a prenotation now renders in a distinct darker blue with the creator's username shown underneath, and clicking it no longer opens the edit/delete modal at all.
 
 ### Fixed
