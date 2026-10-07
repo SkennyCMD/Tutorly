@@ -631,7 +631,7 @@ cd Java/backend-api
 ```bash
 cd Nodejs
 
-# Run the full Jest/Supertest suite (181 tests across 15 files, covering
+# Run the full Jest/Supertest suite (179 tests across 14 files, covering
 # every route in src/index.js - see 08_Testing_Guide.md for details)
 npm test
 

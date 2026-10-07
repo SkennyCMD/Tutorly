@@ -333,6 +333,7 @@ JAVA_API_KEY: 'MLkOj0KWeVxppf7sJifwRS3gwukG0Mhu'
 - `fetchLessonsByTutor(tutorId)`: Fetches lessons for a tutor
 - `fetchAllLessons()`: Fetches all lessons
 - `fetchAllPrenotations()`: Fetches all bookings
+- `fetchPrenotationById(id)`: Fetches a single booking by ID - used by `PUT`/`DELETE /api/prenotations/:id` to check the existing `creatorId` before allowing an edit/delete (added in 2.3.9)
 - `fetchPrenotationsByTutor(tutorId)`: Fetches bookings for a tutor
 - `fetchPrenotationsByStudent(studentId)`: Fetches bookings for a student, across every tutor
 - `fetchPrenotationsByDateRange(startTime, endTime)`: Fetches bookings within a date range, across every tutor - used by `calendarDataService.js` (see below) and the daily reminder job
@@ -362,7 +363,7 @@ Shared range-bounded fetch/enrich logic for the Calendar page, added in 2.3.3 to
 **Role:** the one place both `GET /calendar` (initial page load) and `GET /api/calendar/data` (on-demand fetch as a tutor navigates) get their prenotations/notes from, so the two stay in sync instead of duplicating the same role-filtering and enrichment logic.
 
 **Exports:**
-- `getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime })`: fetches prenotations and notes bounded to `[startTime, endTime]` via `fetchPrenotationsByDateRange`/`fetchCalendarNotesByDateRange`, applies the same STAFF/GENERIC/GUEST visibility rules the Calendar page has always used, and enriches each prenotation's student/tutor references through a promise-memoizing lookup cache (dedupes repeat lookups for the same id, instead of firing a fresh HTTP call every time) before returning `{ prenotations, calendarNotes }`.
+- `getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime })`: fetches prenotations and notes bounded to `[startTime, endTime]` via `fetchPrenotationsByDateRange`/`fetchCalendarNotesByDateRange`, applies the same STAFF/GENERIC/GUEST visibility rules the Calendar page has always used, and enriches each prenotation's student/tutor/creator references through a promise-memoizing lookup cache (dedupes repeat lookups for the same id, instead of firing a fresh HTTP call every time) before returning `{ prenotations, calendarNotes }`. Since 2.3.9, each enriched prenotation also carries `creatorId`, `creatorUsername`, and `canModify` (`true` for STAFF always, for a GENERIC tutor only if they created it themselves) - the Calendar client uses `canModify` to render a staff-assigned prenotation differently and block opening its edit/delete modal, mirroring the same rule `PUT`/`DELETE /api/prenotations/:id` enforce server-side.
 
 ---
 

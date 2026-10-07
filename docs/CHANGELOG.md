@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.3.9] - 2026-10-07
+
+### Added
+- **Calendar**: a GENERIC tutor can no longer edit or delete a prenotation that STAFF created on their behalf - `PUT`/`DELETE /api/prenotations/:id` now check the prenotation's original creator (a field the `Prenotation` entity already tracked, just never enforced) and return `403` for anyone else with the GENERIC role. On the Calendar itself, such a prenotation now renders in a distinct darker blue with the creator's username shown underneath, and clicking it no longer opens the edit/delete modal at all.
+
+### Fixed
+- **Calendar**: editing a prenotation reassigned its `creatorId` to whoever made the edit, instead of preserving the original creator - harmless before, but would have silently broken the new creator-based authorization above after a prenotation's second edit.
+- **Calendar**: `DELETE /api/prenotations/:id` was missing the `blockGuestApi` guard that `POST`/`PUT` already had, so a GUEST account could delete a prenotation by calling the endpoint directly.
+
+---
+
 ## [2.3.8] - 2026-10-02
 
 ### Fixed

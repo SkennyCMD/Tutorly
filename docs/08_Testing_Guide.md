@@ -67,7 +67,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
 | Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 139 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (181 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (179 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -300,11 +300,10 @@ Nodejs/
     │   ├── push.test.js
     │   ├── reports.test.js        # Excel downloads + the one JSON report endpoint
     │   └── dashboard.test.js      # GET /api/dashboard/calendar-events
-    └── excel.test.js              # server_utilities/excel.js directly - worksheet naming
-                                    # (dedup/sanitization), not a route, so it sits outside test/routes/
+    └── (no top-level files - every suite lives under test/routes/)
 ```
 
-Every route in `src/index.js` (58 total) has at least one test, plus a direct unit-test file for `excel.js`'s worksheet-naming logic - **181 tests across 15 files.**
+Every route in `src/index.js` (58 total) has at least one test - **179 tests across 14 files.**
 
 ### Login Helper
 
