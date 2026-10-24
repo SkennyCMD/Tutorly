@@ -67,7 +67,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
 | Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 141 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (183 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (187 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -304,7 +304,7 @@ Nodejs/
                                     # upcoming-lesson job, not a route, so it sits outside test/routes/
 ```
 
-Every route in `src/index.js` (58 total) has at least one test, plus a direct unit-test file for `reminderScheduler.js`'s upcoming-lesson job - **183 tests across 15 files.**
+Every route in `src/index.js` (58 total) has at least one test, plus a direct unit-test file for `reminderScheduler.js`'s upcoming-lesson job - **187 tests across 15 files.**
 
 ### Login Helper
 

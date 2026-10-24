@@ -631,7 +631,7 @@ cd Java/backend-api
 ```bash
 cd Nodejs
 
-# Run the full Jest/Supertest suite (183 tests across 15 files, covering
+# Run the full Jest/Supertest suite (187 tests across 15 files, covering
 # every route in src/index.js - see 08_Testing_Guide.md for details)
 npm test
 
@@ -785,6 +785,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.4.1** | 2026-10-24 | STAFF can now delete a lesson package from the Student Profile (its lessons are kept, just unlinked). Editing a lesson now re-splits it against its pack if the new duration overflows the pack's remaining hours, same as on creation. The Java test suite no longer needs a real Postgres connection to run (`mvn test` now boots against in-memory H2). |
 | **2.4.0** | 2026-10-07 | A push notification now goes out 30 minutes before a prenotation starts, to both the assigned tutor and the student - a new, independent per-minute job alongside the existing once-daily reminder. A GENERIC tutor can no longer edit or delete a prenotation STAFF created on their behalf - enforced server-side (`403`) and shown on the Calendar in a distinct darker blue with the creator's username; fixed a related bug where editing a prenotation reassigned its creator to the editor, and a gap where GUEST could call the delete endpoint directly. |
 | **2.3.8** | 2026-10-02 | Fixed a second Excel sheet-naming crash found right after 2.3.7 shipped - a student surname ending in an apostrophe hit a different ExcelJS rule (no leading/trailing quote in a sheet name). Sheet-name sanitization is now a single shared helper covering both rules. |
 | **2.3.7** | 2026-10-02 | Fixed a production crash (`500`) in the Staff Panel's "Download Students Report" - two students sharing a full name produced a duplicate Excel sheet name, which ExcelJS rejects. Sheet names are now deduplicated and sanitized. |

@@ -1092,6 +1092,8 @@ A `Pack` is a prepaid block of tutoring hours purchased for a student. `PackCont
 
 `POST /lessons` doesn't accept a `packId` - it's never client-settable. `LessonController.createLesson` always calls `PackService.findActivePackWithAvailableHours` itself and assigns (and, if needed, splits) the lesson against whichever pack qualifies. See [Packs - Business logic](#packs) above.
 
+`PUT /lessons/{id}` re-runs the exact same pack-assignment/splitting logic, since editing a lesson's student or duration can change which pack (if any) it should draw from. The lesson is first detached from its current pack and saved (`pack = null`) - otherwise `getUsedHours` would still count its pre-edit duration against that pack's remaining hours - then re-evaluated via `findActivePackWithAvailableHours`/`assignLessonToPack` using the updated values, splitting again if the new duration overflows the pack it lands in.
+
 ---
 
 ### Prenotations

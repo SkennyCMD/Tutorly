@@ -19,6 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.1] - 2026-10-24
+
+### Added
+- **Student Profile**: STAFF can now delete a lesson package from its card - `DELETE /api/packs/:id`, restricted server-side to STAFF (`isStaff`), not just hidden from the UI for other roles. Deleting a pack keeps its lessons - they're unlinked (`packId` set to `null`), not deleted, via the existing `ON DELETE SET NULL` foreign key.
+
+### Changed
+- **Lessons**: editing a lesson now re-runs the same pack-assignment/splitting logic lesson creation already used. Extending a lesson's duration past its pack's remaining hours now splits it (the part that fits stays in the pack, the rest becomes a new unassigned lesson) instead of silently over-assigning it; changing the student or start time also re-evaluates which pack, if any, it should draw from.
+
+### Fixed
+- **Testing**: the Java test suite no longer needs a real Postgres connection to run - the one test that did (`BackendApiApplicationTests`) now boots against an in-memory H2 instance instead, so `mvn test` works the same on any machine regardless of whether the real database is up.
+
+---
+
 ## [2.4.0] - 2026-10-07
 
 ### Added
