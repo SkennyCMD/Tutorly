@@ -111,7 +111,8 @@ function buildNoteSegments(note) {
       isMultiDay: !(isFirstDay && isLastDay),
       assignees: ['myself'], // Default assignees
       creatorId: note.creator?.id,
-      creatorUsername: note.creator?.username || null
+      creatorUsername: note.creator?.username || null,
+      tutorIds: (note.tutors || []).map(t => t.id)
     });
 
     cursor.setDate(cursor.getDate() + 1);
@@ -697,7 +698,15 @@ function filterEventsByTutor(eventsToFilter) {
     }
     if (event.type === 'note') {
       if (hideNotes) return false;
-      return tutorFilterId === 'all' || String(event.creatorId) === String(tutorFilterId);
+      if (tutorFilterId === 'all') return true;
+      // Matches the creator OR any assigned tutor - a note created by one
+      // tutor for another must still show up in the assigned tutor's filter,
+      // not just the creator's (same "concerns this tutor" rule the server
+      // already uses to decide visibility for GENERIC/GUEST, see
+      // calendarDataService.js).
+      const matchesCreator = String(event.creatorId) === String(tutorFilterId);
+      const matchesAssignee = (event.tutorIds || []).some(id => String(id) === String(tutorFilterId));
+      return matchesCreator || matchesAssignee;
     }
     return true;
   });
