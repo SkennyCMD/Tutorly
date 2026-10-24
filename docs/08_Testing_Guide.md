@@ -67,7 +67,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
 | Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 141 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (187 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (200 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -300,11 +300,13 @@ Nodejs/
     │   ├── push.test.js
     │   ├── reports.test.js        # Excel downloads + the one JSON report endpoint
     │   └── dashboard.test.js      # GET /api/dashboard/calendar-events
-    └── reminderScheduler.test.js  # server_utilities/reminderScheduler.js directly - the
-                                    # upcoming-lesson job, not a route, so it sits outside test/routes/
+    ├── reminderScheduler.test.js  # server_utilities/reminderScheduler.js directly - both
+    │                               # reminder jobs, not a route, so it sits outside test/routes/
+    └── pushService.test.js        # server_utilities/pushService.js directly - truncation,
+                                    # 404/410 pruning, error logging - also not a route
 ```
 
-Every route in `src/index.js` (58 total) has at least one test, plus a direct unit-test file for `reminderScheduler.js`'s upcoming-lesson job - **187 tests across 15 files.**
+Every route in `src/index.js` (58 total) has at least one test, plus direct unit-test files for `reminderScheduler.js` and `pushService.js` - **200 tests across 16 files.**
 
 ### Login Helper
 
