@@ -77,13 +77,17 @@ function formatReminderTime(dateTimeStr) {
  * @returns {Promise<void>}
  */
 async function sendDailyReminders() {
-    // Today's local start/end, same formula the /home route already uses for
-    // "today's lessons/prenotations/notes" (server-local calendar day).
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    const startTime = startOfDay.toISOString().slice(0, 19);
-    const endTime = endOfDay.toISOString().slice(0, 19);
+    // Today's calendar date in TIMEZONE (not the server's own OS timezone,
+    // and not UTC) - same reasoning as toNaiveDateTimeString below: prenotation
+    // startTime/endTime are naive local timestamps, so "today" has to be
+    // today in Rome, built directly as a string rather than round-tripped
+    // through a UTC-converting Date method.
+    const todayParts = Object.fromEntries(
+        naiveDateTimeFormatter.formatToParts(new Date()).map(({ type, value }) => [type, value])
+    );
+    const today = `${todayParts.year}-${todayParts.month}-${todayParts.day}`;
+    const startTime = `${today}T00:00:00`;
+    const endTime = `${today}T23:59:59`;
 
     const [prenotations, notes] = await Promise.all([
         fetchPrenotationsByDateRange(startTime, endTime),
@@ -140,15 +144,32 @@ function pruneNotifiedUpcomingIds() {
     }
 }
 
+// hourCycle 'h23' so midnight renders as "00", not "24"
+const naiveDateTimeFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+});
+
 /**
- * Format a Date as a "YYYY-MM-DDTHH:MM:SS" string with no timezone offset,
- * matching the naive-local-time convention the rest of the stack uses for
- * prenotation startTime/endTime (see javaApiService.js date-range helpers).
+ * Format a Date as a "YYYY-MM-DDTHH:MM:SS" wall-clock string in TIMEZONE, with
+ * no offset - matching how prenotation startTime/endTime are stored (naive
+ * local time, see POST /api/prenotations). Deliberately not toISOString(),
+ * which is always UTC and would shift the window by the TIMEZONE's offset
+ * (1-2 hours for Europe/Rome), regardless of the server's own OS timezone.
  * @param {Date} date
  * @returns {string}
  */
 function toNaiveDateTimeString(date) {
-    return date.toISOString().slice(0, 19);
+    const parts = Object.fromEntries(
+        naiveDateTimeFormatter.formatToParts(date).map(({ type, value }) => [type, value])
+    );
+    return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`;
 }
 
 /**
