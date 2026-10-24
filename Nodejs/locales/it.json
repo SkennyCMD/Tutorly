@@ -345,8 +345,10 @@
     "unknownTutor": "Sconosciuto",
     "unassignedHoursMessage": "{hours}h svolte fuori da qualsiasi pacchetto da quando si è esaurito",
     "closePackage": "Chiudi Pacchetto",
+    "deletePackage": "Elimina Pacchetto",
     "confirm": {
-      "closePackage": "Sei sicuro di voler chiudere questo pacchetto?"
+      "closePackage": "Sei sicuro di voler chiudere questo pacchetto?",
+      "deletePackage": "Sei sicuro di voler eliminare questo pacchetto? Le lezioni già registrate su di esso verranno mantenute, solo scollegate da esso."
     },
     "errors": {
       "selectDateAndTimes": "Seleziona una data e gli orari di inizio/fine",
@@ -355,7 +357,9 @@
       "createPackageFailed": "Creazione pacchetto non riuscita: {error}",
       "createPackageRetry": "Creazione pacchetto non riuscita. Riprova.",
       "closePackageFailed": "Chiusura pacchetto non riuscita: {error}",
-      "closePackageRetry": "Chiusura pacchetto non riuscita. Riprova."
+      "closePackageRetry": "Chiusura pacchetto non riuscita. Riprova.",
+      "deletePackageFailed": "Eliminazione pacchetto non riuscita: {error}",
+      "deletePackageRetry": "Eliminazione pacchetto non riuscita. Riprova."
     }
   }
 }

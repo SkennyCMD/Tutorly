@@ -240,6 +240,15 @@ public class LessonController {
      * write-only via their related entities and aren't deserializable from
      * plain IDs on the entity itself.
      *
+     * Re-runs the same pack-assignment/splitting logic lesson creation uses
+     * (see createLesson below), since changing the student or the duration can
+     * change which pack, if any, the lesson should draw from. The lesson is
+     * first detached from whatever pack it's currently in and saved, so the
+     * pack's used-hours calculation doesn't still count this lesson's
+     * pre-edit duration when deciding how much room is left - then it's
+     * re-assigned (and split again if it only partially fits) exactly as a
+     * freshly created lesson would be.
+     *
      * @param id The lesson ID to update
      * @param dto The updated lesson data (description, startTime, endTime, tutorId, studentId)
      * @return Updated lesson if found, 404 Not Found if lesson/tutor/student don't exist
@@ -269,7 +278,15 @@ public class LessonController {
         lesson.setTutor(tutor.get());
         lesson.setStudent(student.get());
 
-        return ResponseEntity.ok(lessonService.saveLesson(lesson));
+        lesson.setPack(null);
+        lesson = lessonService.saveLesson(lesson);
+
+        Optional<Pack> activePack = packService.findActivePackWithAvailableHours(dto.getStudentId(), dto.getStartTime());
+        Lesson savedLesson = activePack.isPresent()
+                ? packService.assignLessonToPack(activePack.get(), lesson)
+                : lesson;
+
+        return ResponseEntity.ok(savedLesson);
     }
     
     /**

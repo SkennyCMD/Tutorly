@@ -69,6 +69,16 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<!-- In-memory DB for BackendApiApplicationTests only - every other test mocks
+		     the repository layer with Mockito and never touches a datasource at all.
+		     Keeps `mvn test` fully self-contained, independent of the real Postgres
+		     instance (and the gitignored src/main/resources/application.properties
+		     that points at it) - see src/test/resources/application.properties. -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
 
 		<!-- Logging & AOP Dependencies -->
 		<dependency>

@@ -223,6 +223,7 @@ class LessonControllerTest {
         when(lessonService.getLessonById(10L)).thenReturn(Optional.of(existing));
         when(tutorService.getUserById(1L)).thenReturn(Optional.of(tutor()));
         when(studentService.getStudentById(2L)).thenReturn(Optional.of(student()));
+        when(packService.findActivePackWithAvailableHours(eq(2L), any(LocalDateTime.class))).thenReturn(Optional.empty());
         when(lessonService.saveLesson(any(Lesson.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         LessonCreateDTO dto = new LessonCreateDTO("New desc", LocalDateTime.now(), LocalDateTime.now().plusHours(1), 1L, 2L);
@@ -233,6 +234,67 @@ class LessonControllerTest {
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.description").value("New desc"));
+
+        verify(packService, never()).assignLessonToPack(any(), any());
+    }
+
+    @Test
+    void updateLesson_detachesFromCurrentPackBeforeCheckingAvailableHours() throws Exception {
+        Pack oldPack = new Pack(LocalDateTime.now().minusDays(1), 10.0, null, student());
+        oldPack.setId(5L);
+        Lesson existing = new Lesson("Old desc", LocalDateTime.now(), LocalDateTime.now().plusHours(1), tutor(), student());
+        existing.setId(10L);
+        existing.setPack(oldPack);
+        when(lessonService.getLessonById(10L)).thenReturn(Optional.of(existing));
+        when(tutorService.getUserById(1L)).thenReturn(Optional.of(tutor()));
+        when(studentService.getStudentById(2L)).thenReturn(Optional.of(student()));
+        when(packService.findActivePackWithAvailableHours(eq(2L), any(LocalDateTime.class))).thenReturn(Optional.empty());
+        when(lessonService.saveLesson(any(Lesson.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        LessonCreateDTO dto = new LessonCreateDTO("New desc", LocalDateTime.now(), LocalDateTime.now().plusHours(1), 1L, 2L);
+
+        mockMvc.perform(put("/api/lessons/10")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk());
+
+        // The pack-availability check must run against a lesson already detached
+        // from its old pack, otherwise the old pack's used-hours would still
+        // count this lesson's pre-edit contribution.
+        org.mockito.ArgumentCaptor<Lesson> savedCaptor = org.mockito.ArgumentCaptor.forClass(Lesson.class);
+        verify(lessonService).saveLesson(savedCaptor.capture());
+        org.junit.jupiter.api.Assertions.assertNull(savedCaptor.getValue().getPack());
+    }
+
+    @Test
+    void updateLesson_activePackWithHours_delegatesToPackServiceWithDetachedLesson() throws Exception {
+        Lesson existing = new Lesson("Old desc", LocalDateTime.now(), LocalDateTime.now().plusHours(1), tutor(), student());
+        existing.setId(10L);
+        when(lessonService.getLessonById(10L)).thenReturn(Optional.of(existing));
+        when(tutorService.getUserById(1L)).thenReturn(Optional.of(tutor()));
+        when(studentService.getStudentById(2L)).thenReturn(Optional.of(student()));
+        when(lessonService.saveLesson(any(Lesson.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Pack pack = new Pack(LocalDateTime.now().minusDays(1), 10.0, null, student());
+        pack.setId(7L);
+        when(packService.findActivePackWithAvailableHours(eq(2L), any(LocalDateTime.class))).thenReturn(Optional.of(pack));
+
+        Lesson splitResult = new Lesson("New desc", LocalDateTime.now(), LocalDateTime.now().plusHours(1), tutor(), student());
+        splitResult.setId(10L);
+        splitResult.setPack(pack);
+        when(packService.assignLessonToPack(eq(pack), any(Lesson.class))).thenReturn(splitResult);
+
+        LessonCreateDTO dto = new LessonCreateDTO("New desc", LocalDateTime.now(), LocalDateTime.now().plusHours(3), 1L, 2L);
+
+        mockMvc.perform(put("/api/lessons/10")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.packId").value(7));
+
+        verify(packService).assignLessonToPack(eq(pack), any(Lesson.class));
     }
 
     @Test

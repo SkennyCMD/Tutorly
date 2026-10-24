@@ -578,6 +578,12 @@ function renderPacks() {
         </button>
         ` : ''}
         ` : ''}
+        ${isStaff ? `
+        <button type="button" data-delete-pack-id="${p.id}"
+            class="delete-pack-btn w-full text-xs border border-destructive text-destructive px-3 py-1.5 rounded-lg font-medium hover:bg-destructive/10 transition-colors">
+            ${t('student.deletePackage')}
+        </button>
+        ` : ''}
         </div>
     `;
     }).join('');
@@ -818,15 +824,39 @@ function setupEventListeners() {
         return;
     }
 
-    const btn = e.target.closest('.close-pack-btn');
-    if (!btn) return;
+    const closeBtn = e.target.closest('.close-pack-btn');
+    if (closeBtn) {
+        const packId = closeBtn.getAttribute('data-close-pack-id');
+        if (!confirm(t('student.confirm.closePackage'))) return;
 
-    const packId = btn.getAttribute('data-close-pack-id');
-    if (!confirm(t('student.confirm.closePackage'))) return;
+        try {
+        const response = await fetch(`/api/packs/${packId}/close`, {
+            method: 'PUT',
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert(t('student.errors.closePackageFailed', { error: error.error || t('calendar.errors.unknownError') }));
+        }
+        } catch (error) {
+        console.error('Error closing package:', error);
+        alert(t('student.errors.closePackageRetry'));
+        }
+        return;
+    }
+
+    const deleteBtn = e.target.closest('.delete-pack-btn');
+    if (!deleteBtn) return;
+
+    const deletePackId = deleteBtn.getAttribute('data-delete-pack-id');
+    if (!confirm(t('student.confirm.deletePackage'))) return;
 
     try {
-        const response = await fetch(`/api/packs/${packId}/close`, {
-        method: 'PUT',
+        const response = await fetch(`/api/packs/${deletePackId}`, {
+        method: 'DELETE',
         credentials: 'same-origin'
         });
 
@@ -834,11 +864,11 @@ function setupEventListeners() {
         window.location.reload();
         } else {
         const error = await response.json();
-        alert(t('student.errors.closePackageFailed', { error: error.error || t('calendar.errors.unknownError') }));
+        alert(t('student.errors.deletePackageFailed', { error: error.error || t('calendar.errors.unknownError') }));
         }
     } catch (error) {
-        console.error('Error closing package:', error);
-        alert(t('student.errors.closePackageRetry'));
+        console.error('Error deleting package:', error);
+        alert(t('student.errors.deletePackageRetry'));
     }
     });
 }

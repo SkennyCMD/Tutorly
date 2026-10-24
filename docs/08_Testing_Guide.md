@@ -66,7 +66,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
-| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 139 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
+| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 141 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
 | Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (183 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
@@ -103,7 +103,7 @@ The Java backend uses **JUnit 5**, **Mockito**, and **Spring Boot Test** for tes
 </dependencies>
 ```
 
-No H2 (or any other in-memory database) dependency is used: pure service-layer tests mock the repository with Mockito instead of hitting a database at all, and `@WebMvcTest` slices don't touch persistence either - only the pre-existing `@SpringBootTest` context-load test (`BackendApiApplicationTests`) needs a real database, and it uses the same Postgres instance the app itself connects to (see `application.properties`), not an embedded one.
+Pure service-layer tests mock the repository with Mockito instead of hitting a database at all, and `@WebMvcTest` slices don't touch persistence either. The one exception is the pre-existing `@SpringBootTest` context-load test (`BackendApiApplicationTests`), which needs a real `DataSource`/`EntityManagerFactory` to boot - it used to point at the same Postgres instance the app itself connects to (via the gitignored `src/main/resources/application.properties`), making `mvn test` fail on any machine without that real DB up. `src/test/resources/application.properties` now overrides it with an in-memory H2 instance instead (`NON_KEYWORDS=DAY` works around `day` - a plain column name in Postgres - being a reserved word in H2's own grammar), so the full suite is self-contained and DB-independent end to end.
 
 ### Unit Testing
 

@@ -345,8 +345,10 @@
     "unknownTutor": "Unknown",
     "unassignedHoursMessage": "{hours}h done outside any pack since it filled up",
     "closePackage": "Close Package",
+    "deletePackage": "Delete Package",
     "confirm": {
-      "closePackage": "Are you sure you want to close this package?"
+      "closePackage": "Are you sure you want to close this package?",
+      "deletePackage": "Are you sure you want to delete this package? Lessons already logged against it will be kept, just unlinked from it."
     },
     "errors": {
       "selectDateAndTimes": "Please select a date and start/end times",
@@ -355,7 +357,9 @@
       "createPackageFailed": "Failed to create package: {error}",
       "createPackageRetry": "Failed to create package. Please try again.",
       "closePackageFailed": "Failed to close package: {error}",
-      "closePackageRetry": "Failed to close package. Please try again."
+      "closePackageRetry": "Failed to close package. Please try again.",
+      "deletePackageFailed": "Failed to delete package: {error}",
+      "deletePackageRetry": "Failed to delete package. Please try again."
     }
   }
 }

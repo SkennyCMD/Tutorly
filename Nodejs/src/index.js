@@ -1804,6 +1804,52 @@ app.put('/api/packs/:id/close', tutorSession, isAuthenticated, blockGuestApi, as
     }
 });
 
+/**
+ * Delete a lesson package
+ * DELETE /api/packs/:id
+ * STAFF only - the Java side's `lesson.id_pack` FK is ON DELETE SET NULL
+ * (Database/init.sql), so any lessons already logged against this pack are
+ * kept and simply unlinked, not deleted along with it.
+ */
+app.delete('/api/packs/:id', tutorSession, isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        logInfo('Deleting pack', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/packs/${id}`, 'DELETE');
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
+                    logSuccess('Pack deleted successfully', req, { id });
+                    res.json({ success: true, message: 'Pack deleted' });
+                } else {
+                    logError(`Error deleting pack, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete pack' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for pack deletion', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to delete pack' });
+        });
+
+        httpsReq.end();
+
+    } catch (error) {
+        logError('Error deleting pack', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to delete pack' });
+    }
+});
+
 // !!! PUSH NOTIFICATIONS API ROUTES !!!
 // Web Push (VAPID, not Firebase). GUEST accounts must be able to subscribe
 // too (to receive notifications for their own device), so none of these are
