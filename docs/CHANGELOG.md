@@ -289,6 +289,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-07-27
+
+### Added
+- Automatic English/Italian translation (i18n) for the Dashboard, Calendar, Lessons, Staff Panel, and Login pages.
+- Weekly-repeat option for prenotations.
+- "All day" flag and continuous multi-day calendar notes.
+
+---
+
+## [1.2.2] - 2026-07-21
+
+### Added
+- Light/dark theme toggle across all views.
+
+### Fixed
+- The Calendar now keeps the currently-viewed day/week after editing or deleting an event, instead of resetting to the default view.
+
+---
+
+## [1.2.1] - 2026-07-13
+
+### Fixed
+- A mobile drag-select/scroll conflict on the Calendar.
+- A stale service-worker cache that could keep serving outdated assets.
+
+---
+
+## [1.2.0] - 2026-07-13
+
+### Added
+- Calendar: drag-to-select multi-hour time slots, click-to-add slots, and mobile quick actions.
+- Mini-calendar days now link directly to the Calendar page for that date.
+
+---
+
+## [1.1.0] - 2026-07-09
+
+### Added
+- Lesson editing from the Dashboard and My Lessons pages.
+- STAFF-only tutor filter in the Calendar.
+- Automatic lesson creation from a prenotation.
+
+---
+
+## [1.0.4] - 2026-07-08
+
+### Fixed
+- Deduplicated overlapping hours in the monthly stats calculation.
+
+### Added
+- Mini-calendar event dots.
+- Lesson IDs shown on history cards.
+
+---
+
+## [1.0.3] - 2026-07-07
+
+### Added
+- 30-day persisted tutor sessions.
+- Scrollable dashboard modal on small screens.
+- Newest-first lesson history.
+
+### Changed
+- The Calendar now defaults to an 8:00 start instead of midnight.
+
+---
+
+## [1.0.2] - 2026-07-06
+
+### Added
+- "Remember me for 30 days" login option.
+
+### Fixed
+- A calendar wording issue ("Add Prenotation").
+
+---
+
+## [1.0.1] - 2026-07-02
+
+### Changed
+- Centralized Java backend configuration.
+
+### Fixed
+- Lesson stats now include booked/in-progress lessons, not just completed ones.
+
+---
+
 ## [1.0.0] - 2026-04-29
 
 ### Added
@@ -417,7 +504,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Contributing
 
-See [docs/10_Contributing_Guide.md](docs/10_Contributing_Guide.md) for guidelines on contributing to this project.
+See [10_Contributing_Guide.md](10_Contributing_Guide.md) for guidelines on contributing to this project.
 
 All notable changes should be documented in this file when creating pull requests.
 
@@ -425,7 +512,7 @@ All notable changes should be documented in this file when creating pull request
 
 ## Links
 
-- **Documentation**: [docs/README.md](docs/README.md)
+- **Documentation**: [README.md](README.md)
 - **Repository**: https://github.com/skenny-dev/Tutorly (placeholder)
 - **Issues**: GitHub Issues
 - **License**: [LICENSE.txt](LICENSE.txt)
@@ -434,4 +521,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: September 4, 2026
+**Last Updated**: October 24, 2026

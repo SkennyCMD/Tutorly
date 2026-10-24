@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: October 2, 2026  
+**Last Updated**: October 24, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -15,12 +15,16 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 - [File Structure](#file-structure)
   - [config.js](#configjs)
   - [authService.js](#authservicejs)
+  - [passwordService.js](#passwordservicejs)
   - [authMiddleware.js](#authmiddlewarejs)
   - [javaApiService.js](#javaapiservicejs)
-  - [passwordService.js](#passwordservicejs)
-  - [userService.js](#userservicejs)
+  - [calendarDataService.js](#calendardataservicejs)
+  - [pushService.js](#pushservicejs)
+  - [reminderScheduler.js](#reminderschedulerjs)
   - [logger.js](#loggerjs)
-  - [excel.js](#exceljs)
+  - [adminLogger.js](#adminloggerjs)
+  - [excel.js](#-exceljs)
+  - [userService.js](#userservicejs)
   - [i18n.js](#i18njs)
 - [Best Practices](#best-practices)
 - [Maintenance](#maintenance)
@@ -367,6 +371,29 @@ Shared range-bounded fetch/enrich logic for the Calendar page, added in 2.3.3 to
 
 ---
 
+### `pushService.js`
+Sends Web Push notifications (standard Push API + VAPID, not Firebase) to a user's subscribed devices. See [03_Nodejs_Frontend.md - Web Push Notifications](03_Nodejs_Frontend.md#web-push-notifications) for VAPID setup, subscription storage, and the creation-time/reminder triggers that call this module.
+
+**Role:** the single send boundary every push-triggering route/job goes through - fire-and-forget, never throws, and prunes a subscription the push service reports as dead.
+
+**Exports:**
+- `sendPushToUser(userId, payload)`: fetches the user's subscriptions (`fetchPushSubscriptionsByUser`) and sends `payload` to each via the `web-push` package. `payload.body` is truncated to `MAX_BODY_LENGTH` (500 chars) before sending - a free-text field with no length cap elsewhere (a calendar note's description) could otherwise exceed Web Push's hard encrypted-payload limit and silently fail to deliver. A `404`/`410` response prunes that subscription (`deletePushSubscriptionByEndpoint`); any other failure is logged via `logError()` with the userId/endpoint/statusCode rather than a bare `console.error`, so a specific user's missed notification is actually traceable.
+
+---
+
+### `reminderScheduler.js`
+Two independent `node-cron` jobs, self-initializing at require-time. See [03_Nodejs_Frontend.md - Web Push Notifications](03_Nodejs_Frontend.md#web-push-notifications) for the full schedule/timezone details and message formats.
+
+**Role:** the app's only scheduled/recurring jobs - everything else is triggered by an HTTP request.
+
+**Exports:**
+- `sendDailyReminders()`: once a day at `REMINDER_TIME`, pushes a reminder for every prenotation/note starting that day.
+- `sendUpcomingLessonReminders()`: checked every minute, pushes a reminder `UPCOMING_LESSON_REMINDER_MINUTES` before a prenotation starts, deduped via an in-memory `Map` so the same prenotation isn't notified twice.
+
+Both build their date-range window as a `TIMEZONE` wall-clock string (`Intl.DateTimeFormat`), not `toISOString()` - prenotation/note timestamps are naive local time with no offset, and `toISOString()` is always UTC, which used to shift the window by the TIMEZONE's offset.
+
+---
+
 ### `logger.js`
 Centralized logging with color-coded console output.
 
@@ -577,7 +604,7 @@ i18nMiddleware(req, res, next)
 
 ---
 
-**Last Updated**: August 6, 2026
+**Last Updated**: October 24, 2026
 
 ## Maintenance
 
@@ -589,4 +616,4 @@ To add new features:
 5. Update this README
 ---
 
-**Last Updated**: August 6, 2026  
+**Last Updated**: October 24, 2026  

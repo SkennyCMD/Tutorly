@@ -5,7 +5,7 @@ Comprehensive guide for testing the Tutorly application including unit tests, in
 ---
 
 **Document**: 08_Testing_Guide.md  
-**Last Updated**: October 2, 2026  
+**Last Updated**: October 24, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -67,7 +67,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
 | Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 141 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (58 total) has at least one Jest/Supertest test (200 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (60 total) has at least one Jest/Supertest test (200 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -306,7 +306,7 @@ Nodejs/
                                     # 404/410 pruning, error logging - also not a route
 ```
 
-Every route in `src/index.js` (58 total) has at least one test, plus direct unit-test files for `reminderScheduler.js` and `pushService.js` - **200 tests across 16 files.**
+Every route in `src/index.js` (60 total) has at least one test, plus direct unit-test files for `reminderScheduler.js` and `pushService.js` - **200 tests across 16 files.**
 
 ### Login Helper
 
@@ -712,7 +712,7 @@ Nodejs/
                                # under Node.js Frontend Testing > Test Organization
 ```
 
-**Why no repository-layer tests yet:** `@DataJpaTest` needs a database to actually run queries against, and this project has no embedded test database (no H2 or similar - see the Setup section above). Without one, `@DataJpaTest` either fails outright (no embedded driver on the classpath) or - via `@AutoConfigureTestDatabase(replace = Replace.NONE)` - falls back to whatever `application.properties` points at, which today is the same real Postgres database the app itself uses. Neither is acceptable to add casually: the first doesn't work, the second would write and delete real rows in a real (dev) database on every test run. Adding a proper embedded test database is a reasonable next step, but it's an infrastructure decision (which database, whether to keep parity with Postgres-specific behavior) that's out of scope for just writing more tests.
+**Why no repository-layer tests yet:** `@DataJpaTest` needs a database to actually run queries against. An embedded one now exists (`src/test/resources/application.properties` - the in-memory H2 instance added for `BackendApiApplicationTests`, see the Setup section above) and, since that file applies to every test context automatically, a `@DataJpaTest` slice would pick it up for free without any extra wiring - the infrastructure gap this note used to describe no longer exists. What's left is simply that no repository test classes have been written yet (no `repository/` test directory contents, just the empty folder structure below) - a backlog item, not a blocker.
 
 ---
 
@@ -722,4 +722,4 @@ Nodejs/
 
 ---
 
-**Last Updated**: September 8, 2026
+**Last Updated**: October 24, 2026

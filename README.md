@@ -133,6 +133,6 @@ For questions, support, or feedback:
 
 ---
 
-**Version**: 2.3.4  
-**Last Updated**: September 23, 2026
+**Version**: 2.4.1  
+**Last Updated**: October 24, 2026
 

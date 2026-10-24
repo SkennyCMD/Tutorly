@@ -405,7 +405,7 @@ HTTP header used for API key authentication in Tutorly.
 ---
 
 **Navigation**  
-⬅️ **Previous**: [10_Contributing_Guide.md](10_Contributing_Guide.md) | **Next**: [CHANGELOG.md](../CHANGELOG.md) ➡️  
+⬅️ **Previous**: [10_Contributing_Guide.md](10_Contributing_Guide.md) | **Next**: [CHANGELOG.md](CHANGELOG.md) ➡️  
 🏠 **Home**: [Documentation Index](README.md)
 
 ---

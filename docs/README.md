@@ -5,20 +5,20 @@ This directory contains all the documentation for the Tutorly project, organized
 ---
 
 **Document**: README.md  
-**Last Updated**: September 23, 2026  
-**Version**: 2.3.4  
+**Last Updated**: October 24, 2026  
+**Version**: 2.4.1  
 **Maintained by**: Tutorly Development Team  
 
 ---
 
 ## 📋 Table of Contents
 
-- [Documentation Structure](#documentation-structure)
-- [Quick Start Guide](#quick-start-guide)
-- [Documentation by Topic](#documentation-by-topic)
-- [Documentation Maintenance](#documentation-maintenance)
-- [Contributing](#contributing)
-- [Support](#support)
+- [Documentation Structure](#-documentation-structure)
+- [Quick Start Guide](#-quick-start-guide)
+- [Documentation by Topic](#-documentation-by-topic)
+- [Documentation Maintenance](#-documentation-maintenance)
+- [Contributing](#-contributing)
+- [Support](#-support)
 
 ---
 
@@ -108,7 +108,7 @@ This directory contains all the documentation for the Tutorly project, organized
 
 ### Architecture & Design
 - **System Architecture**: [00_Project_Overview.md](00_Project_Overview.md#system-architecture)
-- **Backend Architecture**: [01_Java_Backend_API.md](01_Java_Backend_API.md#architecture)
+- **Backend Architecture**: [01_Java_Backend_API.md](01_Java_Backend_API.md#system-architecture)
 - **Frontend Architecture**: [03_Nodejs_Frontend.md](03_Nodejs_Frontend.md#system-architecture)
 
 ### Installation & Setup

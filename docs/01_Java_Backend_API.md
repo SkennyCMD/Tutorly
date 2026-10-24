@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: September 8, 2026  
+**Last Updated**: October 24, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
