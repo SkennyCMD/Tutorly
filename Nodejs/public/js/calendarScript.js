@@ -942,7 +942,7 @@ function renderEventsOnGrid() {
     if (cell) {
       // Create event element with calculated position and size
       const eventEl = document.createElement('div');
-      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}${event.type === 'lesson' && !event.canModify ? ' event-lesson-staff-assigned' : ''}`;
+      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}${event.type === 'lesson' && !isGuest && !event.canModify ? ' event-lesson-staff-assigned' : ''}`;
       eventEl.style.top = `${topOffset}px`;
       eventEl.style.height = `${heightPx}px`;
       eventEl.style.minHeight = '20px';
@@ -976,10 +976,13 @@ function renderEventsOnGrid() {
       if (event.type === 'lesson') {
         const currentUserId = window.serverData?.currentUserId;
         const isStaff = window.serverData?.userRole === 'STAFF';
-        const showTutor = isStaff && event.tutorId !== currentUserId;
-        // GENERIC viewing a lesson STAFF assigned to them - canModify is already
-        // false only in that case (never for their own, never for STAFF viewers).
-        const showAssignedBy = !event.canModify && event.creatorUsername;
+        // GUEST always sees the assigned tutor (there's no "own" lesson to
+        // compare against); STAFF only when viewing someone else's.
+        const showTutor = isGuest || (isStaff && event.tutorId !== currentUserId);
+        // GENERIC viewing a lesson STAFF assigned to them - canModify is false
+        // for GUEST too (they never modify anything), so this must exclude GUEST
+        // explicitly, or they'd see the creator's name instead of the tutor's.
+        const showAssignedBy = !isGuest && !event.canModify && event.creatorUsername;
 
         applyTutorColor(eventEl, event.tutorId);
 
@@ -1155,7 +1158,7 @@ function renderMobileEvents() {
 
     if (cell) {
       const eventEl = document.createElement('div');
-      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}${event.type === 'lesson' && !event.canModify ? ' event-lesson-staff-assigned' : ''}`;
+      eventEl.className = `event event-${event.type}${event.type === 'note' && !isOwnNote(event) ? ' event-note-other' : ''}${event.type === 'lesson' && !isGuest && !event.canModify ? ' event-lesson-staff-assigned' : ''}`;
       eventEl.style.top = `${topOffset}px`;
       eventEl.style.height = `${heightPx}px`;
       eventEl.style.minHeight = '20px';
@@ -1186,10 +1189,13 @@ function renderMobileEvents() {
       if (event.type === 'lesson') {
         const currentUserId = window.serverData?.currentUserId;
         const isStaff = window.serverData?.userRole === 'STAFF';
-        const showTutor = isStaff && event.tutorId !== currentUserId;
-        // GENERIC viewing a lesson STAFF assigned to them - canModify is already
-        // false only in that case (never for their own, never for STAFF viewers).
-        const showAssignedBy = !event.canModify && event.creatorUsername;
+        // GUEST always sees the assigned tutor (there's no "own" lesson to
+        // compare against); STAFF only when viewing someone else's.
+        const showTutor = isGuest || (isStaff && event.tutorId !== currentUserId);
+        // GENERIC viewing a lesson STAFF assigned to them - canModify is false
+        // for GUEST too (they never modify anything), so this must exclude GUEST
+        // explicitly, or they'd see the creator's name instead of the tutor's.
+        const showAssignedBy = !isGuest && !event.canModify && event.creatorUsername;
 
         applyTutorColor(eventEl, event.tutorId);
 
