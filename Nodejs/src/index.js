@@ -1070,6 +1070,19 @@ function reviewExceptionDay(action) {
                         let exception;
                         try { exception = JSON.parse(data); } catch (e) { exception = null; }
                         res.json({ success: true, message: `Exception day ${action}d`, exception });
+
+                        // Fire-and-forget: let the requester know the outcome. Never
+                        // awaited, so a slow/failed send can't delay or break the
+                        // response above.
+                        if (exception && exception.tutorId != null) {
+                            const approved = action === 'approve';
+                            sendPushToUser(exception.tutorId, {
+                                title: approved ? 'Request Approved' : 'Request Refused',
+                                body: `Your ${exception.type === 'present' ? 'presence' : 'absence'} request for ${exception.day} was ${approved ? 'approved' : 'refused'}`,
+                                url: '/availability',
+                                tag: `exception-day-${exception.id}`
+                            });
+                        }
                     } else {
                         logError(`Error ${action}ing exception day, status: ${httpsRes.statusCode}`, req, { id, response: data });
                         res.status(httpsRes.statusCode).json({ error: data || `Failed to ${action} exception day` });

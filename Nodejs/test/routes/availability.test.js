@@ -20,6 +20,8 @@ async function tutorAgent(overrides = {}) {
     return agent;
 }
 
+beforeEach(() => sendPushToUser.mockClear());
+
 describe('POST /api/availability', () => {
     test('a GUEST account is blocked with 403', async () => {
         const agent = await tutorAgent({ id: 1, role: 'GUEST' });
@@ -68,8 +70,6 @@ describe('POST /api/availability', () => {
 });
 
 describe('POST /api/exception-days', () => {
-    beforeEach(() => sendPushToUser.mockClear());
-
     test('a GUEST account is blocked with 403', async () => {
         const agent = await tutorAgent({ role: 'GUEST' });
         const res = await agent.post('/api/exception-days').send({ type: 'absent', day: '2026-12-24' });
@@ -202,6 +202,25 @@ describe('PUT /api/exception-days/:id/approve', () => {
         const res = await agent.put('/api/exception-days/99/approve');
         expect(res.status).toBe(404);
     });
+
+    test('notifies the requester that their request was approved', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().put('/api/exception-days/10/approve').reply(200, {
+            id: 10, status: 'approved', tutorId: 7, type: 'absent', day: '2026-12-24'
+        });
+
+        const res = await agent.put('/api/exception-days/10/approve');
+        expect(res.status).toBe(200);
+
+        await flushMicrotasks();
+
+        expect(sendPushToUser).toHaveBeenCalledWith(7, expect.objectContaining({
+            title: 'Request Approved',
+            url: '/availability',
+            tag: 'exception-day-10'
+        }));
+    });
 });
 
 describe('PUT /api/exception-days/:id/refuse', () => {
@@ -234,5 +253,24 @@ describe('PUT /api/exception-days/:id/refuse', () => {
 
         const res = await agent.put('/api/exception-days/99/refuse');
         expect(res.status).toBe(404);
+    });
+
+    test('notifies the requester that their request was refused', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().put('/api/exception-days/10/refuse').reply(200, {
+            id: 10, status: 'refused', tutorId: 7, type: 'present', day: '2026-12-24'
+        });
+
+        const res = await agent.put('/api/exception-days/10/refuse');
+        expect(res.status).toBe(200);
+
+        await flushMicrotasks();
+
+        expect(sendPushToUser).toHaveBeenCalledWith(7, expect.objectContaining({
+            title: 'Request Refused',
+            url: '/availability',
+            tag: 'exception-day-10'
+        }));
     });
 });
