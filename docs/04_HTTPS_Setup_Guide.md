@@ -57,8 +57,8 @@ npm run generate-cert
 ```
 
 This will create:
-- `ssl/private-key.pem` - Private key
-- `ssl/certificate.pem` - Public certificate
+- `certs/localhost-key.pem` - Private key
+- `certs/localhost.pem` - Public certificate
 
 The certificates are valid for **365 days**.
 
@@ -109,8 +109,8 @@ HTTPS_PORT=3443
 PORT=3000
 
 # Certificate paths (relative to Nodejs directory)
-SSL_KEY_PATH=./ssl/private-key.pem
-SSL_CERT_PATH=./ssl/certificate.pem
+SSL_KEY_PATH=./certs/localhost-key.pem
+SSL_CERT_PATH=./certs/localhost.pem
 ```
 
 ### Manual Configuration
@@ -162,9 +162,9 @@ openssl s_client -connect localhost:3443 -showcerts
 
 ```
 Nodejs/
-├── ssl/                         # SSL certificates directory
-│   ├── private-key.pem          # Private key (gitignored)
-│   └── certificate.pem          # Public certificate (gitignored)
+├── certs/                       # SSL certificates directory
+│   ├── localhost-key.pem        # Private key (gitignored)
+│   └── localhost.pem            # Public certificate (gitignored)
 ├── generate-ssl-cert.sh         # Certificate generation script
 ├── .env.example                 # Environment variables template
 ├── .env                         # Your local environment variables (gitignored)
@@ -984,7 +984,7 @@ Before starting development with HTTPS:
 - [ ] OpenSSL is installed
 - [ ] Generated SSL certificates (`npm run generate-cert`)
 - [ ] Set `USE_HTTPS=true` in `.env` or environment
-- [ ] Certificates are in `Nodejs/ssl/` directory
+- [ ] Certificates are in `Nodejs/certs/` directory
 - [ ] Started server with `npm run https`
 - [ ] Accessed `https://localhost:3443` and accepted security warning
 - [ ] Verified session cookies are working

@@ -11,8 +11,8 @@
 #   ./generate-ssl-cert.sh
 #
 # Generated Files:
-#   - ssl/private-key.pem  (Private key)
-#   - ssl/certificate.pem  (Public certificate)
+#   - certs/localhost-key.pem  (Private key)
+#   - certs/localhost.pem      (Public certificate)
 #
 # Note: Browsers will show a security warning for self-signed certificates.
 #       This is expected behavior for development. Click "Advanced" -> "Proceed"
@@ -24,7 +24,8 @@
 #-------------------------------------------------------------------------------------
 
 # Configuration
-SSL_DIR="./ssl"
+# Must match SSL_KEY_PATH/SSL_CERT_PATH's defaults in server_utilities/config.js
+SSL_DIR="./certs"
 DAYS=365
 COUNTRY="IT"
 STATE="Sardinia"
@@ -48,8 +49,8 @@ fi
 
 # Generate self-signed certificate
 openssl req -x509 -newkey rsa:4096 \
-  -keyout "$SSL_DIR/private-key.pem" \
-  -out "$SSL_DIR/certificate.pem" \
+  -keyout "$SSL_DIR/localhost-key.pem" \
+  -out "$SSL_DIR/localhost.pem" \
   -days $DAYS \
   -nodes \
   -subj "/C=$COUNTRY/ST=$STATE/L=$CITY/O=$ORG/OU=$OU/CN=$CN"
@@ -57,17 +58,17 @@ openssl req -x509 -newkey rsa:4096 \
 # Check if generation was successful
 if [ $? -eq 0 ]; then
     # Set correct permissions
-    chmod 600 "$SSL_DIR/private-key.pem"
-    chmod 644 "$SSL_DIR/certificate.pem"
-    
+    chmod 600 "$SSL_DIR/localhost-key.pem"
+    chmod 644 "$SSL_DIR/localhost.pem"
+
     echo ""
     echo "----------------------------------------------"
     echo "Certificate generated successfully!"
     echo "----------------------------------------------"
     echo ""
     echo "Location: $SSL_DIR/"
-    echo "Private Key: private-key.pem"
-    echo "Certificate: certificate.pem"
+    echo "Private Key: localhost-key.pem"
+    echo "Certificate: localhost.pem"
     echo "Valid for: $DAYS days"
     echo ""
     echo "----------------------------------------------"

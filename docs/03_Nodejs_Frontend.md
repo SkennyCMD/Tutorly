@@ -96,8 +96,8 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 | `package.json` | Dependencies and scripts | Root directory |
 | `config.js` | App configuration | `server_utilities/` |
 | `.env` | Environment variables (if used) | Root directory |
-| `ssl/certificate.pem` | SSL certificate | `ssl/` directory |
-| `ssl/private-key.pem` | SSL private key | `ssl/` directory |
+| `certs/localhost.pem` | SSL certificate | `certs/` directory |
+| `certs/localhost-key.pem` | SSL private key | `certs/` directory |
 
 ### Default Ports
 
@@ -295,9 +295,9 @@ Nodejs/
 │       ├── i18n.js                 # Client-side t() translation helper
 │       └── 404.js                  # Error page interactions
 │
-├── ssl/                            # SSL certificates (gitignored)
-│   ├── private-key.pem             # Private key for HTTPS
-│   └── certificate.pem             # Self-signed certificate
+├── certs/                          # SSL certificates (gitignored)
+│   ├── localhost-key.pem           # Private key for HTTPS
+│   └── localhost.pem               # Self-signed certificate
 │
 ├── migrations/                     # Database migration scripts
 │   └── hashExistingPasswords.js    # Migrate plain-text passwords to bcrypt
@@ -954,8 +954,8 @@ PORT=3000          # HTTP port (redirects to HTTPS when USE_HTTPS=true)
 HTTPS_PORT=3443    # HTTPS port
 
 # SSL certificate paths (relative to Nodejs directory)
-SSL_KEY_PATH=./ssl/private-key.pem
-SSL_CERT_PATH=./ssl/certificate.pem
+SSL_KEY_PATH=./certs/localhost-key.pem
+SSL_CERT_PATH=./certs/localhost.pem
 ```
 
 **Quick Setup:**
