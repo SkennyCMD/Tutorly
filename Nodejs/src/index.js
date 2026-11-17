@@ -1000,6 +1000,29 @@ app.post('/api/exception-days', tutorSession, isAuthenticated, blockGuestApi, as
                 if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
                     logSuccess('Exception day submitted successfully', req, exceptionData);
                     res.status(201).json({ success: true, message: 'Exception day submitted' });
+
+                    // Fire-and-forget: notify every active STAFF member (other than the
+                    // submitter, in case a STAFF tutor requests one for themselves) that
+                    // a new request needs review. Never awaited, so a slow/failed send
+                    // can't delay or break the response above.
+                    let createdException;
+                    try { createdException = JSON.parse(data); } catch (e) { createdException = null; }
+                    const exceptionId = createdException ? createdException.id : null;
+
+                    fetchFromJavaAPI('/api/users').then((allUsers) => {
+                        (allUsers || [])
+                            .filter(u => u.role === 'STAFF' && u.status === 'ACTIVE' && !u.anonymizedAt && u.id !== req.session.userId)
+                            .forEach((staff) => {
+                                sendPushToUser(staff.id, {
+                                    title: 'New Availability Request',
+                                    body: `${req.session.username} requested ${type === 'present' ? 'a presence' : 'an absence'} on ${day}`,
+                                    url: '/availability',
+                                    tag: `exception-day-${exceptionId}`
+                                });
+                            });
+                    }).catch((error) => {
+                        logError('Error fetching STAFF list to notify about new exception day', req, { error: error.message });
+                    });
                 } else {
                     logError(`Error submitting exception day, status: ${httpsRes.statusCode}`, req, { response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to submit exception day' });

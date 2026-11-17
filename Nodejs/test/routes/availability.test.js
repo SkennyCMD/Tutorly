@@ -1,7 +1,18 @@
+// Mocked so tests can assert exactly who gets notified, without a real VAPID
+// setup or push_subscription lookups - see server_utilities/pushService.js.
+jest.mock('../../server_utilities/pushService', () => ({ sendPushToUser: jest.fn() }));
+
 const request = require('supertest');
 const app = require('../helpers/testApp');
 const { javaApi } = require('../helpers/javaApi');
 const { loginAsTutor, tutorFixture } = require('../helpers/auth');
+const { sendPushToUser } = require('../../server_utilities/pushService');
+
+// POST /api/exception-days notifies STAFF fire-and-forget, after the HTTP
+// response is already sent - give its promise chain a tick to run.
+function flushMicrotasks() {
+    return new Promise(resolve => setTimeout(resolve, 20));
+}
 
 async function tutorAgent(overrides = {}) {
     const agent = request.agent(app);
@@ -57,6 +68,8 @@ describe('POST /api/availability', () => {
 });
 
 describe('POST /api/exception-days', () => {
+    beforeEach(() => sendPushToUser.mockClear());
+
     test('a GUEST account is blocked with 403', async () => {
         const agent = await tutorAgent({ role: 'GUEST' });
         const res = await agent.post('/api/exception-days').send({ type: 'absent', day: '2026-12-24' });
@@ -106,6 +119,45 @@ describe('POST /api/exception-days', () => {
 
         const res = await agent.post('/api/exception-days').send({ type: 'absent', day: '2026-12-24' });
         expect(res.status).toBe(400);
+    });
+
+    test('notifies every active STAFF member, but not GUEST/BLOCKED/erased accounts', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().post('/api/exception-days').reply(201, { id: 30, status: 'pending' });
+        javaApi().get('/api/users').reply(200, [
+            tutorFixture({ id: 1, username: 'me.generic', role: 'GENERIC' }),
+            tutorFixture({ id: 2, username: 'staff.one', role: 'STAFF', status: 'ACTIVE' }),
+            tutorFixture({ id: 3, username: 'staff.blocked', role: 'STAFF', status: 'BLOCKED' }),
+            tutorFixture({ id: 4, username: 'staff.erased', role: 'STAFF', status: 'DISCONTINUED', anonymizedAt: '2026-01-01T00:00:00' }),
+            tutorFixture({ id: 5, username: 'guest.one', role: 'GUEST', status: 'ACTIVE' })
+        ]);
+
+        const res = await agent.post('/api/exception-days').send({ type: 'absent', day: '2026-12-24' });
+        expect(res.status).toBe(201);
+
+        await flushMicrotasks();
+
+        expect(sendPushToUser).toHaveBeenCalledTimes(1);
+        expect(sendPushToUser).toHaveBeenCalledWith(2, expect.objectContaining({
+            title: 'New Availability Request',
+            url: '/availability',
+            tag: 'exception-day-30'
+        }));
+    });
+
+    test('does not notify the submitter even if they are STAFF themselves', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().post('/api/exception-days').reply(201, { id: 31, status: 'pending' });
+        javaApi().get('/api/users').reply(200, [
+            tutorFixture({ id: 1, username: 'me.staff', role: 'STAFF', status: 'ACTIVE' })
+        ]);
+
+        const res = await agent.post('/api/exception-days').send({ type: 'absent', day: '2026-12-24' });
+        expect(res.status).toBe(201);
+
+        await flushMicrotasks();
+
+        expect(sendPushToUser).not.toHaveBeenCalled();
     });
 });
 
