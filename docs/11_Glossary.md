@@ -5,7 +5,7 @@ Technical terms and acronyms used in the Tutorly project.
 ---
 
 **Document**: 11_Glossary.md  
-**Last Updated**: February 25, 2026  
+**Last Updated**: November 17, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -27,6 +27,9 @@ Process of verifying the identity of a user. Tutorly uses bcrypt-hashed password
 
 **Authorization**  
 Process of determining what an authenticated user is allowed to do. Tutorly has role-based authorization (STAFF, GENERIC, ADMIN).
+
+**Availability**  
+Database table (schema only, no application code yet) holding a tutor's recurring weekly availability slots (day of week, start/end time).
 
 ---
 
@@ -82,6 +85,9 @@ Design pattern where dependencies are "injected" rather than created by the clas
 **DTO (Data Transfer Object)**  
 Object used to transfer data between layers or processes, often with specific fields for API responses.
 
+**Dashboard Note**  
+Database table (schema only, no application code yet) holding time-bound notices an admin publishes to tutors' dashboards, paired with a `see_dashboard_note` join table tracking which tutors have seen each one.
+
 ---
 
 ## E
@@ -97,6 +103,9 @@ Web application framework for Node.js used in Tutorly's frontend server.
 
 **ExcelJS**  
 Library used to generate Excel reports for lessons and statistics.
+
+**Exception Day**  
+Database table (schema only, no application code yet) holding one-off deviations from a tutor's regular `Availability` (marked present or absent for a specific date), subject to STAFF approval.
 
 ---
 
@@ -289,6 +298,9 @@ System and service manager for Linux. Used to run Tutorly services in production
 
 ## T
 
+**Ticket**  
+Database table (schema only, no application code yet) holding support tickets raised by users and handled by admins, with an open/managing/closed lifecycle.
+
 **Test**  
 Entity representing an exam or assessment taken by a student.
 
@@ -410,4 +422,4 @@ HTTP header used for API key authentication in Tutorly.
 
 ---
 
-**Last Updated**: February 25, 2026
+**Last Updated**: November 17, 2026

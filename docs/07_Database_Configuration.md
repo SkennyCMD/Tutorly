@@ -5,7 +5,7 @@ This document provides comprehensive information about the Tutorly database stru
 ---
 
 **Document**: 07_Database_Configuration.md  
-**Last Updated**: September 8, 2026  
+**Last Updated**: November 17, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -33,6 +33,9 @@ Tutorly uses **PostgreSQL 12+** as its relational database management system. Th
 - **Prenotations**: Lesson bookings and reservations
 - **Tests**: Student assessments and grades
 - **Calendar Notes**: Planning and task management
+- **Availability / Exception Days**: Tutor weekly availability and one-off exceptions to it (schema only - no application code yet)
+- **Dashboard Notes**: Time-bound notices from admins to tutors (schema only - no application code yet)
+- **Tickets**: Support tickets raised by users and handled by admins (schema only - no application code yet)
 
 ### Database Specifications
 
@@ -231,6 +234,93 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 
 ---
 
+#### 10. **Availability**
+
+> **Schema only** - added directly to [Database/init.sql](../Database/init.sql) ahead of the corresponding feature; no JPA entity, repository, or API endpoint exists for this table yet.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique availability-slot ID |
+| `week_day` | SMALLINT | NOT NULL, CHECK (1-7) | Day of the week this slot recurs on |
+| `start_time` | TIME(0) | NOT NULL | Slot start time |
+| `end_time` | TIME(0) | NOT NULL, CHECK > `start_time` | Slot end time |
+| `id_tutor` | BIGINT | FK → User(id), NOT NULL | Tutor this recurring availability belongs to |
+
+**Purpose**: Future home for a tutor's regular weekly availability (e.g. "available Mondays 9:00-13:00"). Deleting the tutor cascades to their availability slots.
+
+---
+
+#### 11. **ExceptionDay**
+
+> **Schema only** - same as `Availability` above, no application code yet.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique exception-day ID |
+| `day` | DATE | NOT NULL | The date this exception applies to |
+| `type` | TEXT | NOT NULL, CHECK IN ('present','absent') | Whether the tutor is exceptionally available or unavailable that day |
+| `start_time` | TIME(0) | nullable | Required (NOT NULL) when `type = 'present'`, must be NULL when `type = 'absent'` |
+| `end_time` | TIME(0) | nullable, CHECK > `start_time` | Same rule as `start_time` |
+| `status` | TEXT | NOT NULL, DEFAULT `'pending'`, CHECK IN ('pending','refused','approved') | Staff-approval state of the request |
+| `id_tutor` | BIGINT | FK → User(id), NOT NULL | Tutor requesting the exception |
+| `id_staff` | BIGINT | FK → User(id), nullable | STAFF member who reviewed it, if any |
+
+**Purpose**: Future home for one-off deviations from a tutor's regular `Availability` (e.g. "unavailable on 2026-12-24" or "available 14:00-16:00 instead of the usual slot"), subject to STAFF approval. `id_staff` is `ON DELETE SET NULL` so removing the reviewing staff account doesn't delete the exception; `id_tutor` is `ON DELETE CASCADE`.
+
+---
+
+#### 12. **DashboardNote**
+
+> **Schema only** - same as `Availability` above, no application code yet.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique note ID |
+| `content` | TEXT | NOT NULL | Notice text |
+| `creation` | TIMESTAMP | NOT NULL | When the notice was created |
+| `expiration` | TIMESTAMP | NOT NULL | When the notice stops being shown |
+| `id_admin` | BIGINT | FK → Admin(id), NOT NULL | Admin who authored the notice |
+
+**Purpose**: Future home for time-bound notices an admin publishes to tutors' dashboards. Deleting the authoring admin cascades to their notes.
+
+**Many-to-Many Relationship**: `DashboardNote ↔ User` (via `see_dashboard_note` join table) - tracks which tutors have seen which notice.
+
+---
+
+#### 13. **SeeDashboardNote** (Associative Entity)
+
+> **Schema only** - same as `Availability` above, no application code yet.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id_dashboard_note` | BIGINT | FK → DashboardNote(id) | The notice seen |
+| `id_tutor` | BIGINT | FK → User(id) | The tutor who saw it |
+
+**Purpose**: Join table recording that a given tutor has seen a given dashboard note. Both FKs `ON DELETE CASCADE`.
+
+**Composite Primary Key**: (`id_dashboard_note`, `id_tutor`)
+
+---
+
+#### 14. **Ticket**
+
+> **Schema only** - same as `Availability` above, no application code yet.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique ticket ID |
+| `content` | TEXT | NOT NULL | Ticket body as submitted by the user |
+| `creation` | TIMESTAMP | NOT NULL | When the ticket was opened |
+| `status` | TEXT | NOT NULL, DEFAULT `'open'`, CHECK IN ('open','managing','closed') | Ticket lifecycle state |
+| `closure` | TIMESTAMP | nullable, CHECK >= `creation` | When the ticket was closed - must be set if and only if `status = 'closed'` |
+| `comment` | TEXT | nullable | Admin's resolution comment |
+| `id_user` | BIGINT | FK → User(id), nullable | User who raised the ticket |
+| `id_admin` | BIGINT | FK → Admin(id), nullable | Admin handling the ticket |
+
+**Purpose**: Future home for a support-ticket system between users and admins. Both FKs are `ON DELETE SET NULL` so deleting the raising user or handling admin preserves the ticket as history rather than losing it.
+
+---
+
 ### Relationships Summary
 
 | Relationship | Type | Description |
@@ -246,6 +336,12 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | **Student → Pack** | One-to-Many | A student can have many lesson packages |
 | **Pack → Lesson** | One-to-Many, optional | A package can have lessons drawn from it; a lesson doesn't need a package |
 | **User → Student** | One-to-Many, optional | A `GUEST` user can be linked to student(s) via `Student.id_user` - visibility restriction enforced in the Node.js frontend |
+| **User → Availability** | One-to-Many | A tutor has many recurring weekly availability slots (schema only) |
+| **User → ExceptionDay** | One-to-Many (2 roles) | As the requesting tutor OR as the reviewing staff member (schema only) |
+| **Admin → DashboardNote** | One-to-Many | An admin authors many dashboard notices (schema only) |
+| **User → DashboardNote** | Many-to-Many | Tutors see notices; tracked via `see_dashboard_note` (schema only) |
+| **User → Ticket** | One-to-Many, optional | A user raises many support tickets (schema only) |
+| **Admin → Ticket** | One-to-Many, optional | An admin handles many support tickets (schema only) |
 
 ---
 
@@ -874,4 +970,4 @@ ORDER BY pg_total_relation_size(tablename::regclass) DESC;
 
 ---
 
-**Last Updated**: September 8, 2026
+**Last Updated**: November 17, 2026

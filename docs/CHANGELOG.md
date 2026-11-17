@@ -19,6 +19,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.5.0] - 2026-11-17
+
+### Added
+- **Database**: added five new tables ahead of their corresponding features - `availability` and `exception_day` (tutor weekly availability and one-off exceptions to it, the latter with a STAFF-approval workflow), `dashboard_note` and `see_dashboard_note` (time-bound admin notices and per-tutor read tracking), and `ticket` (support tickets between users and admins). Schema only - no JPA entities, repositories, or API endpoints yet. See [07_Database_Configuration.md](07_Database_Configuration.md#database-schema).
+
+### Changed
+- **Docs**: updated the ER diagram ([docs/TUTORLY_Normal.png](TUTORLY_Normal.png)) to include the five new tables above.
+
+---
+
 ## [2.4.1] - 2026-10-24
 
 ### Added
@@ -521,4 +531,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: October 24, 2026
+**Last Updated**: November 17, 2026
