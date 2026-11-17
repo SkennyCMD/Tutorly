@@ -1037,7 +1037,11 @@ function reviewExceptionDay(action) {
                 httpsRes.on('end', () => {
                     if (httpsRes.statusCode === 200) {
                         logSuccess(`Exception day ${action}d successfully`, req, { id });
-                        res.json({ success: true, message: `Exception day ${action}d` });
+                        // Forward the updated exception back - lets the client patch its
+                        // local state (pending list + calendar) without a full page reload
+                        let exception;
+                        try { exception = JSON.parse(data); } catch (e) { exception = null; }
+                        res.json({ success: true, message: `Exception day ${action}d`, exception });
                     } else {
                         logError(`Error ${action}ing exception day, status: ${httpsRes.statusCode}`, req, { id, response: data });
                         res.status(httpsRes.statusCode).json({ error: data || `Failed to ${action} exception day` });

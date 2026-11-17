@@ -6,8 +6,9 @@ const tutors = window.initialTutors || [];
 
 // Pending exception_day requests awaiting STAFF review - empty/unused for a
 // GENERIC viewer, since the toggle button/list aren't even rendered for them
-// (see availability.ejs).
-const pendingExceptions = window.initialPendingExceptions || [];
+// (see availability.ejs). Reassigned (not just mutated) when a request is
+// approved/refused, so `let` rather than `const`.
+let pendingExceptions = window.initialPendingExceptions || [];
 
 const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -41,6 +42,15 @@ function dateAtDay(day) {
 
 function dateKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+// Parses a "YYYY-MM-DD" string (as returned by the Java API for a LocalDate)
+// into a local Date at midnight. New Date("YYYY-MM-DD") parses as UTC instead,
+// which can land on the wrong calendar day once converted back to local time
+// in timezones behind UTC - building it from the parts avoids that entirely.
+function parseDateOnly(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
 }
 
 function timeLabel(value) {
@@ -343,11 +353,12 @@ function renderPendingExceptions() {
 
     list.innerHTML = pendingExceptions.map(exception => {
         const borderClass = exception.type === 'present' ? 'border-green-600' : 'border-destructive';
+        const weekday = weekdayNames[parseDateOnly(exception.day).getDay()];
         return `
         <div class="flex items-center justify-between gap-3 rounded-lg border-2 ${borderClass} bg-card p-3 min-w-[240px]">
             <div class="min-w-0">
                 <p class="text-sm font-medium text-foreground">${exception.tutorName}</p>
-                <p class="text-xs text-muted-foreground">${exception.type === 'present' ? 'Presence' : 'Absence'} · ${exception.day}${exception.type === 'present' ? ` · ${timeLabel(exception.startTime)} – ${timeLabel(exception.endTime)}` : ''}</p>
+                <p class="text-xs text-muted-foreground">${exception.type === 'present' ? 'Presence' : 'Absence'} · ${exception.day} (${weekday})${exception.type === 'present' ? ` · ${timeLabel(exception.startTime)} – ${timeLabel(exception.endTime)}` : ''}</p>
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 <button type="button" class="approve-exception-btn p-2 rounded-lg text-green-600 hover:bg-green-600/10 transition-colors" data-exception-id="${exception.id}" aria-label="Approve">
@@ -372,6 +383,8 @@ function renderPendingExceptions() {
 async function reviewPendingException(id, action) {
     if (!confirm(`Are you sure you want to ${action} this request?`)) return;
 
+    const numericId = Number(id);
+
     try {
         const response = await fetch(`/api/exception-days/${id}/${action}`, {
             method: 'PUT',
@@ -379,7 +392,27 @@ async function reviewPendingException(id, action) {
         });
 
         if (response.ok) {
-            window.location.reload();
+            const result = await response.json();
+
+            // No page reload: drop it from the pending list, and if it was
+            // approved, patch the matching tutor's exceptions in place so the
+            // day cards/week view pick it up immediately
+            pendingExceptions = pendingExceptions.filter(exception => exception.id !== numericId);
+
+            if (action === 'approve' && result.exception) {
+                const tutor = tutors.find(item => item.id === result.exception.tutorId);
+                if (tutor) {
+                    tutor.exceptions[result.exception.day] = {
+                        type: result.exception.type,
+                        startTime: result.exception.startTime ? result.exception.startTime.slice(0, 5) : null,
+                        endTime: result.exception.endTime ? result.exception.endTime.slice(0, 5) : null
+                    };
+                }
+            }
+
+            renderPendingExceptions();
+            renderTutorDays();
+            renderWeek();
         } else {
             const error = await response.json();
             alert(`Failed to ${action} request: ${error.error || 'Unknown error'}`);

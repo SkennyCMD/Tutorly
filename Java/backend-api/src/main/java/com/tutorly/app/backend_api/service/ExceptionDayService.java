@@ -1,8 +1,10 @@
 package com.tutorly.app.backend_api.service;
 
 import com.tutorly.app.backend_api.dto.ExceptionDayCreateDTO;
+import com.tutorly.app.backend_api.entity.Availability;
 import com.tutorly.app.backend_api.entity.ExceptionDay;
 import com.tutorly.app.backend_api.entity.User;
+import com.tutorly.app.backend_api.repository.AvailabilityRepository;
 import com.tutorly.app.backend_api.repository.ExceptionDayRepository;
 import com.tutorly.app.backend_api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,9 @@ public class ExceptionDayService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private AvailabilityRepository availabilityRepository;
+
     public List<ExceptionDay> getAllExceptionDays() {
         return exceptionDayRepository.findAll();
     }
@@ -48,9 +53,18 @@ public class ExceptionDayService {
      * staff member, regardless of who's calling - there is deliberately no way
      * to create an already-approved/refused exception through this method.
      *
+     * <p>An exception only makes sense relative to the tutor's regular weekly
+     * {@link Availability} on that date's day of the week: an "absent" one
+     * requires at least one existing slot that day (there's nothing to be
+     * absent <em>from</em> otherwise), while a "present" one requires its
+     * time range to fall entirely outside every existing slot that day (if it
+     * overlapped one, it would just be their regular schedule, not an
+     * exception to it).</p>
+     *
      * @param dto The exception data to create
      * @return The created exception (status "pending")
-     * @throws IllegalArgumentException if type/times are invalid or the tutor doesn't exist
+     * @throws IllegalArgumentException if type/times are invalid, the tutor doesn't
+     *         exist, or the request doesn't make sense against the tutor's regular availability
      */
     public ExceptionDay createExceptionDay(ExceptionDayCreateDTO dto) {
         if (dto.getDay() == null) {
@@ -70,6 +84,21 @@ public class ExceptionDayService {
 
         User tutor = userRepository.findById(dto.getTutorId())
                 .orElseThrow(() -> new IllegalArgumentException("Tutor not found with ID: " + dto.getTutorId()));
+
+        int isoWeekDay = dto.getDay().getDayOfWeek().getValue(); // 1=Monday...7=Sunday, matches Availability.weekDay
+        List<Availability> dayAvailability = availabilityRepository.findByTutor_IdAndWeekDay(dto.getTutorId(), isoWeekDay);
+
+        if (isPresent) {
+            boolean overlapsExistingAvailability = dayAvailability.stream()
+                    .anyMatch(slot -> dto.getStartTime().isBefore(slot.getEndTime()) && dto.getEndTime().isAfter(slot.getStartTime()));
+            if (overlapsExistingAvailability) {
+                throw new IllegalArgumentException(
+                        "A 'present' exception must fall outside the tutor's regular availability on that day");
+            }
+        } else if (dayAvailability.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "An 'absent' exception can only be requested for a day the tutor is normally available");
+        }
 
         ExceptionDay exceptionDay = new ExceptionDay(dto.getDay(), dto.getType(), dto.getStartTime(), dto.getEndTime(), tutor);
         return exceptionDayRepository.save(exceptionDay);

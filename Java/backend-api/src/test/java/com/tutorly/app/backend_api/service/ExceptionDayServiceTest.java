@@ -1,8 +1,10 @@
 package com.tutorly.app.backend_api.service;
 
 import com.tutorly.app.backend_api.dto.ExceptionDayCreateDTO;
+import com.tutorly.app.backend_api.entity.Availability;
 import com.tutorly.app.backend_api.entity.ExceptionDay;
 import com.tutorly.app.backend_api.entity.User;
+import com.tutorly.app.backend_api.repository.AvailabilityRepository;
 import com.tutorly.app.backend_api.repository.ExceptionDayRepository;
 import com.tutorly.app.backend_api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +40,9 @@ class ExceptionDayServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private AvailabilityRepository availabilityRepository;
 
     @InjectMocks
     private ExceptionDayService exceptionDayService;
@@ -87,10 +92,15 @@ class ExceptionDayServiceTest {
 
     @Test
     void createExceptionDay_validAbsent_savesAndReturnsPending() {
+        LocalDate day = LocalDate.of(2026, 12, 24);
+        int weekDay = day.getDayOfWeek().getValue();
         when(userRepository.findById(4L)).thenReturn(Optional.of(tutor));
+        // an 'absent' exception requires at least one regular slot that day
+        when(availabilityRepository.findByTutor_IdAndWeekDay(4L, weekDay))
+                .thenReturn(List.of(new Availability(weekDay, LocalTime.of(9, 0), LocalTime.of(12, 0), tutor)));
         when(exceptionDayRepository.save(any(ExceptionDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(LocalDate.of(2026, 12, 24), "absent", null, null, 4L);
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(day, "absent", null, null, 4L);
         ExceptionDay result = exceptionDayService.createExceptionDay(dto);
 
         assertThat(result.getType()).isEqualTo("absent");
@@ -99,16 +109,64 @@ class ExceptionDayServiceTest {
     }
 
     @Test
-    void createExceptionDay_validPresent_savesWithTimes() {
+    void createExceptionDay_absentWithNoAvailabilityThatDay_throwsAndDoesNotSave() {
+        LocalDate day = LocalDate.of(2026, 12, 24);
+        int weekDay = day.getDayOfWeek().getValue();
         when(userRepository.findById(4L)).thenReturn(Optional.of(tutor));
+        when(availabilityRepository.findByTutor_IdAndWeekDay(4L, weekDay)).thenReturn(List.of());
+
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(day, "absent", null, null, 4L);
+
+        assertThatThrownBy(() -> exceptionDayService.createExceptionDay(dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
+    }
+
+    @Test
+    void createExceptionDay_validPresent_savesWithTimes() {
+        LocalDate day = LocalDate.of(2026, 12, 24);
+        int weekDay = day.getDayOfWeek().getValue();
+        when(userRepository.findById(4L)).thenReturn(Optional.of(tutor));
+        // a 'present' exception at 14:00-16:00 doesn't overlap a 09:00-12:00 slot
+        when(availabilityRepository.findByTutor_IdAndWeekDay(4L, weekDay))
+                .thenReturn(List.of(new Availability(weekDay, LocalTime.of(9, 0), LocalTime.of(12, 0), tutor)));
         when(exceptionDayRepository.save(any(ExceptionDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(
-                LocalDate.of(2026, 12, 24), "present", LocalTime.of(14, 0), LocalTime.of(16, 0), 4L);
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(day, "present", LocalTime.of(14, 0), LocalTime.of(16, 0), 4L);
         ExceptionDay result = exceptionDayService.createExceptionDay(dto);
 
         assertThat(result.getStartTime()).isEqualTo(LocalTime.of(14, 0));
         assertThat(result.getEndTime()).isEqualTo(LocalTime.of(16, 0));
+    }
+
+    @Test
+    void createExceptionDay_presentWithNoAvailabilityThatDay_isValid() {
+        LocalDate day = LocalDate.of(2026, 12, 24);
+        int weekDay = day.getDayOfWeek().getValue();
+        when(userRepository.findById(4L)).thenReturn(Optional.of(tutor));
+        when(availabilityRepository.findByTutor_IdAndWeekDay(4L, weekDay)).thenReturn(List.of());
+        when(exceptionDayRepository.save(any(ExceptionDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(day, "present", LocalTime.of(14, 0), LocalTime.of(16, 0), 4L);
+        ExceptionDay result = exceptionDayService.createExceptionDay(dto);
+
+        assertThat(result.getType()).isEqualTo("present");
+    }
+
+    @Test
+    void createExceptionDay_presentOverlappingAvailability_throwsAndDoesNotSave() {
+        LocalDate day = LocalDate.of(2026, 12, 24);
+        int weekDay = day.getDayOfWeek().getValue();
+        when(userRepository.findById(4L)).thenReturn(Optional.of(tutor));
+        // existing 09:00-12:00 slot overlaps the requested 11:00-13:00 presence
+        when(availabilityRepository.findByTutor_IdAndWeekDay(4L, weekDay))
+                .thenReturn(List.of(new Availability(weekDay, LocalTime.of(9, 0), LocalTime.of(12, 0), tutor)));
+
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(day, "present", LocalTime.of(11, 0), LocalTime.of(13, 0), 4L);
+
+        assertThatThrownBy(() -> exceptionDayService.createExceptionDay(dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
     }
 
     @Test

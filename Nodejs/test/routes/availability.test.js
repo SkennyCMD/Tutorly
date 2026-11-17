@@ -137,6 +137,9 @@ describe('PUT /api/exception-days/:id/approve', () => {
 
         expect(res.status).toBe(200);
         expect(forwardedBody).toEqual({ staffId: 1 });
+        // the updated exception is forwarded back so the client can patch its
+        // local state instead of reloading the page
+        expect(res.body.exception).toMatchObject({ id: 10, status: 'approved' });
     });
 
     test('propagates a Java API error', async () => {
@@ -169,6 +172,7 @@ describe('PUT /api/exception-days/:id/refuse', () => {
 
         expect(res.status).toBe(200);
         expect(forwardedBody).toEqual({ staffId: 1 });
+        expect(res.body.exception).toMatchObject({ id: 10, status: 'refused' });
     });
 
     test('propagates a Java API error', async () => {

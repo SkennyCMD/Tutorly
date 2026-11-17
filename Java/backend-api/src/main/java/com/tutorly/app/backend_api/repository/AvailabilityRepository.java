@@ -19,4 +19,15 @@ public interface AvailabilityRepository extends JpaRepository<Availability, Long
      * @return List of availability slots belonging to that tutor
      */
     List<Availability> findByTutor_Id(Long tutorId);
+
+    /**
+     * Find a tutor's recurring availability slots on one specific day of the
+     * week (ISO-8601, 1 = Monday ... 7 = Sunday) - used to validate exception
+     * day requests against the tutor's regular schedule.
+     *
+     * @param tutorId The tutor's ID
+     * @param weekDay ISO-8601 day of the week (1-7)
+     * @return List of availability slots belonging to that tutor on that weekday
+     */
+    List<Availability> findByTutor_IdAndWeekDay(Long tutorId, Integer weekDay);
 }
