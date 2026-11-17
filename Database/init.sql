@@ -143,3 +143,77 @@ CREATE TABLE push_subscription (
 		ON DELETE CASCADE
 		ON UPDATE CASCADE
 );
+
+CREATE TABLE availability(
+	id SERIAL PRIMARY KEY,
+	week_day SMALLINT NOT NULL CHECK (week_day BETWEEN 1 AND 7),
+	start_time TIME(0) NOT NULL,
+	end_time TIME(0) NOT NULL,
+	id_tutor INTEGER NOT NULL,
+	FOREIGN KEY (id_tutor) REFERENCES app_user(id)
+		ON DELETE CASCADE,
+	CONSTRAINT availability_end_after_start CHECK (end_time > start_time)
+);
+
+CREATE TABLE exception_day(
+	id SERIAL PRIMARY KEY,
+	day DATE NOT NULL,
+	type TEXT NOT NULL CHECK (type IN ('present','absent')),
+	start_time TIME(0),
+	end_time TIME(0),
+	status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','refused','approved')),
+	id_tutor INTEGER NOT NULL,
+	id_staff INTEGER,
+	
+	FOREIGN KEY (id_tutor) REFERENCES app_user(id)
+		ON DELETE CASCADE,
+	FOREIGN KEY (id_staff) REFERENCES app_user(id)
+		ON DELETE SET NULL,
+	
+	CONSTRAINT times_match_type CHECK (
+    		(type = 'present' AND start_time IS NOT NULL AND end_time IS NOT NULL) OR
+    		(type = 'absent'  AND start_time IS NULL     AND end_time IS NULL)
+	),
+    	CONSTRAINT end_after_start
+        	CHECK (end_time > start_time)
+);
+
+CREATE TABLE dashboard_note(
+	id SERIAL PRIMARY KEY,
+	content TEXT NOT NULL,
+	creation TIMESTAMP NOT NULL,
+	expiration TIMESTAMP NOT NULL,
+	id_admin INTEGER NOT NULL,
+	FOREIGN KEY (id_admin) REFERENCES admin(id)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE see_dashboard_note(
+	id_dashboard_note INTEGER NOT NULL,
+	id_tutor INTEGER NOT NULL,
+	FOREIGN KEY (id_dashboard_note) REFERENCES dashboard_note(id)
+		ON DELETE CASCADE,
+	FOREIGN KEY (id_tutor) REFERENCES app_user(id)
+		ON DELETE CASCADE,
+	PRIMARY KEY (id_dashboard_note, id_tutor)
+);
+
+CREATE TABLE ticket(
+	id SERIAL PRIMARY KEY,
+	content TEXT NOT NULL,
+	creation TIMESTAMP NOT NULL,
+	status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','managing','closed')),
+	closure TIMESTAMP,
+	comment TEXT,
+	id_user INTEGER,
+	id_admin INTEGER,
+	FOREIGN KEY (id_user) REFERENCES app_user(id)
+		ON DELETE SET NULL,
+	FOREIGN KEY (id_admin) REFERENCES admin(id)
+		ON DELETE SET NULL,
+		
+	CONSTRAINT closure_match_status
+        	CHECK ((status = 'closed') = (closure IS NOT NULL)),
+    	CONSTRAINT closure_after_creation
+        	CHECK (closure >= creation)
+);
