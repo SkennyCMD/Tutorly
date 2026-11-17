@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: October 24, 2026  
+**Last Updated**: November 17, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -21,6 +21,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
   - [calendarDataService.js](#calendardataservicejs)
   - [pushService.js](#pushservicejs)
   - [reminderScheduler.js](#reminderschedulerjs)
+  - [privacyNotice.js](#privacynoticejs)
   - [logger.js](#loggerjs)
   - [adminLogger.js](#adminloggerjs)
   - [excel.js](#-exceljs)
@@ -394,6 +395,18 @@ Both build their date-range window as a `TIMEZONE` wall-clock string (`Intl.Date
 
 ---
 
+### `privacyNotice.js`
+Reads and renders `config/privacy-notice.md` - the tutoring center's own full privacy notice, shown on the `/privacy` page. See [03_Nodejs_Frontend.md - Privacy and Cookie Policy Pages](03_Nodejs_Frontend.md#privacy-and-cookie-policy-pages).
+
+**Role:** source of the one piece of page content in the app that's center-specific free text rather than i18n strings - kept out of the repo (gitignored) since its content differs per deployment, same rationale as `config/subjects.json` but auto-created instead of requiring a manual copy from an example file.
+
+**Exports:**
+- `ensurePrivacyNoticeFile()`: creates `config/privacy-notice.md` with a default Italian placeholder if it doesn't exist yet. Called once at server startup; a no-op once the file exists, so it never overwrites a center's own notice.
+- `getPrivacyNoticeHtml()`: reads `config/privacy-notice.md` and renders it to HTML via `marked`. Re-read on every call, not cached, so editing the file takes effect without a server restart (acceptable for a low-traffic page).
+- `PRIVACY_NOTICE_PATH`: the absolute path to the file, exported mainly for tests.
+
+---
+
 ### `logger.js`
 Centralized logging with color-coded console output.
 
@@ -604,7 +617,7 @@ i18nMiddleware(req, res, next)
 
 ---
 
-**Last Updated**: October 24, 2026
+**Last Updated**: November 17, 2026
 
 ## Maintenance
 
@@ -616,4 +629,4 @@ To add new features:
 5. Update this README
 ---
 
-**Last Updated**: October 24, 2026  
+**Last Updated**: November 17, 2026  

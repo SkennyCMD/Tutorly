@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: October 24, 2026  
+**Last Updated**: November 17, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -529,7 +529,7 @@ Tutorly/
 │   │   ├── i18n.js                 # Language detection/translation
 │   │   └── config.js               # Configuration
 │   ├── locales/                    # i18n dictionaries (en.json, it.json)
-│   ├── config/                     # Static reference data (e.g. subjects.json)
+│   ├── config/                     # Static reference data + center-specific content (e.g. subjects.json, privacy-notice.md)
 │   ├── views/                      # EJS templates
 │   │   ├── login.ejs
 │   │   ├── adminLogin.ejs
@@ -631,7 +631,7 @@ cd Java/backend-api
 ```bash
 cd Nodejs
 
-# Run the full Jest/Supertest suite (200 tests across 16 files, covering
+# Run the full Jest/Supertest suite (208 tests across 17 files, covering
 # every route in src/index.js - see 08_Testing_Guide.md for details)
 npm test
 

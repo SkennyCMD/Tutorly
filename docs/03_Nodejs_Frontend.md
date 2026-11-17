@@ -246,8 +246,9 @@ Nodejs/
 │   ├── en.json                     # English translations
 │   └── it.json                     # Italian translations
 │
-├── config/                         # Static reference data
-│   └── subjects.json               # Fixed subject list (Evaluations page dropdown)
+├── config/                         # Static reference data + center-specific content
+│   ├── subjects.json               # Fixed subject list (Evaluations page dropdown)
+│   └── privacy-notice.md           # Center's own privacy notice (Markdown), /privacy page
 │
 ├── views/                          # EJS templates (server-rendered HTML)
 │   ├── login.ejs                   # Tutor login page
@@ -711,9 +712,9 @@ A `GUEST` account (e.g. a parent/guardian, created via the [Admin Panel - Guest 
 
 ## Privacy and Cookie Policy Pages
 
-Two public, unauthenticated pages (`GET /privacy`, `GET /cookies`) linked from the login page footer, sharing the same header/footer chrome as `login.ejs` for visual consistency. Both are static, translated content pages - neither reads from the Java API or `req.session`.
+Two public, unauthenticated pages (`GET /privacy`, `GET /cookies`) linked from the login page footer, sharing the same header/footer chrome as `login.ejs` for visual consistency. Both are translated content pages - neither reads from the Java API or `req.session`.
 
-- **`/privacy`** (`views/privacy.ejs`): states that privacy consent is collected by the tutoring center itself, in person at enrollment, before any account on this platform is created - Tutorly is the software the center uses, not the data controller. Points users to the center's own website or a direct request to the center to review the full policy.
+- **`/privacy`** (`views/privacy.ejs`): states that privacy consent is collected by the tutoring center itself, in person at enrollment, before any account on this platform is created - Tutorly is the software the center uses, not the data controller. Points users to the center's own website or a direct request to the center to review the full policy. Below that, an optional **"Full Notice"** section renders the center's own privacy notice from `config/privacy-notice.md` - a gitignored, center-specific Markdown file (same rationale as `config/subjects.json`, but auto-created with a placeholder on first run rather than requiring a manual copy from an example - see `server_utilities/privacyNotice.js` in [05_Service_Modules.md](05_Service_Modules.md#privacynoticejs)). Rendered to HTML with `marked` and styled by a page-scoped `.markdown-notice` CSS block (plain tag selectors, since `marked()` output carries no classes); the route re-reads and re-renders the file on every request, so editing it takes effect immediately, no server restart needed.
 - **`/cookies`** (`views/cookies.ejs`): documents the single cookie the app sets, `tutorly.sid` (the session cookie - see [Session Management](#session-management) below for its `httpOnly`/`sameSite` settings), and states plainly that there are no third-party, advertising, or tracking cookies. Also notes that the light/dark theme preference is stored in `localStorage`, not a cookie - see [Theming (Light/Dark Mode)](#theming-lightdark-mode).
 
 The login footer's previous dead "Terms" and "Help" links (`href="#"`, no real destination) were removed rather than pointed anywhere, since there was no content to link them to; the "Privacy" link now points to `/privacy` instead of `href="#"`.

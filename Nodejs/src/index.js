@@ -71,6 +71,11 @@ const { sendPushToUser } = require('../server_utilities/pushService');
 // see server_utilities/reminderScheduler.js
 require('../server_utilities/reminderScheduler');
 
+// Renders config/privacy-notice.md (gitignored, center-specific) for the /privacy
+// page - see server_utilities/privacyNotice.js
+const { ensurePrivacyNoticeFile, getPrivacyNoticeHtml } = require('../server_utilities/privacyNotice');
+ensurePrivacyNoticeFile();
+
 /**
  * Format a local "YYYY-MM-DDTHH:MM:SS" datetime string as "DD/MM/YYYY HH:MM"
  * for push notification bodies. String-sliced rather than parsed into a Date
@@ -235,10 +240,12 @@ app.get('/login', tutorSession, (req, res) => {
 /**
  * Privacy policy page
  * GET /privacy - Public page explaining that privacy consent is handled by the
- * tutoring center at enrollment, not by this platform. Linked from the login footer
+ * tutoring center at enrollment, not by this platform. Linked from the login footer.
+ * Also renders the center's own full notice from config/privacy-notice.md, if
+ * the center has filled it in - see server_utilities/privacyNotice.js
  */
 app.get('/privacy', (req, res) => {
-    res.render('privacy');
+    res.render('privacy', { privacyNoticeHtml: getPrivacyNoticeHtml() });
 });
 
 /**

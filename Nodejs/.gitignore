@@ -126,3 +126,7 @@ Thumbs.db
 
 # Locally-customized config (kept on disk, see config/subjects.example.json)
 config/subjects.json
+
+# Center-specific privacy notice shown on /privacy (Markdown) - auto-created
+# with a placeholder by server_utilities/privacyNotice.js on first run
+config/privacy-notice.md

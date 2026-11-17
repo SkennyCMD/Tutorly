@@ -33,6 +33,24 @@ Features:
     tailwind.config.theme.extend.fontFamily = { sans: ['Inter', 'sans-serif'] };
   </script>
   <%- include('partials/pwa-setup') %>
+  <style>
+    /* Styling for the center's own notice, rendered from Markdown - see
+       config/privacy-notice.md / server_utilities/privacyNotice.js. Plain
+       tag selectors since marked() doesn't attach any classes. */
+    .markdown-notice { color: rgb(var(--color-foreground)); line-height: 1.6; }
+    .markdown-notice h1, .markdown-notice h2, .markdown-notice h3 { font-weight: 700; margin-top: 1.25em; margin-bottom: 0.5em; }
+    .markdown-notice h1 { font-size: 1.35rem; }
+    .markdown-notice h2 { font-size: 1.15rem; }
+    .markdown-notice h3 { font-size: 1rem; }
+    .markdown-notice p { margin-bottom: 1em; color: rgb(var(--color-muted-foreground)); }
+    .markdown-notice ul, .markdown-notice ol { margin: 0 0 1em 1.25em; color: rgb(var(--color-muted-foreground)); }
+    .markdown-notice li { margin-bottom: 0.25em; }
+    .markdown-notice li > ul, .markdown-notice li > ol { margin-top: 0.25em; }
+    .markdown-notice a { color: rgb(var(--color-primary)); text-decoration: underline; }
+    .markdown-notice strong { font-weight: 600; color: rgb(var(--color-foreground)); }
+    .markdown-notice blockquote { border-left: 3px solid rgb(var(--color-border)); padding-left: 1em; color: rgb(var(--color-muted-foreground)); font-style: italic; }
+    .markdown-notice :first-child { margin-top: 0; }
+  </style>
 </head>
 
 <body class="font-sans bg-background min-h-screen flex flex-col">
@@ -93,6 +111,13 @@ Features:
             </div>
           </div>
         </div>
+
+        <% if (privacyNoticeHtml) { %>
+        <div class="mt-8 pt-6 border-t border-border">
+          <h2 class="text-sm font-semibold text-foreground mb-3"><%= t('privacy.noticeHeading') %></h2>
+          <div class="markdown-notice text-sm"><%- privacyNoticeHtml %></div>
+        </div>
+        <% } %>
 
         <a href="/login" class="inline-flex items-center gap-2 mt-8 text-sm text-primary hover:text-primary-hover transition-colors">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
