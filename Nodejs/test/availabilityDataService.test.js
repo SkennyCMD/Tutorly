@@ -98,6 +98,28 @@ describe('buildTutorAvailability', () => {
     test('handles missing/empty input arrays', () => {
         expect(buildTutorAvailability({})).toEqual([]);
     });
+
+    test('restrictToTutorId limits the result to just that tutor - GENERIC viewer', () => {
+        const result = buildTutorAvailability({
+            users: [activeTutor, staffTutor],
+            availability: [],
+            exceptionDays: [],
+            restrictToTutorId: 1
+        });
+
+        expect(result.map(t => t.id)).toEqual([1]);
+    });
+
+    test('restrictToTutorId null/omitted includes every active tutor - STAFF viewer', () => {
+        const result = buildTutorAvailability({
+            users: [activeTutor, staffTutor],
+            availability: [],
+            exceptionDays: [],
+            restrictToTutorId: null
+        });
+
+        expect(result.map(t => t.id)).toEqual([1, 2]);
+    });
 });
 
 describe('getPendingExceptions', () => {
@@ -154,5 +176,33 @@ describe('getPendingExceptions', () => {
 
     test('handles missing/empty input arrays', () => {
         expect(getPendingExceptions({})).toEqual([]);
+    });
+
+    test('restrictToTutorId limits the result to just that tutor\'s own requests', () => {
+        const otherTutor = { id: 2, username: 'tutor.two', role: 'GENERIC', status: 'ACTIVE', anonymizedAt: null };
+        const result = getPendingExceptions({
+            users: [tutor, otherTutor],
+            exceptionDays: [
+                { id: 10, tutorId: 1, day: '2026-12-24', type: 'absent', startTime: null, endTime: null, status: 'pending' },
+                { id: 11, tutorId: 2, day: '2026-12-25', type: 'absent', startTime: null, endTime: null, status: 'pending' }
+            ],
+            restrictToTutorId: 1
+        });
+
+        expect(result.map(e => e.id)).toEqual([10]);
+    });
+
+    test('restrictToTutorId null/omitted includes every tutor\'s pending requests', () => {
+        const otherTutor = { id: 2, username: 'tutor.two', role: 'GENERIC', status: 'ACTIVE', anonymizedAt: null };
+        const result = getPendingExceptions({
+            users: [tutor, otherTutor],
+            exceptionDays: [
+                { id: 10, tutorId: 1, day: '2026-12-24', type: 'absent', startTime: null, endTime: null, status: 'pending' },
+                { id: 11, tutorId: 2, day: '2026-12-25', type: 'absent', startTime: null, endTime: null, status: 'pending' }
+            ],
+            restrictToTutorId: null
+        });
+
+        expect(result.map(e => e.id)).toEqual([10, 11]);
     });
 });

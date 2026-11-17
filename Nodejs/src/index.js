@@ -882,11 +882,16 @@ app.get('/availability', tutorSession, isAuthenticated, blockGuest, async (req, 
             fetchAllExceptionDays()
         ]);
 
+        const role = tutorData ? tutorData.role : req.session.role;
+        // A GENERIC tutor only ever sees their own schedule, never other
+        // tutors' - STAFF manage everyone's, so they see the full list
+        const restrictToTutorId = role === 'STAFF' ? null : req.session.userId;
+
         res.render('availability', {
             userId: req.session.userId,
-            user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
-            tutors: buildTutorAvailability({ users: allUsers, availability: allAvailability, exceptionDays: allExceptionDays }),
-            pendingExceptions: getPendingExceptions({ users: allUsers, exceptionDays: allExceptionDays })
+            user: { username: req.session.username, role },
+            tutors: buildTutorAvailability({ users: allUsers, availability: allAvailability, exceptionDays: allExceptionDays, restrictToTutorId }),
+            pendingExceptions: getPendingExceptions({ users: allUsers, exceptionDays: allExceptionDays, restrictToTutorId })
         });
     } catch (error) {
         logError('Error fetching data for availability page', req, { error: error.message });

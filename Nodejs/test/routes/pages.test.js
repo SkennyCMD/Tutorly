@@ -297,6 +297,38 @@ describe('GET /availability', () => {
         expect(res.status).toBe(200);
     });
 
+    test('a GENERIC tutor only sees their own schedule, not other tutors\'', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+        javaApi().get('/api/users').reply(200, [
+            tutorFixture({ id: 1, username: 'me.generic', role: 'GENERIC' }),
+            tutorFixture({ id: 2, username: 'other.tutor', role: 'GENERIC' })
+        ]);
+        javaApi().get('/api/availability').reply(200, []);
+        javaApi().get('/api/exception-days').reply(200, []);
+
+        const res = await agent.get('/availability');
+
+        expect(res.text).toContain('me.generic');
+        expect(res.text).not.toContain('other.tutor');
+    });
+
+    test('a STAFF tutor sees every tutor\'s schedule', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get('/api/users').reply(200, [
+            tutorFixture({ id: 1, username: 'me.staff', role: 'STAFF' }),
+            tutorFixture({ id: 2, username: 'other.tutor', role: 'GENERIC' })
+        ]);
+        javaApi().get('/api/availability').reply(200, []);
+        javaApi().get('/api/exception-days').reply(200, []);
+
+        const res = await agent.get('/availability');
+
+        expect(res.text).toContain('me.staff');
+        expect(res.text).toContain('other.tutor');
+    });
+
     test('still renders (with no tutors) if the Java API call fails', async () => {
         const agent = await tutorAgent({ role: 'GENERIC' });
         javaApi().get('/api/users/1').reply(500, 'DB error');

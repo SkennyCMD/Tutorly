@@ -43,17 +43,23 @@ function usernameInitials(username) {
  * `status === 'approved'` are included - pending/refused ones haven't taken
  * effect and shouldn't override the regular weekly schedule.
  *
+ * `restrictToTutorId`, when given, limits the result to just that one tutor -
+ * used so a GENERIC viewer only ever sees their own schedule, never other
+ * tutors'. STAFF pass `null`/omit it, since they manage everyone's.
+ *
  * @param {Object} params
  * @param {Array} params.users - Raw user objects from GET /api/users
  * @param {Array} params.availability - Raw rows from GET /api/availability
  * @param {Array} params.exceptionDays - Raw rows from GET /api/exception-days
+ * @param {?number} [params.restrictToTutorId] - If set, only this tutor is included
  * @returns {Array<{id: number, name: string, initials: string, days: Object<number, Array<[string,string]>>, exceptions: Object<string, {type: string, startTime: ?string, endTime: ?string}>}>}
  */
-function buildTutorAvailability({ users, availability, exceptionDays }) {
+function buildTutorAvailability({ users, availability, exceptionDays, restrictToTutorId }) {
     const tutorsById = new Map();
 
     (users || [])
         .filter(u => u.role !== 'GUEST' && u.status === 'ACTIVE' && !u.anonymizedAt)
+        .filter(u => restrictToTutorId == null || u.id === restrictToTutorId)
         .forEach(u => {
             tutorsById.set(u.id, {
                 id: u.id,
@@ -88,21 +94,24 @@ function buildTutorAvailability({ users, availability, exceptionDays }) {
 }
 
 /**
- * Builds the list of pending exception-day requests for the STAFF review UI
- * (the "Pending Requests" toggle on the Availability page) - each one
- * enriched with the requesting tutor's username, since the raw exception row
- * only has `tutorId`.
+ * Builds the list of pending exception-day requests for the "Pending
+ * Requests" toggle on the Availability page - each one enriched with the
+ * requesting tutor's username, since the raw exception row only has
+ * `tutorId`. STAFF can approve/refuse any of them (see public/js/availability.js);
+ * a GENERIC viewer only sees (read-only) their own, via `restrictToTutorId`.
  *
  * @param {Object} params
  * @param {Array} params.users - Raw user objects from GET /api/users
  * @param {Array} params.exceptionDays - Raw rows from GET /api/exception-days
+ * @param {?number} [params.restrictToTutorId] - If set, only this tutor's requests are included
  * @returns {Array<{id: number, tutorId: number, tutorName: string, day: string, type: string, startTime: ?string, endTime: ?string}>}
  */
-function getPendingExceptions({ users, exceptionDays }) {
+function getPendingExceptions({ users, exceptionDays, restrictToTutorId }) {
     const usersById = new Map((users || []).map(u => [u.id, u]));
 
     return (exceptionDays || [])
         .filter(exception => exception.status === 'pending')
+        .filter(exception => restrictToTutorId == null || exception.tutorId === restrictToTutorId)
         .map(exception => {
             const tutor = usersById.get(exception.tutorId);
             return {

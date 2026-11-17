@@ -95,9 +95,18 @@ function renderTutorDays() {
         });
     });
 
-    $('tutorCount').textContent = `${tutors.length} tutors`;
+    // Not rendered for a GENERIC viewer (see availability.ejs) - they only
+    // ever have one tutor (themselves) in `tutors`, so a count is pointless
+    const tutorCountEl = $('tutorCount');
+    if (tutorCountEl) tutorCountEl.textContent = `${tutors.length} tutors`;
 
     const MAX_VISIBLE_TUTORS_PER_DAY = 3;
+    // A GENERIC viewer only ever has themselves in `tutors` (see
+    // buildTutorAvailability's restrictToTutorId) - the "N available"
+    // counter and "No tutors available" wording only make sense when
+    // browsing multiple tutors, so STAFF keeps them and GENERIC instead just
+    // gets a plain "Absent" on a day they have nothing scheduled.
+    const isGeneric = window.userRole === 'GENERIC';
 
     $('dayList').innerHTML = dayDates.map(date => {
         const jsDay = date.getDay();
@@ -106,7 +115,9 @@ function renderTutorDays() {
         const scrollClasses = entries.length > MAX_VISIBLE_TUTORS_PER_DAY
             ? 'max-h-44 overflow-y-auto scrollbar-thin pr-1'
             : '';
-        return `<article class="rounded-xl border border-border bg-card p-4"><h3 class="mb-3 flex items-center justify-between text-sm font-semibold"><span>${weekdayNames[jsDay]} <span class="font-normal text-muted-foreground">${dateLabel}</span></span><span class="text-xs font-normal text-muted-foreground">${entries.length} available</span></h3>${entries.length ? `<ul class="space-y-2 ${scrollClasses}">${entries.map(({ tutor, slots, isException }) => `<li><button type="button" class="tutor-card flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition hover:bg-secondary" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}, available ${slots.map(slot => slot.map(timeLabel).join(' to ')).join(' and ')}${isException ? ' (exception)' : ''}"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium">${tutor.name}</span><span class="block truncate text-xs text-muted-foreground">${slots.map(slot => slot.map(timeLabel).join('–')).join(' · ')}${isException ? ` · <span style="color: rgb(var(--color-note))">Exception</span>` : ''}</span></span></button></li>`).join('')}</ul>` : `<p class="py-2 text-sm text-muted-foreground">No tutors available</p>`}</article>`;
+        const countBadge = isGeneric ? '' : `<span class="text-xs font-normal text-muted-foreground">${entries.length} available</span>`;
+        const emptyText = isGeneric ? 'Absent' : 'No tutors available';
+        return `<article class="rounded-xl border border-border bg-card p-4"><h3 class="mb-3 flex items-center justify-between text-sm font-semibold"><span>${weekdayNames[jsDay]} <span class="font-normal text-muted-foreground">${dateLabel}</span></span>${countBadge}</h3>${entries.length ? `<ul class="space-y-2 ${scrollClasses}">${entries.map(({ tutor, slots, isException }) => `<li><button type="button" class="tutor-card flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition hover:bg-secondary" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}, available ${slots.map(slot => slot.map(timeLabel).join(' to ')).join(' and ')}${isException ? ' (exception)' : ''}"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium">${tutor.name}</span><span class="block truncate text-xs text-muted-foreground">${slots.map(slot => slot.map(timeLabel).join('–')).join(' · ')}${isException ? ` · <span style="color: rgb(var(--color-note))">Exception</span>` : ''}</span></span></button></li>`).join('')}</ul>` : `<p class="py-2 text-sm text-muted-foreground">${emptyText}</p>`}</article>`;
     }).join('');
 
     document.querySelectorAll('#dayList .tutor-card').forEach(button => button.addEventListener('click', () => {
@@ -119,9 +130,13 @@ function renderTutorDays() {
 
 // Flat list of every tutor (unlike #dayList, not grouped/limited by day) -
 // clicking one shows their full week below, same as clicking them from a day
-// card.
+// card. Not rendered for a GENERIC viewer (see availability.ejs) - they only
+// ever have one tutor (themselves) in `tutors`, so there's nothing to list.
 function renderTutorList() {
-    $('tutorList').innerHTML = tutors.map(tutor => `<button type="button" class="tutor-card flex items-center gap-2 rounded-full border border-transparent bg-secondary py-1.5 pl-1.5 pr-3 text-left transition hover:bg-secondary/70" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}'s weekly availability"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="text-sm font-medium text-foreground">${tutor.name}</span></button>`).join('');
+    const list = $('tutorList');
+    if (!list) return;
+
+    list.innerHTML = tutors.map(tutor => `<button type="button" class="tutor-card flex items-center gap-2 rounded-full border border-transparent bg-secondary py-1.5 pl-1.5 pr-3 text-left transition hover:bg-secondary/70" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}'s weekly availability"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="text-sm font-medium text-foreground">${tutor.name}</span></button>`).join('');
 
     document.querySelectorAll('#tutorList .tutor-card').forEach(button => button.addEventListener('click', () => {
         selectTutor(Number(button.dataset.tutor));
@@ -351,23 +366,31 @@ function renderPendingExceptions() {
         return;
     }
 
+    const isStaff = window.userRole === 'STAFF';
+
     list.innerHTML = pendingExceptions.map(exception => {
         const borderClass = exception.type === 'present' ? 'border-green-600' : 'border-destructive';
         const weekday = weekdayNames[parseDateOnly(exception.day).getDay()];
-        return `
-        <div class="flex items-center justify-between gap-3 rounded-lg border-2 ${borderClass} bg-card p-3 min-w-[240px]">
-            <div class="min-w-0">
-                <p class="text-sm font-medium text-foreground">${exception.tutorName}</p>
-                <p class="text-xs text-muted-foreground">${exception.type === 'present' ? 'Presence' : 'Absence'} · ${exception.day} (${weekday})${exception.type === 'present' ? ` · ${timeLabel(exception.startTime)} – ${timeLabel(exception.endTime)}` : ''}</p>
-            </div>
-            <div class="flex items-center gap-2 shrink-0">
+        // STAFF can approve/refuse any request; GENERIC only ever sees their
+        // own here (see restrictToTutorId in src/index.js) and read-only - no
+        // reviewing their own request
+        const actions = isStaff
+            ? `<div class="flex items-center gap-2 shrink-0">
                 <button type="button" class="approve-exception-btn p-2 rounded-lg text-green-600 hover:bg-green-600/10 transition-colors" data-exception-id="${exception.id}" aria-label="Approve">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                 </button>
                 <button type="button" class="refuse-exception-btn p-2 rounded-lg text-destructive hover:bg-destructive/10 transition-colors" data-exception-id="${exception.id}" aria-label="Refuse">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
+            </div>`
+            : `<span class="shrink-0 text-xs font-medium text-muted-foreground">Pending</span>`;
+        return `
+        <div class="flex items-center justify-between gap-3 rounded-lg border-2 ${borderClass} bg-card p-3 min-w-[240px]">
+            <div class="min-w-0">
+                <p class="text-sm font-medium text-foreground">${exception.tutorName}</p>
+                <p class="text-xs text-muted-foreground">${exception.type === 'present' ? 'Presence' : 'Absence'} · ${exception.day} (${weekday})${exception.type === 'present' ? ` · ${timeLabel(exception.startTime)} – ${timeLabel(exception.endTime)}` : ''}</p>
             </div>
+            ${actions}
         </div>
     `;
     }).join('');
