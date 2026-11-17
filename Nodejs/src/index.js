@@ -1033,7 +1033,8 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
                 hours: pack.hours,
                 usedHours: pack.usedHours || 0,
                 unassignedHours: pack.unassignedHours || 0,
-                firstUnassignedLessonStart: pack.firstUnassignedLessonStart || null
+                firstUnassignedLessonStart: pack.firstUnassignedLessonStart || null,
+                checked: pack.checked || 'open'
             }));
 
         // Shared cache so tests and prenotations don't re-fetch the same tutor twice
@@ -1801,6 +1802,51 @@ app.put('/api/packs/:id/close', tutorSession, isAuthenticated, blockGuestApi, as
     } catch (error) {
         logError('Error closing pack', req, { id: req.params.id, error: error.message, stack: error.stack });
         res.status(500).json({ error: 'Failed to close pack' });
+    }
+});
+
+/**
+ * Mark a lesson package as checked (paid/settled)
+ * PUT /api/packs/:id/checked
+ * STAFF only - this is a one-way flag (no endpoint reopens it) and is a
+ * prerequisite on the Java side for closing the pack via /close below.
+ */
+app.put('/api/packs/:id/checked', tutorSession, isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        logInfo('Marking pack as checked', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/packs/${id}/checked`, 'PUT');
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+
+            httpsRes.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200) {
+                    logSuccess('Pack marked as checked successfully', req, { id });
+                    res.json({ success: true, message: 'Pack marked as checked' });
+                } else {
+                    logError(`Error marking pack as checked, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to mark pack as checked' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for marking pack as checked', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to mark pack as checked' });
+        });
+
+        httpsReq.end();
+
+    } catch (error) {
+        logError('Error marking pack as checked', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to mark pack as checked' });
     }
 });
 

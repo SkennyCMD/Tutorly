@@ -83,6 +83,7 @@ class PackControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].usedHours").value(3.0))
                 .andExpect(jsonPath("$[0].unassignedHours").value(0.0))
+                .andExpect(jsonPath("$[0].checked").value("open"))
                 .andExpect(jsonPath("$[0].firstUnassignedLessonStart").doesNotExist());
 
         verify(packService, never()).getHoursOutsidePack(any());
@@ -172,6 +173,7 @@ class PackControllerTest {
     void closePack_notYetClosed_setsClosureToToday() throws Exception {
         Pack pack = new Pack(LocalDateTime.now(), 10.0, null, student());
         pack.setId(7L);
+        pack.setChecked("closed");
         when(packService.getPackById(7L)).thenReturn(Optional.of(pack));
         when(packService.savePack(pack)).thenReturn(pack);
 
@@ -180,6 +182,18 @@ class PackControllerTest {
                 .andExpect(jsonPath("$.closure").value(LocalDate.now().toString()));
 
         verify(packService).savePack(pack);
+    }
+
+    @Test
+    void closePack_notCheckedYet_returns409AndDoesNotClose() throws Exception {
+        Pack pack = new Pack(LocalDateTime.now(), 10.0, null, student());
+        pack.setId(7L);
+        when(packService.getPackById(7L)).thenReturn(Optional.of(pack));
+
+        mockMvc.perform(put("/api/packs/7/close").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isConflict());
+
+        verify(packService, never()).savePack(any());
     }
 
     @Test
@@ -201,6 +215,42 @@ class PackControllerTest {
         when(packService.getPackById(99L)).thenReturn(Optional.empty());
 
         mockMvc.perform(put("/api/packs/99/close").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void markPackChecked_notYetChecked_setsCheckedToClosed() throws Exception {
+        Pack pack = new Pack(LocalDateTime.now(), 10.0, null, student());
+        pack.setId(7L);
+        when(packService.getPackById(7L)).thenReturn(Optional.of(pack));
+        when(packService.savePack(pack)).thenReturn(pack);
+
+        mockMvc.perform(put("/api/packs/7/checked").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.checked").value("closed"));
+
+        verify(packService).savePack(pack);
+    }
+
+    @Test
+    void markPackChecked_alreadyChecked_isANoOp() throws Exception {
+        Pack pack = new Pack(LocalDateTime.now(), 10.0, null, student());
+        pack.setId(7L);
+        pack.setChecked("closed");
+        when(packService.getPackById(7L)).thenReturn(Optional.of(pack));
+
+        mockMvc.perform(put("/api/packs/7/checked").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.checked").value("closed"));
+
+        verify(packService, never()).savePack(any());
+    }
+
+    @Test
+    void markPackChecked_notFound_returns404() throws Exception {
+        when(packService.getPackById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/packs/99/checked").header(API_KEY_HEADER, API_KEY_VALUE))
                 .andExpect(status().isNotFound());
     }
 

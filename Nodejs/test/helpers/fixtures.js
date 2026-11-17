@@ -64,6 +64,7 @@ function packFixture(overrides = {}) {
         usedHours: 0,
         unassignedHours: 0,
         closure: null,
+        checked: 'open',
         ...overrides
     };
 }

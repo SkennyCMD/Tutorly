@@ -235,9 +235,7 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 
 **Checked Values**:
 - `open` - Not yet paid/settled (default)
-- `closed` - Marked as paid/settled by a STAFF member
-
-> **Note:** `checked` is schema only as of this writing - no JPA entity field, DTO, or UI toggle exists for it yet; a STAFF member will set it once the corresponding feature is built.
+- `closed` - Marked as paid/settled by a STAFF member. Also a prerequisite for closing the pack itself (`closure`) - see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs).
 
 ---
 

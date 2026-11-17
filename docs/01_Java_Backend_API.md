@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: October 24, 2026  
+**Last Updated**: November 17, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -1033,6 +1033,7 @@ A `Pack` is a prepaid block of tutoring hours purchased for a student. `PackCont
 | `startTime` | `LocalDateTime` | Required, user-editable. When the pack is eligible to draw a lesson (see below), a lesson must start *after* this time |
 | `hours` | `Double` | Required - total hours purchased |
 | `closure` | `LocalDate` | Optional - null while the package is still open/active; set by the close endpoint below |
+| `checked` | `String` | `"open"` (default) or `"closed"` - whether a STAFF member has verified the pack was paid/settled. Not settable via the create/update DTO; only via the dedicated endpoint below. Required (`"closed"`) before the pack can be closed |
 | `studentId` | `Long` | Required (`@JsonProperty` helper, like `tutorId` on `Test`/`Lesson`) |
 
 `Lesson` gained an optional `packId` field (`Long`, nullable) pointing to the package a lesson was drawn from - a lesson doesn't have to belong to one. `lesson.id_pack`'s FK is `ON DELETE SET NULL` (not `CASCADE`) - deleting a pack clears `packId` on its lessons instead of deleting them, so attendance/billing history is never lost. See [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql--code-migration-tutor--app_user-pack-table-guest-role) for the original table and [06_Database_Migrations.md](06_Database_Migrations.md#manual-sql-pack-timestamps-and-lessonid_pack-on-delete-set-null) for the `createdAt`/`startTime` columns and the `ON DELETE SET NULL` change.
@@ -1044,7 +1045,8 @@ A `Pack` is a prepaid block of tutoring hours purchased for a student. `PackCont
 | GET | `/packs/student/{studentId}` | Packs for a student, each annotated with `usedHours` and, for full-but-open packs, `unassignedHours`/`firstUnassignedLessonStart` (see below) |
 | POST | `/packs` | Create a new pack; retroactively assigns any of the student's unassigned lessons starting at or after `startTime` (see below) |
 | PUT | `/packs/{id}` | Update a pack (same DTO shape as create) |
-| PUT | `/packs/{id}/close` | Close a pack - sets `closure` to today if not already closed |
+| PUT | `/packs/{id}/close` | Close a pack - sets `closure` to today if not already closed. **409 Conflict** if `checked` isn't `"closed"` yet |
+| PUT | `/packs/{id}/checked` | Mark a pack as checked (paid/settled) - sets `checked` to `"closed"` if not already. One-way, no endpoint reopens it |
 | DELETE | `/packs/{id}` | Delete a pack (its lessons keep their other data, `packId` is set to `null`) |
 
 **Example Request Body (POST):**

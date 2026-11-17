@@ -89,7 +89,8 @@ const packs = (window.initialPacks || []).map(p => ({
     hours: p.hours,
     usedHours: p.usedHours || 0,
     unassignedHours: p.unassignedHours || 0,
-    firstUnassignedLessonStart: p.firstUnassignedLessonStart || null
+    firstUnassignedLessonStart: p.firstUnassignedLessonStart || null,
+    checked: p.checked || 'open'
 }));
 
 // Aggregates a list of lessons into hours completed per month (key: YYYY-MM)
@@ -548,6 +549,7 @@ function renderPacks() {
     container.innerHTML = packs.map(p => {
     const pct = p.hours > 0 ? Math.min(100, (p.usedHours / p.hours) * 100) : 0;
     const isComplete = pct >= 100;
+    const isChecked = p.checked === 'closed';
     const cardClasses = isComplete
         ? 'p-3 border border-destructive bg-destructive/10 rounded-lg space-y-2'
         : 'p-3 border border-border rounded-lg space-y-2';
@@ -561,6 +563,14 @@ function renderPacks() {
         <div class="w-full h-2 bg-secondary rounded-full overflow-hidden">
             <div class="h-full ${barColor} rounded-full" style="width: ${pct}%"></div>
         </div>
+        ${isStaff ? `
+        <label class="flex items-center gap-2 text-xs text-foreground cursor-pointer select-none">
+            <input type="checkbox" data-pack-checked-id="${p.id}"
+                class="pack-checked-checkbox h-4 w-4 rounded border-border"
+                ${isChecked ? 'checked disabled' : ''}>
+            ${t('student.packChecked')}
+        </label>
+        ` : ''}
         ${isComplete ? `
         ${p.unassignedHours > 0 ? `
         <p class="text-xs text-destructive">${t('student.unassignedHoursMessage', { hours: p.unassignedHours })}</p>
@@ -572,8 +582,9 @@ function renderPacks() {
         ` : ''}
         ` : ''}
         ${isStaff ? `
-        <button type="button" data-close-pack-id="${p.id}"
-            class="close-pack-btn w-full text-xs bg-destructive text-white px-3 py-1.5 rounded-lg font-medium hover:bg-destructive/90 transition-colors">
+        <button type="button" data-close-pack-id="${p.id}" ${isChecked ? '' : 'disabled'}
+            title="${isChecked ? '' : t('student.packMustBeCheckedFirst')}"
+            class="close-pack-btn w-full text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${isChecked ? 'bg-destructive text-white hover:bg-destructive/90' : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'}">
             ${t('student.closePackage')}
         </button>
         ` : ''}
@@ -816,6 +827,39 @@ function setupEventListeners() {
     }
     });
 
+    document.getElementById('packsList').addEventListener('change', async (e) => {
+    const checkbox = e.target.closest('.pack-checked-checkbox');
+    if (!checkbox) return;
+
+    const packId = checkbox.getAttribute('data-pack-checked-id');
+    if (!confirm(t('student.confirm.markPackageChecked'))) {
+        checkbox.checked = false;
+        return;
+    }
+
+    checkbox.disabled = true;
+    try {
+        const response = await fetch(`/api/packs/${packId}/checked`, {
+        method: 'PUT',
+        credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+        window.location.reload();
+        } else {
+        const error = await response.json();
+        alert(t('student.errors.markPackageCheckedFailed', { error: error.error || t('calendar.errors.unknownError') }));
+        checkbox.checked = false;
+        checkbox.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error marking package as checked:', error);
+        alert(t('student.errors.markPackageCheckedRetry'));
+        checkbox.checked = false;
+        checkbox.disabled = false;
+    }
+    });
+
     document.getElementById('packsList').addEventListener('click', async (e) => {
     const newPackFromUnassignedBtn = e.target.closest('.new-pack-from-unassigned-btn');
     if (newPackFromUnassignedBtn) {
@@ -826,6 +870,7 @@ function setupEventListeners() {
 
     const closeBtn = e.target.closest('.close-pack-btn');
     if (closeBtn) {
+        if (closeBtn.disabled) return;
         const packId = closeBtn.getAttribute('data-close-pack-id');
         if (!confirm(t('student.confirm.closePackage'))) return;
 

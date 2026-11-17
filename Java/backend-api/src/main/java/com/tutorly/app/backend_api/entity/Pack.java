@@ -82,6 +82,17 @@ public class Pack {
     private LocalDate closure;
 
     /**
+     * Whether the package has been paid/settled.
+     *
+     * {@code "open"} (default) means not yet settled; {@code "closed"} means a STAFF
+     * member has verified it was paid/settled. A pack must be marked {@code "closed"}
+     * here before it can itself be closed (see the {@code closure} field above) -
+     * these are two independent concepts despite the similar wording.
+     */
+    @Column(name = "checked", nullable = false)
+    private String checked = "open";
+
+    /**
      * The student this package was purchased for.
      *
      * Many-to-one relationship with Student entity.
@@ -225,6 +236,24 @@ public class Pack {
      */
     public void setClosure(LocalDate closure) {
         this.closure = closure;
+    }
+
+    /**
+     * Gets whether the package has been paid/settled.
+     *
+     * @return "open" if not yet settled, "closed" if a STAFF member has settled it
+     */
+    public String getChecked() {
+        return checked;
+    }
+
+    /**
+     * Sets whether the package has been paid/settled.
+     *
+     * @param checked "open" or "closed"
+     */
+    public void setChecked(String checked) {
+        this.checked = checked;
     }
 
     /**

@@ -70,6 +70,43 @@ describe('PUT /api/packs/:id/close', () => {
     });
 });
 
+describe('PUT /api/packs/:id/checked', () => {
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GUEST' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GUEST' }));
+
+        const res = await agent.put('/api/packs/400/checked');
+        expect(res.status).toBe(403);
+    });
+
+    test('a GENERIC tutor is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+
+        const res = await agent.put('/api/packs/400/checked');
+        expect(res.status).toBe(403);
+    });
+
+    test('STAFF can mark the pack as checked', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().put('/api/packs/400/checked').reply(200, packFixture({ checked: 'closed' }));
+
+        const res = await agent.put('/api/packs/400/checked');
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+    });
+
+    test('propagates a Java API error', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().put('/api/packs/999/checked').reply(404, 'Pack not found');
+
+        const res = await agent.put('/api/packs/999/checked');
+        expect(res.status).toBe(404);
+    });
+});
+
 describe('DELETE /api/packs/:id', () => {
     test('a GUEST account is blocked with 403', async () => {
         const agent = await tutorAgent({ id: 1, role: 'GUEST' });

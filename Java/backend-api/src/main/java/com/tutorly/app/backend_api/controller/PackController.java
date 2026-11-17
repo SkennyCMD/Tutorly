@@ -91,6 +91,7 @@ public class PackController {
                     dto.put("startTime", pack.getStartTime());
                     dto.put("hours", pack.getHours());
                     dto.put("closure", pack.getClosure());
+                    dto.put("checked", pack.getChecked());
                     dto.put("studentId", pack.getStudentId());
                     dto.put("usedHours", usedHours);
                     dto.put("unassignedHours", unassignedHours);
@@ -182,9 +183,12 @@ public class PackController {
      *
      * Sets the pack's closure date to today, marking it as no longer active.
      * If the pack is already closed, its existing closure date is left untouched.
+     * Requires the pack to already be marked as checked (paid/settled) - see
+     * {@link #markPackChecked(Long)} - otherwise returns 409 Conflict.
      *
      * @param id The pack ID to close
-     * @return Updated pack if found, 404 Not Found if pack doesn't exist
+     * @return Updated pack if found, 404 Not Found if pack doesn't exist,
+     *         409 Conflict if the pack isn't marked as checked yet
      * @apiNote PUT /api/packs/{id}/close
      */
     @PutMapping("/{id}/close")
@@ -196,9 +200,43 @@ public class PackController {
 
         Pack pack = packOpt.get();
         if (pack.getClosure() == null) {
+            if (!"closed".equals(pack.getChecked())) {
+                log.warn("Refused to close pack with ID {} - not marked as checked yet", id);
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Pack must be marked as checked (paid/settled) before it can be closed");
+            }
             pack.setClosure(LocalDate.now());
             pack = packService.savePack(pack);
             log.info("Closed pack with ID {}", id);
+        }
+
+        return ResponseEntity.ok(pack);
+    }
+
+    /**
+     * Mark a pack as checked (paid/settled)
+     *
+     * Sets the pack's checked status to "closed" - meaning a STAFF member has
+     * verified it was paid/settled. This is a one-way flag (no endpoint reopens
+     * it) and is a prerequisite for closing the pack itself via
+     * {@link #closePack(Long)}.
+     *
+     * @param id The pack ID
+     * @return Updated pack if found, 404 Not Found if pack doesn't exist
+     * @apiNote PUT /api/packs/{id}/checked
+     */
+    @PutMapping("/{id}/checked")
+    public ResponseEntity<?> markPackChecked(@PathVariable Long id) {
+        Optional<Pack> packOpt = packService.getPackById(id);
+        if (packOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Pack pack = packOpt.get();
+        if (!"closed".equals(pack.getChecked())) {
+            pack.setChecked("closed");
+            pack = packService.savePack(pack);
+            log.info("Marked pack with ID {} as checked", id);
         }
 
         return ResponseEntity.ok(pack);
