@@ -1,0 +1,210 @@
+// Real tutor data (every active GENERIC/STAFF tutor's recurring weekly
+// availability, plus STAFF-approved one-off exceptions for specific dates) -
+// see window.initialTutors in availability.ejs, built server-side by
+// GET /availability in src/index.js.
+const tutors = window.initialTutors || [];
+
+const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+let selectedTutorId = tutors.length ? tutors[0].id : null;
+let weekStart = getMonday(new Date());
+const $ = id => document.getElementById(id);
+
+// Same 48-color per-tutor palette as the Calendar page (calendarScript.js) -
+// a tutor gets the same color on both pages, since the hash is purely
+// `tutorId % 48`. Kept as a small, dependency-free copy rather than a shared
+// import, consistent with how other per-page constants are duplicated across
+// this app's plain <script> files (e.g. the .mobile-menu CSS rules).
+const TUTOR_COLOR_VAR_COUNT = 48;
+function getTutorColorVar(tutorId) {
+    const index = Math.abs(Number(tutorId)) % TUTOR_COLOR_VAR_COUNT;
+    return `--color-tutor-${index + 1}`;
+}
+
+function getMonday(date) {
+    const d = new Date(date);
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d;
+}
+
+function dateAtDay(day) {
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + day);
+    return date;
+}
+
+function dateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function timeLabel(value) {
+    const [h, m] = value.split(':').map(Number);
+    const suffix = h >= 12 ? 'pm' : 'am';
+    return `${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : ''} ${suffix}`;
+}
+
+// Single entry point for picking a tutor, used by both the day-grouped
+// cards and the flat "All Tutors" list below, so selection stays in sync
+// across all three UI surfaces (day cards, tutor list, week view).
+function selectTutor(tutorId) {
+    selectedTutorId = tutorId;
+    renderTutorDays();
+    renderTutorList();
+    renderWeek();
+}
+
+function formatWeek() {
+    const end = dateAtDay(6);
+    const opts = { month: 'short', day: 'numeric' };
+    const startText = weekStart.toLocaleDateString('en-US', opts);
+    const endText = end.toLocaleDateString('en-US', opts);
+    $('weekLabel').textContent = weekStart.getFullYear() === end.getFullYear()
+        ? `${startText} – ${endText}, ${end.getFullYear()}`
+        : `${startText}, ${weekStart.getFullYear()} – ${endText}, ${end.getFullYear()}`;
+}
+
+// "Available tutors by day" - tied to the currently selected week (weekStart/
+// dateAtDay()), not a generic recurring weekday view, so a tutor's approved
+// exception for one of this week's specific dates correctly adds/removes
+// them from that day's list and swaps in their exception hours.
+function renderTutorDays() {
+    const dayDates = Array.from({ length: 7 }, (_, i) => dateAtDay(i));
+    const dayToEntries = Array.from({ length: 7 }, () => []);
+
+    dayDates.forEach(date => {
+        const jsDay = date.getDay();
+        tutors.forEach(tutor => {
+            const { isException, slots } = effectiveSlotsForDate(tutor, date);
+            if (slots.length) dayToEntries[jsDay].push({ tutor, slots, isException });
+        });
+    });
+
+    $('tutorCount').textContent = `${tutors.length} tutors`;
+
+    const MAX_VISIBLE_TUTORS_PER_DAY = 3;
+
+    $('dayList').innerHTML = dayDates.map(date => {
+        const jsDay = date.getDay();
+        const entries = dayToEntries[jsDay];
+        const dateLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const scrollClasses = entries.length > MAX_VISIBLE_TUTORS_PER_DAY
+            ? 'max-h-44 overflow-y-auto scrollbar-thin pr-1'
+            : '';
+        return `<article class="rounded-xl border border-border bg-card p-4"><h3 class="mb-3 flex items-center justify-between text-sm font-semibold"><span>${weekdayNames[jsDay]} <span class="font-normal text-muted-foreground">${dateLabel}</span></span><span class="text-xs font-normal text-muted-foreground">${entries.length} available</span></h3>${entries.length ? `<ul class="space-y-2 ${scrollClasses}">${entries.map(({ tutor, slots, isException }) => `<li><button type="button" class="tutor-card flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition hover:bg-secondary" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}, available ${slots.map(slot => slot.map(timeLabel).join(' to ')).join(' and ')}${isException ? ' (exception)' : ''}"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium">${tutor.name}</span><span class="block truncate text-xs text-muted-foreground">${slots.map(slot => slot.map(timeLabel).join('–')).join(' · ')}${isException ? ` · <span style="color: rgb(var(--color-note))">Exception</span>` : ''}</span></span></button></li>`).join('')}</ul>` : `<p class="py-2 text-sm text-muted-foreground">No tutors available</p>`}</article>`;
+    }).join('');
+
+    document.querySelectorAll('#dayList .tutor-card').forEach(button => button.addEventListener('click', () => {
+        // data-tutor is always a string; tutor.id is a real DB number - must
+        // convert, or the === comparisons in aria-pressed/renderWeek() below
+        // silently never match again after the first click
+        selectTutor(Number(button.dataset.tutor));
+    }));
+}
+
+// Flat list of every tutor (unlike #dayList, not grouped/limited by day) -
+// clicking one shows their full week below, same as clicking them from a day
+// card.
+function renderTutorList() {
+    $('tutorList').innerHTML = tutors.map(tutor => `<button type="button" class="tutor-card flex items-center gap-2 rounded-full border border-transparent bg-secondary py-1.5 pl-1.5 pr-3 text-left transition hover:bg-secondary/70" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}'s weekly availability"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="text-sm font-medium text-foreground">${tutor.name}</span></button>`).join('');
+
+    document.querySelectorAll('#tutorList .tutor-card').forEach(button => button.addEventListener('click', () => {
+        selectTutor(Number(button.dataset.tutor));
+    }));
+}
+
+// Resolves what a tutor's schedule actually looks like on one specific date:
+// an approved exception for that exact date (if any) fully overrides the
+// regular weekly schedule - "absent" clears it, "present" swaps in the
+// exception's own time range instead. Shared by both the week view
+// (scheduleMarkup) and the day cards (renderTutorDays), so they always agree
+// on the same week's data.
+function effectiveSlotsForDate(tutor, date) {
+    const exception = tutor.exceptions[dateKey(date)];
+    if (exception) {
+        return {
+            isException: true,
+            isAbsentException: exception.type === 'absent',
+            slots: exception.type === 'present' ? [[exception.startTime, exception.endTime]] : []
+        };
+    }
+    return { isException: false, isAbsentException: false, slots: tutor.days[date.getDay()] || [] };
+}
+
+// Renders one day's cell for a tutor in the week view - always styled/labeled
+// distinctly when an exception applies, so it's clear this day differs from
+// the tutor's routine rather than just reading as a normal slot or a plain
+// "no schedule" day.
+function scheduleMarkup(tutor, date) {
+    const { isException, isAbsentException, slots } = effectiveSlotsForDate(tutor, date);
+
+    if (isAbsentException) {
+        return `<div class="exception-block exception-absent mt-3 rounded-md px-2 py-2 text-xs font-medium"><span class="block">Unavailable</span><span class="mt-0.5 block text-[10px] opacity-80">Exception</span></div>`;
+    }
+
+    if (!slots.length) {
+        return `<p class="mt-3 text-xs text-muted-foreground">Unavailable</p>`;
+    }
+
+    const blockClass = isException ? 'exception-block exception-present' : 'availability-block';
+    const label = isException ? ' · Exception' : '';
+
+    return `<div class="mt-3 space-y-2">${slots.map(([start, end]) => `<div class="${blockClass} rounded-md px-2 py-2 text-xs font-medium"><span class="block">${timeLabel(start)} – ${timeLabel(end)}</span><span class="mt-0.5 block text-[10px] opacity-70">${start}–${end}${label}</span></div>`).join('')}</div>`;
+}
+
+function renderWeek() {
+    const tutor = tutors.find(item => item.id === selectedTutorId) || tutors[0];
+    if (!tutor) {
+        $('selectedTutorLabel').textContent = '';
+        formatWeek();
+        $('desktopWeek').innerHTML = '';
+        $('mobileWeek').innerHTML = '';
+        return;
+    }
+
+    $('selectedTutorLabel').textContent = tutor.name;
+    formatWeek();
+
+    $('desktopWeek').innerHTML = Array.from({ length: 7 }, (_, i) => {
+        const date = dateAtDay(i);
+        return `<section class="min-h-[220px] border-r border-border p-2 last:border-r-0 sm:p-3"><div class="border-b border-border pb-2 text-center"><p class="text-xs text-muted-foreground">${shortDays[(i + 1) % 7]}</p><p class="mt-1 text-sm font-semibold">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p></div>${scheduleMarkup(tutor, date)}</section>`;
+    }).join('');
+
+    $('mobileWeek').innerHTML = Array.from({ length: 7 }, (_, i) => {
+        const date = dateAtDay(i);
+        return `<section class="rounded-xl border border-border p-3"><div class="flex items-center justify-between"><h3 class="text-sm font-semibold">${weekdayNames[date.getDay()]}</h3><span class="text-xs text-muted-foreground">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>${scheduleMarkup(tutor, date)}</section>`;
+    }).join('');
+}
+
+function setMenu(open) {
+    $('mobileMenu').classList.toggle('open', open);
+    $('menuOverlay').classList.toggle('hidden', !open);
+    $('menuToggle').setAttribute('aria-expanded', String(open));
+}
+
+$('menuToggle').addEventListener('click', () => setMenu(true));
+$('closeMenu').addEventListener('click', () => setMenu(false));
+$('menuOverlay').addEventListener('click', () => setMenu(false));
+
+// renderTutorDays() is re-run alongside renderWeek() on every week change too
+// - the day cards are tied to this week's actual dates, not a generic
+// recurring weekday view, so they need to pick up that week's exceptions.
+$('prevWeek').addEventListener('click', () => {
+    weekStart.setDate(weekStart.getDate() - 7);
+    renderTutorDays();
+    renderWeek();
+});
+$('nextWeek').addEventListener('click', () => {
+    weekStart.setDate(weekStart.getDate() + 7);
+    renderTutorDays();
+    renderWeek();
+});
+$('todayButton').addEventListener('click', () => {
+    weekStart = getMonday(new Date());
+    renderTutorDays();
+    renderWeek();
+});
+
+renderTutorDays();
+renderTutorList();
+renderWeek();

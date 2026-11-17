@@ -1,0 +1,82 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.availability-block {
+    background: rgb(var(--color-primary) / 0.13);
+    border-left: 3px solid rgb(var(--color-primary));
+    color: rgb(var(--color-primary));
+}
+
+/* One-off exception_day overrides (approved only) - deliberately distinct from
+   .availability-block so they read as "different from the regular schedule",
+   not just another slot. .exception-present reuses --color-note (the same
+   amber already used for calendar notes elsewhere in the app); .exception-absent
+   reuses --color-destructive, consistent with how "unavailable"/removal states
+   are colored throughout the app. */
+.exception-block {
+    border-left: 3px solid transparent;
+}
+
+.exception-present {
+    background: rgb(var(--color-note) / 0.13);
+    border-left-color: rgb(var(--color-note));
+    color: rgb(var(--color-note));
+}
+
+.exception-absent {
+    background: rgb(var(--color-destructive) / 0.1);
+    border-left-color: rgb(var(--color-destructive));
+    color: rgb(var(--color-destructive));
+}
+
+.tutor-card[aria-pressed="true"] {
+    border-color: rgb(var(--color-primary));
+    background: rgb(var(--color-primary) / 0.08);
+}
+
+.mobile-menu {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+}
+
+.mobile-menu.open {
+    transform: translateX(0);
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: rgb(var(--color-card));
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-border));
+    border-radius: 3px;
+}
+
+@media (max-width: 767px) {
+    .desktop-week {
+        display: none;
+    }
+}
+
+@media (min-width: 768px) {
+    .mobile-week {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+    }
+}

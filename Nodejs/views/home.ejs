@@ -60,6 +60,7 @@ Features:
           <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.calendar') %></a>
           <!-- GUEST accounts are restricted server-side to Dashboard/Calendar only - hide dead-end links -->
           <% if (user && user.role!=='GUEST' ) { %>
+          <a href="/availability" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.availability') %></a>
           <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.myLessons') %></a>
           <a href="/reports" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('reports.navLabel') %></a>
           <% } %>
@@ -127,6 +128,14 @@ Features:
       </a>
       <!-- GUEST accounts are restricted server-side to Dashboard/Calendar only - hide dead-end links -->
       <% if (user && user.role!=='GUEST' ) { %>
+      <a href="/availability"
+        class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <%= t('common.availability') %>
+      </a>
       <a href="/lessons"
         class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

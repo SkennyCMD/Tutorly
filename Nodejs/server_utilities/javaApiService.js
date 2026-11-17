@@ -609,6 +609,51 @@ function deletePushSubscriptionByEndpoint(endpoint) {
 }
 
 
+// Availability Operations
+
+
+/**
+ * Fetch every tutor's recurring weekly availability slots.
+ *
+ * Backs the Availability page - see 03_Nodejs_Frontend.md. Returns empty
+ * array if none found or on error.
+ *
+ * @returns {Promise<Array>} Array of all availability slots
+ *
+ * @example
+ * const slots = await fetchAllAvailability();
+ * // Returns: [{ id: 1, weekDay: 1, startTime: '09:00:00', endTime: '12:00:00', tutorId: 4 }, ...]
+ */
+function fetchAllAvailability() {
+    return fetchFromJavaAPI('/api/availability', 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching availability:', error);
+            return [];
+        });
+}
+
+/**
+ * Fetch every tutor's exception days (one-off deviations from their regular
+ * availability), regardless of approval status - callers decide whether to
+ * honor pending/refused ones.
+ *
+ * @returns {Promise<Array>} Array of all exception days
+ *
+ * @example
+ * const exceptions = await fetchAllExceptionDays();
+ * // Returns: [{ id: 1, day: '2026-12-24', type: 'absent', status: 'approved', tutorId: 4, ... }, ...]
+ */
+function fetchAllExceptionDays() {
+    return fetchFromJavaAPI('/api/exception-days', 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching exception days:', error);
+            return [];
+        });
+}
+
+
 // Module Exports
 
 
@@ -626,6 +671,7 @@ function deletePushSubscriptionByEndpoint(endpoint) {
  * - Calendar Notes: fetchCalendarNotesByTutor, fetchCalendarNotesByDateRange
  * - Tests (Evaluations): fetchTestsByTutor
  * - Push Subscriptions: fetchPushSubscriptionsByUser, upsertPushSubscription, deletePushSubscriptionByEndpoint
+ * - Availability: fetchAllAvailability, fetchAllExceptionDays
  *
  * Usage Pattern:
  * All functions return Promises that resolve to data or reject with errors.
@@ -653,5 +699,7 @@ module.exports = {
     fetchStudentsByGuest,
     fetchPushSubscriptionsByUser,
     upsertPushSubscription,
-    deletePushSubscriptionByEndpoint
+    deletePushSubscriptionByEndpoint,
+    fetchAllAvailability,
+    fetchAllExceptionDays
 };

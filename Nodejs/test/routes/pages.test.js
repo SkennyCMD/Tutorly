@@ -258,6 +258,54 @@ describe('GET /lessons', () => {
     });
 });
 
+describe('GET /availability', () => {
+    test('redirects to /login when not authenticated', async () => {
+        const res = await request(app).get('/availability');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/login');
+    });
+
+    test('a GUEST account is redirected to /home', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        const res = await agent.get('/availability');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/home');
+    });
+
+    test('renders for a GENERIC tutor, with real availability data', async () => {
+        const agent = await tutorAgent({ role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+        javaApi().get('/api/users').reply(200, [tutorFixture({ id: 1, role: 'GENERIC' })]);
+        javaApi().get('/api/availability').reply(200, [
+            { id: 1, weekDay: 1, startTime: '09:00:00', endTime: '12:00:00', tutorId: 1 }
+        ]);
+        javaApi().get('/api/exception-days').reply(200, []);
+
+        const res = await agent.get('/availability');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('09:00');
+    });
+
+    test('renders for a STAFF tutor', async () => {
+        const agent = await tutorAgent({ role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get('/api/users').reply(200, [tutorFixture({ id: 1, role: 'STAFF' })]);
+        javaApi().get('/api/availability').reply(200, []);
+        javaApi().get('/api/exception-days').reply(200, []);
+
+        const res = await agent.get('/availability');
+        expect(res.status).toBe(200);
+    });
+
+    test('still renders (with no tutors) if the Java API call fails', async () => {
+        const agent = await tutorAgent({ role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(500, 'DB error');
+
+        const res = await agent.get('/availability');
+        expect(res.status).toBe(200);
+    });
+});
+
 describe('GET /staffPanel', () => {
     test('a non-STAFF tutor is redirected to /home', async () => {
         const agent = await tutorAgent({ role: 'GENERIC' });

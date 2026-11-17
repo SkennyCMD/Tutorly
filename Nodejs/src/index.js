@@ -57,12 +57,18 @@ const {
     fetchPacksByStudent,
     fetchStudentsByGuest,
     upsertPushSubscription,
-    deletePushSubscriptionByEndpoint
+    deletePushSubscriptionByEndpoint,
+    fetchAllAvailability,
+    fetchAllExceptionDays
 } = require('../server_utilities/javaApiService');
 
 // Shared range-bounded fetch/enrich logic for the Calendar page - see
 // server_utilities/calendarDataService.js
 const { getCalendarDataForRange } = require('../server_utilities/calendarDataService');
+
+// Pure data-shaping logic for the Availability page - see
+// server_utilities/availabilityDataService.js
+const { buildTutorAvailability } = require('../server_utilities/availabilityDataService');
 
 // Web Push notification sender (VAPID, not Firebase) - see server_utilities/pushService.js
 const { sendPushToUser } = require('../server_utilities/pushService');
@@ -856,6 +862,37 @@ app.get('/lessons', tutorSession, isAuthenticated, blockGuest, async (req, res) 
             lessons: [],
             totalLessons: 0,
             prenotations: []
+        });
+    }
+});
+
+/**
+ * Tutor availability view
+ * GET /availability - Display a tutor's weekly availability schedule
+ * GENERIC and STAFF only - blockGuest excludes GUEST, and tutorSession/isAuthenticated
+ * (checking req.session.userId) already excludes ADMIN, whose session uses a separate
+ * adminId instead, same as every other tutor-only page
+ */
+app.get('/availability', tutorSession, isAuthenticated, blockGuest, async (req, res) => {
+    try {
+        const [tutorData, allUsers, allAvailability, allExceptionDays] = await Promise.all([
+            fetchTutorData(req.session.userId),
+            fetchFromJavaAPI('/api/users'),
+            fetchAllAvailability(),
+            fetchAllExceptionDays()
+        ]);
+
+        res.render('availability', {
+            userId: req.session.userId,
+            user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
+            tutors: buildTutorAvailability({ users: allUsers, availability: allAvailability, exceptionDays: allExceptionDays })
+        });
+    } catch (error) {
+        logError('Error fetching data for availability page', req, { error: error.message });
+        res.render('availability', {
+            userId: req.session.userId,
+            user: { username: req.session.username, role: req.session.role },
+            tutors: []
         });
     }
 });
