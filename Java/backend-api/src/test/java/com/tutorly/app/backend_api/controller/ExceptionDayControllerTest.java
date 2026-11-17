@@ -1,14 +1,17 @@
 package com.tutorly.app.backend_api.controller;
 
+import com.tutorly.app.backend_api.dto.ExceptionDayCreateDTO;
 import com.tutorly.app.backend_api.entity.ExceptionDay;
 import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.service.ExceptionDayService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -19,12 +22,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Slice tests for {@link ExceptionDayController} - read-only, so just the
- * four GET endpoints.
+ * Slice tests for {@link ExceptionDayController}: the four GET endpoints,
+ * plus createExceptionDay's success/validation-error branches.
  */
 @WebMvcTest(ExceptionDayController.class)
 @TestPropertySource(properties = "api.security.keys=test-api-key")
@@ -35,6 +39,9 @@ class ExceptionDayControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private ExceptionDayService exceptionDayService;
@@ -97,5 +104,36 @@ class ExceptionDayControllerTest {
                         .param("end", "2026-11-23"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(0)));
+    }
+
+    @Test
+    void createExceptionDay_valid_returns201() throws Exception {
+        ExceptionDay saved = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor());
+        saved.setId(7L);
+        when(exceptionDayService.createExceptionDay(any())).thenReturn(saved);
+
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(LocalDate.of(2026, 12, 24), "absent", null, null, 4L);
+
+        mockMvc.perform(post("/api/exception-days")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(7))
+                .andExpect(jsonPath("$.status").value("pending"));
+    }
+
+    @Test
+    void createExceptionDay_invalid_returns400() throws Exception {
+        when(exceptionDayService.createExceptionDay(any()))
+                .thenThrow(new IllegalArgumentException("type must be 'present' or 'absent'"));
+
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(LocalDate.of(2026, 12, 24), "bogus", null, null, 4L);
+
+        mockMvc.perform(post("/api/exception-days")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
     }
 }

@@ -898,6 +898,122 @@ app.get('/availability', tutorSession, isAuthenticated, blockGuest, async (req, 
 });
 
 /**
+ * Create a new recurring availability slot
+ * POST /api/availability
+ * Body: { tutorId, weekDay, startTime, endTime }
+ * STAFF only - setting up a tutor's regular weekly schedule is a management
+ * action, unlike submitting an exception request below (which any tutor does
+ * for themselves)
+ */
+app.post('/api/availability', tutorSession, isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { tutorId, weekDay, startTime, endTime } = req.body;
+
+        if (!tutorId || !weekDay || !startTime || !endTime) {
+            return res.status(400).json({ error: 'Tutor, week day, and start/end time are required' });
+        }
+
+        const availabilityData = {
+            tutorId: parseInt(tutorId),
+            weekDay: parseInt(weekDay),
+            startTime,
+            endTime
+        };
+
+        logInfo('Creating new availability slot', req, availabilityData);
+
+        const postData = JSON.stringify(availabilityData);
+        const options = createJavaApiRequestOptions('/api/availability', 'POST', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    logSuccess('Availability slot created successfully', req, availabilityData);
+                    res.status(201).json({ success: true, message: 'Availability slot created' });
+                } else {
+                    logError(`Error creating availability slot, status: ${httpsRes.statusCode}`, req, { response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to create availability slot' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for availability creation', req, { error: error.message });
+            res.status(500).json({ error: 'Failed to create availability slot' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+    } catch (error) {
+        logError('Error creating availability slot', req, { error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to create availability slot' });
+    }
+});
+
+/**
+ * Submit a new exception day request (present or absent) for the logged-in
+ * tutor
+ * POST /api/exception-days
+ * Body: { type, day, startTime, endTime }  (startTime/endTime required only for type 'present')
+ * GENERIC and STAFF (not GUEST) - tutorId is always the caller's own session
+ * userId, never client-supplied, so a tutor can only request an exception for
+ * themselves. Always created as "pending" by the Java side - approving/
+ * refusing it is a separate, not-yet-built STAFF action.
+ */
+app.post('/api/exception-days', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
+    try {
+        const { type, day, startTime, endTime } = req.body;
+
+        if (!type || !day) {
+            return res.status(400).json({ error: 'Type and day are required' });
+        }
+        if (type === 'present' && (!startTime || !endTime)) {
+            return res.status(400).json({ error: 'Start and end time are required for a present exception' });
+        }
+
+        const exceptionData = {
+            tutorId: req.session.userId,
+            type,
+            day,
+            startTime: type === 'present' ? startTime : null,
+            endTime: type === 'present' ? endTime : null
+        };
+
+        logInfo('Submitting new exception day', req, exceptionData);
+
+        const postData = JSON.stringify(exceptionData);
+        const options = createJavaApiRequestOptions('/api/exception-days', 'POST', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 201) {
+                    logSuccess('Exception day submitted successfully', req, exceptionData);
+                    res.status(201).json({ success: true, message: 'Exception day submitted' });
+                } else {
+                    logError(`Error submitting exception day, status: ${httpsRes.statusCode}`, req, { response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to submit exception day' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for exception day submission', req, { error: error.message });
+            res.status(500).json({ error: 'Failed to submit exception day' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+    } catch (error) {
+        logError('Error submitting exception day', req, { error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to submit exception day' });
+    }
+});
+
+/**
  * Staff panel
  * GET /staffPanel - Display staff management panel (STAFF role only)
  * Allows viewing and managing all tutors

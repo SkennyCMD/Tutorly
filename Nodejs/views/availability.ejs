@@ -168,6 +168,33 @@ GENERIC and STAFF only - see GET /availability in src/index.js.
       </div>
     </section>
 
+    <!-- Action buttons: Add Availability (STAFF only), Add Exception - Present/Absent (STAFF + GENERIC) -->
+    <section class="flex flex-wrap gap-3">
+      <% if (user && user.role === 'STAFF') { %>
+      <button id="addAvailabilityBtn" type="button"
+        class="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Availability
+      </button>
+      <% } %>
+      <button id="addPresentExceptionBtn" type="button"
+        class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-green-700 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Presence
+      </button>
+      <button id="addAbsentExceptionBtn" type="button"
+        class="inline-flex items-center gap-2 bg-destructive text-white px-4 py-2.5 rounded-lg font-medium hover:bg-destructive/90 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add Absence
+      </button>
+    </section>
+
     <section aria-labelledby="all-tutors-heading" class="space-y-3">
       <h2 id="all-tutors-heading" class="text-lg font-semibold text-foreground">All Tutors</h2>
       <div id="tutorList" class="flex flex-wrap gap-2" aria-live="polite"></div>
@@ -215,12 +242,116 @@ GENERIC and STAFF only - see GET /availability in src/index.js.
     </section>
   </main>
 
+  <!-- MODALS -->
+  <!-- Add Availability Modal (STAFF only) -->
+  <div id="addAvailabilityModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeAddAvailabilityModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-foreground">Add Availability</h2>
+        <button onclick="closeAddAvailabilityModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="addAvailabilityForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Tutor</label>
+          <select id="availabilityTutor" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="">-- Select a tutor --</option>
+            <% tutors.forEach(tutor => { %>
+            <option value="<%= tutor.id %>"><%= tutor.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Day of week</label>
+          <select id="availabilityWeekDay" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+            <option value="7">Sunday</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Start time</label>
+            <input type="time" id="availabilityStartTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">End time</label>
+            <input type="time" id="availabilityEndTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeAddAvailabilityModal()"
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit"
+            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Exception Modal (STAFF + GENERIC) - shared by both the "Present" and
+       "Absent" buttons; openAddExceptionModal(type) sets the hidden type field,
+       toggles the time fields, and updates the title -->
+  <div id="addExceptionModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeAddExceptionModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 id="addExceptionModalTitle" class="text-xl font-semibold text-foreground">Add Exception</h2>
+        <button onclick="closeAddExceptionModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="addExceptionForm" class="space-y-4">
+        <input type="hidden" id="exceptionType">
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Date</label>
+          <input type="date" id="exceptionDay" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+        </div>
+        <div id="exceptionTimeFields" class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Start time</label>
+            <input type="time" id="exceptionStartTime" step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">End time</label>
+            <input type="time" id="exceptionEndTime" step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+        </div>
+        <p class="text-xs text-muted-foreground">Submitted as a request - a STAFF member needs to approve it before it affects your schedule.</p>
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeAddExceptionModal()"
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit"
+            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- SCRIPTS -->
   <script>
     // Active GENERIC/STAFF tutors, with their recurring weekly availability
     // (availability table) and STAFF-approved one-off exceptions (exception_day
     // table) - see GET /availability in src/index.js
     window.initialTutors = <%- JSON.stringify(tutors) %>;
+    window.userRole = <%- JSON.stringify(user && user.role) %>;
     window.translations = <%- JSON.stringify(translations) %>;
     window.lang = <%- JSON.stringify(lang) %>;
   </script>

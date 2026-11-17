@@ -1,27 +1,32 @@
 package com.tutorly.app.backend_api.controller;
 
+import com.tutorly.app.backend_api.dto.AvailabilityCreateDTO;
 import com.tutorly.app.backend_api.entity.Availability;
 import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.service.AvailabilityService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Slice tests for {@link AvailabilityController} - read-only, so just the
- * three GET endpoints.
+ * Slice tests for {@link AvailabilityController}: the three GET endpoints,
+ * plus createAvailability's success/validation-error branches.
  */
 @WebMvcTest(AvailabilityController.class)
 @TestPropertySource(properties = "api.security.keys=test-api-key")
@@ -32,6 +37,9 @@ class AvailabilityControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @MockitoBean
     private AvailabilityService availabilityService;
@@ -79,5 +87,35 @@ class AvailabilityControllerTest {
         mockMvc.perform(get("/api/availability/tutor/4").header(API_KEY_HEADER, API_KEY_VALUE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].weekDay").value(3));
+    }
+
+    @Test
+    void createAvailability_valid_returns201() throws Exception {
+        Availability saved = new Availability(1, LocalTime.of(9, 0), LocalTime.of(12, 0), tutor());
+        saved.setId(7L);
+        when(availabilityService.createAvailability(any())).thenReturn(saved);
+
+        AvailabilityCreateDTO dto = new AvailabilityCreateDTO(1, LocalTime.of(9, 0), LocalTime.of(12, 0), 4L);
+
+        mockMvc.perform(post("/api/availability")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(7));
+    }
+
+    @Test
+    void createAvailability_invalid_returns400() throws Exception {
+        when(availabilityService.createAvailability(any()))
+                .thenThrow(new IllegalArgumentException("endTime must be after startTime"));
+
+        AvailabilityCreateDTO dto = new AvailabilityCreateDTO(1, LocalTime.of(12, 0), LocalTime.of(9, 0), 4L);
+
+        mockMvc.perform(post("/api/availability")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
     }
 }

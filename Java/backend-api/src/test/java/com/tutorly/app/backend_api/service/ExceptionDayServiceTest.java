@@ -1,8 +1,10 @@
 package com.tutorly.app.backend_api.service;
 
+import com.tutorly.app.backend_api.dto.ExceptionDayCreateDTO;
 import com.tutorly.app.backend_api.entity.ExceptionDay;
 import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.repository.ExceptionDayRepository;
+import com.tutorly.app.backend_api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,21 +13,31 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link ExceptionDayService} - a thin pass-through to
- * {@link ExceptionDayRepository}, so these just verify the delegation.
+ * Unit tests for {@link ExceptionDayService}: the read methods are a thin
+ * pass-through to {@link ExceptionDayRepository}; createExceptionDay has real
+ * validation logic (type, present/absent time rules, tutor existence) and
+ * always persists with the entity's default "pending" status.
  */
 @ExtendWith(MockitoExtension.class)
 class ExceptionDayServiceTest {
 
     @Mock
     private ExceptionDayRepository exceptionDayRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private ExceptionDayService exceptionDayService;
@@ -71,5 +83,69 @@ class ExceptionDayServiceTest {
         when(exceptionDayRepository.findByTutor_IdAndDayBetween(4L, start, end)).thenReturn(List.of(exception));
 
         assertThat(exceptionDayService.getExceptionDaysByTutorAndDateRange(4L, start, end)).containsExactly(exception);
+    }
+
+    @Test
+    void createExceptionDay_validAbsent_savesAndReturnsPending() {
+        when(userRepository.findById(4L)).thenReturn(Optional.of(tutor));
+        when(exceptionDayRepository.save(any(ExceptionDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(LocalDate.of(2026, 12, 24), "absent", null, null, 4L);
+        ExceptionDay result = exceptionDayService.createExceptionDay(dto);
+
+        assertThat(result.getType()).isEqualTo("absent");
+        assertThat(result.getStatus()).isEqualTo("pending");
+        assertThat(result.getTutor()).isEqualTo(tutor);
+    }
+
+    @Test
+    void createExceptionDay_validPresent_savesWithTimes() {
+        when(userRepository.findById(4L)).thenReturn(Optional.of(tutor));
+        when(exceptionDayRepository.save(any(ExceptionDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(
+                LocalDate.of(2026, 12, 24), "present", LocalTime.of(14, 0), LocalTime.of(16, 0), 4L);
+        ExceptionDay result = exceptionDayService.createExceptionDay(dto);
+
+        assertThat(result.getStartTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(result.getEndTime()).isEqualTo(LocalTime.of(16, 0));
+    }
+
+    @Test
+    void createExceptionDay_invalidType_throwsAndDoesNotSave() {
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(LocalDate.of(2026, 12, 24), "bogus", null, null, 4L);
+
+        assertThatThrownBy(() -> exceptionDayService.createExceptionDay(dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
+    }
+
+    @Test
+    void createExceptionDay_presentWithoutTimes_throwsAndDoesNotSave() {
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(LocalDate.of(2026, 12, 24), "present", null, null, 4L);
+
+        assertThatThrownBy(() -> exceptionDayService.createExceptionDay(dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
+    }
+
+    @Test
+    void createExceptionDay_absentWithTimes_throwsAndDoesNotSave() {
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(
+                LocalDate.of(2026, 12, 24), "absent", LocalTime.of(9, 0), LocalTime.of(10, 0), 4L);
+
+        assertThatThrownBy(() -> exceptionDayService.createExceptionDay(dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
+    }
+
+    @Test
+    void createExceptionDay_tutorNotFound_throwsAndDoesNotSave() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+        ExceptionDayCreateDTO dto = new ExceptionDayCreateDTO(LocalDate.of(2026, 12, 24), "absent", null, null, 99L);
+
+        assertThatThrownBy(() -> exceptionDayService.createExceptionDay(dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
     }
 }

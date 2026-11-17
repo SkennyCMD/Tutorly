@@ -205,6 +205,124 @@ $('todayButton').addEventListener('click', () => {
     renderWeek();
 });
 
+// Add Availability (STAFF only - button isn't even rendered for GENERIC, see
+// availability.ejs, but the real enforcement is server-side on POST /api/availability)
+function openAddAvailabilityModal() {
+    $('addAvailabilityModal').classList.add('open');
+}
+
+function closeAddAvailabilityModal() {
+    $('addAvailabilityModal').classList.remove('open');
+    $('addAvailabilityForm').reset();
+}
+
+const addAvailabilityBtn = $('addAvailabilityBtn');
+if (addAvailabilityBtn) addAvailabilityBtn.addEventListener('click', openAddAvailabilityModal);
+
+const addAvailabilityForm = $('addAvailabilityForm');
+if (addAvailabilityForm) {
+    addAvailabilityForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const tutorId = $('availabilityTutor').value;
+        const weekDay = $('availabilityWeekDay').value;
+        const startTime = $('availabilityStartTime').value;
+        const endTime = $('availabilityEndTime').value;
+
+        if (!tutorId) {
+            alert('Please select a tutor.');
+            return;
+        }
+        if (startTime >= endTime) {
+            alert('End time must be after start time.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/availability', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tutorId, weekDay, startTime, endTime })
+            });
+
+            if (response.ok) {
+                closeAddAvailabilityModal();
+                window.location.reload();
+            } else {
+                const error = await response.json();
+                alert(`Failed to create availability slot: ${error.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error creating availability slot:', error);
+            alert('Failed to create availability slot. Please try again.');
+        }
+    });
+}
+
+// Add Exception - Present/Absent (STAFF + GENERIC) - one shared modal, the
+// clicked button's type decides which fields are shown and what gets submitted
+function openAddExceptionModal(type) {
+    $('exceptionType').value = type;
+    $('addExceptionModalTitle').textContent = type === 'present' ? 'Add Presence' : 'Add Absence';
+    $('exceptionTimeFields').classList.toggle('hidden', type !== 'present');
+    $('exceptionStartTime').required = type === 'present';
+    $('exceptionEndTime').required = type === 'present';
+    $('addExceptionModal').classList.add('open');
+}
+
+function closeAddExceptionModal() {
+    $('addExceptionModal').classList.remove('open');
+    $('addExceptionForm').reset();
+}
+
+const addPresentExceptionBtn = $('addPresentExceptionBtn');
+if (addPresentExceptionBtn) addPresentExceptionBtn.addEventListener('click', () => openAddExceptionModal('present'));
+
+const addAbsentExceptionBtn = $('addAbsentExceptionBtn');
+if (addAbsentExceptionBtn) addAbsentExceptionBtn.addEventListener('click', () => openAddExceptionModal('absent'));
+
+const addExceptionForm = $('addExceptionForm');
+if (addExceptionForm) {
+    addExceptionForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const type = $('exceptionType').value;
+        const day = $('exceptionDay').value;
+        const startTime = $('exceptionStartTime').value;
+        const endTime = $('exceptionEndTime').value;
+
+        if (!day) {
+            alert('Please select a date.');
+            return;
+        }
+        if (type === 'present' && (!startTime || !endTime || startTime >= endTime)) {
+            alert('Please enter a valid start/end time.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/exception-days', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, day, startTime: type === 'present' ? startTime : undefined, endTime: type === 'present' ? endTime : undefined })
+            });
+
+            if (response.ok) {
+                closeAddExceptionModal();
+                window.location.reload();
+            } else {
+                const error = await response.json();
+                alert(`Failed to submit exception: ${error.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error submitting exception day:', error);
+            alert('Failed to submit exception. Please try again.');
+        }
+    });
+}
+
 renderTutorDays();
 renderTutorList();
 renderWeek();
