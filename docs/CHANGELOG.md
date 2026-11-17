@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Database**: added five new tables ahead of their corresponding features - `availability` and `exception_day` (tutor weekly availability and one-off exceptions to it, the latter with a STAFF-approval workflow), `dashboard_note` and `see_dashboard_note` (time-bound admin notices and per-tutor read tracking), and `ticket` (support tickets between users and admins). Schema only - no JPA entities, repositories, or API endpoints yet. See [07_Database_Configuration.md](07_Database_Configuration.md#database-schema).
+- **Database**: added a `checked` column to `pack` (`'open'`/`'closed'`, default `'open'`), marking whether a package has been paid/settled - to be set by a STAFF member once the corresponding feature is built. Schema only for now.
 
 ### Changed
 - **Docs**: updated the ER diagram ([docs/TUTORLY_Normal.png](TUTORLY_Normal.png)) to include the five new tables above.

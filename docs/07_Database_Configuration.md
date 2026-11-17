@@ -229,8 +229,15 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | `hours` | DOUBLE PRECISION | NOT NULL | Total hours purchased in this package |
 | `closure` | DATE | nullable | Date the package was closed/expired; null while still active |
 | `id_student` | BIGINT | FK → Student(id), NOT NULL | The student this package belongs to |
+| `checked` | TEXT | NOT NULL, DEFAULT `'open'`, CHECK IN ('open','closed') | Whether the package has been paid/settled - set by a STAFF member |
 
 **Purpose**: Track prepaid blocks of tutoring hours purchased for a student. A `Lesson` can optionally reference a `Pack` via `lesson.id_pack` (FK is `ON DELETE SET NULL` - deleting a pack clears this on its lessons rather than deleting them) to track which package it was drawn from.
+
+**Checked Values**:
+- `open` - Not yet paid/settled (default)
+- `closed` - Marked as paid/settled by a STAFF member
+
+> **Note:** `checked` is schema only as of this writing - no JPA entity field, DTO, or UI toggle exists for it yet; a STAFF member will set it once the corresponding feature is built.
 
 ---
 

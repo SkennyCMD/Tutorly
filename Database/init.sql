@@ -96,6 +96,7 @@ CREATE TABLE pack (
 	hours FLOAT NOT NULL,
 	closure DATE,
 	id_student INTEGER NOT NULL,
+	checked TEXT NOT NULL DEFAULT 'open' CHECK (checked IN ('open','closed')),
 	FOREIGN KEY (id_student) REFERENCES student(id)
 		ON DELETE CASCADE
 		ON UPDATE CASCADE
