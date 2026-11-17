@@ -1,6 +1,7 @@
 package com.tutorly.app.backend_api.controller;
 
 import com.tutorly.app.backend_api.dto.ExceptionDayCreateDTO;
+import com.tutorly.app.backend_api.dto.ExceptionDayReviewDTO;
 import com.tutorly.app.backend_api.entity.ExceptionDay;
 import com.tutorly.app.backend_api.service.ExceptionDayService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +20,8 @@ import java.util.Optional;
  * Backs the Node.js frontend's Availability page - see
  * docs/03_Nodejs_Frontend.md and docs/05_Service_Modules.md. All endpoints
  * require API key authentication. Role restriction (GENERIC/STAFF can submit
- * a request for themselves; approving/refusing it is a separate, not-yet-built
- * STAFF-only action) is enforced in the Node.js layer, not here.
+ * a request for themselves; approving/refusing one is STAFF only) is enforced
+ * in the Node.js layer, not here.
  *
  * Base URL: /api/exception-days
  */
@@ -102,6 +103,48 @@ public class ExceptionDayController {
         try {
             ExceptionDay saved = exceptionDayService.createExceptionDay(dto);
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Approve a pending exception day, recording which STAFF member reviewed it.
+     *
+     * @param id  The exception day ID
+     * @param dto The reviewing STAFF member's ID
+     * @return Updated exception if found, 404 Not Found if the exception doesn't exist,
+     *         400 if the staff member doesn't exist
+     * @apiNote PUT /api/exception-days/{id}/approve
+     */
+    @PutMapping("/{id}/approve")
+    public ResponseEntity<?> approveExceptionDay(@PathVariable Long id, @RequestBody ExceptionDayReviewDTO dto) {
+        if (exceptionDayService.getExceptionDayById(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            return ResponseEntity.ok(exceptionDayService.approveExceptionDay(id, dto.getStaffId()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Refuse a pending exception day, recording which STAFF member reviewed it.
+     *
+     * @param id  The exception day ID
+     * @param dto The reviewing STAFF member's ID
+     * @return Updated exception if found, 404 Not Found if the exception doesn't exist,
+     *         400 if the staff member doesn't exist
+     * @apiNote PUT /api/exception-days/{id}/refuse
+     */
+    @PutMapping("/{id}/refuse")
+    public ResponseEntity<?> refuseExceptionDay(@PathVariable Long id, @RequestBody ExceptionDayReviewDTO dto) {
+        if (exceptionDayService.getExceptionDayById(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            return ResponseEntity.ok(exceptionDayService.refuseExceptionDay(id, dto.getStaffId()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

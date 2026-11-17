@@ -1,6 +1,7 @@
 package com.tutorly.app.backend_api.controller;
 
 import com.tutorly.app.backend_api.dto.ExceptionDayCreateDTO;
+import com.tutorly.app.backend_api.dto.ExceptionDayReviewDTO;
 import com.tutorly.app.backend_api.entity.ExceptionDay;
 import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.service.ExceptionDayService;
@@ -23,6 +24,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -135,5 +137,80 @@ class ExceptionDayControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void approveExceptionDay_found_returns200() throws Exception {
+        ExceptionDay exception = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor());
+        exception.setId(7L);
+        when(exceptionDayService.getExceptionDayById(7L)).thenReturn(Optional.of(exception));
+
+        ExceptionDay approved = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor());
+        approved.setId(7L);
+        approved.setStatus("approved");
+        when(exceptionDayService.approveExceptionDay(7L, 1L)).thenReturn(approved);
+
+        mockMvc.perform(put("/api/exception-days/7/approve")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ExceptionDayReviewDTO(1L))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("approved"));
+    }
+
+    @Test
+    void approveExceptionDay_notFound_returns404() throws Exception {
+        when(exceptionDayService.getExceptionDayById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/exception-days/99/approve")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ExceptionDayReviewDTO(1L))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void approveExceptionDay_invalidStaff_returns400() throws Exception {
+        ExceptionDay exception = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor());
+        exception.setId(7L);
+        when(exceptionDayService.getExceptionDayById(7L)).thenReturn(Optional.of(exception));
+        when(exceptionDayService.approveExceptionDay(7L, 99L))
+                .thenThrow(new IllegalArgumentException("Staff member not found with ID: 99"));
+
+        mockMvc.perform(put("/api/exception-days/7/approve")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ExceptionDayReviewDTO(99L))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void refuseExceptionDay_found_returns200() throws Exception {
+        ExceptionDay exception = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor());
+        exception.setId(7L);
+        when(exceptionDayService.getExceptionDayById(7L)).thenReturn(Optional.of(exception));
+
+        ExceptionDay refused = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor());
+        refused.setId(7L);
+        refused.setStatus("refused");
+        when(exceptionDayService.refuseExceptionDay(7L, 1L)).thenReturn(refused);
+
+        mockMvc.perform(put("/api/exception-days/7/refuse")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ExceptionDayReviewDTO(1L))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("refused"));
+    }
+
+    @Test
+    void refuseExceptionDay_notFound_returns404() throws Exception {
+        when(exceptionDayService.getExceptionDayById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/api/exception-days/99/refuse")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new ExceptionDayReviewDTO(1L))))
+                .andExpect(status().isNotFound());
     }
 }

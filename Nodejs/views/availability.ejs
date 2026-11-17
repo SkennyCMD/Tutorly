@@ -195,6 +195,20 @@ GENERIC and STAFF only - see GET /availability in src/index.js.
       </button>
     </section>
 
+    <!-- Pending exception-day requests awaiting STAFF review (STAFF only) -->
+    <% if (user && user.role === 'STAFF') { %>
+    <section class="space-y-3">
+      <button id="togglePendingBtn" type="button"
+        class="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
+        <svg id="pendingChevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+        Pending Requests (<span id="pendingCount">0</span>)
+      </button>
+      <div id="pendingList" class="hidden flex flex-wrap gap-3"></div>
+    </section>
+    <% } %>
+
     <section aria-labelledby="all-tutors-heading" class="space-y-3">
       <h2 id="all-tutors-heading" class="text-lg font-semibold text-foreground">All Tutors</h2>
       <div id="tutorList" class="flex flex-wrap gap-2" aria-live="polite"></div>
@@ -351,6 +365,9 @@ GENERIC and STAFF only - see GET /availability in src/index.js.
     // (availability table) and STAFF-approved one-off exceptions (exception_day
     // table) - see GET /availability in src/index.js
     window.initialTutors = <%- JSON.stringify(tutors) %>;
+    // Pending exception_day requests awaiting STAFF review - only meaningful
+    // (and only rendered a toggle) for STAFF, but harmless to always send
+    window.initialPendingExceptions = <%- JSON.stringify(pendingExceptions) %>;
     window.userRole = <%- JSON.stringify(user && user.role) %>;
     window.translations = <%- JSON.stringify(translations) %>;
     window.lang = <%- JSON.stringify(lang) %>;

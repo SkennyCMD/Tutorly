@@ -1,4 +1,4 @@
-const { usernameInitials, buildTutorAvailability } = require('../server_utilities/availabilityDataService');
+const { usernameInitials, buildTutorAvailability, getPendingExceptions } = require('../server_utilities/availabilityDataService');
 
 describe('usernameInitials', () => {
     test('splits on underscore into one initial per part', () => {
@@ -97,5 +97,62 @@ describe('buildTutorAvailability', () => {
 
     test('handles missing/empty input arrays', () => {
         expect(buildTutorAvailability({})).toEqual([]);
+    });
+});
+
+describe('getPendingExceptions', () => {
+    const tutor = { id: 1, username: 'tutor.one', role: 'GENERIC', status: 'ACTIVE', anonymizedAt: null };
+
+    test('includes only pending exceptions, enriched with the tutor username', () => {
+        const result = getPendingExceptions({
+            users: [tutor],
+            exceptionDays: [
+                { id: 10, tutorId: 1, day: '2026-12-24', type: 'absent', startTime: null, endTime: null, status: 'pending' },
+                { id: 11, tutorId: 1, day: '2026-12-25', type: 'absent', startTime: null, endTime: null, status: 'approved' },
+                { id: 12, tutorId: 1, day: '2026-12-26', type: 'absent', startTime: null, endTime: null, status: 'refused' }
+            ]
+        });
+
+        expect(result).toEqual([
+            { id: 10, tutorId: 1, tutorName: 'tutor.one', day: '2026-12-24', type: 'absent', startTime: null, endTime: null }
+        ]);
+    });
+
+    test('slices seconds off present exception times', () => {
+        const result = getPendingExceptions({
+            users: [tutor],
+            exceptionDays: [
+                { id: 10, tutorId: 1, day: '2026-12-24', type: 'present', startTime: '14:00:00', endTime: '16:00:00', status: 'pending' }
+            ]
+        });
+
+        expect(result[0]).toMatchObject({ startTime: '14:00', endTime: '16:00' });
+    });
+
+    test('falls back to a placeholder name if the tutor is missing from the users list', () => {
+        const result = getPendingExceptions({
+            users: [],
+            exceptionDays: [
+                { id: 10, tutorId: 999, day: '2026-12-24', type: 'absent', startTime: null, endTime: null, status: 'pending' }
+            ]
+        });
+
+        expect(result[0].tutorName).toBe('Tutor #999');
+    });
+
+    test('sorts by date ascending', () => {
+        const result = getPendingExceptions({
+            users: [tutor],
+            exceptionDays: [
+                { id: 10, tutorId: 1, day: '2026-12-26', type: 'absent', startTime: null, endTime: null, status: 'pending' },
+                { id: 11, tutorId: 1, day: '2026-12-24', type: 'absent', startTime: null, endTime: null, status: 'pending' }
+            ]
+        });
+
+        expect(result.map(e => e.id)).toEqual([11, 10]);
+    });
+
+    test('handles missing/empty input arrays', () => {
+        expect(getPendingExceptions({})).toEqual([]);
     });
 });

@@ -13,10 +13,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Service layer for ExceptionDay entity. Mostly read-only, plus submitting a
- * new request - see {@link com.tutorly.app.backend_api.controller.ExceptionDayController}.
- * There's no approve/refuse action yet (STAFF reviewing a request), so every
- * exception created here stays "pending" until that's built.
+ * Service layer for ExceptionDay entity: reading, submitting a new request,
+ * and STAFF reviewing (approving/refusing) a pending one - see
+ * {@link com.tutorly.app.backend_api.controller.ExceptionDayController}.
  */
 @Service
 public class ExceptionDayService {
@@ -73,6 +72,42 @@ public class ExceptionDayService {
                 .orElseThrow(() -> new IllegalArgumentException("Tutor not found with ID: " + dto.getTutorId()));
 
         ExceptionDay exceptionDay = new ExceptionDay(dto.getDay(), dto.getType(), dto.getStartTime(), dto.getEndTime(), tutor);
+        return exceptionDayRepository.save(exceptionDay);
+    }
+
+    /**
+     * Approves a pending exception day, recording which STAFF member reviewed it.
+     *
+     * @param id      The exception day ID
+     * @param staffId The reviewing STAFF member's ID
+     * @return The updated exception (status "approved")
+     * @throws IllegalArgumentException if the exception or the staff member doesn't exist
+     */
+    public ExceptionDay approveExceptionDay(Long id, Long staffId) {
+        return reviewExceptionDay(id, staffId, "approved");
+    }
+
+    /**
+     * Refuses a pending exception day, recording which STAFF member reviewed it.
+     *
+     * @param id      The exception day ID
+     * @param staffId The reviewing STAFF member's ID
+     * @return The updated exception (status "refused")
+     * @throws IllegalArgumentException if the exception or the staff member doesn't exist
+     */
+    public ExceptionDay refuseExceptionDay(Long id, Long staffId) {
+        return reviewExceptionDay(id, staffId, "refused");
+    }
+
+    private ExceptionDay reviewExceptionDay(Long id, Long staffId, String newStatus) {
+        ExceptionDay exceptionDay = exceptionDayRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Exception day not found with ID: " + id));
+
+        User staff = userRepository.findById(staffId)
+                .orElseThrow(() -> new IllegalArgumentException("Staff member not found with ID: " + staffId));
+
+        exceptionDay.setStatus(newStatus);
+        exceptionDay.setStaff(staff);
         return exceptionDayRepository.save(exceptionDay);
     }
 }

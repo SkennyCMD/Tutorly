@@ -4,6 +4,11 @@
 // GET /availability in src/index.js.
 const tutors = window.initialTutors || [];
 
+// Pending exception_day requests awaiting STAFF review - empty/unused for a
+// GENERIC viewer, since the toggle button/list aren't even rendered for them
+// (see availability.ejs).
+const pendingExceptions = window.initialPendingExceptions || [];
+
 const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 let selectedTutorId = tutors.length ? tutors[0].id : null;
@@ -323,6 +328,77 @@ if (addExceptionForm) {
     });
 }
 
+// Pending Requests toggle + list (STAFF only - the button/list markup isn't
+// even rendered for a GENERIC viewer, see availability.ejs)
+function renderPendingExceptions() {
+    const list = $('pendingList');
+    if (!list) return;
+
+    $('pendingCount').textContent = pendingExceptions.length;
+
+    if (pendingExceptions.length === 0) {
+        list.innerHTML = `<p class="text-sm text-muted-foreground">No pending requests.</p>`;
+        return;
+    }
+
+    list.innerHTML = pendingExceptions.map(exception => {
+        const borderClass = exception.type === 'present' ? 'border-green-600' : 'border-destructive';
+        return `
+        <div class="flex items-center justify-between gap-3 rounded-lg border-2 ${borderClass} bg-card p-3 min-w-[240px]">
+            <div class="min-w-0">
+                <p class="text-sm font-medium text-foreground">${exception.tutorName}</p>
+                <p class="text-xs text-muted-foreground">${exception.type === 'present' ? 'Presence' : 'Absence'} · ${exception.day}${exception.type === 'present' ? ` · ${timeLabel(exception.startTime)} – ${timeLabel(exception.endTime)}` : ''}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <button type="button" class="approve-exception-btn p-2 rounded-lg text-green-600 hover:bg-green-600/10 transition-colors" data-exception-id="${exception.id}" aria-label="Approve">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                </button>
+                <button type="button" class="refuse-exception-btn p-2 rounded-lg text-destructive hover:bg-destructive/10 transition-colors" data-exception-id="${exception.id}" aria-label="Refuse">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+        </div>
+    `;
+    }).join('');
+
+    document.querySelectorAll('.approve-exception-btn').forEach(button => button.addEventListener('click', () => {
+        reviewPendingException(button.dataset.exceptionId, 'approve');
+    }));
+    document.querySelectorAll('.refuse-exception-btn').forEach(button => button.addEventListener('click', () => {
+        reviewPendingException(button.dataset.exceptionId, 'refuse');
+    }));
+}
+
+async function reviewPendingException(id, action) {
+    if (!confirm(`Are you sure you want to ${action} this request?`)) return;
+
+    try {
+        const response = await fetch(`/api/exception-days/${id}/${action}`, {
+            method: 'PUT',
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert(`Failed to ${action} request: ${error.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error(`Error ${action}ing pending exception:`, error);
+        alert(`Failed to ${action} request. Please try again.`);
+    }
+}
+
+const togglePendingBtn = $('togglePendingBtn');
+if (togglePendingBtn) {
+    togglePendingBtn.addEventListener('click', () => {
+        $('pendingList').classList.toggle('hidden');
+        $('pendingChevron').classList.toggle('rotate-180');
+    });
+}
+
 renderTutorDays();
 renderTutorList();
+renderPendingExceptions();
 renderWeek();

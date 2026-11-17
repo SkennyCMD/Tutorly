@@ -87,4 +87,35 @@ function buildTutorAvailability({ users, availability, exceptionDays }) {
     return Array.from(tutorsById.values());
 }
 
-module.exports = { usernameInitials, buildTutorAvailability };
+/**
+ * Builds the list of pending exception-day requests for the STAFF review UI
+ * (the "Pending Requests" toggle on the Availability page) - each one
+ * enriched with the requesting tutor's username, since the raw exception row
+ * only has `tutorId`.
+ *
+ * @param {Object} params
+ * @param {Array} params.users - Raw user objects from GET /api/users
+ * @param {Array} params.exceptionDays - Raw rows from GET /api/exception-days
+ * @returns {Array<{id: number, tutorId: number, tutorName: string, day: string, type: string, startTime: ?string, endTime: ?string}>}
+ */
+function getPendingExceptions({ users, exceptionDays }) {
+    const usersById = new Map((users || []).map(u => [u.id, u]));
+
+    return (exceptionDays || [])
+        .filter(exception => exception.status === 'pending')
+        .map(exception => {
+            const tutor = usersById.get(exception.tutorId);
+            return {
+                id: exception.id,
+                tutorId: exception.tutorId,
+                tutorName: tutor ? tutor.username : `Tutor #${exception.tutorId}`,
+                day: exception.day,
+                type: exception.type,
+                startTime: exception.startTime ? exception.startTime.slice(0, 5) : null,
+                endTime: exception.endTime ? exception.endTime.slice(0, 5) : null
+            };
+        })
+        .sort((a, b) => a.day.localeCompare(b.day));
+}
+
+module.exports = { usernameInitials, buildTutorAvailability, getPendingExceptions };

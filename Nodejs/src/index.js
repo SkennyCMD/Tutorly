@@ -68,7 +68,7 @@ const { getCalendarDataForRange } = require('../server_utilities/calendarDataSer
 
 // Pure data-shaping logic for the Availability page - see
 // server_utilities/availabilityDataService.js
-const { buildTutorAvailability } = require('../server_utilities/availabilityDataService');
+const { buildTutorAvailability, getPendingExceptions } = require('../server_utilities/availabilityDataService');
 
 // Web Push notification sender (VAPID, not Firebase) - see server_utilities/pushService.js
 const { sendPushToUser } = require('../server_utilities/pushService');
@@ -885,14 +885,16 @@ app.get('/availability', tutorSession, isAuthenticated, blockGuest, async (req, 
         res.render('availability', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
-            tutors: buildTutorAvailability({ users: allUsers, availability: allAvailability, exceptionDays: allExceptionDays })
+            tutors: buildTutorAvailability({ users: allUsers, availability: allAvailability, exceptionDays: allExceptionDays }),
+            pendingExceptions: getPendingExceptions({ users: allUsers, exceptionDays: allExceptionDays })
         });
     } catch (error) {
         logError('Error fetching data for availability page', req, { error: error.message });
         res.render('availability', {
             userId: req.session.userId,
             user: { username: req.session.username, role: req.session.role },
-            tutors: []
+            tutors: [],
+            pendingExceptions: []
         });
     }
 });
@@ -1012,6 +1014,64 @@ app.post('/api/exception-days', tutorSession, isAuthenticated, blockGuestApi, as
         res.status(500).json({ error: 'Failed to submit exception day' });
     }
 });
+
+/**
+ * Shared handler for approving/refusing a pending exception day.
+ * STAFF only; the reviewing staffId is always the caller's own session
+ * userId, never client-supplied.
+ */
+function reviewExceptionDay(action) {
+    return async (req, res) => {
+        try {
+            const { id } = req.params;
+            const reviewData = { staffId: req.session.userId };
+
+            logInfo(`${action === 'approve' ? 'Approving' : 'Refusing'} exception day`, req, { id, ...reviewData });
+
+            const postData = JSON.stringify(reviewData);
+            const options = createJavaApiRequestOptions(`/api/exception-days/${id}/${action}`, 'PUT', postData);
+
+            const httpsReq = https.request(options, (httpsRes) => {
+                let data = '';
+                httpsRes.on('data', (chunk) => { data += chunk; });
+                httpsRes.on('end', () => {
+                    if (httpsRes.statusCode === 200) {
+                        logSuccess(`Exception day ${action}d successfully`, req, { id });
+                        res.json({ success: true, message: `Exception day ${action}d` });
+                    } else {
+                        logError(`Error ${action}ing exception day, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                        res.status(httpsRes.statusCode).json({ error: data || `Failed to ${action} exception day` });
+                    }
+                });
+            });
+
+            httpsReq.on('error', (error) => {
+                logError(`Error calling Java API to ${action} exception day`, req, { id, error: error.message });
+                res.status(500).json({ error: `Failed to ${action} exception day` });
+            });
+
+            httpsReq.write(postData);
+            httpsReq.end();
+        } catch (error) {
+            logError(`Error ${action}ing exception day`, req, { id: req.params.id, error: error.message, stack: error.stack });
+            res.status(500).json({ error: `Failed to ${action} exception day` });
+        }
+    };
+}
+
+/**
+ * Approve a pending exception day
+ * PUT /api/exception-days/:id/approve
+ * STAFF only
+ */
+app.put('/api/exception-days/:id/approve', tutorSession, isAuthenticated, isStaff, reviewExceptionDay('approve'));
+
+/**
+ * Refuse a pending exception day
+ * PUT /api/exception-days/:id/refuse
+ * STAFF only
+ */
+app.put('/api/exception-days/:id/refuse', tutorSession, isAuthenticated, isStaff, reviewExceptionDay('refuse'));
 
 /**
  * Staff panel

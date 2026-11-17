@@ -108,3 +108,75 @@ describe('POST /api/exception-days', () => {
         expect(res.status).toBe(400);
     });
 });
+
+describe('PUT /api/exception-days/:id/approve', () => {
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GUEST' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GUEST' }));
+
+        const res = await agent.put('/api/exception-days/10/approve');
+        expect(res.status).toBe(403);
+    });
+
+    test('a GENERIC tutor is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+
+        const res = await agent.put('/api/exception-days/10/approve');
+        expect(res.status).toBe(403);
+    });
+
+    test('STAFF can approve, with staffId forced from the session', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        let forwardedBody;
+        javaApi().put('/api/exception-days/10/approve', body => { forwardedBody = body; return true; })
+            .reply(200, (uri, body) => ({ id: 10, status: 'approved', ...body }));
+
+        const res = await agent.put('/api/exception-days/10/approve');
+
+        expect(res.status).toBe(200);
+        expect(forwardedBody).toEqual({ staffId: 1 });
+    });
+
+    test('propagates a Java API error', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().put('/api/exception-days/99/approve').reply(404, 'Exception day not found');
+
+        const res = await agent.put('/api/exception-days/99/approve');
+        expect(res.status).toBe(404);
+    });
+});
+
+describe('PUT /api/exception-days/:id/refuse', () => {
+    test('a GENERIC tutor is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+
+        const res = await agent.put('/api/exception-days/10/refuse');
+        expect(res.status).toBe(403);
+    });
+
+    test('STAFF can refuse, with staffId forced from the session', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        let forwardedBody;
+        javaApi().put('/api/exception-days/10/refuse', body => { forwardedBody = body; return true; })
+            .reply(200, (uri, body) => ({ id: 10, status: 'refused', ...body }));
+
+        const res = await agent.put('/api/exception-days/10/refuse');
+
+        expect(res.status).toBe(200);
+        expect(forwardedBody).toEqual({ staffId: 1 });
+    });
+
+    test('propagates a Java API error', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().put('/api/exception-days/99/refuse').reply(404, 'Exception day not found');
+
+        const res = await agent.put('/api/exception-days/99/refuse');
+        expect(res.status).toBe(404);
+    });
+});

@@ -148,4 +148,66 @@ class ExceptionDayServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
         verify(exceptionDayRepository, never()).save(any());
     }
+
+    @Test
+    void approveExceptionDay_valid_setsStatusAndStaff() {
+        ExceptionDay exception = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor);
+        exception.setId(7L);
+        User staff = new User("staff.one", "hashedPassword123", "ACTIVE", "STAFF");
+        staff.setId(1L);
+        when(exceptionDayRepository.findById(7L)).thenReturn(Optional.of(exception));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(staff));
+        when(exceptionDayRepository.save(any(ExceptionDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExceptionDay result = exceptionDayService.approveExceptionDay(7L, 1L);
+
+        assertThat(result.getStatus()).isEqualTo("approved");
+        assertThat(result.getStaff()).isEqualTo(staff);
+    }
+
+    @Test
+    void approveExceptionDay_exceptionNotFound_throwsAndDoesNotSave() {
+        when(exceptionDayRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> exceptionDayService.approveExceptionDay(99L, 1L))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
+    }
+
+    @Test
+    void approveExceptionDay_staffNotFound_throwsAndDoesNotSave() {
+        ExceptionDay exception = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor);
+        exception.setId(7L);
+        when(exceptionDayRepository.findById(7L)).thenReturn(Optional.of(exception));
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> exceptionDayService.approveExceptionDay(7L, 99L))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
+    }
+
+    @Test
+    void refuseExceptionDay_valid_setsStatusAndStaff() {
+        ExceptionDay exception = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor);
+        exception.setId(7L);
+        User staff = new User("staff.one", "hashedPassword123", "ACTIVE", "STAFF");
+        staff.setId(1L);
+        when(exceptionDayRepository.findById(7L)).thenReturn(Optional.of(exception));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(staff));
+        when(exceptionDayRepository.save(any(ExceptionDay.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ExceptionDay result = exceptionDayService.refuseExceptionDay(7L, 1L);
+
+        assertThat(result.getStatus()).isEqualTo("refused");
+        assertThat(result.getStaff()).isEqualTo(staff);
+    }
+
+    @Test
+    void refuseExceptionDay_exceptionNotFound_throwsAndDoesNotSave() {
+        when(exceptionDayRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> exceptionDayService.refuseExceptionDay(99L, 1L))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(exceptionDayRepository, never()).save(any());
+    }
 }
