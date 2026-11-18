@@ -24,7 +24,8 @@ const {
     fetchCalendarNotesByDateRange,
     fetchStudentData,
     fetchTutorData,
-    fetchStudentsByGuest
+    fetchStudentsByGuest,
+    fetchAllExceptionDays
 } = require('./javaApiService');
 
 /**
@@ -60,6 +61,11 @@ function makeLookupCache(fetchFn) {
  * - Calendar notes: always scoped to notes assigned to OR created by this
  *   tutor, regardless of role (unrelated to the STAFF/GENERIC/GUEST split
  *   above - notes were never role-gated the way prenotations are).
+ * - Exception days (one-off presence/absence requests): STAFF only - shown
+ *   as all-day notes on the calendar so staff can see who's in/out before
+ *   even opening the Availability page. Pending and approved requests are
+ *   both surfaced (a still-unreviewed request still matters for staffing);
+ *   refused ones carry no useful information once dismissed.
  *
  * @param {object} params
  * @param {number} params.tutorId - Session user id (also the GUEST's id, if isGuest)
@@ -67,13 +73,17 @@ function makeLookupCache(fetchFn) {
  * @param {boolean} params.isGuest
  * @param {string} params.startTime - ISO datetime string (inclusive), e.g. "2026-09-21T00:00:00"
  * @param {string} params.endTime - ISO datetime string (inclusive)
- * @returns {Promise<{prenotations: Array, calendarNotes: Array}>}
+ * @returns {Promise<{prenotations: Array, calendarNotes: Array, exceptionDays: Array}>}
  */
 async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime }) {
-    const [rawPrenotations, rawNotes, assignedStudents] = await Promise.all([
+    const [rawPrenotations, rawNotes, assignedStudents, rawExceptionDays] = await Promise.all([
         fetchPrenotationsByDateRange(startTime, endTime),
         fetchCalendarNotesByDateRange(startTime, endTime),
-        isGuest ? fetchStudentsByGuest(tutorId) : Promise.resolve(null)
+        isGuest ? fetchStudentsByGuest(tutorId) : Promise.resolve(null),
+        // No date-bounded Java endpoint for exception days - fetch everything
+        // and filter by day in Node below (same tradeoff already made for
+        // calendar notes' STAFF branch a few lines down).
+        isStaff ? fetchAllExceptionDays() : Promise.resolve([])
     ]);
 
     // Role-based prenotation visibility - mirrors the logic the Calendar
@@ -102,6 +112,30 @@ async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, e
 
     const getStudent = makeLookupCache(fetchStudentData);
     const getTutor = makeLookupCache(fetchTutorData);
+
+    // Exception days in range, approved or still pending, enriched with the
+    // requesting tutor's username (reusing the same getTutor cache as
+    // prenotations above). Date-only comparison since `day` has no time
+    // component - a day exactly on the boundary still counts as in range.
+    const rangeStartDay = startTime.slice(0, 10);
+    const rangeEndDay = endTime.slice(0, 10);
+    const exceptionDaysInRange = (rawExceptionDays || []).filter(exception =>
+        (exception.status === 'approved' || exception.status === 'pending') &&
+        exception.day >= rangeStartDay && exception.day <= rangeEndDay
+    );
+    const exceptionDays = await Promise.all(exceptionDaysInRange.map(async exception => {
+        const tutor = exception.tutorId ? await getTutor(exception.tutorId) : null;
+        return {
+            id: exception.id,
+            day: exception.day,
+            type: exception.type,
+            status: exception.status,
+            startTime: exception.startTime,
+            endTime: exception.endTime,
+            tutorId: exception.tutorId,
+            tutorUsername: tutor?.username || 'Unknown'
+        };
+    }));
 
     const enrichedPrenotations = await Promise.all(prenotations.map(async prenotation => {
         const studentId = prenotation.studentId;
@@ -133,7 +167,7 @@ async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, e
         };
     }));
 
-    return { prenotations: enrichedPrenotations, calendarNotes };
+    return { prenotations: enrichedPrenotations, calendarNotes, exceptionDays };
 }
 
 module.exports = {

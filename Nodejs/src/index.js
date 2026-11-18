@@ -737,6 +737,9 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             prenotations: calendarData.prenotations,
             calendarNotes: calendarData.calendarNotes,
+            // STAFF-only all-day chips, see getCalendarDataForRange - always
+            // empty for GENERIC/GUEST.
+            exceptionDays: calendarData.exceptionDays,
             // Erased students shouldn't be offered when creating a new prenotation
             students: (students || []).filter(s => !s.anonymizedAt),
             tutors: tutors || [],
@@ -751,6 +754,7 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             role: 'GENERIC',
             prenotations: [],
             calendarNotes: [],
+            exceptionDays: [],
             students: [],
             tutors: [],
             initialRangeStart: '',

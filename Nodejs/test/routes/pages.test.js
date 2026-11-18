@@ -230,6 +230,43 @@ describe('GET /api/calendar/data', () => {
         expect(res.body.prenotations).toHaveLength(1);
         expect(res.body.prenotations[0].studentId).toBe(10);
     });
+
+    test('a STAFF tutor sees approved and pending exception days in range, enriched with the tutor\'s username', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/exception-days').reply(200, [
+            { id: 10, day: '2026-09-03', type: 'absent', status: 'approved', tutorId: 2, startTime: null, endTime: null },
+            { id: 11, day: '2026-09-05', type: 'present', status: 'pending', tutorId: 2, startTime: '09:00:00', endTime: '12:00:00' },
+            // Out of the requested range - must be excluded.
+            { id: 12, day: '2026-09-10', type: 'absent', status: 'approved', tutorId: 2, startTime: null, endTime: null },
+            // Refused - carries no useful information once dismissed, must be excluded.
+            { id: 13, day: '2026-09-04', type: 'absent', status: 'refused', tutorId: 2, startTime: null, endTime: null }
+        ]);
+        javaApi().get('/api/users/2').reply(200, tutorFixture({ id: 2, username: 'other.tutor' }));
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.exceptionDays.map(e => e.id).sort()).toEqual([10, 11]);
+        expect(res.body.exceptionDays.find(e => e.id === 11).tutorUsername).toBe('other.tutor');
+    });
+
+    test('a GENERIC tutor never sees exception days on the calendar, even if some exist', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        const exceptionDaysScope = javaApi().get('/api/exception-days').reply(200, [
+            { id: 10, day: '2026-09-03', type: 'absent', status: 'approved', tutorId: 1 }
+        ]);
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.exceptionDays).toEqual([]);
+        // Not STAFF - exception days shouldn't even be fetched, not just filtered out client-side.
+        expect(exceptionDaysScope.isDone()).toBe(false);
+    });
 });
 
 describe('GET /lessons', () => {

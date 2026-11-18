@@ -131,7 +131,7 @@ function buildNoteSegments(note) {
  * @returns {boolean}
  */
 function isAllDayNote(event) {
-  return event.type === 'note' && event.startTime === '00:00' && event.endTime === '23:59';
+  return (event.type === 'note' || event.type === 'exception') && event.startTime === '00:00' && event.endTime === '23:59';
 }
 
 /**
@@ -211,6 +211,36 @@ function mergeServerDataIntoEvents(data) {
     data.calendarNotes.forEach(note => {
       if (existingNoteIds.has(note.id)) return;
       events.push(...buildNoteSegments(note));
+    });
+  }
+
+  // Exception days (presence/absence requests) - always empty for non-STAFF,
+  // see calendarDataService.js. Rendered as a single-day all-day chip
+  // (isAllDayNote), never a multi-day segment like notes since an
+  // exception_day row always covers exactly one date.
+  if (data && data.exceptionDays && data.exceptionDays.length) {
+    const existingExceptionIds = new Set(events.filter(e => e.type === 'exception').map(e => e.id));
+
+    const existingRawExceptionIds = new Set((window.serverData.exceptionDays || []).map(e => e.id));
+    data.exceptionDays.forEach(exception => {
+      if (!existingRawExceptionIds.has(exception.id)) {
+        window.serverData.exceptionDays.push(exception);
+      }
+    });
+
+    data.exceptionDays.forEach(exception => {
+      if (existingExceptionIds.has(exception.id)) return;
+      events.push({
+        id: exception.id,
+        type: 'exception',
+        date: exception.day,
+        startTime: '00:00',
+        endTime: '23:59',
+        excType: exception.type, // 'present' | 'absent'
+        status: exception.status, // 'approved' | 'pending'
+        tutorId: exception.tutorId,
+        tutorUsername: exception.tutorUsername || 'Unknown'
+      });
     });
   }
 }
@@ -708,6 +738,9 @@ function filterEventsByTutor(eventsToFilter) {
       const matchesAssignee = (event.tutorIds || []).some(id => String(id) === String(tutorFilterId));
       return matchesCreator || matchesAssignee;
     }
+    if (event.type === 'exception') {
+      return tutorFilterId === 'all' || String(event.tutorId) === String(tutorFilterId);
+    }
     return true;
   });
 }
@@ -781,6 +814,31 @@ function renderDayHeaders() {
 }
 
 /**
+ * Build the label + CSS classes for an exception-day all-day chip (STAFF
+ * only - see calendarDataService.js). Green for an approved/pending
+ * presence, red for an approved/pending absence; pending requests are drawn
+ * lighter/dashed since they're not yet confirmed, consistent with the
+ * green/red pending-request styling on the Availability page.
+ *
+ * @param {Object} exception - An 'exception' event (see mergeServerDataIntoEvents)
+ * @returns {{label: string, classes: string}}
+ */
+function exceptionChipInfo(exception) {
+  const isPresent = exception.excType === 'present';
+  const isPending = exception.status === 'pending';
+  const typeLabel = isPresent ? 'Presence' : 'Absence';
+  const label = isPending
+    ? `${exception.tutorUsername} - ${typeLabel} (pending)`
+    : `${exception.tutorUsername} - ${typeLabel}`;
+
+  const colorClasses = isPresent
+    ? (isPending ? 'bg-green-600/10 border-green-600 text-green-700 dark:text-green-400 border-dashed' : 'bg-green-600/20 border-green-600 text-green-700 dark:text-green-400')
+    : (isPending ? 'bg-destructive/10 border-destructive text-destructive border-dashed' : 'bg-destructive/20 border-destructive text-destructive');
+
+  return { label, classes: `border-l-[3px] ${colorClasses}` };
+}
+
+/**
  * Render the all-day notes row above the desktop week grid: one chip per
  * all-day note (see isAllDayNote), positioned under its matching day header
  * instead of stretched across all 24 hours in the grid below. Hides the
@@ -806,11 +864,18 @@ function renderAllDayNotesRow() {
     date.setDate(date.getDate() + day);
     const dateStr = formatDate(date);
 
-    const notesForDay = visibleEvents.filter(e => isAllDayNote(e) && e.date === dateStr);
-    if (notesForDay.length > 0) hasAny = true;
+    const notesForDay = visibleEvents.filter(e => isAllDayNote(e) && e.type === 'note' && e.date === dateStr);
+    const exceptionsForDay = visibleEvents.filter(e => isAllDayNote(e) && e.type === 'exception' && e.date === dateStr);
+    if (notesForDay.length > 0 || exceptionsForDay.length > 0) hasAny = true;
 
     html += `
       <div class="p-1 space-y-0.5 border-l border-border min-w-0 overflow-hidden">
+        ${exceptionsForDay.map(exception => {
+          const { label, classes } = exceptionChipInfo(exception);
+          return `
+          <div class="${classes} text-[10px] px-1.5 py-0.5 rounded truncate" title="${label}">${label}</div>
+        `;
+        }).join('')}
         ${notesForDay.map(note => {
           const showCreator = isStaff && note.creatorId !== currentUserId && note.creatorUsername;
           const label = showCreator ? `${note.description} (👤 ${note.creatorUsername})` : note.description;
@@ -1054,16 +1119,23 @@ function renderMobileAllDayNotes() {
   const isStaff = window.serverData?.userRole === 'STAFF';
 
   const dateStr = formatDate(currentMobileDate);
-  const notesForDay = filterEventsByTutor(events).filter(e => isAllDayNote(e) && e.date === dateStr);
+  const visibleEvents = filterEventsByTutor(events).filter(e => isAllDayNote(e) && e.date === dateStr);
+  const notesForDay = visibleEvents.filter(e => e.type === 'note');
+  const exceptionsForDay = visibleEvents.filter(e => e.type === 'exception');
 
-  row.innerHTML = notesForDay.map(note => {
+  const exceptionChips = exceptionsForDay.map(exception => {
+    const { label, classes } = exceptionChipInfo(exception);
+    return `<div class="${classes} text-xs px-2 py-1 rounded truncate" title="${label}">${label}</div>`;
+  }).join('');
+  const noteChips = notesForDay.map(note => {
     const showCreator = isStaff && note.creatorId !== currentUserId && note.creatorUsername;
     const label = showCreator ? `${note.description} (👤 ${note.creatorUsername})` : note.description;
     return `
     <div class="event-note${isOwnNote(note) ? '' : ' event-note-other'} text-xs px-2 py-1 rounded truncate ${isGuest ? '' : 'cursor-pointer'}" ${isGuest ? '' : `onclick="openEditNoteModal(${note.id})"`} title="${label}">${label}</div>
   `;
   }).join('');
-  row.classList.toggle('hidden', notesForDay.length === 0);
+  row.innerHTML = exceptionChips + noteChips;
+  row.classList.toggle('hidden', visibleEvents.length === 0);
 }
 
 /**
