@@ -87,12 +87,15 @@ describe('GET /calendar', () => {
     test('renders for an authenticated GENERIC tutor', async () => {
         const agent = await tutorAgent();
         javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
-        // GET /calendar now fetches a bounded ±7-day window via the date-range
+        // GET /calendar now fetches a bounded +/- 7-day window via the date-range
         // endpoints instead of everything - see calendarDataService.js.
         const prenotationsScope = javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
         const notesScope = javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
         javaApi().get('/api/students').reply(200, []);
         javaApi().get('/api/users').reply(200, []);
+        const exceptionDaysScope = javaApi().get('/api/exception-days').reply(200, [
+            { id: 10, day: '2026-09-03', type: 'absent', status: 'approved', tutorId: 1 }
+        ]);
 
         const res = await agent.get('/calendar');
         expect(res.status).toBe(200);
@@ -100,6 +103,35 @@ describe('GET /calendar', () => {
         // (which would also render 200 with empty data).
         expect(prenotationsScope.isDone()).toBe(true);
         expect(notesScope.isDone()).toBe(true);
+        // A GENERIC tutor isn't STAFF - exception days shouldn't be fetched
+        // on initial page load either, not just on the on-demand range endpoint.
+        expect(exceptionDaysScope.isDone()).toBe(false);
+        expect(res.text).toContain('exceptionDays: []');
+    });
+
+    test('renders for an authenticated STAFF tutor, with exception days embedded for the client', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        // Fetched twice: once for the role check above, once more inside
+        // getCalendarDataForRange's getTutor cache to enrich the exception
+        // day below with its requester's username.
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students').reply(200, []);
+        javaApi().get('/api/users').reply(200, []);
+        // The initial page load's range is "today" +/- 7 days (see GET /calendar
+        // in index.js) - use today's own date so this exception always lands
+        // inside it, whenever the suite happens to run.
+        const today = new Date().toISOString().slice(0, 10);
+        const exceptionDaysScope = javaApi().get('/api/exception-days').reply(200, [
+            { id: 10, day: today, type: 'absent', status: 'approved', tutorId: 1 }
+        ]);
+
+        const res = await agent.get('/calendar');
+        expect(res.status).toBe(200);
+        expect(exceptionDaysScope.isDone()).toBe(true);
+        expect(res.text).toContain('"id":10');
     });
 });
 
@@ -265,6 +297,22 @@ describe('GET /api/calendar/data', () => {
         expect(res.status).toBe(200);
         expect(res.body.exceptionDays).toEqual([]);
         // Not STAFF - exception days shouldn't even be fetched, not just filtered out client-side.
+        expect(exceptionDaysScope.isDone()).toBe(false);
+    });
+
+    test('a GUEST never sees exception days on the calendar either', async () => {
+        const agent = await tutorAgent({ id: 21, role: 'GUEST' });
+        javaApi().get('/api/users/21').reply(200, tutorFixture({ id: 21, role: 'GUEST' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students/guest/21').reply(200, []);
+        const exceptionDaysScope = javaApi().get('/api/exception-days').reply(200, [
+            { id: 10, day: '2026-09-03', type: 'absent', status: 'approved', tutorId: 21 }
+        ]);
+
+        const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
+        expect(res.status).toBe(200);
+        expect(res.body.exceptionDays).toEqual([]);
         expect(exceptionDaysScope.isDone()).toBe(false);
     });
 });
