@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: November 17, 2026  
+**Last Updated**: November 18, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -132,6 +132,8 @@ The heart of the system is a robust RESTful API built with Spring Boot 3.4.1 and
 - `Test`: Student assessments and exam results
 - `CalendarNote`: Notes and reminders for the calendar
 - `Pack`: Prepaid lesson packages (hours purchased for a student); new lessons are auto-drawn from (and split across, if only partially fitting) a student's active pack - see [01_Java_Backend_API.md - Packs](01_Java_Backend_API.md#packs)
+- `Availability`: A tutor's recurring weekly availability slots, managed by STAFF - see [01_Java_Backend_API.md - Availability](01_Java_Backend_API.md#availability)
+- `ExceptionDay`: A one-off presence/absence exception to a tutor's regular `Availability`, subject to STAFF approval - see [01_Java_Backend_API.md - ExceptionDay](01_Java_Backend_API.md#exceptionday)
 - `Admin`: System administrators
 
 **Technologies**:
@@ -240,6 +242,13 @@ PostgreSQL relational database for data persistence.
 - Mobile: Add Prenotation/Add Note buttons visible directly on the page (no need to open the menu), redundant week-navigation controls hidden
 - Home dashboard mini calendar: click a day to jump straight to it on the Calendar page
 
+#### 📆 Availability
+- Browse any tutor's recurring weekly schedule, week by week, with a flat tutor list and a "by day" view for quickly finding who's free
+- STAFF can add, edit, and delete a tutor's recurring availability slots; STAFF also has a confirmation-gated "Delete All" action wiping every tutor's schedule at once
+- Any tutor can submit a one-off "presence" or "absence" exception request for a specific date (validated against their own regular schedule); STAFF review (approve/refuse) or delete one outright, for any tutor, with a push notification both on submission and on the outcome
+- A GENERIC tutor only ever sees their own schedule and their own pending requests (read-only) - never other tutors'
+- Approved/pending exceptions also appear as a STAFF-only all-day chip on the main Calendar page
+
 #### 📊 Excel Reports
 - **Monthly lesson report**: All lessons of the month
 - **Student report**: Lessons specific to each student
@@ -288,6 +297,7 @@ Tutors with **STAFF** role have additional features:
 - **Calendar tutor filter**: Filter the calendar view to show only a selected tutor's prenotations (notes remain always visible)
 - **Extended reports**: Access to reports from other tutors (if authorized)
 - **Student Profile page**: per-student view combining evaluations (grouped by subject and tutor, one toggleable chart line per pair), hours taught, and prenotations across every tutor who's worked with that student - not just their own; can edit/delete a student's prenotations directly from this page
+- **Availability management**: add, edit, and delete any tutor's recurring weekly availability slots; approve, refuse, or delete any tutor's presence/absence exception requests; a "Delete All" action for wiping every tutor's schedule at once, gated behind a typed confirmation phrase
 - **Advanced configurations**: System settings
 
 ---
@@ -785,6 +795,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
+| **2.5.0** | 2026-11-18 | New Availability page: tutors' recurring weekly schedules, managed by STAFF (add/edit/delete slots, plus a type-to-confirm "Delete All" danger zone), with a GENERIC tutor scoped to viewing only their own. Any GENERIC/STAFF tutor can submit a one-off presence/absence exception request, validated against their regular schedule; STAFF approve, refuse, or delete one outright, for any tutor - with push notifications both on submission and on the outcome. An approved or pending exception also shows up as a STAFF-only all-day chip on the Calendar page. Full English/Italian translation added for the new page. Also: STAFF can mark a lesson package as paid/settled (now a prerequisite for closing it); the Privacy page can show the center's own Markdown-authored notice; added `dashboard_note`/`see_dashboard_note`/`ticket` tables ahead of their features (schema only, no application code yet). |
 | **2.4.1** | 2026-10-24 | STAFF can now delete a lesson package from the Student Profile (its lessons are kept, just unlinked). Editing a lesson now re-splits it against its pack if the new duration overflows the pack's remaining hours, same as on creation. The Java test suite no longer needs a real Postgres connection to run (`mvn test` now boots against in-memory H2). Fixed the 30-minutes-before-a-lesson reminder firing 1-2 hours late (it compared a UTC-built window against locally-stored timestamps), and some users silently never receiving push notifications (an unbounded calendar-note description could exceed Web Push's payload limit, and non-404/410 send failures had no user/endpoint context to diagnose them by). Fixed the Calendar showing a GUEST the prenotation creator's username instead of the assigned tutor's, and the STAFF tutor filter missing notes assigned to a tutor other than their creator. |
 | **2.4.0** | 2026-10-07 | A push notification now goes out 30 minutes before a prenotation starts, to both the assigned tutor and the student - a new, independent per-minute job alongside the existing once-daily reminder. A GENERIC tutor can no longer edit or delete a prenotation STAFF created on their behalf - enforced server-side (`403`) and shown on the Calendar in a distinct darker blue with the creator's username; fixed a related bug where editing a prenotation reassigned its creator to the editor, and a gap where GUEST could call the delete endpoint directly. |
 | **2.3.8** | 2026-10-02 | Fixed a second Excel sheet-naming crash found right after 2.3.7 shipped - a student surname ending in an apostrophe hit a different ExcelJS rule (no leading/trailing quote in a sheet name). Sheet-name sanitization is now a single shared helper covering both rules. |

@@ -19,16 +19,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.5.0] - 2026-11-17
+## [2.5.0] - 2026-11-18
 
 ### Added
-- **Database**: added five new tables ahead of their corresponding features - `availability` and `exception_day` (tutor weekly availability and one-off exceptions to it, the latter with a STAFF-approval workflow), `dashboard_note` and `see_dashboard_note` (time-bound admin notices and per-tutor read tracking), and `ticket` (support tickets between users and admins). Schema only - no JPA entities, repositories, or API endpoints yet. See [07_Database_Configuration.md](07_Database_Configuration.md#database-schema).
+- **Database**: added five new tables ahead of their corresponding features - `availability` and `exception_day` (tutor weekly availability and one-off exceptions to it, with a STAFF-approval workflow for the latter - see below), `dashboard_note` and `see_dashboard_note` (time-bound admin notices and per-tutor read tracking), and `ticket` (support tickets between users and admins). `dashboard_note`/`see_dashboard_note`/`ticket` remain schema only - no JPA entities, repositories, or API endpoints yet. See [07_Database_Configuration.md](07_Database_Configuration.md#database-schema).
 - **Database**: added a `checked` column to `pack` (`'open'`/`'closed'`, default `'open'`), marking whether a package has been paid/settled.
 - **Student Profile**: STAFF can now mark a lesson package as paid/settled via a checkbox on its card - `PUT /api/packs/:id/checked`, restricted server-side to STAFF (`isStaff`). One-way (no action unchecks it). A package can no longer be closed (`PUT /api/packs/:id/close`) until it's been marked paid/settled - enforced both by disabling the "Close Package" button client-side and with a 409 on the Java endpoint if attempted anyway.
 - **Privacy Page**: the `/privacy` page can now show the tutoring center's own full privacy notice, written in Markdown in `Nodejs/config/privacy-notice.md` and rendered to HTML. The file is gitignored (its content is center-specific) but auto-created with a placeholder on first server start, so the feature works out of the box. See [05_Service_Modules.md](05_Service_Modules.md#privacynoticejs).
+- **Availability**: new `/availability` page - a tutor's recurring weekly schedule, managed by STAFF (add/edit/delete any tutor's slots: `POST`/`PUT`/`DELETE /api/availability[/:id]`) with a GENERIC tutor restricted server-side to viewing only their own, never other tutors'. See [03_Nodejs_Frontend.md - Availability Page](03_Nodejs_Frontend.md#availability-page) and [01_Java_Backend_API.md - Availability](01_Java_Backend_API.md#availability).
+- **Availability**: any GENERIC/STAFF tutor can submit a one-off presence/absence exception request for themselves, validated against their own regular schedule before it's accepted (an absence needs an existing slot that weekday; a presence must fall entirely outside every existing slot that weekday). STAFF approve, refuse, or delete one outright, for any tutor (`PUT /api/exception-days/:id/{approve,refuse}`, `DELETE /api/exception-days/:id`). See [01_Java_Backend_API.md - ExceptionDay](01_Java_Backend_API.md#exceptionday).
+- **Availability**: push notifications added for the exception-request lifecycle - every active STAFF member (except the submitter) is notified when a new request comes in; the original requester is notified with the outcome when STAFF approves or refuses it.
+- **Availability**: a STAFF-only "Danger Zone" action (`DELETE /api/availability`, no `{id}`) wipes every tutor's recurring availability at once - gated behind typing the exact phrase `DELETE ALL` into a confirmation modal, re-validated server-side (not just a disabled button client-side), since it's irreversible.
+- **Calendar**: an approved or still-pending exception-day request now also shows as a STAFF-only all-day chip on the main Calendar page (green for a presence, red for an absence; a pending one renders lighter/dashed) - see [03_Nodejs_Frontend.md - Exception-Day All-Day Chips](03_Nodejs_Frontend.md#exception-day-all-day-chips-staff-only). Visibility is enforced server-side (the Java call isn't even made for a non-STAFF viewer), not just hidden client-side.
+- **Internationalization**: full English/Italian translation added for the new Availability page (previously entirely hardcoded English) - headings, buttons, modals, and alert/confirm messages. Weekday/month names now reuse the existing `common.daysFull`/`common.days`/`common.monthsShort` dictionaries instead of a separate hardcoded array, and displayed times switched from 12-hour am/pm to 24-hour, matching every other page in the app.
 
 ### Changed
 - **Docs**: updated the ER diagram ([docs/TUTORLY_Normal.png](TUTORLY_Normal.png)) to include the five new tables above.
+
+### Fixed
+- **Docs**: the local HTTPS setup guide, `.env.example`, and `generate-ssl-cert.sh` all documented the certificate directory as `ssl/`, but the app's actual config default (`server_utilities/config.js`) - and any real `.env` - point to `certs/`. Regenerating the certificate by following the docs silently wrote to the wrong, unused directory, so the app kept serving the old (expired) one. Script and docs now match the real default.
 
 ---
 
@@ -534,4 +543,4 @@ All notable changes should be documented in this file when creating pull request
 
 **Maintained by**: Tutorly Development Team (Skenny)  
 **Email**: skenny.dev@gmail.com  
-**Last Updated**: November 17, 2026
+**Last Updated**: November 18, 2026

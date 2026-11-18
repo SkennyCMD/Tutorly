@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: November 17, 2026  
+**Last Updated**: November 18, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -1222,6 +1222,74 @@ Backs the Web Push notification feature (standard Push API + VAPID, not Firebase
 ```
 
 `endpoint`/`p256dh`/`auth` come straight from the browser's `PushSubscription.toJSON()`; `userAgent` is optional, kept only for debugging which device a subscription belongs to. `POST` upserts by `endpoint` (unique in the DB) - re-subscribing the same browser (e.g. after the push service rotates its keys) updates the existing row instead of creating a duplicate. See [06_Database_Migrations.md - Automatic: `push_subscription` table added](06_Database_Migrations.md#automatic-push_subscription-table-added).
+
+---
+
+### Availability
+
+A tutor's recurring weekly availability slots. See [03_Nodejs_Frontend.md - Availability Page](03_Nodejs_Frontend.md#availability-page) for the UI and [07_Database_Configuration.md - Availability](07_Database_Configuration.md#10-availability) for the table schema.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/availability` | List every tutor's recurring weekly availability slots |
+| GET | `/availability/{id}` | Slot details by ID |
+| GET | `/availability/tutor/{tutorId}` | Slots belonging to one tutor |
+| POST | `/availability` | Create a new recurring slot |
+| PUT | `/availability/{id}` | Update a slot's day/time range |
+| DELETE | `/availability/{id}` | Delete a single slot |
+| DELETE | `/availability` | **Delete every slot, for every tutor** - see below |
+
+**Example Request Body (POST/PUT) - with DTO:**
+```json
+{
+  "weekDay": 1,
+  "startTime": "09:00:00",
+  "endTime": "12:00:00",
+  "tutorId": 4
+}
+```
+`weekDay` is ISO-8601 (1=Monday...7=Sunday). `PUT` ignores `tutorId` - a slot's tutor is never reassigned through this endpoint, only its day/time range.
+
+Role restriction (creating, editing, or deleting a slot is STAFF-only) is enforced in the Node.js frontend layer, not here - same as every other entity in this codebase. The bulk `DELETE /availability` (no `{id}`) wipes the entire table and returns `{ "deletedCount": N }` - backs the "Danger Zone" action on the Availability page; the Node layer re-validates a typed confirmation phrase before ever calling it, since there's no undoing it.
+
+---
+
+### ExceptionDay
+
+A one-off deviation from a tutor's regular `Availability` for a specific date, subject to STAFF approval. See [03_Nodejs_Frontend.md - Availability Page](03_Nodejs_Frontend.md#availability-page) for the submit/review/notification flow and [07_Database_Configuration.md - ExceptionDay](07_Database_Configuration.md#11-exceptionday) for the table schema.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/exception-days` | List every exception, for every tutor, regardless of status |
+| GET | `/exception-days/{id}` | Exception details by ID |
+| GET | `/exception-days/tutor/{tutorId}` | Exceptions requested by one tutor |
+| GET | `/exception-days/tutor/{tutorId}/range?start={start}&end={end}` | One tutor's exceptions in a date range (inclusive) |
+| POST | `/exception-days` | Submit a new exception request (always saved `pending`) |
+| PUT | `/exception-days/{id}/approve` | Approve a pending exception |
+| PUT | `/exception-days/{id}/refuse` | Refuse a pending exception |
+| DELETE | `/exception-days/{id}` | Delete an exception outright, regardless of status or type |
+
+**Example Request Body (POST) - with DTO:**
+```json
+{
+  "day": "2026-12-24",
+  "type": "absent",
+  "startTime": null,
+  "endTime": null,
+  "tutorId": 4
+}
+```
+`type` is `'present'` or `'absent'`. A `'present'` exception requires `startTime`/`endTime` (and must fall entirely outside the tutor's regular availability on that weekday); an `'absent'` one must have neither, and the tutor must normally be available that weekday - there's nothing to be absent *from* otherwise.
+
+**Example Request Body (PUT .../approve or .../refuse) - with DTO:**
+```json
+{
+  "staffId": 1
+}
+```
+Records which STAFF member reviewed it.
+
+Role restriction is enforced in the Node.js frontend layer, not here: submitting a request for yourself is GENERIC/STAFF; approving, refusing, or deleting one - for any tutor - is STAFF only. Approving sends a push notification to the requester with the outcome; submitting a new request notifies every active STAFF member except the submitter.
 
 ---
 

@@ -5,7 +5,7 @@ Comprehensive guide for testing the Tutorly application including unit tests, in
 ---
 
 **Document**: 08_Testing_Guide.md  
-**Last Updated**: November 17, 2026  
+**Last Updated**: November 18, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -66,8 +66,8 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
-| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription` - 145 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (60 total) has at least one Jest/Supertest test (208 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
+| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription`, `Availability`, `ExceptionDay` - 202 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (70 total) has at least one Jest/Supertest test (281 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -299,16 +299,19 @@ Nodejs/
     │   ├── students.test.js       # POST /api/students (the "quick add student" modal)
     │   ├── push.test.js
     │   ├── reports.test.js        # Excel downloads + the one JSON report endpoint
-    │   └── dashboard.test.js      # GET /api/dashboard/calendar-events
+    │   ├── dashboard.test.js      # GET /api/dashboard/calendar-events
+    │   └── availability.test.js  # /api/availability, /api/exception-days (Availability page)
     ├── reminderScheduler.test.js  # server_utilities/reminderScheduler.js directly - both
     │                               # reminder jobs, not a route, so it sits outside test/routes/
     ├── pushService.test.js        # server_utilities/pushService.js directly - truncation,
     │                               # 404/410 pruning, error logging - also not a route
+    ├── availabilityDataService.test.js  # server_utilities/availabilityDataService.js directly -
+    │                               # pure data-shaping, no HTTP, so it sits outside test/routes/
     └── privacyNotice.test.js      # server_utilities/privacyNotice.js directly - file
                                     # auto-creation and Markdown rendering, fs mocked
 ```
 
-Every route in `src/index.js` (60 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `pushService.js`, and `privacyNotice.js` - **208 tests across 17 files.**
+Every route in `src/index.js` (70 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **281 tests across 19 files.**
 
 ### Login Helper
 
@@ -724,4 +727,4 @@ Nodejs/
 
 ---
 
-**Last Updated**: November 17, 2026
+**Last Updated**: November 18, 2026

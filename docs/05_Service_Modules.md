@@ -5,7 +5,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
 ---
 
 **Document**: 05_Service_Modules.md  
-**Last Updated**: November 17, 2026  
+**Last Updated**: November 18, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -19,6 +19,7 @@ This file contains a list of all the utility modules in Nodejs/server_utilities 
   - [authMiddleware.js](#authmiddlewarejs)
   - [javaApiService.js](#javaapiservicejs)
   - [calendarDataService.js](#calendardataservicejs)
+  - [availabilityDataService.js](#availabilitydataservicejs)
   - [pushService.js](#pushservicejs)
   - [reminderScheduler.js](#reminderschedulerjs)
   - [privacyNotice.js](#privacynoticejs)
@@ -368,7 +369,20 @@ Shared range-bounded fetch/enrich logic for the Calendar page, added in 2.3.3 to
 **Role:** the one place both `GET /calendar` (initial page load) and `GET /api/calendar/data` (on-demand fetch as a tutor navigates) get their prenotations/notes from, so the two stay in sync instead of duplicating the same role-filtering and enrichment logic.
 
 **Exports:**
-- `getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime })`: fetches prenotations and notes bounded to `[startTime, endTime]` via `fetchPrenotationsByDateRange`/`fetchCalendarNotesByDateRange`, applies the same STAFF/GENERIC/GUEST visibility rules the Calendar page has always used, and enriches each prenotation's student/tutor/creator references through a promise-memoizing lookup cache (dedupes repeat lookups for the same id, instead of firing a fresh HTTP call every time) before returning `{ prenotations, calendarNotes }`. Each enriched prenotation also carries `creatorId`, `creatorUsername`, and `canModify` (`true` for STAFF always, for a GENERIC tutor only if they created it themselves, always `false` for GUEST). The Calendar client uses `canModify` to block opening the edit/delete modal (mirroring the same rule `PUT`/`DELETE /api/prenotations/:id` enforce server-side) and to render a GENERIC tutor's staff-assigned prenotation differently - but the client must check the viewer's own role too, not `canModify` alone, since it's `false` for GUEST for an unrelated reason (GUEST never modifies anything); see [03_Nodejs_Frontend.md - Assigned-Tutor / Assigned-By Username on a Prenotation](03_Nodejs_Frontend.md#assigned-tutor--assigned-by-username-on-a-prenotation).
+- `getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime })`: fetches prenotations and notes bounded to `[startTime, endTime]` via `fetchPrenotationsByDateRange`/`fetchCalendarNotesByDateRange`, applies the same STAFF/GENERIC/GUEST visibility rules the Calendar page has always used, and enriches each prenotation's student/tutor/creator references through a promise-memoizing lookup cache (dedupes repeat lookups for the same id, instead of firing a fresh HTTP call every time) before returning `{ prenotations, calendarNotes, exceptionDays }`. Each enriched prenotation also carries `creatorId`, `creatorUsername`, and `canModify` (`true` for STAFF always, for a GENERIC tutor only if they created it themselves, always `false` for GUEST). The Calendar client uses `canModify` to block opening the edit/delete modal (mirroring the same rule `PUT`/`DELETE /api/prenotations/:id` enforce server-side) and to render a GENERIC tutor's staff-assigned prenotation differently - but the client must check the viewer's own role too, not `canModify` alone, since it's `false` for GUEST for an unrelated reason (GUEST never modifies anything); see [03_Nodejs_Frontend.md - Assigned-Tutor / Assigned-By Username on a Prenotation](03_Nodejs_Frontend.md#assigned-tutor--assigned-by-username-on-a-prenotation).
+- `exceptionDays` (added alongside the STAFF-only all-day exception chips - see [03_Nodejs_Frontend.md - Exception-Day All-Day Chips](03_Nodejs_Frontend.md#exception-day-all-day-chips-staff-only)): fetched from the Java API only when `isStaff` (resolves to `[]`, no Java call made, for GENERIC/GUEST - fail-closed, not just filtered after the fact), filtered to `approved`/`pending` status and within `[startTime, endTime]` by date, and enriched with the requesting tutor's username via the same lookup cache as prenotations.
+
+---
+
+### `availabilityDataService.js`
+Pure, synchronous data-shaping logic for the Availability page (`GET /availability` in `src/index.js`) - no fetching here, which is what makes it easily unit-testable without mocking HTTP calls. See [03_Nodejs_Frontend.md - Availability Page](03_Nodejs_Frontend.md#availability-page) for the feature this backs.
+
+**Role:** takes the raw lists already fetched from the Java API (users, availability, exception days) and turns them into the per-tutor shape `public/js/availability.js` renders.
+
+**Exports:**
+- `usernameInitials(username)`: derives a 2-letter avatar initial from a username (`app_user` has no first/last name) - `"firstname.lastname"`/`"firstname_lastname"`-style usernames yield one initial per part, anything else falls back to the first two characters.
+- `buildTutorAvailability({ users, availability, exceptionDays, restrictToTutorId })`: only active, non-erased GENERIC/STAFF users are included (GUEST isn't a tutor). Returns `{ id, name, initials, days, exceptions }` per tutor - `days` keyed by JS `Date.getDay()` (converted from the Java entity's ISO-8601 `weekDay`, 1=Monday...7=Sunday), each slot kept as `{ id, start, end }` so the client can target that specific row for edit/delete; `exceptions` keyed by `"YYYY-MM-DD"`, approved-only, each kept as `{ id, type, startTime, endTime }` for the same reason (STAFF can delete an approved exception outright from the week view). `restrictToTutorId`, when set, limits the result to just that one tutor - how a GENERIC viewer is scoped to themselves; STAFF pass `null`.
+- `getPendingExceptions({ users, exceptionDays, restrictToTutorId })`: the "Pending Requests" list - `pending`-status exceptions only, enriched with the requesting tutor's username (the raw row only has `tutorId`). Same `restrictToTutorId` scoping as above.
 
 ---
 
@@ -617,7 +631,7 @@ i18nMiddleware(req, res, next)
 
 ---
 
-**Last Updated**: November 17, 2026
+**Last Updated**: November 18, 2026
 
 ## Maintenance
 
@@ -629,4 +643,4 @@ To add new features:
 5. Update this README
 ---
 
-**Last Updated**: November 17, 2026  
+**Last Updated**: November 18, 2026  

@@ -5,7 +5,7 @@ This document provides comprehensive information about the Tutorly database stru
 ---
 
 **Document**: 07_Database_Configuration.md  
-**Last Updated**: November 17, 2026  
+**Last Updated**: November 18, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -33,7 +33,7 @@ Tutorly uses **PostgreSQL 12+** as its relational database management system. Th
 - **Prenotations**: Lesson bookings and reservations
 - **Tests**: Student assessments and grades
 - **Calendar Notes**: Planning and task management
-- **Availability / Exception Days**: Tutor weekly availability and one-off exceptions to it (schema only - no application code yet)
+- **Availability / Exception Days**: Tutor weekly availability and one-off exceptions to it, with a STAFF-approval workflow for exceptions
 - **Dashboard Notes**: Time-bound notices from admins to tutors (schema only - no application code yet)
 - **Tickets**: Support tickets raised by users and handled by admins (schema only - no application code yet)
 
@@ -241,8 +241,6 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 
 #### 10. **Availability**
 
-> **Schema only** - added directly to [Database/init.sql](../Database/init.sql) ahead of the corresponding feature; no JPA entity, repository, or API endpoint exists for this table yet.
-
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique availability-slot ID |
@@ -251,13 +249,11 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | `end_time` | TIME(0) | NOT NULL, CHECK > `start_time` | Slot end time |
 | `id_tutor` | BIGINT | FK → User(id), NOT NULL | Tutor this recurring availability belongs to |
 
-**Purpose**: Future home for a tutor's regular weekly availability (e.g. "available Mondays 9:00-13:00"). Deleting the tutor cascades to their availability slots.
+**Purpose**: A tutor's regular weekly availability (e.g. "available Mondays 9:00-13:00"), managed by STAFF on the Availability page - see [03_Nodejs_Frontend.md - Availability Page](03_Nodejs_Frontend.md#availability-page) and [01_Java_Backend_API.md - Availability](01_Java_Backend_API.md#availability). Deleting the tutor cascades to their availability slots.
 
 ---
 
 #### 11. **ExceptionDay**
-
-> **Schema only** - same as `Availability` above, no application code yet.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -270,7 +266,7 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | `id_tutor` | BIGINT | FK → User(id), NOT NULL | Tutor requesting the exception |
 | `id_staff` | BIGINT | FK → User(id), nullable | STAFF member who reviewed it, if any |
 
-**Purpose**: Future home for one-off deviations from a tutor's regular `Availability` (e.g. "unavailable on 2026-12-24" or "available 14:00-16:00 instead of the usual slot"), subject to STAFF approval. `id_staff` is `ON DELETE SET NULL` so removing the reviewing staff account doesn't delete the exception; `id_tutor` is `ON DELETE CASCADE`.
+**Purpose**: One-off deviations from a tutor's regular `Availability` (e.g. "unavailable on 2026-12-24" or "available 14:00-16:00 instead of the usual slot"). Any GENERIC/STAFF tutor can submit one for themselves (always created `pending`); only STAFF can approve, refuse, or delete one outright, for any tutor - see [01_Java_Backend_API.md - ExceptionDay](01_Java_Backend_API.md#exceptionday). An approved exception overrides the tutor's regular schedule for that one date; it's also surfaced as an all-day chip on the main Calendar page, STAFF-only. `id_staff` is `ON DELETE SET NULL` so removing the reviewing staff account doesn't delete the exception; `id_tutor` is `ON DELETE CASCADE`.
 
 ---
 
@@ -341,8 +337,8 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | **Student → Pack** | One-to-Many | A student can have many lesson packages |
 | **Pack → Lesson** | One-to-Many, optional | A package can have lessons drawn from it; a lesson doesn't need a package |
 | **User → Student** | One-to-Many, optional | A `GUEST` user can be linked to student(s) via `Student.id_user` - visibility restriction enforced in the Node.js frontend |
-| **User → Availability** | One-to-Many | A tutor has many recurring weekly availability slots (schema only) |
-| **User → ExceptionDay** | One-to-Many (2 roles) | As the requesting tutor OR as the reviewing staff member (schema only) |
+| **User → Availability** | One-to-Many | A tutor has many recurring weekly availability slots |
+| **User → ExceptionDay** | One-to-Many (2 roles) | As the requesting tutor OR as the reviewing staff member |
 | **Admin → DashboardNote** | One-to-Many | An admin authors many dashboard notices (schema only) |
 | **User → DashboardNote** | Many-to-Many | Tutors see notices; tracked via `see_dashboard_note` (schema only) |
 | **User → Ticket** | One-to-Many, optional | A user raises many support tickets (schema only) |

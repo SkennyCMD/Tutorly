@@ -5,7 +5,7 @@ Technical terms and acronyms used in the Tutorly project.
 ---
 
 **Document**: 11_Glossary.md  
-**Last Updated**: November 17, 2026  
+**Last Updated**: November 18, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -29,7 +29,7 @@ Process of verifying the identity of a user. Tutorly uses bcrypt-hashed password
 Process of determining what an authenticated user is allowed to do. Tutorly has role-based authorization (STAFF, GENERIC, ADMIN).
 
 **Availability**  
-Database table (schema only, no application code yet) holding a tutor's recurring weekly availability slots (day of week, start/end time).
+A tutor's recurring weekly availability slots (day of week, start/end time), managed on the Availability page. STAFF can add, edit, and delete any tutor's slots; a GENERIC tutor can only view their own.
 
 ---
 
@@ -105,7 +105,7 @@ Web application framework for Node.js used in Tutorly's frontend server.
 Library used to generate Excel reports for lessons and statistics.
 
 **Exception Day**  
-Database table (schema only, no application code yet) holding one-off deviations from a tutor's regular `Availability` (marked present or absent for a specific date), subject to STAFF approval.
+A one-off deviation from a tutor's regular `Availability` (marked present or absent for a specific date). A GENERIC or STAFF tutor submits one for themselves as a pending request; only STAFF can approve, refuse, or delete one, for any tutor. An approved exception overrides the tutor's schedule on that date and also appears, STAFF-only, as an all-day chip on the Calendar page.
 
 ---
 

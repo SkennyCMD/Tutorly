@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: November 17, 2026  
+**Last Updated**: November 18, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -45,6 +45,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 - ✅ Calendar weekly-repeat prenotations and continuous multi-day/all-day notes
 - ✅ Student evaluations (test marks) with per-student progress chart and running average
 - ✅ STAFF-only Student Profile page: per-subject/tutor marks chart with toggleable lines, hours breakdown, prenotation management, and lesson-package (Pack) tracking with auto-assignment
+- ✅ Availability page: tutor weekly schedules managed by STAFF, with GENERIC/STAFF-submitted presence/absence exception requests subject to STAFF approval - see [Availability Page](#availability-page)
 
 ---
 
@@ -73,6 +74,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 | `/home` | GET | Dashboard | Tutor/Admin |
 | `/lessons` | GET | Lessons management | Tutor/Admin |
 | `/calendar` | GET | Calendar view | Tutor/Admin |
+| `/availability` | GET | Tutor weekly availability + exception requests | Tutor/Admin (not GUEST) |
 | `/reports` | GET | Evaluations (student marks/tests, with per-student stats chart) | Tutor/Admin |
 | `/student/:id` | GET | Student profile (marks chart, hours, prenotations, lesson packages) | STAFF only |
 | `/admin` | GET | Admin panel | Admin only |
@@ -1038,6 +1040,7 @@ Default admin account (created via Java API):
 | GET | `/home` | Home dashboard (today's tasks, lessons, prenotations; GUEST-only "My Students" section) |
 | GET | `/lessons` | Lesson management interface (blocked for `guest` via `blockGuest`) |
 | GET | `/calendar` | Calendar view with notes |
+| GET | `/availability` | Tutor weekly availability + exceptions - see [Availability Page](#availability-page) (blocked for `guest` via `blockGuest`) |
 | GET | `/reports` | Evaluations page (blocked for `guest` via `blockGuest`) |
 
 ---
@@ -1200,6 +1203,34 @@ Body: {
 | PUT | `/api/calendar-notes/:id` | Staff, blocked for `guest` (`blockGuestApi`) | Update note |
 | DELETE | `/api/calendar-notes/:id` | Staff | Delete note |
 | GET | `/api/calendar-notes/range` | Tutor | Get notes by date range |
+
+---
+
+### API Endpoints - Availability
+
+Backs the `/availability` page - see [Availability Page](#availability-page) for the full feature. STAFF manage every tutor's schedule; a GENERIC tutor can only view their own, enforced server-side (not just hidden in the UI).
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | `/api/availability` | Staff | Create a new recurring slot for any tutor |
+| PUT | `/api/availability/:id` | Staff | Update a slot's day/time range (its tutor is never reassigned) |
+| DELETE | `/api/availability/:id` | Staff | Delete a single slot |
+| DELETE | `/api/availability` | Staff | Delete every slot, for every tutor - the "Danger Zone" action. Requires a `confirmText` field exactly equal to `"DELETE ALL"`, re-validated here (not just by the disabled submit button client-side) since there's no undoing it |
+
+---
+
+### API Endpoints - Exception Days
+
+A tutor's one-off deviation from their regular `Availability` for a specific date (present or absent), subject to STAFF approval.
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | `/api/exception-days` | Tutor, blocked for `guest` (`blockGuestApi`) | Submit a new exception request for yourself (always saved pending; `tutorId` forced server-side from the session, never client-supplied). Notifies every active STAFF member except the submitter |
+| PUT | `/api/exception-days/:id/approve` | Staff | Approve a pending request (`staffId` forced from the session). Notifies the requester that it was approved |
+| PUT | `/api/exception-days/:id/refuse` | Staff | Refuse a pending request. Notifies the requester that it was refused |
+| DELETE | `/api/exception-days/:id` | Staff | Delete an exception outright, regardless of status or type |
+
+An approved exception overrides the tutor's regular schedule on that date (absence clears it; presence swaps in the exception's own hours), and is also surfaced as a STAFF-only all-day chip on the main Calendar page - see [Exception-Day All-Day Chips (STAFF only)](#exception-day-all-day-chips-staff-only).
 
 ---
 
@@ -1400,7 +1431,7 @@ Standard Web Push (a VAPID keypair), not Firebase Cloud Messaging. Notifies a `G
 
 The application auto-detects each visitor's language from the browser's `Accept-Language` header and serves fully translated pages — there is no manual language switcher, no cookie, and no new npm dependency. English and Italian are currently supported, with English as the fallback for unsupported languages.
 
-**Translated pages:** Dashboard (`home.ejs`), Calendar (`calendar.ejs`), Lessons (`lessons.ejs`), Staff Panel (`staffPanel.ejs`), Login (`login.ejs`), Evaluations/Reports (`reports.ejs`), and Student Profile (`student.ejs`). Admin, Admin Login, and the 404 page are not yet translated. The `student` locale namespace (page title, headings, labels, modals, status badges, validation/error messages) reuses keys from `common`/`lessons`/`reports`/`calendar`/`staffPanel` wherever the text already matched, rather than duplicating them.
+**Translated pages:** Dashboard (`home.ejs`), Calendar (`calendar.ejs`), Lessons (`lessons.ejs`), Staff Panel (`staffPanel.ejs`), Login (`login.ejs`), Evaluations/Reports (`reports.ejs`), Student Profile (`student.ejs`), and Availability (`availability.ejs`). Admin, Admin Login, and the 404 page are not yet translated. The `student` locale namespace (page title, headings, labels, modals, status badges, validation/error messages) reuses keys from `common`/`lessons`/`reports`/`calendar`/`staffPanel` wherever the text already matched, rather than duplicating them; `availability` does the same for weekday names, date labels, and common action words (`common.daysFull`, `common.days`, `common.monthsShort`, `common.cancel`, `common.delete`, `common.startTime`/`endTime`). The one gap: push notification bodies (new-request/approved/refused) are always sent in English, since there's no stored per-user language preference to translate them against - this app's i18n is resolved per-request from `Accept-Language`, not a saved setting.
 
 **Files:**
 - `locales/en.json` / `locales/it.json` - Dictionaries of dot-notation keys (e.g. `common.cancel`, `home.welcomeBack`) grouped by page/feature (`common`, `home`, `calendar`, `lessons`, `staffPanel`, `login`). Values can include `{placeholder}` tokens (e.g. `"lessonCount": "{count} lesson"`) and arrays (e.g. `common.months`, `common.daysFull`) for calendar labels.
@@ -1480,6 +1511,52 @@ Added in 2.3.5, alongside the STAFF/GENERIC prenotation-visibility split that al
 - No explicit cache-invalidation logic is needed: every create/edit/delete flow already ends in a full `window.location.href = /calendar?date=...` reload, which naturally resets the client-side cache.
 
 **Also added:** a shared `https.Agent({ keepAlive: true })` in `javaApiService.js`, reused across every Java API call instead of a fresh TCP+TLS handshake per request - benefits every route, not just the calendar.
+
+### Exception-Day All-Day Chips (STAFF only)
+
+Approved and still-pending exception-day requests (see [Availability Page](#availability-page) below) are surfaced on the main Calendar page too, as all-day chips above the hourly grid - reusing the same row `renderAllDayNotesRow()`/`renderMobileAllDayNotes()` already render calendar notes into (see [Continuous Multi-Day Notes and All-Day Notes](#continuous-multi-day-notes-and-all-day-notes) above), rather than a separate UI surface.
+
+- **STAFF only, enforced server-side, not just hidden client-side:** `calendarDataService.js`'s `getCalendarDataForRange` only fetches exception days from the Java API at all when `isStaff` - a GENERIC or GUEST viewer's `exceptionDays` comes back `[]` without the Java call ever being made, the same "fail closed" pattern used elsewhere in this app (role is always re-verified from the Java API per request, never trusted from the session).
+- **Approved and pending, not refused:** a refused request carries no useful information once dismissed. Both of the others are shown so STAFF can see who's in/out - or who's asked to be - without opening the Availability page first.
+- **Styling:** green for a presence, red for an absence (`calendarScript.js`'s `exceptionChipInfo()`); a pending request renders lighter with a dashed border until approved, solid once it is. Read-only - clicking one does nothing (no edit modal exists for an exception from this page; manage it from [Availability Page](#availability-page)).
+- Respects the existing STAFF-only tutor filter (`filterEventsByTutor()`), same as prenotations/notes.
+
+---
+
+## Availability Page
+
+The `/availability` page (`views/availability.ejs` + `public/js/availability.js` + `public/css/availability.css`) manages tutors' recurring weekly availability and one-off exceptions to it. Reachable by every non-GUEST role; what each role can see and do on it differs sharply:
+
+- **STAFF**: sees and manages every tutor's schedule - add/edit/delete any tutor's recurring slots, submit/approve/refuse/delete exception requests for anyone, and the "Danger Zone" bulk-delete action.
+- **GENERIC**: sees only their own schedule (never other tutors'), can submit an exception request for themselves, and can see (read-only) their own pending requests. Cannot add/edit/delete a recurring availability slot at all - that's STAFF's job.
+
+**Data shaping:** `server_utilities/availabilityDataService.js` is a pure, synchronous module (no fetching, easily unit-tested) with two exports - see [05_Service_Modules.md - availabilityDataService.js](05_Service_Modules.md#availabilitydataservicejs) for the full breakdown:
+- `buildTutorAvailability({ users, availability, exceptionDays, restrictToTutorId })` → per-tutor `{ id, name, initials, days, exceptions }`. `days` is keyed by JS `Date.getDay()` (converted from the Java entity's ISO-8601 `weekDay`), each slot keeping its own availability-row `id` so the client can target it for edit/delete. `exceptions` is keyed by `"YYYY-MM-DD"`, approved-only, each keeping the exception_day row's own `id` for the same reason. `restrictToTutorId` is how a GENERIC viewer is scoped to themselves - `GET /availability` computes it from the freshly-fetched session role, never trusting `req.session.role` directly.
+- `getPendingExceptions({ users, exceptionDays, restrictToTutorId })` → the "Pending Requests" list, enriched with the requesting tutor's username. Same `restrictToTutorId` scoping for GENERIC.
+
+### Weekly Schedule View
+
+A week-navigable grid (desktop columns / mobile stacked cards, same pattern as the Calendar page) shows the selected tutor's availability for that week, with a flat "All Tutors" list (STAFF only) and a "by day" card grid above it for quickly finding who's free when. `effectiveSlotsForDate()` resolves what a tutor's schedule actually looks like on one specific date: an approved exception for that exact date, if any, fully overrides the regular weekly recurrence - `absent` clears the day, `present` swaps in the exception's own time range instead.
+
+**Editing/deleting a regular slot (STAFF only):** clicking a slot in the week view opens an "Edit Availability" modal (day-of-week/start/end time fields plus a Delete button) - `PUT`/`DELETE /api/availability/:id`, see [API Endpoints - Availability](#api-endpoints---availability). An exception-overridden block is never clickable this way (there's no availability row behind it to edit) - delete one of those from its own small trash-icon button instead, see below.
+
+### Exception Requests (Presence/Absence)
+
+"Add Presence"/"Add Absence" buttons (visible to GENERIC and STAFF) submit a `POST /api/exception-days` request for the logged-in tutor, always created `pending`. Validated against the tutor's own regular availability before it's even accepted: an absence request only makes sense on a day the tutor is normally scheduled; a presence request must fall entirely outside their regular hours that day (otherwise it would just be their normal schedule, not an exception to it).
+
+**Pending Requests panel:** a collapsible list above the week view. STAFF sees every tutor's pending requests, with green-check/red-X approve/refuse buttons (`PUT /api/exception-days/:id/{approve,refuse}`, `staffId` always the reviewing session user). GENERIC sees only their own, read-only. Reviewing a request patches the client's local state in place (removed from the pending list; if approved, written into the matching tutor's `exceptions` map) rather than reloading the page.
+
+**Deleting an exception (STAFF only):** a small trash-icon button on an exception block in the week view (both the "Unavailable" absence block and a presence block) calls `DELETE /api/exception-days/:id` - removes the row outright regardless of status, mainly for undoing an already-approved exception that's stuck overriding a tutor's schedule, since approve/refuse can't be undone once applied. Not rendered at all for a non-STAFF viewer.
+
+**Notifications:** submitting a new request pushes every active STAFF member except the submitter (title "New Availability Request"); approving or refusing one pushes the original requester with the outcome (title "Request Approved"/"Request Refused"). Both fire-and-forget after the HTTP response is already sent, via the shared `sendPushToUser()` - see [Web Push Notifications](#web-push-notifications) above.
+
+### Danger Zone: Delete All Availability (STAFF only)
+
+A red-bordered section at the bottom of the page with a "Delete All Availability" button - wipes every tutor's recurring weekly availability from the database in one shot (`DELETE /api/availability`, no `{id}`). Deliberately gated behind more friction than a plain `confirm()` dialog, since it's global and unrecoverable:
+
+- Opens a dedicated modal explaining the consequence; the submit button stays `disabled` until the admin types the phrase `DELETE ALL` exactly into a text field.
+- The phrase is re-checked server-side on the Node route too (`confirmText !== 'DELETE ALL'` → `400`) - a direct API call without it is rejected just the same as the disabled button prevents it client-side.
+- Logged via `logWarning` (not the usual `logInfo`), both on the attempt and on success, given the blast radius.
 
 ---
 
