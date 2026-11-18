@@ -826,10 +826,10 @@ function renderDayHeaders() {
 function exceptionChipInfo(exception) {
   const isPresent = exception.excType === 'present';
   const isPending = exception.status === 'pending';
-  const typeLabel = isPresent ? 'Presence' : 'Absence';
+  const typeLabel = isPresent ? t('calendar.exceptionPresence') : t('calendar.exceptionAbsence');
   const label = isPending
-    ? `${exception.tutorUsername} - ${typeLabel} (pending)`
-    : `${exception.tutorUsername} - ${typeLabel}`;
+    ? t('calendar.exceptionChipPending', { tutor: exception.tutorUsername, type: typeLabel })
+    : t('calendar.exceptionChipApproved', { tutor: exception.tutorUsername, type: typeLabel });
 
   const colorClasses = isPresent
     ? (isPending ? 'bg-green-600/10 border-green-600 text-green-700 dark:text-green-400 border-dashed' : 'bg-green-600/20 border-green-600 text-green-700 dark:text-green-400')

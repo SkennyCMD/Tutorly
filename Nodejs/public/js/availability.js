@@ -10,8 +10,11 @@ const tutors = window.initialTutors || [];
 // approved/refused, so `let` rather than `const`.
 let pendingExceptions = window.initialPendingExceptions || [];
 
-const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const shortDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// common.daysFull is Sunday-first (matches Date.getDay()); common.days is
+// Monday-first 3-letter abbreviations (matches the Monday-first week view
+// below) - both already localized, so no separate translation needed here.
+const weekdayNames = t('common.daysFull');
+const shortDays = t('common.days');
 let selectedTutorId = tutors.length ? tutors[0].id : null;
 let weekStart = getMonday(new Date());
 const $ = id => document.getElementById(id);
@@ -53,10 +56,19 @@ function parseDateOnly(dateStr) {
     return new Date(year, month - 1, day);
 }
 
+// 24-hour format, consistent with every other page in the app (home/lessons/
+// calendar/admin/student/staffPanel all format times with hour12: false) -
+// also sidesteps needing to translate am/pm, which Italian doesn't use.
 function timeLabel(value) {
-    const [h, m] = value.split(':').map(Number);
-    const suffix = h >= 12 ? 'pm' : 'am';
-    return `${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : ''} ${suffix}`;
+    return value.slice(0, 5);
+}
+
+// Localized "Mon 15"-style date label, using common.monthsShort instead of
+// toLocaleDateString('en-US', ...) so it actually follows the detected
+// language instead of always rendering in English.
+function formatDateShort(date) {
+    const months = t('common.monthsShort');
+    return `${months[date.getMonth()]} ${date.getDate()}`;
 }
 
 // Single entry point for picking a tutor, used by both the day-grouped
@@ -71,9 +83,8 @@ function selectTutor(tutorId) {
 
 function formatWeek() {
     const end = dateAtDay(6);
-    const opts = { month: 'short', day: 'numeric' };
-    const startText = weekStart.toLocaleDateString('en-US', opts);
-    const endText = end.toLocaleDateString('en-US', opts);
+    const startText = formatDateShort(weekStart);
+    const endText = formatDateShort(end);
     $('weekLabel').textContent = weekStart.getFullYear() === end.getFullYear()
         ? `${startText} – ${endText}, ${end.getFullYear()}`
         : `${startText}, ${weekStart.getFullYear()} – ${endText}, ${end.getFullYear()}`;
@@ -98,7 +109,7 @@ function renderTutorDays() {
     // Not rendered for a GENERIC viewer (see availability.ejs) - they only
     // ever have one tutor (themselves) in `tutors`, so a count is pointless
     const tutorCountEl = $('tutorCount');
-    if (tutorCountEl) tutorCountEl.textContent = `${tutors.length} tutors`;
+    if (tutorCountEl) tutorCountEl.textContent = t('availability.tutorsCount', { count: tutors.length });
 
     const MAX_VISIBLE_TUTORS_PER_DAY = 3;
     // A GENERIC viewer only ever has themselves in `tutors` (see
@@ -107,17 +118,24 @@ function renderTutorDays() {
     // browsing multiple tutors, so STAFF keeps them and GENERIC instead just
     // gets a plain "Absent" on a day they have nothing scheduled.
     const isGeneric = window.userRole === 'GENERIC';
+    const toWord = t('availability.ariaTo');
+    const andWord = t('availability.ariaAnd');
+    const exceptionAriaSuffix = ` ${t('availability.ariaExceptionSuffix')}`;
 
     $('dayList').innerHTML = dayDates.map(date => {
         const jsDay = date.getDay();
         const entries = dayToEntries[jsDay];
-        const dateLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dateLabel = formatDateShort(date);
         const scrollClasses = entries.length > MAX_VISIBLE_TUTORS_PER_DAY
             ? 'max-h-44 overflow-y-auto scrollbar-thin pr-1'
             : '';
-        const countBadge = isGeneric ? '' : `<span class="text-xs font-normal text-muted-foreground">${entries.length} available</span>`;
-        const emptyText = isGeneric ? 'Absent' : 'No tutors available';
-        return `<article class="rounded-xl border border-border bg-card p-4"><h3 class="mb-3 flex items-center justify-between text-sm font-semibold"><span>${weekdayNames[jsDay]} <span class="font-normal text-muted-foreground">${dateLabel}</span></span>${countBadge}</h3>${entries.length ? `<ul class="space-y-2 ${scrollClasses}">${entries.map(({ tutor, slots, isException }) => `<li><button type="button" class="tutor-card flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition hover:bg-secondary" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}, available ${slots.map(slot => `${timeLabel(slot.start)} to ${timeLabel(slot.end)}`).join(' and ')}${isException ? ' (exception)' : ''}"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium">${tutor.name}</span><span class="block truncate text-xs text-muted-foreground">${slots.map(slot => `${timeLabel(slot.start)}–${timeLabel(slot.end)}`).join(' · ')}${isException ? ` · <span style="color: rgb(var(--color-note))">Exception</span>` : ''}</span></span></button></li>`).join('')}</ul>` : `<p class="py-2 text-sm text-muted-foreground">${emptyText}</p>`}</article>`;
+        const countBadge = isGeneric ? '' : `<span class="text-xs font-normal text-muted-foreground">${t('availability.availableCount', { count: entries.length })}</span>`;
+        const emptyText = isGeneric ? t('availability.absent') : t('availability.noTutorsAvailable');
+        return `<article class="rounded-xl border border-border bg-card p-4"><h3 class="mb-3 flex items-center justify-between text-sm font-semibold"><span>${weekdayNames[jsDay]} <span class="font-normal text-muted-foreground">${dateLabel}</span></span>${countBadge}</h3>${entries.length ? `<ul class="space-y-2 ${scrollClasses}">${entries.map(({ tutor, slots, isException }) => {
+            const timesText = slots.map(slot => `${timeLabel(slot.start)} ${toWord} ${timeLabel(slot.end)}`).join(` ${andWord} `) + (isException ? exceptionAriaSuffix : '');
+            const ariaLabel = t('availability.ariaViewDay', { name: tutor.name, times: timesText });
+            return `<li><button type="button" class="tutor-card flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition hover:bg-secondary" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="${ariaLabel}"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium">${tutor.name}</span><span class="block truncate text-xs text-muted-foreground">${slots.map(slot => `${timeLabel(slot.start)}–${timeLabel(slot.end)}`).join(' · ')}${isException ? ` · <span style="color: rgb(var(--color-note))">${t('availability.exception')}</span>` : ''}</span></span></button></li>`;
+        }).join('')}</ul>` : `<p class="py-2 text-sm text-muted-foreground">${emptyText}</p>`}</article>`;
     }).join('');
 
     document.querySelectorAll('#dayList .tutor-card').forEach(button => button.addEventListener('click', () => {
@@ -136,7 +154,7 @@ function renderTutorList() {
     const list = $('tutorList');
     if (!list) return;
 
-    list.innerHTML = tutors.map(tutor => `<button type="button" class="tutor-card flex items-center gap-2 rounded-full border border-transparent bg-secondary py-1.5 pl-1.5 pr-3 text-left transition hover:bg-secondary/70" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}'s weekly availability"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="text-sm font-medium text-foreground">${tutor.name}</span></button>`).join('');
+    list.innerHTML = tutors.map(tutor => `<button type="button" class="tutor-card flex items-center gap-2 rounded-full border border-transparent bg-secondary py-1.5 pl-1.5 pr-3 text-left transition hover:bg-secondary/70" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="${t('availability.ariaViewWeek', { name: tutor.name })}"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="text-sm font-medium text-foreground">${tutor.name}</span></button>`).join('');
 
     document.querySelectorAll('#tutorList .tutor-card').forEach(button => button.addEventListener('click', () => {
         selectTutor(Number(button.dataset.tutor));
@@ -171,15 +189,15 @@ function scheduleMarkup(tutor, date) {
     const { isException, isAbsentException, slots } = effectiveSlotsForDate(tutor, date);
 
     if (isAbsentException) {
-        return `<div class="exception-block exception-absent mt-3 rounded-md px-2 py-2 text-xs font-medium"><span class="block">Unavailable</span><span class="mt-0.5 block text-[10px] opacity-80">Exception</span></div>`;
+        return `<div class="exception-block exception-absent mt-3 rounded-md px-2 py-2 text-xs font-medium"><span class="block">${t('availability.unavailable')}</span><span class="mt-0.5 block text-[10px] opacity-80">${t('availability.exception')}</span></div>`;
     }
 
     if (!slots.length) {
-        return `<p class="mt-3 text-xs text-muted-foreground">Unavailable</p>`;
+        return `<p class="mt-3 text-xs text-muted-foreground">${t('availability.unavailable')}</p>`;
     }
 
     const blockClass = isException ? 'exception-block exception-present' : 'availability-block';
-    const label = isException ? ' · Exception' : '';
+    const label = isException ? ` · ${t('availability.exception')}` : '';
     // Only a regular weekly slot can be edited/deleted here (an exception
     // override has no availability row behind it), and only for STAFF, who
     // are the only ones who can create one in the first place (see
@@ -213,12 +231,14 @@ function renderWeek() {
 
     $('desktopWeek').innerHTML = Array.from({ length: 7 }, (_, i) => {
         const date = dateAtDay(i);
-        return `<section class="min-h-[220px] border-r border-border p-2 last:border-r-0 sm:p-3"><div class="border-b border-border pb-2 text-center"><p class="text-xs text-muted-foreground">${shortDays[(i + 1) % 7]}</p><p class="mt-1 text-sm font-semibold">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p></div>${scheduleMarkup(tutor, date)}</section>`;
+        // shortDays (common.days) is already Monday-first, matching i directly -
+        // no Sunday-first reindexing needed, unlike weekdayNames below.
+        return `<section class="min-h-[220px] border-r border-border p-2 last:border-r-0 sm:p-3"><div class="border-b border-border pb-2 text-center"><p class="text-xs text-muted-foreground">${shortDays[i]}</p><p class="mt-1 text-sm font-semibold">${formatDateShort(date)}</p></div>${scheduleMarkup(tutor, date)}</section>`;
     }).join('');
 
     $('mobileWeek').innerHTML = Array.from({ length: 7 }, (_, i) => {
         const date = dateAtDay(i);
-        return `<section class="rounded-xl border border-border p-3"><div class="flex items-center justify-between"><h3 class="text-sm font-semibold">${weekdayNames[date.getDay()]}</h3><span class="text-xs text-muted-foreground">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span></div>${scheduleMarkup(tutor, date)}</section>`;
+        return `<section class="rounded-xl border border-border p-3"><div class="flex items-center justify-between"><h3 class="text-sm font-semibold">${weekdayNames[date.getDay()]}</h3><span class="text-xs text-muted-foreground">${formatDateShort(date)}</span></div>${scheduleMarkup(tutor, date)}</section>`;
     }).join('');
 }
 
@@ -276,11 +296,11 @@ if (addAvailabilityForm) {
         const endTime = $('availabilityEndTime').value;
 
         if (!tutorId) {
-            alert('Please select a tutor.');
+            alert(t('availability.errors.selectTutor'));
             return;
         }
         if (startTime >= endTime) {
-            alert('End time must be after start time.');
+            alert(t('availability.errors.endAfterStart'));
             return;
         }
 
@@ -297,11 +317,11 @@ if (addAvailabilityForm) {
                 window.location.reload();
             } else {
                 const error = await response.json();
-                alert(`Failed to create availability slot: ${error.error || 'Unknown error'}`);
+                alert(t('availability.errors.createFailed', { error: error.error || t('availability.errors.unknownError') }));
             }
         } catch (error) {
             console.error('Error creating availability slot:', error);
-            alert('Failed to create availability slot. Please try again.');
+            alert(t('availability.errors.createRetry'));
         }
     });
 }
@@ -315,7 +335,7 @@ if (addAvailabilityForm) {
 function openEditAvailabilityModal(el) {
     const { availabilityId, weekDay, startTime, endTime, tutorName } = el.dataset;
     $('editAvailabilityId').value = availabilityId;
-    $('editAvailabilityTutorName').textContent = tutorName;
+    $('editAvailabilityIntro').textContent = t('availability.editingTutorAvailability', { tutorName });
     $('editAvailabilityWeekDay').value = weekDay;
     $('editAvailabilityStartTime').value = startTime;
     $('editAvailabilityEndTime').value = endTime;
@@ -337,7 +357,7 @@ if (editAvailabilityForm) {
         const endTime = $('editAvailabilityEndTime').value;
 
         if (startTime >= endTime) {
-            alert('End time must be after start time.');
+            alert(t('availability.errors.endAfterStart'));
             return;
         }
 
@@ -354,11 +374,11 @@ if (editAvailabilityForm) {
                 window.location.reload();
             } else {
                 const error = await response.json();
-                alert(`Failed to update availability slot: ${error.error || 'Unknown error'}`);
+                alert(t('availability.errors.updateFailed', { error: error.error || t('availability.errors.unknownError') }));
             }
         } catch (error) {
             console.error('Error updating availability slot:', error);
-            alert('Failed to update availability slot. Please try again.');
+            alert(t('availability.errors.updateRetry'));
         }
     });
 }
@@ -366,7 +386,7 @@ if (editAvailabilityForm) {
 const deleteAvailabilityBtn = $('deleteAvailabilityBtn');
 if (deleteAvailabilityBtn) {
     deleteAvailabilityBtn.addEventListener('click', async () => {
-        if (!confirm('Are you sure you want to delete this availability slot?')) return;
+        if (!confirm(t('availability.confirm.deleteAvailability'))) return;
 
         const id = $('editAvailabilityId').value;
 
@@ -381,11 +401,11 @@ if (deleteAvailabilityBtn) {
                 window.location.reload();
             } else {
                 const error = await response.json();
-                alert(`Failed to delete availability slot: ${error.error || 'Unknown error'}`);
+                alert(t('availability.errors.deleteFailed', { error: error.error || t('availability.errors.unknownError') }));
             }
         } catch (error) {
             console.error('Error deleting availability slot:', error);
-            alert('Failed to delete availability slot. Please try again.');
+            alert(t('availability.errors.deleteRetry'));
         }
     });
 }
@@ -394,7 +414,7 @@ if (deleteAvailabilityBtn) {
 // clicked button's type decides which fields are shown and what gets submitted
 function openAddExceptionModal(type) {
     $('exceptionType').value = type;
-    $('addExceptionModalTitle').textContent = type === 'present' ? 'Add Presence' : 'Add Absence';
+    $('addExceptionModalTitle').textContent = type === 'present' ? t('availability.addPresence') : t('availability.addAbsence');
     $('exceptionTimeFields').classList.toggle('hidden', type !== 'present');
     $('exceptionStartTime').required = type === 'present';
     $('exceptionEndTime').required = type === 'present';
@@ -423,11 +443,11 @@ if (addExceptionForm) {
         const endTime = $('exceptionEndTime').value;
 
         if (!day) {
-            alert('Please select a date.');
+            alert(t('availability.errors.selectDate'));
             return;
         }
         if (type === 'present' && (!startTime || !endTime || startTime >= endTime)) {
-            alert('Please enter a valid start/end time.');
+            alert(t('availability.errors.invalidTimes'));
             return;
         }
 
@@ -444,11 +464,11 @@ if (addExceptionForm) {
                 window.location.reload();
             } else {
                 const error = await response.json();
-                alert(`Failed to submit exception: ${error.error || 'Unknown error'}`);
+                alert(t('availability.errors.submitExceptionFailed', { error: error.error || t('availability.errors.unknownError') }));
             }
         } catch (error) {
             console.error('Error submitting exception day:', error);
-            alert('Failed to submit exception. Please try again.');
+            alert(t('availability.errors.submitExceptionRetry'));
         }
     });
 }
@@ -462,7 +482,7 @@ function renderPendingExceptions() {
     $('pendingCount').textContent = pendingExceptions.length;
 
     if (pendingExceptions.length === 0) {
-        list.innerHTML = `<p class="text-sm text-muted-foreground">No pending requests.</p>`;
+        list.innerHTML = `<p class="text-sm text-muted-foreground">${t('availability.noPendingRequests')}</p>`;
         return;
     }
 
@@ -476,19 +496,19 @@ function renderPendingExceptions() {
         // reviewing their own request
         const actions = isStaff
             ? `<div class="flex items-center gap-2 shrink-0">
-                <button type="button" class="approve-exception-btn p-2 rounded-lg text-green-600 hover:bg-green-600/10 transition-colors" data-exception-id="${exception.id}" aria-label="Approve">
+                <button type="button" class="approve-exception-btn p-2 rounded-lg text-green-600 hover:bg-green-600/10 transition-colors" data-exception-id="${exception.id}" aria-label="${t('availability.approve')}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                 </button>
-                <button type="button" class="refuse-exception-btn p-2 rounded-lg text-destructive hover:bg-destructive/10 transition-colors" data-exception-id="${exception.id}" aria-label="Refuse">
+                <button type="button" class="refuse-exception-btn p-2 rounded-lg text-destructive hover:bg-destructive/10 transition-colors" data-exception-id="${exception.id}" aria-label="${t('availability.refuse')}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>`
-            : `<span class="shrink-0 text-xs font-medium text-muted-foreground">Pending</span>`;
+            : `<span class="shrink-0 text-xs font-medium text-muted-foreground">${t('availability.pending')}</span>`;
         return `
         <div class="flex items-center justify-between gap-3 rounded-lg border-2 ${borderClass} bg-card p-3 min-w-[240px]">
             <div class="min-w-0">
                 <p class="text-sm font-medium text-foreground">${exception.tutorName}</p>
-                <p class="text-xs text-muted-foreground">${exception.type === 'present' ? 'Presence' : 'Absence'} · ${exception.day} (${weekday})${exception.type === 'present' ? ` · ${timeLabel(exception.startTime)} – ${timeLabel(exception.endTime)}` : ''}</p>
+                <p class="text-xs text-muted-foreground">${exception.type === 'present' ? t('availability.presence') : t('availability.absence')} · ${exception.day} (${weekday})${exception.type === 'present' ? ` · ${timeLabel(exception.startTime)} – ${timeLabel(exception.endTime)}` : ''}</p>
             </div>
             ${actions}
         </div>
@@ -504,7 +524,8 @@ function renderPendingExceptions() {
 }
 
 async function reviewPendingException(id, action) {
-    if (!confirm(`Are you sure you want to ${action} this request?`)) return;
+    const confirmKey = action === 'approve' ? 'availability.confirm.approveRequest' : 'availability.confirm.refuseRequest';
+    if (!confirm(t(confirmKey))) return;
 
     const numericId = Number(id);
 
@@ -538,11 +559,13 @@ async function reviewPendingException(id, action) {
             renderWeek();
         } else {
             const error = await response.json();
-            alert(`Failed to ${action} request: ${error.error || 'Unknown error'}`);
+            const failedKey = action === 'approve' ? 'availability.errors.reviewApproveFailed' : 'availability.errors.reviewRefuseFailed';
+            alert(t(failedKey, { error: error.error || t('availability.errors.unknownError') }));
         }
     } catch (error) {
         console.error(`Error ${action}ing pending exception:`, error);
-        alert(`Failed to ${action} request. Please try again.`);
+        const retryKey = action === 'approve' ? 'availability.errors.reviewApproveRetry' : 'availability.errors.reviewRefuseRetry';
+        alert(t(retryKey));
     }
 }
 
@@ -602,11 +625,11 @@ if (deleteAllAvailabilityForm) {
                 window.location.reload();
             } else {
                 const error = await response.json();
-                alert(`Failed to delete all availability: ${error.error || 'Unknown error'}`);
+                alert(t('availability.errors.deleteAllFailed', { error: error.error || t('availability.errors.unknownError') }));
             }
         } catch (error) {
             console.error('Error deleting all availability:', error);
-            alert('Failed to delete all availability. Please try again.');
+            alert(t('availability.errors.deleteAllRetry'));
         }
     });
 }
