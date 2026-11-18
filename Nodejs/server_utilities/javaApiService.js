@@ -163,6 +163,20 @@ function fetchTutorData(tutorId) {
     return fetchFromJavaAPI(`/api/users/${tutorId}`, 'GET');
 }
 
+/**
+ * Fetch a single admin's data by ID from Java backend API.
+ *
+ * @param {number} adminId - Unique admin ID from database
+ * @returns {Promise<object|null>} Admin object if found, null if not found or error
+ *
+ * @example
+ * const admin = await fetchAdminData(1);
+ * // Returns: { id: 1, username: 'admin.one', mail: '...', ... }
+ */
+function fetchAdminData(adminId) {
+    return fetchFromJavaAPI(`/api/admins/${adminId}`, 'GET');
+}
+
 
 // Calendar Notes Operations
 
@@ -654,6 +668,31 @@ function fetchAllExceptionDays() {
 }
 
 
+// Ticket Operations
+
+
+/**
+ * Fetch every support ticket, regardless of status.
+ *
+ * Backs the admin-only Ticketing page - see 03_Nodejs_Frontend.md. Returns
+ * empty array if none found or on error.
+ *
+ * @returns {Promise<Array>} Array of all tickets
+ *
+ * @example
+ * const tickets = await fetchAllTickets();
+ * // Returns: [{ id: 1, content: '...', creation: '...', status: 'open', userId: 4, adminId: null }, ...]
+ */
+function fetchAllTickets() {
+    return fetchFromJavaAPI('/api/tickets', 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching tickets:', error);
+            return [];
+        });
+}
+
+
 // Module Exports
 
 
@@ -665,6 +704,7 @@ function fetchAllExceptionDays() {
  * 
  * Entity-Specific Functions:
  * - Tutors: fetchTutorData
+ * - Admins: fetchAdminData
  * - Students: fetchStudentData, fetchAllStudents
  * - Lessons: fetchLessonsByTutor, fetchAllLessons
  * - Prenotations: fetchAllPrenotations, fetchPrenotationsByTutor, fetchPrenotationsByDateRange
@@ -672,6 +712,7 @@ function fetchAllExceptionDays() {
  * - Tests (Evaluations): fetchTestsByTutor
  * - Push Subscriptions: fetchPushSubscriptionsByUser, upsertPushSubscription, deletePushSubscriptionByEndpoint
  * - Availability: fetchAllAvailability, fetchAllExceptionDays
+ * - Tickets: fetchAllTickets
  *
  * Usage Pattern:
  * All functions return Promises that resolve to data or reject with errors.
@@ -681,6 +722,7 @@ function fetchAllExceptionDays() {
 module.exports = {
     fetchFromJavaAPI,
     fetchTutorData,
+    fetchAdminData,
     fetchCalendarNotesByTutor,
     fetchCalendarNotesByDateRange,
     fetchLessonsByTutor,
@@ -701,5 +743,6 @@ module.exports = {
     upsertPushSubscription,
     deletePushSubscriptionByEndpoint,
     fetchAllAvailability,
-    fetchAllExceptionDays
+    fetchAllExceptionDays,
+    fetchAllTickets
 };

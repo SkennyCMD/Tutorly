@@ -5,7 +5,7 @@
 const request = require('supertest');
 const app = require('../helpers/testApp');
 const { javaApi } = require('../helpers/javaApi');
-const { loginAsTutor, loginAsAdmin, tutorFixture } = require('../helpers/auth');
+const { loginAsTutor, loginAsAdmin, tutorFixture, adminFixture } = require('../helpers/auth');
 const { studentFixture, calendarNoteFixture } = require('../helpers/fixtures');
 
 async function tutorAgent(overrides = {}) {
@@ -54,6 +54,64 @@ describe('GET /admin', () => {
 
         const res = await agent.get('/admin');
         expect(res.status).toBe(200);
+    });
+});
+
+describe('GET /ticketing', () => {
+    test('redirects to /adminLogin when not authenticated', async () => {
+        const res = await request(app).get('/ticketing');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/adminLogin');
+    });
+
+    test('renders the support ticket board when authenticated, with real ticket data', async () => {
+        const agent = request.agent(app);
+        await loginAsAdmin(agent);
+        javaApi().get('/api/tickets').reply(200, [
+            { id: 1, content: 'I cannot access my materials', creation: '2026-11-10T09:00:00', status: 'open', userId: 4, adminId: null }
+        ]);
+        javaApi().get('/api/users/4').reply(200, tutorFixture({ id: 4, username: 'needs.help' }));
+
+        const res = await agent.get('/ticketing');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('I cannot access my materials');
+        expect(res.text).toContain('needs.help');
+    });
+
+    test('still renders (with no tickets) if the Java API call fails', async () => {
+        const agent = request.agent(app);
+        await loginAsAdmin(agent);
+        javaApi().get('/api/tickets').reply(500, 'DB error');
+
+        const res = await agent.get('/ticketing');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('window.initialTickets = []');
+    });
+
+    test('only shows this admin\'s own managing/closed tickets - another admin\'s never reach the page', async () => {
+        const agent = request.agent(app);
+        await loginAsAdmin(agent, adminFixture({ id: 1, username: 'me.admin' }));
+        javaApi().get('/api/tickets').reply(200, [
+            { id: 1, content: 'Open for anyone', creation: '2026-11-16T09:00:00', status: 'open', userId: 4, adminId: null },
+            { id: 2, content: 'I am handling this one', creation: '2026-11-15T09:00:00', status: 'managing', userId: 4, adminId: 1 },
+            { id: 3, content: 'Someone else is handling this one', creation: '2026-11-14T09:00:00', status: 'managing', userId: 4, adminId: 2 },
+            { id: 4, content: 'I resolved this one', creation: '2026-11-10T09:00:00', status: 'closed', closure: '2026-11-11T09:00:00', comment: 'Done', userId: 4, adminId: 1 },
+            { id: 5, content: 'Someone else resolved this one', creation: '2026-11-09T09:00:00', status: 'closed', closure: '2026-11-10T09:00:00', comment: 'Done', userId: 4, adminId: 2 }
+        ]);
+        // Lookups are promise-memoized per id within the request, so each
+        // distinct user/admin id is only actually fetched once even though
+        // several surviving tickets share the same one.
+        javaApi().get('/api/users/4').reply(200, tutorFixture({ id: 4, username: 'needs.help' }));
+        javaApi().get('/api/admins/1').reply(200, adminFixture({ id: 1, username: 'me.admin' }));
+
+        const res = await agent.get('/ticketing');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('Open for anyone');
+        expect(res.text).toContain('I am handling this one');
+        expect(res.text).toContain('I resolved this one');
+        expect(res.text).not.toContain('Someone else is handling this one');
+        expect(res.text).not.toContain('Someone else resolved this one');
+        expect(res.text).toContain('me.admin');
     });
 });
 

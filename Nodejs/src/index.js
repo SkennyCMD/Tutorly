@@ -41,6 +41,7 @@ const { i18nMiddleware } = require('../server_utilities/i18n');
 const { 
     fetchFromJavaAPI,
     fetchTutorData,
+    fetchAdminData,
     fetchCalendarNotesByTutor,
     fetchCalendarNotesByDateRange,
     fetchLessonsByTutor,
@@ -59,7 +60,8 @@ const {
     upsertPushSubscription,
     deletePushSubscriptionByEndpoint,
     fetchAllAvailability,
-    fetchAllExceptionDays
+    fetchAllExceptionDays,
+    fetchAllTickets
 } = require('../server_utilities/javaApiService');
 
 // Shared range-bounded fetch/enrich logic for the Calendar page - see
@@ -321,10 +323,184 @@ app.post('/adminLogin', adminSession, async (req, res) => {
  * GET /admin - Display admin panel (requires admin authentication)
  */
 app.get('/admin', adminSession, isAdmin, (req, res) => {
-    res.render('admin', { 
+    res.render('admin', {
         adminUsername: req.session.adminUsername,
         adminId: req.session.adminId
     });
+});
+
+/**
+ * Support tickets (admin)
+ * GET /ticketing - Display the support ticket board (requires admin authentication)
+ */
+app.get('/ticketing', adminSession, isAdmin, async (req, res) => {
+    try {
+        const rawTickets = await fetchAllTickets();
+
+        // Open tickets are a shared pool - every admin sees all of them.
+        // Managing/closed ones are scoped to whichever admin is handling (or
+        // handled) them - another admin's in-progress/resolved tickets never
+        // reach this admin's page at all, not just hidden client-side.
+        const visibleTickets = rawTickets.filter(ticket =>
+            ticket.status === 'open' || ticket.adminId === req.session.adminId
+        );
+
+        // Shared caches so repeated requesters/resolvers across tickets aren't re-fetched
+        const userCache = new Map();
+        const getUsername = async (id) => {
+            if (id == null) return null;
+            if (!userCache.has(id)) {
+                userCache.set(id, fetchTutorData(id));
+            }
+            const cachedUser = await userCache.get(id);
+            return cachedUser ? cachedUser.username : null;
+        };
+        const adminCache = new Map();
+        const getAdminUsername = async (id) => {
+            if (id == null) return null;
+            if (!adminCache.has(id)) {
+                adminCache.set(id, fetchAdminData(id));
+            }
+            const cachedAdmin = await adminCache.get(id);
+            return cachedAdmin ? cachedAdmin.username : null;
+        };
+
+        const tickets = await Promise.all(visibleTickets.map(async ticket => ({
+            id: ticket.id,
+            content: ticket.content,
+            creation: ticket.creation,
+            status: ticket.status,
+            closure: ticket.closure,
+            comment: ticket.comment,
+            userId: ticket.userId,
+            requesterUsername: await getUsername(ticket.userId),
+            adminId: ticket.adminId,
+            resolverUsername: await getAdminUsername(ticket.adminId)
+        })));
+
+        res.render('ticketing', {
+            adminUsername: req.session.adminUsername,
+            adminId: req.session.adminId,
+            tickets
+        });
+    } catch (error) {
+        logError('Error fetching tickets', req, { error: error.message });
+        res.render('ticketing', {
+            adminUsername: req.session.adminUsername,
+            adminId: req.session.adminId,
+            tickets: []
+        });
+    }
+});
+
+/**
+ * An admin picks up an open ticket, moving it to "managing"
+ * PUT /api/tickets/:id/manage
+ * Admin only. adminId is always the caller's own admin session id, never
+ * client-supplied.
+ */
+app.put('/api/tickets/:id/manage', adminSession, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const postData = JSON.stringify({ adminId: req.session.adminId });
+
+        logInfo('Starting to manage ticket', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/tickets/${id}/manage`, 'PUT', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', async () => {
+                if (httpsRes.statusCode === 200) {
+                    logSuccess('Ticket moved to managing', req, { id });
+                    let ticket;
+                    try { ticket = JSON.parse(data); } catch (e) { ticket = null; }
+                    // Re-enrich with the same requester/resolver usernames the
+                    // initial page load carries, so the client's in-place
+                    // update doesn't lose them.
+                    if (ticket) {
+                        const [requesterUsername, resolverUsername] = await Promise.all([
+                            ticket.userId != null ? fetchTutorData(ticket.userId).then(u => u ? u.username : null).catch(() => null) : null,
+                            ticket.adminId != null ? fetchAdminData(ticket.adminId).then(a => a ? a.username : null).catch(() => null) : null
+                        ]);
+                        ticket = { ...ticket, requesterUsername, resolverUsername };
+                    }
+                    res.json({ success: true, message: 'Ticket moved to managing', ticket });
+                } else {
+                    logError(`Error managing ticket, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to update ticket' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API to manage ticket', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to update ticket' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+    } catch (error) {
+        logError('Error managing ticket', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to update ticket' });
+    }
+});
+
+/**
+ * An admin closes a ticket being managed, optionally with a resolution comment
+ * PUT /api/tickets/:id/close
+ * Body: { comment } (optional)
+ * Admin only. adminId is always the caller's own admin session id, never
+ * client-supplied.
+ */
+app.put('/api/tickets/:id/close', adminSession, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { comment } = req.body;
+        const postData = JSON.stringify({ adminId: req.session.adminId, comment: comment || null });
+
+        logInfo('Closing ticket', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/tickets/${id}/close`, 'PUT', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', async () => {
+                if (httpsRes.statusCode === 200) {
+                    logSuccess('Ticket closed', req, { id });
+                    let ticket;
+                    try { ticket = JSON.parse(data); } catch (e) { ticket = null; }
+                    // Re-enrich with the same requester/resolver usernames the
+                    // initial page load carries, so the client's in-place
+                    // update doesn't lose them.
+                    if (ticket) {
+                        const [requesterUsername, resolverUsername] = await Promise.all([
+                            ticket.userId != null ? fetchTutorData(ticket.userId).then(u => u ? u.username : null).catch(() => null) : null,
+                            ticket.adminId != null ? fetchAdminData(ticket.adminId).then(a => a ? a.username : null).catch(() => null) : null
+                        ]);
+                        ticket = { ...ticket, requesterUsername, resolverUsername };
+                    }
+                    res.json({ success: true, message: 'Ticket closed', ticket });
+                } else {
+                    logError(`Error closing ticket, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to close ticket' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API to close ticket', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to close ticket' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+    } catch (error) {
+        logError('Error closing ticket', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to close ticket' });
+    }
 });
 
 /**
