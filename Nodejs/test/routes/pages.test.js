@@ -58,10 +58,19 @@ describe('GET /admin', () => {
 });
 
 describe('GET /ticketing', () => {
-    test('redirects to /adminLogin when not authenticated', async () => {
+    test('redirects to /login when neither an admin nor a tutor session exists', async () => {
         const res = await request(app).get('/ticketing');
         expect(res.status).toBe(302);
-        expect(res.headers.location).toBe('/adminLogin');
+        expect(res.headers.location).toBe('/login');
+    });
+
+    test('a GUEST tutor is redirected to /home', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GUEST' }));
+
+        const res = await agent.get('/ticketing');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/home');
     });
 
     test('renders the support ticket board when authenticated, with real ticket data', async () => {
@@ -112,6 +121,28 @@ describe('GET /ticketing', () => {
         expect(res.text).not.toContain('Someone else is handling this one');
         expect(res.text).not.toContain('Someone else resolved this one');
         expect(res.text).toContain('me.admin');
+    });
+
+    test.each(['STAFF', 'GENERIC'])('a %s tutor can view the page, read-only, seeing only their own tickets', async (role) => {
+        const agent = await tutorAgent({ id: 4, role, username: 'needs.help' });
+        // Hit twice: once for the route's own role check, once more for the
+        // ticket-enrichment step's requester-username lookup.
+        javaApi().get('/api/users/4').reply(200, tutorFixture({ id: 4, role, username: 'needs.help' }));
+        javaApi().get('/api/users/4').reply(200, tutorFixture({ id: 4, role, username: 'needs.help' }));
+        javaApi().get('/api/tickets').reply(200, [
+            { id: 1, content: 'My own open ticket', creation: '2026-11-16T09:00:00', status: 'open', userId: 4, adminId: null },
+            { id: 2, content: 'My own closed ticket', creation: '2026-11-10T09:00:00', status: 'closed', closure: '2026-11-11T09:00:00', comment: 'Done', userId: 4, adminId: 1 },
+            { id: 3, content: 'Someone else\'s ticket', creation: '2026-11-09T09:00:00', status: 'open', userId: 9, adminId: null }
+        ]);
+        javaApi().get('/api/admins/1').reply(200, adminFixture({ id: 1, username: 'some.admin' }));
+
+        const res = await agent.get('/ticketing');
+
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('My own open ticket');
+        expect(res.text).toContain('My own closed ticket');
+        expect(res.text).not.toContain('Someone else\'s ticket');
+        expect(res.text).toContain('window.canManageTickets = false');
     });
 });
 

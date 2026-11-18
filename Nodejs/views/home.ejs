@@ -68,6 +68,10 @@ Features:
           <% if (user && user.role==='STAFF' ) { %>
             <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.staffPanel') %></a>
             <% } %>
+          <!-- Non-GUEST: support ticket board -->
+          <% if (user && user.role!=='GUEST' ) { %>
+            <a href="/ticketing" class="text-muted-foreground hover:text-foreground transition-colors">Tickets</a>
+            <% } %>
         </nav>
 
         <!-- Settings menu (theme/notifications/logout) button (Desktop) -->
@@ -163,6 +167,18 @@ Features:
               d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
           <%= t('common.staffPanel') %>
+        </a>
+        <% } %>
+
+      <!-- Non-GUEST: support ticket board in mobile menu -->
+      <% if (user && user.role!=='GUEST' ) { %>
+        <a href="/ticketing"
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12h3.75M9 15h3.75M9 18h3.75m3-15H9a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 009 21h9a2.25 2.25 0 002.25-2.25V9M15 3v4.5A1.5 1.5 0 0016.5 9H21M15 3l6 6" />
+          </svg>
+          Tickets
         </a>
         <% } %>
 

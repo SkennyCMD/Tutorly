@@ -92,7 +92,11 @@ function card(ticket, withActions = false) {
     body.textContent = ticket.content;
     article.append(top, body);
 
-    if (withActions) {
+    // Managing/closing a ticket requires an admin identity - a STAFF/GENERIC
+    // tutor viewer is read-only, so neither button is ever shown to them.
+    // Enforced server-side regardless (PUT /api/tickets/:id/{manage,close}),
+    // this only decides whether to offer the affordance at all.
+    if (withActions && window.canManageTickets) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'mt-4 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90';
@@ -101,7 +105,7 @@ function card(ticket, withActions = false) {
         button.addEventListener('click', () => startManaging(ticket));
         article.append(button);
     }
-    if (ticket.status === 'managing') {
+    if (ticket.status === 'managing' && window.canManageTickets) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'mt-4 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-secondary';

@@ -333,17 +333,57 @@ app.get('/admin', adminSession, isAdmin, (req, res) => {
  * Support tickets (admin)
  * GET /ticketing - Display the support ticket board (requires admin authentication)
  */
-app.get('/ticketing', adminSession, isAdmin, async (req, res) => {
+/**
+ * Support ticket board
+ * GET /ticketing
+ * Reachable by an admin (full management board: every open ticket, plus
+ * whichever managing/closed ones they're handling) or by a STAFF/GENERIC
+ * tutor (read-only - their own tickets only, every status, no manage/close
+ * actions - those require an admin identity, which a tutor account doesn't
+ * have). A GUEST, or anyone with neither an admin nor a tutor session, is
+ * redirected away - role is always re-verified fresh from the Java API for a
+ * tutor session, never trusted from req.session.role alone.
+ */
+app.get('/ticketing', async (req, res) => {
+    const isAdminViewer = !!(req.session && req.session.adminId);
+    let viewerRole = null;
+
+    if (!isAdminViewer) {
+        if (!(req.session && req.session.userId)) {
+            return res.redirect('/login');
+        }
+        try {
+            const tutorData = await fetchTutorData(req.session.userId);
+            viewerRole = tutorData ? tutorData.role : null;
+        } catch (error) {
+            logError('Error verifying role for ticketing page', req, { error: error.message });
+            return res.redirect('/home');
+        }
+        if (viewerRole !== 'STAFF' && viewerRole !== 'GENERIC') {
+            return res.redirect('/home');
+        }
+    }
+
+    const viewerLocals = {
+        isAdminViewer,
+        adminUsername: req.session.adminUsername || null,
+        // Always a real value (never undefined) - JSON.stringify(undefined)
+        // renders as nothing at all in the view's <script> block, leaving a
+        // syntactically broken `window.adminId = ;` for a tutor viewer.
+        adminId: req.session.adminId ?? null,
+        user: isAdminViewer ? null : { username: req.session.username, role: viewerRole }
+    };
+
     try {
         const rawTickets = await fetchAllTickets();
 
-        // Open tickets are a shared pool - every admin sees all of them.
-        // Managing/closed ones are scoped to whichever admin is handling (or
-        // handled) them - another admin's in-progress/resolved tickets never
-        // reach this admin's page at all, not just hidden client-side.
-        const visibleTickets = rawTickets.filter(ticket =>
-            ticket.status === 'open' || ticket.adminId === req.session.adminId
-        );
+        // Admin: open tickets are a shared pool everyone sees, plus whichever
+        // managing/closed ones they're personally handling - another admin's
+        // never reaches this page at all, not just hidden client-side.
+        // Tutor (STAFF/GENERIC): only their own tickets, any status - read-only.
+        const visibleTickets = isAdminViewer
+            ? rawTickets.filter(ticket => ticket.status === 'open' || ticket.adminId === req.session.adminId)
+            : rawTickets.filter(ticket => ticket.userId === req.session.userId);
 
         // Shared caches so repeated requesters/resolvers across tickets aren't re-fetched
         const userCache = new Map();
@@ -378,18 +418,10 @@ app.get('/ticketing', adminSession, isAdmin, async (req, res) => {
             resolverUsername: await getAdminUsername(ticket.adminId)
         })));
 
-        res.render('ticketing', {
-            adminUsername: req.session.adminUsername,
-            adminId: req.session.adminId,
-            tickets
-        });
+        res.render('ticketing', { ...viewerLocals, tickets });
     } catch (error) {
         logError('Error fetching tickets', req, { error: error.message });
-        res.render('ticketing', {
-            adminUsername: req.session.adminUsername,
-            adminId: req.session.adminId,
-            tickets: []
-        });
+        res.render('ticketing', { ...viewerLocals, tickets: [] });
     }
 });
 

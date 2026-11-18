@@ -12,6 +12,7 @@
 </head>
 <body class="bg-background text-foreground min-h-screen">
 
+  <% if (isAdminViewer) { %>
   <!-- HEADER: Top Navigation Bar (same structure as admin.ejs) -->
   <header class="bg-card border-b border-border sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -100,8 +101,131 @@
       </div>
     </nav>
   </aside>
+  <% } else { %>
+  <!-- HEADER: Top Navigation Bar (same structure as home/calendar/availability
+       for a STAFF/GENERIC tutor viewer) -->
+  <header class="bg-card border-b border-border sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+
+        <a href="/home" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+            </svg>
+          </div>
+          <span class="text-xl font-bold text-foreground">Tutorly</span>
+          <% if (poweredByText) { %><span class="text-xs text-muted-foreground ml-1"><%= poweredByText %></span><% } %>
+        </a>
+
+        <nav class="hidden md:flex items-center gap-6">
+          <a href="/home" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.dashboard') %></a>
+          <a href="/calendar" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.calendar') %></a>
+          <a href="/availability" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.availability') %></a>
+          <a href="/lessons" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.myLessons') %></a>
+          <a href="/reports" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('reports.navLabel') %></a>
+          <% if (user.role === 'STAFF') { %>
+          <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.staffPanel') %></a>
+          <% } %>
+          <a href="/ticketing" class="text-foreground font-medium" aria-current="page">Tickets</a>
+        </nav>
+
+        <div class="hidden md:flex items-center gap-1">
+          <%- include('partials/settings-menu') %>
+        </div>
+
+        <button id="menuToggle" class="md:hidden p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div id="menuOverlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+  <aside id="mobileMenu" class="mobile-menu fixed top-0 left-0 h-full w-72 bg-card border-r border-border z-50 md:hidden">
+    <div class="p-4 border-b border-border flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+          </svg>
+        </div>
+        <span class="text-lg font-bold text-foreground">Tutorly</span>
+        <% if (poweredByText) { %><span class="text-xs text-muted-foreground ml-1"><%= poweredByText %></span><% } %>
+      </div>
+      <button id="closeMenu" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+        <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <nav class="p-4 flex flex-col gap-2">
+      <a href="/home" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        <%= t('common.dashboard') %>
+      </a>
+      <a href="/calendar" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <%= t('common.calendar') %>
+      </a>
+      <a href="/availability" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <%= t('common.availability') %>
+      </a>
+      <a href="/lessons" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <%= t('common.myLessons') %>
+      </a>
+      <a href="/reports" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <%= t('reports.navLabel') %>
+      </a>
+      <% if (user.role === 'STAFF') { %>
+      <a href="/staffPanel" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <%= t('common.staffPanel') %>
+      </a>
+      <% } %>
+      <a href="/ticketing" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary text-foreground" aria-current="page">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h3.75M9 15h3.75M9 18h3.75m3-15H9a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 009 21h9a2.25 2.25 0 002.25-2.25V9M15 3v4.5A1.5 1.5 0 0016.5 9H21M15 3l6 6" />
+        </svg>
+        Tickets
+      </a>
+      <div class="mt-4 pt-4 border-t border-border space-y-1">
+        <%- include('partials/settings-menu-mobile') %>
+      </div>
+    </nav>
+  </aside>
+  <% } %>
   <main class="mx-auto max-w-7xl space-y-7 px-4 py-7 sm:px-6 sm:py-9">
-    <section class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 class="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Support tickets</h1></div><div id="summary" class="flex flex-wrap gap-2" aria-live="polite"></div></section>
+    <section class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><h1 class="mt-1 text-3xl font-bold tracking-tight sm:text-4xl"><%= isAdminViewer ? 'Support tickets' : 'My Tickets' %></h1><% if (!isAdminViewer) { %><% } %></div><div id="summary" class="flex flex-wrap gap-2" aria-live="polite"></div></section>
     <section aria-labelledby="open-heading" class="space-y-4"><div class="flex items-center justify-between"><div><h2 id="open-heading" class="text-xl font-semibold">Open tickets</h2></div><span id="openCount" class="rounded-full border border-border bg-card px-3 py-1 text-sm text-muted-foreground"></span></div><div id="openList" class="grid gap-3 md:grid-cols-2 xl:grid-cols-3"></div></section>
     <section class="grid items-start gap-6 lg:grid-cols-2" aria-label="Ticket status boards">
       <div class="space-y-4"><div class="flex items-center justify-between"><div><h2 class="text-xl font-semibold">Managing</h2></div><span id="managingCount" class="rounded-full border border-border bg-card px-3 py-1 text-sm text-muted-foreground"></span></div><div id="managingList" class="space-y-3"></div></div>
@@ -140,11 +264,25 @@
   </div>
 
   <script>
-    // Every ticket, regardless of status - see GET /ticketing in src/index.js
+    // Tickets visible to this viewer - see GET /ticketing in src/index.js for
+    // what that means (admin: shared open pool + own managing/closed; STAFF/
+    // GENERIC tutor: only their own, any status).
     window.initialTickets = <%- JSON.stringify(tickets) %>;
     window.adminId = <%- JSON.stringify(adminId) %>;
+    // Only an admin can pick up/close a ticket - a STAFF/GENERIC tutor viewer
+    // is read-only (enforced server-side on PUT /api/tickets/:id/{manage,close}
+    // regardless of this flag; it only decides whether to show the buttons).
+    window.canManageTickets = <%- JSON.stringify(isAdminViewer) %>;
+    // Needed by the tutor-viewer header's settings menu (theme/notifications/
+    // logout, see partials/settings-menu.ejs) - harmless and unused for the
+    // admin header, which has no such menu.
+    window.translations = <%- JSON.stringify(translations) %>;
+    window.lang = <%- JSON.stringify(lang) %>;
   </script>
   <script src="/js/theme.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/settingsMenu.js"></script>
+  <script src="/js/push.js"></script>
   <script src="/js/ticketing.js"></script>
 </body>
 </html>
