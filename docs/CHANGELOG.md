@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.5.0] - 2026-11-18
+## [3.0.0] - 2026-11-18
 
 ### Added
 - **Database**: added five new tables ahead of their corresponding features - `availability` and `exception_day` (tutor weekly availability and one-off exceptions to it, with a STAFF-approval workflow for the latter - see below), `dashboard_note` and `see_dashboard_note` (time-bound admin notices and per-tutor read tracking), and `ticket` (support tickets between users and admins). `dashboard_note`/`see_dashboard_note`/`ticket` remain schema only - no JPA entities, repositories, or API endpoints yet. See [07_Database_Configuration.md](07_Database_Configuration.md#database-schema).
