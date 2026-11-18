@@ -1,6 +1,8 @@
-// Support ticket board (admin only) - real data from GET /ticketing
-// (window.initialTickets, see src/index.js), status changes via
-// PUT /api/tickets/:id/{manage,close}.
+// Support ticket board - real data from GET /ticketing (window.initialTickets,
+// see src/index.js). Admin: status changes via PUT /api/tickets/:id/{manage,close}.
+// STAFF/GENERIC tutor: read-only board, plus submitting a new ticket via
+// POST /api/tickets (window.canManageTickets gates which of these a given
+// viewer can do - see card() and the New Ticket button below).
 const tickets = window.initialTickets || [];
 const statusStyles = { open: 'bg-amber-500/10 text-amber-300 border-amber-500/20', managing: 'bg-sky-500/10 text-sky-300 border-sky-500/20', closed: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' };
 const dateFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
@@ -78,6 +80,50 @@ document.getElementById('closeTicketForm').addEventListener('submit', async (e) 
     } catch (error) {
         console.error('Error closing ticket:', error);
         alert('Failed to close ticket. Please try again.');
+    }
+});
+
+// New Ticket modal (STAFF/GENERIC only - the trigger button isn't even
+// rendered for an admin viewer, see ticketing.ejs). Submitting reloads the
+// page on success, same simple pattern as every other "Add X" form in this
+// app (Add Availability, Add Exception, etc.), rather than patching local
+// state in place.
+function openNewTicketModal() {
+    document.getElementById('newTicketContent').value = '';
+    document.getElementById('newTicketModal').classList.add('open');
+}
+
+function closeNewTicketModal() {
+    document.getElementById('newTicketModal').classList.remove('open');
+}
+
+const newTicketBtn = document.getElementById('newTicketBtn');
+if (newTicketBtn) newTicketBtn.addEventListener('click', openNewTicketModal);
+
+document.getElementById('newTicketForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const content = document.getElementById('newTicketContent').value.trim();
+    if (!content) return;
+
+    try {
+        const response = await fetch('/api/tickets', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+
+        if (response.ok) {
+            closeNewTicketModal();
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert(`Failed to submit ticket: ${error.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('Error submitting ticket:', error);
+        alert('Failed to submit ticket. Please try again.');
     }
 });
 

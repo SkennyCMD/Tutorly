@@ -1,13 +1,59 @@
 const request = require('supertest');
 const app = require('../helpers/testApp');
 const { javaApi } = require('../helpers/javaApi');
-const { loginAsAdmin, adminFixture, tutorFixture } = require('../helpers/auth');
+const { loginAsAdmin, loginAsTutor, adminFixture, tutorFixture } = require('../helpers/auth');
 
 async function adminAgent(overrides = {}) {
     const agent = request.agent(app);
     await loginAsAdmin(agent, adminFixture(overrides));
     return agent;
 }
+
+async function tutorAgent(overrides = {}) {
+    const agent = request.agent(app);
+    await loginAsTutor(agent, tutorFixture(overrides));
+    return agent;
+}
+
+describe('POST /api/tickets', () => {
+    test('redirects to /login when not authenticated', async () => {
+        const res = await request(app).post('/api/tickets').send({ content: 'Help' });
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/login');
+    });
+
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        const res = await agent.post('/api/tickets').send({ content: 'Help' });
+        expect(res.status).toBe(403);
+    });
+
+    test('rejects blank content with 400', async () => {
+        const agent = await tutorAgent({ role: 'GENERIC' });
+        const res = await agent.post('/api/tickets').send({ content: '   ' });
+        expect(res.status).toBe(400);
+    });
+
+    test.each(['STAFF', 'GENERIC'])('a %s tutor can submit a ticket, userId forced from the session', async (role) => {
+        const agent = await tutorAgent({ id: 4, role });
+        let forwardedBody;
+        javaApi().post('/api/tickets', body => { forwardedBody = body; return true; })
+            .reply(201, (uri, body) => ({ id: 10, status: 'open', creation: '2026-11-18T09:00:00', ...body }));
+
+        const res = await agent.post('/api/tickets').send({ content: 'I need help', userId: 999 });
+
+        expect(res.status).toBe(201);
+        expect(forwardedBody).toEqual({ content: 'I need help', userId: 4 });
+    });
+
+    test('propagates a Java API error', async () => {
+        const agent = await tutorAgent({ role: 'STAFF' });
+        javaApi().post('/api/tickets').reply(400, 'content is required');
+
+        const res = await agent.post('/api/tickets').send({ content: 'Help' });
+        expect(res.status).toBe(400);
+    });
+});
 
 describe('PUT /api/tickets/:id/manage', () => {
     test('redirects to /adminLogin when not authenticated', async () => {

@@ -426,6 +426,55 @@ app.get('/ticketing', async (req, res) => {
 });
 
 /**
+ * Submit a new support ticket
+ * POST /api/tickets
+ * Body: { content }
+ * STAFF/GENERIC only (blocked for GUEST, and an admin has no tutor session
+ * to authenticate this with at all). userId is always the caller's own
+ * session userId, never client-supplied - always saved "open" with no admin
+ * assigned, regardless of what's in the request body.
+ */
+app.post('/api/tickets', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
+    try {
+        const { content } = req.body;
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: 'Please describe your issue.' });
+        }
+
+        const postData = JSON.stringify({ content, userId: req.session.userId });
+
+        logInfo('Submitting new ticket', req, { userId: req.session.userId });
+
+        const options = createJavaApiRequestOptions('/api/tickets', 'POST', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 201) {
+                    logSuccess('Ticket submitted successfully', req, { userId: req.session.userId });
+                    res.status(201).json({ success: true, message: 'Ticket submitted' });
+                } else {
+                    logError(`Error submitting ticket, status: ${httpsRes.statusCode}`, req, { response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to submit ticket' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for ticket submission', req, { error: error.message });
+            res.status(500).json({ error: 'Failed to submit ticket' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+    } catch (error) {
+        logError('Error submitting ticket', req, { error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to submit ticket' });
+    }
+});
+
+/**
  * An admin picks up an open ticket, moving it to "managing"
  * PUT /api/tickets/:id/manage
  * Admin only. adminId is always the caller's own admin session id, never
