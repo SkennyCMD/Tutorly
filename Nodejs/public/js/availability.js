@@ -117,7 +117,7 @@ function renderTutorDays() {
             : '';
         const countBadge = isGeneric ? '' : `<span class="text-xs font-normal text-muted-foreground">${entries.length} available</span>`;
         const emptyText = isGeneric ? 'Absent' : 'No tutors available';
-        return `<article class="rounded-xl border border-border bg-card p-4"><h3 class="mb-3 flex items-center justify-between text-sm font-semibold"><span>${weekdayNames[jsDay]} <span class="font-normal text-muted-foreground">${dateLabel}</span></span>${countBadge}</h3>${entries.length ? `<ul class="space-y-2 ${scrollClasses}">${entries.map(({ tutor, slots, isException }) => `<li><button type="button" class="tutor-card flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition hover:bg-secondary" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}, available ${slots.map(slot => slot.map(timeLabel).join(' to ')).join(' and ')}${isException ? ' (exception)' : ''}"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium">${tutor.name}</span><span class="block truncate text-xs text-muted-foreground">${slots.map(slot => slot.map(timeLabel).join('–')).join(' · ')}${isException ? ` · <span style="color: rgb(var(--color-note))">Exception</span>` : ''}</span></span></button></li>`).join('')}</ul>` : `<p class="py-2 text-sm text-muted-foreground">${emptyText}</p>`}</article>`;
+        return `<article class="rounded-xl border border-border bg-card p-4"><h3 class="mb-3 flex items-center justify-between text-sm font-semibold"><span>${weekdayNames[jsDay]} <span class="font-normal text-muted-foreground">${dateLabel}</span></span>${countBadge}</h3>${entries.length ? `<ul class="space-y-2 ${scrollClasses}">${entries.map(({ tutor, slots, isException }) => `<li><button type="button" class="tutor-card flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition hover:bg-secondary" data-tutor="${tutor.id}" aria-pressed="${tutor.id === selectedTutorId}" aria-label="View ${tutor.name}, available ${slots.map(slot => `${timeLabel(slot.start)} to ${timeLabel(slot.end)}`).join(' and ')}${isException ? ' (exception)' : ''}"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold" style="background-color: rgb(var(${getTutorColorVar(tutor.id)}) / 0.15); color: rgb(var(${getTutorColorVar(tutor.id)}))">${tutor.initials}</span><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium">${tutor.name}</span><span class="block truncate text-xs text-muted-foreground">${slots.map(slot => `${timeLabel(slot.start)}–${timeLabel(slot.end)}`).join(' · ')}${isException ? ` · <span style="color: rgb(var(--color-note))">Exception</span>` : ''}</span></span></button></li>`).join('')}</ul>` : `<p class="py-2 text-sm text-muted-foreground">${emptyText}</p>`}</article>`;
     }).join('');
 
     document.querySelectorAll('#dayList .tutor-card').forEach(button => button.addEventListener('click', () => {
@@ -152,10 +152,12 @@ function renderTutorList() {
 function effectiveSlotsForDate(tutor, date) {
     const exception = tutor.exceptions[dateKey(date)];
     if (exception) {
+        // No `id` - an exception override has no availability row behind it
+        // to edit/delete, unlike a regular slot below.
         return {
             isException: true,
             isAbsentException: exception.type === 'absent',
-            slots: exception.type === 'present' ? [[exception.startTime, exception.endTime]] : []
+            slots: exception.type === 'present' ? [{ id: null, start: exception.startTime, end: exception.endTime }] : []
         };
     }
     return { isException: false, isAbsentException: false, slots: tutor.days[date.getDay()] || [] };
@@ -178,8 +180,22 @@ function scheduleMarkup(tutor, date) {
 
     const blockClass = isException ? 'exception-block exception-present' : 'availability-block';
     const label = isException ? ' · Exception' : '';
+    // Only a regular weekly slot can be edited/deleted here (an exception
+    // override has no availability row behind it), and only for STAFF, who
+    // are the only ones who can create one in the first place (see
+    // openAddAvailabilityModal). This only decides whether to show the
+    // affordance - the real enforcement is server-side on PUT/DELETE
+    // /api/availability/:id.
+    const isEditable = !isException && window.userRole === 'STAFF';
+    const isoWeekDay = date.getDay() === 0 ? 7 : date.getDay();
 
-    return `<div class="mt-3 space-y-2">${slots.map(([start, end]) => `<div class="${blockClass} rounded-md px-2 py-2 text-xs font-medium"><span class="block">${timeLabel(start)} – ${timeLabel(end)}</span><span class="mt-0.5 block text-[10px] opacity-70">${start}–${end}${label}</span></div>`).join('')}</div>`;
+    return `<div class="mt-3 space-y-2">${slots.map(slot => {
+        const clickableClass = isEditable ? ' cursor-pointer hover:opacity-80 transition' : '';
+        const clickableAttrs = isEditable
+            ? ` role="button" tabindex="0" data-availability-id="${slot.id}" data-week-day="${isoWeekDay}" data-start-time="${slot.start}" data-end-time="${slot.end}" data-tutor-name="${tutor.name}" onclick="openEditAvailabilityModal(this)"`
+            : '';
+        return `<div class="${blockClass}${clickableClass} rounded-md px-2 py-2 text-xs font-medium"${clickableAttrs}><span class="block">${timeLabel(slot.start)} – ${timeLabel(slot.end)}</span><span class="mt-0.5 block text-[10px] opacity-70">${slot.start}–${slot.end}${label}</span></div>`;
+    }).join('')}</div>`;
 }
 
 function renderWeek() {
@@ -286,6 +302,90 @@ if (addAvailabilityForm) {
         } catch (error) {
             console.error('Error creating availability slot:', error);
             alert('Failed to create availability slot. Please try again.');
+        }
+    });
+}
+
+// Edit/Delete Availability (STAFF only - clicking a regular slot in the week
+// view below isn't even wired up for GENERIC, see isEditable in
+// scheduleMarkup(); the real enforcement is server-side on PUT/DELETE
+// /api/availability/:id). Opened from the slot's own data attributes rather
+// than passing them as inline onclick() arguments, so a tutor name
+// containing a quote/apostrophe can't break the generated markup.
+function openEditAvailabilityModal(el) {
+    const { availabilityId, weekDay, startTime, endTime, tutorName } = el.dataset;
+    $('editAvailabilityId').value = availabilityId;
+    $('editAvailabilityTutorName').textContent = tutorName;
+    $('editAvailabilityWeekDay').value = weekDay;
+    $('editAvailabilityStartTime').value = startTime;
+    $('editAvailabilityEndTime').value = endTime;
+    $('editAvailabilityModal').classList.add('open');
+}
+
+function closeEditAvailabilityModal() {
+    $('editAvailabilityModal').classList.remove('open');
+}
+
+const editAvailabilityForm = $('editAvailabilityForm');
+if (editAvailabilityForm) {
+    editAvailabilityForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const id = $('editAvailabilityId').value;
+        const weekDay = $('editAvailabilityWeekDay').value;
+        const startTime = $('editAvailabilityStartTime').value;
+        const endTime = $('editAvailabilityEndTime').value;
+
+        if (startTime >= endTime) {
+            alert('End time must be after start time.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/availability/${id}`, {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weekDay, startTime, endTime })
+            });
+
+            if (response.ok) {
+                closeEditAvailabilityModal();
+                window.location.reload();
+            } else {
+                const error = await response.json();
+                alert(`Failed to update availability slot: ${error.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error updating availability slot:', error);
+            alert('Failed to update availability slot. Please try again.');
+        }
+    });
+}
+
+const deleteAvailabilityBtn = $('deleteAvailabilityBtn');
+if (deleteAvailabilityBtn) {
+    deleteAvailabilityBtn.addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to delete this availability slot?')) return;
+
+        const id = $('editAvailabilityId').value;
+
+        try {
+            const response = await fetch(`/api/availability/${id}`, {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                closeEditAvailabilityModal();
+                window.location.reload();
+            } else {
+                const error = await response.json();
+                alert(`Failed to delete availability slot: ${error.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting availability slot:', error);
+            alert('Failed to delete availability slot. Please try again.');
         }
     });
 }

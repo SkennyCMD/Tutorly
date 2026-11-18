@@ -18,9 +18,12 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -117,5 +120,67 @@ class AvailabilityControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateAvailability_valid_returns200() throws Exception {
+        Availability updated = new Availability(3, LocalTime.of(14, 0), LocalTime.of(16, 0), tutor());
+        updated.setId(7L);
+        when(availabilityService.updateAvailability(eq(7L), any())).thenReturn(updated);
+
+        AvailabilityCreateDTO dto = new AvailabilityCreateDTO(3, LocalTime.of(14, 0), LocalTime.of(16, 0), 4L);
+
+        mockMvc.perform(put("/api/availability/7")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.weekDay").value(3));
+    }
+
+    @Test
+    void updateAvailability_notFound_returns404() throws Exception {
+        when(availabilityService.updateAvailability(eq(404L), any()))
+                .thenThrow(new IllegalArgumentException("Availability slot not found with ID: 404"));
+
+        AvailabilityCreateDTO dto = new AvailabilityCreateDTO(1, LocalTime.of(9, 0), LocalTime.of(12, 0), 4L);
+
+        mockMvc.perform(put("/api/availability/404")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateAvailability_invalidTimes_returns400() throws Exception {
+        when(availabilityService.updateAvailability(eq(7L), any()))
+                .thenThrow(new IllegalArgumentException("endTime must be after startTime"));
+
+        AvailabilityCreateDTO dto = new AvailabilityCreateDTO(1, LocalTime.of(12, 0), LocalTime.of(9, 0), 4L);
+
+        mockMvc.perform(put("/api/availability/7")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteAvailability_found_returns204() throws Exception {
+        Availability slot = new Availability(1, LocalTime.of(9, 0), LocalTime.of(12, 0), tutor());
+        slot.setId(7L);
+        when(availabilityService.getAvailabilityById(7L)).thenReturn(Optional.of(slot));
+
+        mockMvc.perform(delete("/api/availability/7").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteAvailability_notFound_returns404() throws Exception {
+        when(availabilityService.getAvailabilityById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete("/api/availability/99").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isNotFound());
     }
 }

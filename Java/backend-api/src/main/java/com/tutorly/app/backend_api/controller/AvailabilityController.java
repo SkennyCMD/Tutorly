@@ -83,4 +83,42 @@ public class AvailabilityController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    /**
+     * Update an existing recurring availability slot's day/time range.
+     *
+     * @param id The slot to update
+     * @param dto The new weekDay/startTime/endTime (tutorId is ignored - the
+     *            slot's tutor is never reassigned here)
+     * @return Updated slot, 404 if it doesn't exist, 400 if invalid
+     * @apiNote PUT /api/availability/{id}
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateAvailability(@PathVariable Long id, @RequestBody AvailabilityCreateDTO dto) {
+        try {
+            Availability updated = availabilityService.updateAvailability(id, dto);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("Availability slot not found")) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Delete a recurring availability slot.
+     *
+     * @param id The slot to delete
+     * @return 204 No Content if deleted, 404 Not Found if it doesn't exist
+     * @apiNote DELETE /api/availability/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAvailability(@PathVariable Long id) {
+        if (availabilityService.getAvailabilityById(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        availabilityService.deleteAvailability(id);
+        return ResponseEntity.noContent().build();
+    }
 }

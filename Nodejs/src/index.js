@@ -964,6 +964,96 @@ app.post('/api/availability', tutorSession, isAuthenticated, isStaff, async (req
 });
 
 /**
+ * Update an existing recurring availability slot's day/time range
+ * PUT /api/availability/:id
+ * Body: { weekDay, startTime, endTime }
+ * STAFF only, same rationale as creating one. The slot's tutor is never
+ * reassigned here - only clicking "Edit" on one of their own slots in the
+ * week view (see public/js/availability.js) opens this.
+ */
+app.put('/api/availability/:id', tutorSession, isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { weekDay, startTime, endTime } = req.body;
+
+        if (!weekDay || !startTime || !endTime) {
+            return res.status(400).json({ error: 'Week day and start/end time are required' });
+        }
+
+        const availabilityData = { weekDay: parseInt(weekDay), startTime, endTime };
+
+        logInfo('Updating availability slot', req, { id, ...availabilityData });
+
+        const postData = JSON.stringify(availabilityData);
+        const options = createJavaApiRequestOptions(`/api/availability/${id}`, 'PUT', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200) {
+                    logSuccess('Availability slot updated successfully', req, { id });
+                    res.json({ success: true, message: 'Availability slot updated' });
+                } else {
+                    logError(`Error updating availability slot, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to update availability slot' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for availability update', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to update availability slot' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+    } catch (error) {
+        logError('Error updating availability slot', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to update availability slot' });
+    }
+});
+
+/**
+ * Delete a recurring availability slot
+ * DELETE /api/availability/:id
+ * STAFF only, same rationale as creating/updating one.
+ */
+app.delete('/api/availability/:id', tutorSession, isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        logInfo('Deleting availability slot', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/availability/${id}`, 'DELETE');
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
+                    logSuccess('Availability slot deleted successfully', req, { id });
+                    res.json({ success: true, message: 'Availability slot deleted' });
+                } else {
+                    logError(`Error deleting availability slot, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete availability slot' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for availability deletion', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to delete availability slot' });
+        });
+
+        httpsReq.end();
+    } catch (error) {
+        logError('Error deleting availability slot', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to delete availability slot' });
+    }
+});
+
+/**
  * Submit a new exception day request (present or absent) for the logged-in
  * tutor
  * POST /api/exception-days

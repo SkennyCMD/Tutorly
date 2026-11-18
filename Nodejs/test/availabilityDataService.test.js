@@ -46,27 +46,30 @@ describe('buildTutorAvailability', () => {
         const result = buildTutorAvailability({
             users: [activeTutor],
             availability: [
-                { tutorId: 1, weekDay: 1, startTime: '09:00:00', endTime: '12:00:00' },
-                { tutorId: 1, weekDay: 7, startTime: '10:00:00', endTime: '11:00:00' }
+                { id: 10, tutorId: 1, weekDay: 1, startTime: '09:00:00', endTime: '12:00:00' },
+                { id: 11, tutorId: 1, weekDay: 7, startTime: '10:00:00', endTime: '11:00:00' }
             ],
             exceptionDays: []
         });
 
-        expect(result[0].days[1]).toEqual([['09:00', '12:00']]);
-        expect(result[0].days[0]).toEqual([['10:00', '11:00']]);
+        expect(result[0].days[1]).toEqual([{ id: 10, start: '09:00', end: '12:00' }]);
+        expect(result[0].days[0]).toEqual([{ id: 11, start: '10:00', end: '11:00' }]);
     });
 
-    test('groups multiple slots on the same day', () => {
+    test('groups multiple slots on the same day, keeping each row\'s own id', () => {
         const result = buildTutorAvailability({
             users: [activeTutor],
             availability: [
-                { tutorId: 1, weekDay: 1, startTime: '09:00:00', endTime: '12:00:00' },
-                { tutorId: 1, weekDay: 1, startTime: '14:00:00', endTime: '17:00:00' }
+                { id: 10, tutorId: 1, weekDay: 1, startTime: '09:00:00', endTime: '12:00:00' },
+                { id: 20, tutorId: 1, weekDay: 1, startTime: '14:00:00', endTime: '17:00:00' }
             ],
             exceptionDays: []
         });
 
-        expect(result[0].days[1]).toEqual([['09:00', '12:00'], ['14:00', '17:00']]);
+        expect(result[0].days[1]).toEqual([
+            { id: 10, start: '09:00', end: '12:00' },
+            { id: 20, start: '14:00', end: '17:00' }
+        ]);
     });
 
     test('ignores availability rows for a tutor not in the active list', () => {

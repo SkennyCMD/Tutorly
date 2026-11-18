@@ -325,6 +325,60 @@ GENERIC and STAFF only - see GET /availability in src/index.js.
     </div>
   </div>
 
+  <!-- Edit Availability Modal (STAFF only) - opened by clicking a regular
+       (non-exception) slot in the week view below, see openEditAvailabilityModal
+       in public/js/availability.js. Tutor isn't editable, only shown for context. -->
+  <div id="editAvailabilityModal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60" onclick="closeEditAvailabilityModal()"></div>
+    <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-foreground">Edit Availability</h2>
+        <button onclick="closeEditAvailabilityModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
+          <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="editAvailabilityForm" class="space-y-4">
+        <input type="hidden" id="editAvailabilityId">
+        <p class="text-sm text-muted-foreground">Editing <span id="editAvailabilityTutorName" class="font-medium text-foreground"></span>'s availability</p>
+        <div>
+          <label class="block text-sm font-medium text-foreground mb-1.5">Day of week</label>
+          <select id="editAvailabilityWeekDay" required
+            class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+            <option value="7">Sunday</option>
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">Start time</label>
+            <input type="time" id="editAvailabilityStartTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-foreground mb-1.5">End time</label>
+            <input type="time" id="editAvailabilityEndTime" required step="900"
+              class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          </div>
+        </div>
+        <div class="flex gap-3 pt-2">
+          <button type="button" id="deleteAvailabilityBtn"
+            class="px-4 py-2.5 bg-destructive text-white rounded-lg font-medium hover:bg-destructive/90 transition-colors">Delete</button>
+          <button type="button" onclick="closeEditAvailabilityModal()"
+            class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+          <button type="submit"
+            class="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Add Exception Modal (STAFF + GENERIC) - shared by both the "Present" and
        "Absent" buttons; openAddExceptionModal(type) sets the hidden type field,
        toggles the time fields, and updates the title -->

@@ -58,4 +58,40 @@ public class AvailabilityService {
         Availability availability = new Availability(dto.getWeekDay(), dto.getStartTime(), dto.getEndTime(), tutor);
         return availabilityRepository.save(availability);
     }
+
+    /**
+     * Updates an existing recurring availability slot's day/time range. The
+     * tutor it belongs to is never changed here - reassigning a slot to a
+     * different tutor isn't a supported edit, only adjusting when it recurs.
+     *
+     * @param id The slot to update
+     * @param dto The new weekDay/startTime/endTime (tutorId is ignored)
+     * @return The updated slot
+     * @throws IllegalArgumentException if the slot doesn't exist or weekDay/times are invalid
+     */
+    public Availability updateAvailability(Long id, AvailabilityCreateDTO dto) {
+        Availability availability = availabilityRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Availability slot not found with ID: " + id));
+
+        if (dto.getWeekDay() == null || dto.getWeekDay() < 1 || dto.getWeekDay() > 7) {
+            throw new IllegalArgumentException("weekDay must be between 1 (Monday) and 7 (Sunday)");
+        }
+        if (dto.getStartTime() == null || dto.getEndTime() == null || !dto.getEndTime().isAfter(dto.getStartTime())) {
+            throw new IllegalArgumentException("endTime must be after startTime");
+        }
+
+        availability.setWeekDay(dto.getWeekDay());
+        availability.setStartTime(dto.getStartTime());
+        availability.setEndTime(dto.getEndTime());
+        return availabilityRepository.save(availability);
+    }
+
+    /**
+     * Deletes a recurring availability slot.
+     *
+     * @param id The slot to delete
+     */
+    public void deleteAvailability(Long id) {
+        availabilityRepository.deleteById(id);
+    }
 }

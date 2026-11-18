@@ -112,4 +112,51 @@ class AvailabilityServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
         verify(availabilityRepository, never()).save(any());
     }
+
+    @Test
+    void updateAvailability_valid_updatesDayAndTimesButNotTutor() {
+        Availability slot = new Availability(1, LocalTime.of(9, 0), LocalTime.of(12, 0), tutor);
+        slot.setId(7L);
+        when(availabilityRepository.findById(7L)).thenReturn(Optional.of(slot));
+        when(availabilityRepository.save(any(Availability.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AvailabilityCreateDTO dto = new AvailabilityCreateDTO(3, LocalTime.of(14, 0), LocalTime.of(16, 0), 999L);
+        Availability result = availabilityService.updateAvailability(7L, dto);
+
+        assertThat(result.getWeekDay()).isEqualTo(3);
+        assertThat(result.getStartTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(result.getEndTime()).isEqualTo(LocalTime.of(16, 0));
+        // tutorId in the DTO is ignored - the slot keeps belonging to its original tutor
+        assertThat(result.getTutor()).isEqualTo(tutor);
+    }
+
+    @Test
+    void updateAvailability_notFound_throwsAndDoesNotSave() {
+        when(availabilityRepository.findById(404L)).thenReturn(Optional.empty());
+        AvailabilityCreateDTO dto = new AvailabilityCreateDTO(1, LocalTime.of(9, 0), LocalTime.of(12, 0), 4L);
+
+        assertThatThrownBy(() -> availabilityService.updateAvailability(404L, dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(availabilityRepository, never()).save(any());
+    }
+
+    @Test
+    void updateAvailability_endNotAfterStart_throwsAndDoesNotSave() {
+        Availability slot = new Availability(1, LocalTime.of(9, 0), LocalTime.of(12, 0), tutor);
+        slot.setId(7L);
+        when(availabilityRepository.findById(7L)).thenReturn(Optional.of(slot));
+
+        AvailabilityCreateDTO dto = new AvailabilityCreateDTO(1, LocalTime.of(12, 0), LocalTime.of(9, 0), 4L);
+
+        assertThatThrownBy(() -> availabilityService.updateAvailability(7L, dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(availabilityRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteAvailability_delegatesToRepository() {
+        availabilityService.deleteAvailability(7L);
+
+        verify(availabilityRepository).deleteById(7L);
+    }
 }

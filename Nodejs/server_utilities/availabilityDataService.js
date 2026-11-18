@@ -52,7 +52,7 @@ function usernameInitials(username) {
  * @param {Array} params.availability - Raw rows from GET /api/availability
  * @param {Array} params.exceptionDays - Raw rows from GET /api/exception-days
  * @param {?number} [params.restrictToTutorId] - If set, only this tutor is included
- * @returns {Array<{id: number, name: string, initials: string, days: Object<number, Array<[string,string]>>, exceptions: Object<string, {type: string, startTime: ?string, endTime: ?string}>}>}
+ * @returns {Array<{id: number, name: string, initials: string, days: Object<number, Array<{id: number, start: string, end: string}>>, exceptions: Object<string, {type: string, startTime: ?string, endTime: ?string}>}>}
  */
 function buildTutorAvailability({ users, availability, exceptionDays, restrictToTutorId }) {
     const tutorsById = new Map();
@@ -75,7 +75,10 @@ function buildTutorAvailability({ users, availability, exceptionDays, restrictTo
         if (!tutor) return;
         const jsDay = slot.weekDay % 7;
         if (!tutor.days[jsDay]) tutor.days[jsDay] = [];
-        tutor.days[jsDay].push([(slot.startTime || '').slice(0, 5), (slot.endTime || '').slice(0, 5)]);
+        // Keeps the row's own id (unlike exception-day overrides, which have
+        // no such id to edit) so the client can offer edit/delete on a
+        // regular slot - see scheduleMarkup() in public/js/availability.js.
+        tutor.days[jsDay].push({ id: slot.id, start: (slot.startTime || '').slice(0, 5), end: (slot.endTime || '').slice(0, 5) });
     });
 
     (exceptionDays || [])

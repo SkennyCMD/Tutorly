@@ -69,6 +69,91 @@ describe('POST /api/availability', () => {
     });
 });
 
+describe('PUT /api/availability/:id', () => {
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GUEST' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GUEST' }));
+
+        const res = await agent.put('/api/availability/7').send({ weekDay: 2, startTime: '09:00', endTime: '12:00' });
+        expect(res.status).toBe(403);
+    });
+
+    test('a GENERIC tutor is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+
+        const res = await agent.put('/api/availability/7').send({ weekDay: 2, startTime: '09:00', endTime: '12:00' });
+        expect(res.status).toBe(403);
+    });
+
+    test('rejects missing fields with 400', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+
+        const res = await agent.put('/api/availability/7').send({ weekDay: 2 });
+        expect(res.status).toBe(400);
+    });
+
+    test('STAFF can update a slot\'s day/time', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        let forwardedBody;
+        javaApi().put('/api/availability/7', body => { forwardedBody = body; return true; }).reply(200, (uri, body) => ({ id: 7, tutorId: 4, ...body }));
+
+        const res = await agent.put('/api/availability/7').send({ weekDay: 3, startTime: '14:00', endTime: '16:00' });
+
+        expect(res.status).toBe(200);
+        expect(forwardedBody).toEqual({ weekDay: 3, startTime: '14:00', endTime: '16:00' });
+    });
+
+    test('propagates a Java API 404 for a slot that does not exist', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().put('/api/availability/404').reply(404);
+
+        const res = await agent.put('/api/availability/404').send({ weekDay: 1, startTime: '09:00', endTime: '12:00' });
+        expect(res.status).toBe(404);
+    });
+});
+
+describe('DELETE /api/availability/:id', () => {
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GUEST' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GUEST' }));
+
+        const res = await agent.delete('/api/availability/7');
+        expect(res.status).toBe(403);
+    });
+
+    test('a GENERIC tutor is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+
+        const res = await agent.delete('/api/availability/7');
+        expect(res.status).toBe(403);
+    });
+
+    test('STAFF can delete a slot', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        const deleteScope = javaApi().delete('/api/availability/7').reply(204);
+
+        const res = await agent.delete('/api/availability/7');
+
+        expect(res.status).toBe(200);
+        expect(deleteScope.isDone()).toBe(true);
+    });
+
+    test('propagates a Java API 404 for a slot that does not exist', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().delete('/api/availability/404').reply(404);
+
+        const res = await agent.delete('/api/availability/404');
+        expect(res.status).toBe(404);
+    });
+});
+
 describe('POST /api/exception-days', () => {
     test('a GUEST account is blocked with 403', async () => {
         const agent = await tutorAgent({ role: 'GUEST' });
