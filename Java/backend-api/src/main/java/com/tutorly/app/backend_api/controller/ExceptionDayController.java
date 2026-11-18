@@ -149,4 +149,20 @@ public class ExceptionDayController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    /**
+     * Delete an exception day outright, regardless of status or type.
+     *
+     * @param id The exception day to delete
+     * @return 204 No Content if deleted, 404 Not Found if it doesn't exist
+     * @apiNote DELETE /api/exception-days/{id}
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteExceptionDay(@PathVariable Long id) {
+        if (exceptionDayService.getExceptionDayById(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        exceptionDayService.deleteExceptionDay(id);
+        return ResponseEntity.noContent().build();
+    }
 }

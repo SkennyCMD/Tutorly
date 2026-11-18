@@ -139,4 +139,17 @@ public class ExceptionDayService {
         exceptionDay.setStaff(staff);
         return exceptionDayRepository.save(exceptionDay);
     }
+
+    /**
+     * Deletes an exception day outright, regardless of its status (pending,
+     * approved, or refused) or type (present/absent) - STAFF-only on the
+     * Node side. Mainly for removing an already-approved exception that's
+     * currently overriding a tutor's schedule, which approve/refuse can't
+     * undo once applied.
+     *
+     * @param id The exception day to delete
+     */
+    public void deleteExceptionDay(Long id) {
+        exceptionDayRepository.deleteById(id);
+    }
 }

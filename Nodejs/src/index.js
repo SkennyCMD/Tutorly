@@ -1261,6 +1261,48 @@ app.put('/api/exception-days/:id/approve', tutorSession, isAuthenticated, isStaf
 app.put('/api/exception-days/:id/refuse', tutorSession, isAuthenticated, isStaff, reviewExceptionDay('refuse'));
 
 /**
+ * Delete an exception day outright - presence or absence, pending or
+ * already approved. Mainly for removing an approved exception that's
+ * currently overriding a tutor's schedule, since approve/refuse can't
+ * undo that once applied.
+ * DELETE /api/exception-days/:id
+ * STAFF only.
+ */
+app.delete('/api/exception-days/:id', tutorSession, isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        logInfo('Deleting exception day', req, { id });
+
+        const options = createJavaApiRequestOptions(`/api/exception-days/${id}`, 'DELETE');
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200 || httpsRes.statusCode === 204) {
+                    logSuccess('Exception day deleted successfully', req, { id });
+                    res.json({ success: true, message: 'Exception day deleted' });
+                } else {
+                    logError(`Error deleting exception day, status: ${httpsRes.statusCode}`, req, { id, response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete exception day' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for exception day deletion', req, { id, error: error.message });
+            res.status(500).json({ error: 'Failed to delete exception day' });
+        });
+
+        httpsReq.end();
+    } catch (error) {
+        logError('Error deleting exception day', req, { id: req.params.id, error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to delete exception day' });
+    }
+});
+
+/**
  * Staff panel
  * GET /staffPanel - Display staff management panel (STAFF role only)
  * Allows viewing and managing all tutors

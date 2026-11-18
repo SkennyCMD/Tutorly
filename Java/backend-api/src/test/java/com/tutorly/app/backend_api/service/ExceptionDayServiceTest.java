@@ -268,4 +268,11 @@ class ExceptionDayServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
         verify(exceptionDayRepository, never()).save(any());
     }
+
+    @Test
+    void deleteExceptionDay_delegatesToRepository() {
+        exceptionDayService.deleteExceptionDay(7L);
+
+        verify(exceptionDayRepository).deleteById(7L);
+    }
 }

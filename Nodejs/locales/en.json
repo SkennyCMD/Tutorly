@@ -215,7 +215,8 @@
     "confirm": {
       "deleteAvailability": "Are you sure you want to delete this availability slot?",
       "approveRequest": "Are you sure you want to approve this request?",
-      "refuseRequest": "Are you sure you want to refuse this request?"
+      "refuseRequest": "Are you sure you want to refuse this request?",
+      "deleteException": "Are you sure you want to delete this exception?"
     },
     "errors": {
       "unknownError": "Unknown error",
@@ -236,7 +237,9 @@
       "reviewRefuseFailed": "Failed to refuse request: {error}",
       "reviewRefuseRetry": "Failed to refuse request. Please try again.",
       "deleteAllFailed": "Failed to delete all availability: {error}",
-      "deleteAllRetry": "Failed to delete all availability. Please try again."
+      "deleteAllRetry": "Failed to delete all availability. Please try again.",
+      "deleteExceptionFailed": "Failed to delete exception: {error}",
+      "deleteExceptionRetry": "Failed to delete exception. Please try again."
     }
   },
   "lessons": {

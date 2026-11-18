@@ -82,19 +82,19 @@ describe('buildTutorAvailability', () => {
         expect(result[0].days).toEqual({});
     });
 
-    test('includes only approved exception days, keyed by date', () => {
+    test('includes only approved exception days, keyed by date, keeping each row\'s own id', () => {
         const result = buildTutorAvailability({
             users: [activeTutor],
             availability: [],
             exceptionDays: [
-                { tutorId: 1, day: '2026-12-24', type: 'absent', startTime: null, endTime: null, status: 'approved' },
-                { tutorId: 1, day: '2026-12-25', type: 'absent', startTime: null, endTime: null, status: 'pending' },
-                { tutorId: 1, day: '2026-12-26', type: 'present', startTime: '14:00:00', endTime: '16:00:00', status: 'refused' }
+                { id: 50, tutorId: 1, day: '2026-12-24', type: 'absent', startTime: null, endTime: null, status: 'approved' },
+                { id: 51, tutorId: 1, day: '2026-12-25', type: 'absent', startTime: null, endTime: null, status: 'pending' },
+                { id: 52, tutorId: 1, day: '2026-12-26', type: 'present', startTime: '14:00:00', endTime: '16:00:00', status: 'refused' }
             ]
         });
 
         expect(result[0].exceptions).toEqual({
-            '2026-12-24': { type: 'absent', startTime: null, endTime: null }
+            '2026-12-24': { id: 50, type: 'absent', startTime: null, endTime: null }
         });
     });
 

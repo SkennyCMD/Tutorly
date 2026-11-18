@@ -215,7 +215,8 @@
     "confirm": {
       "deleteAvailability": "Sei sicuro di voler eliminare questa disponibilità?",
       "approveRequest": "Sei sicuro di voler approvare questa richiesta?",
-      "refuseRequest": "Sei sicuro di voler rifiutare questa richiesta?"
+      "refuseRequest": "Sei sicuro di voler rifiutare questa richiesta?",
+      "deleteException": "Sei sicuro di voler eliminare questa eccezione?"
     },
     "errors": {
       "unknownError": "Errore sconosciuto",
@@ -236,7 +237,9 @@
       "reviewRefuseFailed": "Rifiuto della richiesta non riuscito: {error}",
       "reviewRefuseRetry": "Rifiuto della richiesta non riuscito. Riprova.",
       "deleteAllFailed": "Eliminazione di tutte le disponibilità non riuscita: {error}",
-      "deleteAllRetry": "Eliminazione di tutte le disponibilità non riuscita. Riprova."
+      "deleteAllRetry": "Eliminazione di tutte le disponibilità non riuscita. Riprova.",
+      "deleteExceptionFailed": "Eliminazione dell'eccezione non riuscita: {error}",
+      "deleteExceptionRetry": "Eliminazione dell'eccezione non riuscita. Riprova."
     }
   },
   "lessons": {

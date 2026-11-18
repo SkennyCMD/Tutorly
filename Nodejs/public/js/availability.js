@@ -170,26 +170,38 @@ function renderTutorList() {
 function effectiveSlotsForDate(tutor, date) {
     const exception = tutor.exceptions[dateKey(date)];
     if (exception) {
-        // No `id` - an exception override has no availability row behind it
-        // to edit/delete, unlike a regular slot below.
+        // The slot's own `id` stays null - an exception override has no
+        // availability row behind it to edit, unlike a regular slot below.
+        // exceptionId is the exception_day row itself, used to delete it
+        // (STAFF only - see scheduleMarkup).
         return {
             isException: true,
             isAbsentException: exception.type === 'absent',
+            exceptionId: exception.id,
             slots: exception.type === 'present' ? [{ id: null, start: exception.startTime, end: exception.endTime }] : []
         };
     }
-    return { isException: false, isAbsentException: false, slots: tutor.days[date.getDay()] || [] };
+    return { isException: false, isAbsentException: false, exceptionId: null, slots: tutor.days[date.getDay()] || [] };
 }
 
 // Renders one day's cell for a tutor in the week view - always styled/labeled
 // distinctly when an exception applies, so it's clear this day differs from
 // the tutor's routine rather than just reading as a normal slot or a plain
 // "no schedule" day.
+// Small trash-icon button appended to an exception block - STAFF only (see
+// deleteExceptionDay). Not rendered at all for GENERIC, consistent with
+// every other STAFF-only affordance on this page; the real enforcement is
+// server-side on DELETE /api/exception-days/:id regardless.
+function exceptionDeleteButton(exceptionId) {
+    if (window.userRole !== 'STAFF') return '';
+    return `<button type="button" class="shrink-0 rounded p-0.5 hover:bg-black/10 transition" onclick="deleteExceptionDay(${exceptionId})" aria-label="${t('common.delete')}"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>`;
+}
+
 function scheduleMarkup(tutor, date) {
-    const { isException, isAbsentException, slots } = effectiveSlotsForDate(tutor, date);
+    const { isException, isAbsentException, exceptionId, slots } = effectiveSlotsForDate(tutor, date);
 
     if (isAbsentException) {
-        return `<div class="exception-block exception-absent mt-3 rounded-md px-2 py-2 text-xs font-medium"><span class="block">${t('availability.unavailable')}</span><span class="mt-0.5 block text-[10px] opacity-80">${t('availability.exception')}</span></div>`;
+        return `<div class="exception-block exception-absent mt-3 rounded-md px-2 py-2 text-xs font-medium"><div class="flex items-center justify-between gap-1"><span class="block">${t('availability.unavailable')}</span>${exceptionDeleteButton(exceptionId)}</div><span class="mt-0.5 block text-[10px] opacity-80">${t('availability.exception')}</span></div>`;
     }
 
     if (!slots.length) {
@@ -212,7 +224,10 @@ function scheduleMarkup(tutor, date) {
         const clickableAttrs = isEditable
             ? ` role="button" tabindex="0" data-availability-id="${slot.id}" data-week-day="${isoWeekDay}" data-start-time="${slot.start}" data-end-time="${slot.end}" data-tutor-name="${tutor.name}" onclick="openEditAvailabilityModal(this)"`
             : '';
-        return `<div class="${blockClass}${clickableClass} rounded-md px-2 py-2 text-xs font-medium"${clickableAttrs}><span class="block">${timeLabel(slot.start)} – ${timeLabel(slot.end)}</span><span class="mt-0.5 block text-[10px] opacity-70">${slot.start}–${slot.end}${label}</span></div>`;
+        const timeRow = isException
+            ? `<div class="flex items-center justify-between gap-1"><span class="block">${timeLabel(slot.start)} – ${timeLabel(slot.end)}</span>${exceptionDeleteButton(exceptionId)}</div>`
+            : `<span class="block">${timeLabel(slot.start)} – ${timeLabel(slot.end)}</span>`;
+        return `<div class="${blockClass}${clickableClass} rounded-md px-2 py-2 text-xs font-medium"${clickableAttrs}>${timeRow}<span class="mt-0.5 block text-[10px] opacity-70">${slot.start}–${slot.end}${label}</span></div>`;
     }).join('')}</div>`;
 }
 
@@ -547,6 +562,7 @@ async function reviewPendingException(id, action) {
                 const tutor = tutors.find(item => item.id === result.exception.tutorId);
                 if (tutor) {
                     tutor.exceptions[result.exception.day] = {
+                        id: result.exception.id,
                         type: result.exception.type,
                         startTime: result.exception.startTime ? result.exception.startTime.slice(0, 5) : null,
                         endTime: result.exception.endTime ? result.exception.endTime.slice(0, 5) : null
@@ -566,6 +582,39 @@ async function reviewPendingException(id, action) {
         console.error(`Error ${action}ing pending exception:`, error);
         const retryKey = action === 'approve' ? 'availability.errors.reviewApproveRetry' : 'availability.errors.reviewRefuseRetry';
         alert(t(retryKey));
+    }
+}
+
+// Delete an exception outright (presence or absence, see exceptionDeleteButton
+// in scheduleMarkup - STAFF only). Unlike reviewPendingException, there's no
+// status to transition to - the exception_day row is gone, so the matching
+// tutor's local exceptions entry is just removed and the week view/day cards
+// re-rendered in place, no full reload needed.
+async function deleteExceptionDay(id) {
+    if (!confirm(t('availability.confirm.deleteException'))) return;
+
+    try {
+        const response = await fetch(`/api/exception-days/${id}`, {
+            method: 'DELETE',
+            credentials: 'same-origin'
+        });
+
+        if (response.ok) {
+            tutors.forEach(tutor => {
+                Object.keys(tutor.exceptions).forEach(day => {
+                    if (tutor.exceptions[day].id === id) delete tutor.exceptions[day];
+                });
+            });
+
+            renderTutorDays();
+            renderWeek();
+        } else {
+            const error = await response.json();
+            alert(t('availability.errors.deleteExceptionFailed', { error: error.error || t('availability.errors.unknownError') }));
+        }
+    } catch (error) {
+        console.error('Error deleting exception day:', error);
+        alert(t('availability.errors.deleteExceptionRetry'));
     }
 }
 

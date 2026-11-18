@@ -22,6 +22,7 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -211,6 +212,24 @@ class ExceptionDayControllerTest {
                         .header(API_KEY_HEADER, API_KEY_VALUE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ExceptionDayReviewDTO(1L))))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteExceptionDay_found_returns204() throws Exception {
+        ExceptionDay exception = new ExceptionDay(LocalDate.of(2026, 12, 24), "absent", null, null, tutor());
+        exception.setId(7L);
+        when(exceptionDayService.getExceptionDayById(7L)).thenReturn(Optional.of(exception));
+
+        mockMvc.perform(delete("/api/exception-days/7").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteExceptionDay_notFound_returns404() throws Exception {
+        when(exceptionDayService.getExceptionDayById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete("/api/exception-days/99").header(API_KEY_HEADER, API_KEY_VALUE))
                 .andExpect(status().isNotFound());
     }
 }

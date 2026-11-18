@@ -52,7 +52,7 @@ function usernameInitials(username) {
  * @param {Array} params.availability - Raw rows from GET /api/availability
  * @param {Array} params.exceptionDays - Raw rows from GET /api/exception-days
  * @param {?number} [params.restrictToTutorId] - If set, only this tutor is included
- * @returns {Array<{id: number, name: string, initials: string, days: Object<number, Array<{id: number, start: string, end: string}>>, exceptions: Object<string, {type: string, startTime: ?string, endTime: ?string}>}>}
+ * @returns {Array<{id: number, name: string, initials: string, days: Object<number, Array<{id: number, start: string, end: string}>>, exceptions: Object<string, {id: number, type: string, startTime: ?string, endTime: ?string}>}>}
  */
 function buildTutorAvailability({ users, availability, exceptionDays, restrictToTutorId }) {
     const tutorsById = new Map();
@@ -87,6 +87,9 @@ function buildTutorAvailability({ users, availability, exceptionDays, restrictTo
             const tutor = tutorsById.get(exception.tutorId);
             if (!tutor) return;
             tutor.exceptions[exception.day] = {
+                // Keeps the row's own id so STAFF can delete it outright from
+                // the week view - see scheduleMarkup() in public/js/availability.js.
+                id: exception.id,
                 type: exception.type,
                 startTime: exception.startTime ? exception.startTime.slice(0, 5) : null,
                 endTime: exception.endTime ? exception.endTime.slice(0, 5) : null

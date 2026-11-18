@@ -419,3 +419,52 @@ describe('PUT /api/exception-days/:id/refuse', () => {
         }));
     });
 });
+
+describe('DELETE /api/exception-days/:id', () => {
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GUEST' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GUEST' }));
+
+        const res = await agent.delete('/api/exception-days/10');
+        expect(res.status).toBe(403);
+    });
+
+    test('a GENERIC tutor is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+
+        const res = await agent.delete('/api/exception-days/10');
+        expect(res.status).toBe(403);
+    });
+
+    test('STAFF can delete an approved presence exception', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        const deleteScope = javaApi().delete('/api/exception-days/10').reply(204);
+
+        const res = await agent.delete('/api/exception-days/10');
+
+        expect(res.status).toBe(200);
+        expect(deleteScope.isDone()).toBe(true);
+    });
+
+    test('STAFF can delete an approved absence exception', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        const deleteScope = javaApi().delete('/api/exception-days/11').reply(204);
+
+        const res = await agent.delete('/api/exception-days/11');
+
+        expect(res.status).toBe(200);
+        expect(deleteScope.isDone()).toBe(true);
+    });
+
+    test('propagates a Java API 404 for an exception that does not exist', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().delete('/api/exception-days/404').reply(404);
+
+        const res = await agent.delete('/api/exception-days/404');
+        expect(res.status).toBe(404);
+    });
+});
