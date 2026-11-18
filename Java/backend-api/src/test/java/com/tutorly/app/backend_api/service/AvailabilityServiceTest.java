@@ -159,4 +159,14 @@ class AvailabilityServiceTest {
 
         verify(availabilityRepository).deleteById(7L);
     }
+
+    @Test
+    void deleteAllAvailability_deletesEverythingAndReturnsThePriorCount() {
+        when(availabilityRepository.count()).thenReturn(42L);
+
+        long deletedCount = availabilityService.deleteAllAvailability();
+
+        assertThat(deletedCount).isEqualTo(42L);
+        verify(availabilityRepository).deleteAll();
+    }
 }

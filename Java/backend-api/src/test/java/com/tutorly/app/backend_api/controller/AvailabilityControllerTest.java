@@ -183,4 +183,13 @@ class AvailabilityControllerTest {
         mockMvc.perform(delete("/api/availability/99").header(API_KEY_HEADER, API_KEY_VALUE))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void deleteAllAvailability_returns200WithDeletedCount() throws Exception {
+        when(availabilityService.deleteAllAvailability()).thenReturn(42L);
+
+        mockMvc.perform(delete("/api/availability").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deletedCount").value(42));
+    }
 }

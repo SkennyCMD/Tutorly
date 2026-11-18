@@ -1054,6 +1054,54 @@ app.delete('/api/availability/:id', tutorSession, isAuthenticated, isStaff, asyn
 });
 
 /**
+ * Delete every recurring availability slot, for every tutor - the "danger
+ * zone" action on the Availability page (see public/js/availability.js).
+ * DELETE /api/availability
+ * Body: { confirmText }, must exactly equal AVAILABILITY_WIPE_CONFIRM_TEXT
+ * STAFF only. The confirmation phrase is enforced here too, not just in the
+ * modal's submit button being disabled client-side - a direct API call still
+ * can't skip it. There's no further undo once this succeeds.
+ */
+const AVAILABILITY_WIPE_CONFIRM_TEXT = 'DELETE ALL';
+app.delete('/api/availability', tutorSession, isAuthenticated, isStaff, async (req, res) => {
+    try {
+        const { confirmText } = req.body;
+
+        if (confirmText !== AVAILABILITY_WIPE_CONFIRM_TEXT) {
+            return res.status(400).json({ error: `Type "${AVAILABILITY_WIPE_CONFIRM_TEXT}" exactly to confirm.` });
+        }
+
+        logWarning('Deleting ALL availability slots for ALL tutors', req);
+
+        const options = createJavaApiRequestOptions('/api/availability', 'DELETE');
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 200) {
+                    logWarning('All availability slots deleted', req, { response: data });
+                    res.json({ success: true, message: 'All availability slots deleted' });
+                } else {
+                    logError(`Error deleting all availability slots, status: ${httpsRes.statusCode}`, req, { response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to delete all availability slots' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for bulk availability deletion', req, { error: error.message });
+            res.status(500).json({ error: 'Failed to delete all availability slots' });
+        });
+
+        httpsReq.end();
+    } catch (error) {
+        logError('Error deleting all availability slots', req, { error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to delete all availability slots' });
+    }
+});
+
+/**
  * Submit a new exception day request (present or absent) for the logged-in
  * tutor
  * POST /api/exception-days

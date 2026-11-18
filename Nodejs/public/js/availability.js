@@ -554,6 +554,63 @@ if (togglePendingBtn) {
     });
 }
 
+// Delete All Availability (STAFF only - button/modal aren't even rendered
+// for GENERIC, see availability.ejs). Must match the server's own check in
+// index.js exactly - kept here purely to drive the submit button's
+// disabled state, since the server re-validates it regardless and a
+// mismatch there is the only thing that actually stops the deletion.
+const DELETE_ALL_CONFIRM_TEXT = 'DELETE ALL';
+
+function openDeleteAllAvailabilityModal() {
+    $('deleteAllAvailabilityModal').classList.add('open');
+}
+
+function closeDeleteAllAvailabilityModal() {
+    $('deleteAllAvailabilityModal').classList.remove('open');
+    $('deleteAllAvailabilityForm').reset();
+    $('confirmDeleteAllAvailabilityBtn').disabled = true;
+}
+
+const deleteAllAvailabilityBtn = $('deleteAllAvailabilityBtn');
+if (deleteAllAvailabilityBtn) deleteAllAvailabilityBtn.addEventListener('click', openDeleteAllAvailabilityModal);
+
+const deleteAllAvailabilityConfirmText = $('deleteAllAvailabilityConfirmText');
+if (deleteAllAvailabilityConfirmText) {
+    deleteAllAvailabilityConfirmText.addEventListener('input', () => {
+        $('confirmDeleteAllAvailabilityBtn').disabled = deleteAllAvailabilityConfirmText.value !== DELETE_ALL_CONFIRM_TEXT;
+    });
+}
+
+const deleteAllAvailabilityForm = $('deleteAllAvailabilityForm');
+if (deleteAllAvailabilityForm) {
+    deleteAllAvailabilityForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const confirmText = $('deleteAllAvailabilityConfirmText').value;
+        if (confirmText !== DELETE_ALL_CONFIRM_TEXT) return;
+
+        try {
+            const response = await fetch('/api/availability', {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ confirmText })
+            });
+
+            if (response.ok) {
+                closeDeleteAllAvailabilityModal();
+                window.location.reload();
+            } else {
+                const error = await response.json();
+                alert(`Failed to delete all availability: ${error.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting all availability:', error);
+            alert('Failed to delete all availability. Please try again.');
+        }
+    });
+}
+
 renderTutorDays();
 renderTutorList();
 renderPendingExceptions();

@@ -154,6 +154,66 @@ describe('DELETE /api/availability/:id', () => {
     });
 });
 
+describe('DELETE /api/availability (bulk - deletes every tutor\'s availability)', () => {
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GUEST' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GUEST' }));
+
+        const res = await agent.delete('/api/availability').send({ confirmText: 'DELETE ALL' });
+        expect(res.status).toBe(403);
+    });
+
+    test('a GENERIC tutor is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'GENERIC' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'GENERIC' }));
+
+        const res = await agent.delete('/api/availability').send({ confirmText: 'DELETE ALL' });
+        expect(res.status).toBe(403);
+    });
+
+    test('rejects a STAFF request with no confirmText, without calling the Java API', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        const deleteScope = javaApi().delete('/api/availability').reply(200, { deletedCount: 99 });
+
+        const res = await agent.delete('/api/availability').send({});
+
+        expect(res.status).toBe(400);
+        expect(deleteScope.isDone()).toBe(false);
+    });
+
+    test('rejects a STAFF request with the wrong confirmText, without calling the Java API', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        const deleteScope = javaApi().delete('/api/availability').reply(200, { deletedCount: 99 });
+
+        const res = await agent.delete('/api/availability').send({ confirmText: 'delete all' });
+
+        expect(res.status).toBe(400);
+        expect(deleteScope.isDone()).toBe(false);
+    });
+
+    test('STAFF with the exact confirmText deletes everything', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        const deleteScope = javaApi().delete('/api/availability').reply(200, { deletedCount: 12 });
+
+        const res = await agent.delete('/api/availability').send({ confirmText: 'DELETE ALL' });
+
+        expect(res.status).toBe(200);
+        expect(deleteScope.isDone()).toBe(true);
+    });
+
+    test('propagates a Java API error', async () => {
+        const agent = await tutorAgent({ id: 1, role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().delete('/api/availability').reply(500, 'DB error');
+
+        const res = await agent.delete('/api/availability').send({ confirmText: 'DELETE ALL' });
+        expect(res.status).toBe(500);
+    });
+});
+
 describe('POST /api/exception-days', () => {
     test('a GUEST account is blocked with 403', async () => {
         const agent = await tutorAgent({ role: 'GUEST' });

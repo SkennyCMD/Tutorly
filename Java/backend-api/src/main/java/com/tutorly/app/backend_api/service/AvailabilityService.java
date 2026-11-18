@@ -94,4 +94,18 @@ public class AvailabilityService {
     public void deleteAvailability(Long id) {
         availabilityRepository.deleteById(id);
     }
+
+    /**
+     * Deletes every recurring availability slot, for every tutor. A STAFF-only
+     * "danger zone" action on the Availability page - the Node layer gates it
+     * behind a typed confirmation phrase before this is ever called, since
+     * there's no undoing it.
+     *
+     * @return How many rows were deleted
+     */
+    public long deleteAllAvailability() {
+        long count = availabilityRepository.count();
+        availabilityRepository.deleteAll();
+        return count;
+    }
 }

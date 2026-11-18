@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -120,5 +121,20 @@ public class AvailabilityController {
         }
         availabilityService.deleteAvailability(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Delete every recurring availability slot, for every tutor. The Node
+     * layer gates this behind a typed confirmation phrase before ever
+     * calling it - there's no confirmation step here, since role/identity
+     * checks already happen in Node, not this layer (see class javadoc).
+     *
+     * @return 200 with how many rows were deleted
+     * @apiNote DELETE /api/availability
+     */
+    @DeleteMapping
+    public ResponseEntity<Map<String, Object>> deleteAllAvailability() {
+        long deletedCount = availabilityService.deleteAllAvailability();
+        return ResponseEntity.ok(Map.of("deletedCount", deletedCount));
     }
 }
