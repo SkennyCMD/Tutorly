@@ -4,7 +4,7 @@
 // POST /api/tickets (window.canManageTickets gates which of these a given
 // viewer can do - see card() and the New Ticket button below).
 const tickets = window.initialTickets || [];
-const statusStyles = { open: 'bg-amber-500/10 text-amber-300 border-amber-500/20', managing: 'bg-sky-500/10 text-sky-300 border-sky-500/20', closed: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' };
+const statusStyles = { open: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20', managing: 'bg-amber-500/10 text-amber-300 border-amber-500/20', closed: 'bg-red-500/10 text-red-300 border-red-500/20' };
 const dateFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 const safe = (value) => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 function formatDate(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Date unavailable' : dateFormat.format(date); }
