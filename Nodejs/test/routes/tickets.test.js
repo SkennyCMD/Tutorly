@@ -1,7 +1,18 @@
+// Mocked so tests can assert exactly who gets notified, without a real VAPID
+// setup or push_subscription lookups - see server_utilities/pushService.js.
+jest.mock('../../server_utilities/pushService', () => ({ sendPushToUser: jest.fn() }));
+
 const request = require('supertest');
 const app = require('../helpers/testApp');
 const { javaApi } = require('../helpers/javaApi');
 const { loginAsAdmin, loginAsTutor, adminFixture, tutorFixture } = require('../helpers/auth');
+const { sendPushToUser } = require('../../server_utilities/pushService');
+
+// PUT /api/tickets/:id/close notifies the requester fire-and-forget, after
+// the HTTP response is already sent - give its promise chain a tick to run.
+function flushMicrotasks() {
+    return new Promise(resolve => setTimeout(resolve, 20));
+}
 
 async function adminAgent(overrides = {}) {
     const agent = request.agent(app);
@@ -14,6 +25,8 @@ async function tutorAgent(overrides = {}) {
     await loginAsTutor(agent, tutorFixture(overrides));
     return agent;
 }
+
+beforeEach(() => sendPushToUser.mockClear());
 
 describe('POST /api/tickets', () => {
     test('redirects to /login when not authenticated', async () => {
@@ -156,6 +169,39 @@ describe('PUT /api/tickets/:id/close', () => {
 
         const res = await agent.put('/api/tickets/10/close').send({});
         expect(res.status).toBe(400);
+    });
+
+    test('notifies the requester that their ticket was closed', async () => {
+        const agent = await adminAgent({ id: 1 });
+        javaApi().put('/api/tickets/10/close').reply(200, {
+            id: 10, status: 'closed', content: 'Help', creation: '2026-11-10T09:00:00', closure: '2026-11-11T09:00:00', comment: 'Resolved.', userId: 4, adminId: 1
+        });
+        javaApi().get('/api/users/4').reply(200, tutorFixture({ id: 4 }));
+        javaApi().get('/api/admins/1').reply(200, adminFixture({ id: 1 }));
+
+        const res = await agent.put('/api/tickets/10/close').send({ comment: 'Resolved.' });
+        expect(res.status).toBe(200);
+
+        await flushMicrotasks();
+
+        expect(sendPushToUser).toHaveBeenCalledWith(4, expect.objectContaining({
+            title: 'Ticket Closed',
+            body: 'A ticket you opened has been closed',
+            url: '/ticketing',
+            tag: 'ticket-10'
+        }));
+    });
+
+    test('does not notify when the closed ticket has no requester', async () => {
+        const agent = await adminAgent();
+        javaApi().put('/api/tickets/10/close').reply(200, { id: 10, status: 'closed', userId: null });
+
+        const res = await agent.put('/api/tickets/10/close').send({});
+        expect(res.status).toBe(200);
+
+        await flushMicrotasks();
+
+        expect(sendPushToUser).not.toHaveBeenCalled();
     });
 
     test('propagates a Java API 404 for a ticket that does not exist', async () => {

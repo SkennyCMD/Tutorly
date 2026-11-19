@@ -564,6 +564,18 @@ app.put('/api/tickets/:id/close', adminSession, isAdmin, async (req, res) => {
                         ticket = { ...ticket, requesterUsername, resolverUsername };
                     }
                     res.json({ success: true, message: 'Ticket closed', ticket });
+
+                    // Fire-and-forget: let the requester know their ticket was
+                    // closed. Never awaited, so a slow/failed send can't delay
+                    // or break the response above.
+                    if (ticket && ticket.userId != null) {
+                        sendPushToUser(ticket.userId, {
+                            title: 'Ticket Closed',
+                            body: 'A ticket you opened has been closed',
+                            url: '/ticketing',
+                            tag: `ticket-${ticket.id}`
+                        });
+                    }
                 } else {
                     logError(`Error closing ticket, status: ${httpsRes.statusCode}`, req, { id, response: data });
                     res.status(httpsRes.statusCode).json({ error: data || 'Failed to close ticket' });
