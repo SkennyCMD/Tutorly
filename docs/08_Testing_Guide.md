@@ -312,7 +312,7 @@ Nodejs/
                                     # auto-creation and Markdown rendering, fs mocked
 ```
 
-Every route in `src/index.js` (74 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **305 tests across 20 files.**
+Every route in `src/index.js` (74 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **307 tests across 20 files.**
 
 ### Login Helper
 

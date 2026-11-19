@@ -252,6 +252,7 @@ PostgreSQL relational database for data persistence.
 #### 🎫 Support Tickets
 - Any STAFF/GENERIC tutor can submit a support ticket describing an issue; reachable via a "Tickets" link in every page's navbar
 - Read-only board of your own tickets (open/managing/closed), with the resolving admin's username and comment once closed
+- Push notification when an admin closes your ticket
 
 #### 📊 Excel Reports
 - **Monthly lesson report**: All lessons of the month

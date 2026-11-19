@@ -1598,6 +1598,8 @@ Each card shows the ticket's content, the requester's username and submission da
 
 A "New Ticket" button (not rendered at all for an admin viewer) opens a modal (`#newTicketModal`) with a single free-text content field. Submits `POST /api/tickets` with `{ content }` - `userId` is always the caller's own session, never client-supplied. Unlike the manage/close actions above, a successful submission reloads the page (`window.location.reload()`) rather than patching local state in place, the same simple pattern used by every other "Add X" form in the app.
 
+**Notifications:** closing a ticket pushes the original requester (title "Ticket Closed", body "A ticket you opened has been closed", `url: '/ticketing'`) - fire-and-forget after the HTTP response is already sent, via the shared `sendPushToUser()`, same pattern as the Availability page's exception-review notifications - see [Web Push Notifications](#web-push-notifications) above. Picking a ticket up (open→managing) and submitting a new one are not notified.
+
 ### Navigation
 
 A "Tickets" link (last item, after Staff Panel where applicable) was added to every tutor-facing page's navbar (Dashboard, Calendar, Availability, My Lessons, Reports, Staff Panel, Student Profile) for STAFF/GENERIC, and to the admin panel's navbar - both pointing at this same page, rendered according to viewer type.
