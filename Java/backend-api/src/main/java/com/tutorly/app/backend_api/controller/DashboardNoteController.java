@@ -1,0 +1,73 @@
+package com.tutorly.app.backend_api.controller;
+
+import com.tutorly.app.backend_api.dto.DashboardNoteCreateDTO;
+import com.tutorly.app.backend_api.entity.DashboardNote;
+import com.tutorly.app.backend_api.service.DashboardNoteService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * REST Controller for DashboardNote entity operations.
+ *
+ * Backs the Node.js frontend's admin-only Dashboard Notes page - see
+ * docs/03_Nodejs_Frontend.md. All endpoints require API key authentication.
+ * Role restriction (only an admin can view/publish notices) is enforced in
+ * the Node.js layer, not here - same as every other entity in this codebase.
+ *
+ * Base URL: /api/dashboard-notes
+ */
+@RestController
+@RequestMapping("/api/dashboard-notes")
+@CrossOrigin(origins = "*")
+public class DashboardNoteController {
+
+    @Autowired
+    private DashboardNoteService dashboardNoteService;
+
+    /**
+     * Get every notice, active and expired alike.
+     *
+     * @return List of all dashboard notes
+     * @apiNote GET /api/dashboard-notes
+     */
+    @GetMapping
+    public ResponseEntity<List<DashboardNote>> getAllNotes() {
+        return ResponseEntity.ok(dashboardNoteService.getAllNotes());
+    }
+
+    /**
+     * Get a notice by ID.
+     *
+     * @param id The note ID
+     * @return The note if found, 404 Not Found otherwise
+     * @apiNote GET /api/dashboard-notes/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<DashboardNote> getNoteById(@PathVariable Long id) {
+        Optional<DashboardNote> note = dashboardNoteService.getNoteById(id);
+        return note.map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Publish a new notice.
+     *
+     * @param dto The note data to create (content, expiration, adminId)
+     * @return Created note with 201 Created status, or 400 if invalid/admin not found
+     * @apiNote POST /api/dashboard-notes
+     */
+    @PostMapping
+    public ResponseEntity<?> createNote(@RequestBody DashboardNoteCreateDTO dto) {
+        try {
+            DashboardNote saved = dashboardNoteService.createNote(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+}

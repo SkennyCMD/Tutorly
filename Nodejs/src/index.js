@@ -61,7 +61,8 @@ const {
     deletePushSubscriptionByEndpoint,
     fetchAllAvailability,
     fetchAllExceptionDays,
-    fetchAllTickets
+    fetchAllTickets,
+    fetchAllDashboardNotes
 } = require('../server_utilities/javaApiService');
 
 // Shared range-bounded fetch/enrich logic for the Calendar page - see
@@ -332,12 +333,87 @@ app.get('/admin', adminSession, isAdmin, (req, res) => {
 /**
  * Dashboard notes (admin)
  * GET /dashboardNotes - Display the dashboard notes manager (requires admin authentication)
+ * Every admin manages the same shared board - unlike Tickets, there's no
+ * per-admin scoping here, just the full list; the client splits it into
+ * active/expired and sorts it, same architecture as the Ticketing page.
  */
-app.get('/dashboardNotes', adminSession, isAdmin, (req, res) => {
-    res.render('dashboardNotes', {
+app.get('/dashboardNotes', adminSession, isAdmin, async (req, res) => {
+    const viewerLocals = {
         adminUsername: req.session.adminUsername,
         adminId: req.session.adminId
-    });
+    };
+
+    try {
+        const rawNotes = await fetchAllDashboardNotes();
+        const notes = rawNotes.map(note => ({
+            id: note.id,
+            content: note.content,
+            creation: note.creation,
+            expiration: note.expiration,
+            adminId: note.adminId
+        }));
+        res.render('dashboardNotes', { ...viewerLocals, notes });
+    } catch (error) {
+        logError('Error fetching dashboard notes', req, { error: error.message });
+        res.render('dashboardNotes', { ...viewerLocals, notes: [] });
+    }
+});
+
+/**
+ * Publish a new dashboard note
+ * POST /api/dashboard-notes
+ * Body: { content, expiresAt } (expiresAt: "YYYY-MM-DD", the last day the
+ * note stays active)
+ * Admin only. adminId is always the caller's own admin session id, never
+ * client-supplied. expiresAt is forwarded as the end of that calendar day
+ * (23:59:59), so the note stays active through the whole selected date
+ * regardless of what time it is "now".
+ */
+app.post('/api/dashboard-notes', adminSession, isAdmin, async (req, res) => {
+    try {
+        const { content, expiresAt } = req.body;
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: 'Note content is required.' });
+        }
+        if (!expiresAt) {
+            return res.status(400).json({ error: 'Expiration date is required.' });
+        }
+
+        const postData = JSON.stringify({
+            content,
+            expiration: `${expiresAt}T23:59:59`,
+            adminId: req.session.adminId
+        });
+
+        logInfo('Publishing dashboard note', req, { adminId: req.session.adminId });
+
+        const options = createJavaApiRequestOptions('/api/dashboard-notes', 'POST', postData);
+
+        const httpsReq = https.request(options, (httpsRes) => {
+            let data = '';
+            httpsRes.on('data', (chunk) => { data += chunk; });
+            httpsRes.on('end', () => {
+                if (httpsRes.statusCode === 201) {
+                    logSuccess('Dashboard note published successfully', req, { adminId: req.session.adminId });
+                    res.status(201).json({ success: true, message: 'Dashboard note published' });
+                } else {
+                    logError(`Error publishing dashboard note, status: ${httpsRes.statusCode}`, req, { response: data });
+                    res.status(httpsRes.statusCode).json({ error: data || 'Failed to publish dashboard note' });
+                }
+            });
+        });
+
+        httpsReq.on('error', (error) => {
+            logError('Error calling Java API for dashboard note publication', req, { error: error.message });
+            res.status(500).json({ error: 'Failed to publish dashboard note' });
+        });
+
+        httpsReq.write(postData);
+        httpsReq.end();
+    } catch (error) {
+        logError('Error publishing dashboard note', req, { error: error.message, stack: error.stack });
+        res.status(500).json({ error: 'Failed to publish dashboard note' });
+    }
 });
 
 /**

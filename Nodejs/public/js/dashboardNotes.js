@@ -1,10 +1,10 @@
-// Dashboard Notes board - sample data only for now (admin-only mockup, not
-// yet wired to the database). See views/dashboardNotes.ejs.
-const notes = [
-    { id: 1, content: '## This week\\n\\nReview **linear equations** and complete the practice set.', expiresAt: futureDate(18) },
-    { id: 2, content: 'Remember to show your work:\\n\\n- Write each step\\n- Check your answer', expiresAt: futureDate(6) },
-    { id: 3, content: '> Midterm revision\\n\\nReview the notes from **Chapter 3** and bring questions to class.', expiresAt: pastDate(3) }
-];
+// Dashboard Notes board - real data from GET /dashboardNotes
+// (window.initialNotes, see src/index.js). Publishing a new note goes
+// through POST /api/dashboard-notes; every admin manages the same shared
+// board, so there's no per-admin scoping here, unlike the Ticketing page.
+const notes = window.initialNotes || [];
+
+const dateFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' });
 
 const $ = id => document.getElementById(id);
 
@@ -13,25 +13,12 @@ function dateOnly(date) {
     return local.toISOString().slice(0, 10);
 }
 
-function futureDate(days) {
-    const d = new Date();
-    d.setDate(d.getDate() + days);
-    return dateOnly(d);
-}
-
-function pastDate(days) {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    return dateOnly(d);
-}
-
 function today() {
     return dateOnly(new Date());
 }
 
 function formatDate(value) {
-    const [year, month, day] = value.split('-').map(Number);
-    return new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(year, month - 1, day));
+    return dateFormat.format(new Date(value));
 }
 
 function renderMarkdown(element, source) {
@@ -55,7 +42,7 @@ function makeNoteCard(note, isExpired) {
 
     const date = document.createElement('p');
     date.className = 'text-xs text-muted-foreground';
-    date.textContent = `Expires ${formatDate(note.expiresAt)}`;
+    date.textContent = `Expires ${formatDate(note.expiration)}`;
 
     header.append(label, date);
 
@@ -75,9 +62,9 @@ function empty(message) {
 }
 
 function render() {
-    const current = today();
-    const active = notes.filter(note => note.expiresAt >= current).sort((a, b) => a.expiresAt.localeCompare(b.expiresAt));
-    const expired = notes.filter(note => note.expiresAt < current).sort((a, b) => b.expiresAt.localeCompare(a.expiresAt));
+    const now = new Date();
+    const active = notes.filter(note => new Date(note.expiration) >= now).sort((a, b) => new Date(a.expiration) - new Date(b.expiration));
+    const expired = notes.filter(note => new Date(note.expiration) < now).sort((a, b) => new Date(b.expiration) - new Date(a.expiration));
 
     $('activeCount').textContent = active.length;
     $('expiredCount').textContent = expired.length;
@@ -92,7 +79,7 @@ $('noteContent').addEventListener('input', () => {
     else preview.textContent = 'Your note preview will appear here.';
 });
 
-$('noteForm').addEventListener('submit', event => {
+$('noteForm').addEventListener('submit', async event => {
     event.preventDefault();
 
     const content = $('noteContent').value.trim();
@@ -103,12 +90,24 @@ $('noteForm').addEventListener('submit', event => {
         return;
     }
 
-    notes.unshift({ id: Date.now(), content, expiresAt });
-    $('formMessage').textContent = 'Dashboard note created.';
-    $('noteForm').reset();
-    $('expiresAt').min = today();
-    $('notePreview').textContent = 'Your note preview will appear here.';
-    render();
+    try {
+        const response = await fetch('/api/dashboard-notes', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content, expiresAt })
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            $('formMessage').textContent = error.error || 'Failed to publish the note.';
+        }
+    } catch (error) {
+        console.error('Error publishing dashboard note:', error);
+        $('formMessage').textContent = 'Failed to publish the note. Please try again.';
+    }
 });
 
 function setMenu(open) {

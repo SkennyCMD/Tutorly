@@ -692,6 +692,27 @@ function fetchAllTickets() {
         });
 }
 
+/**
+ * Fetch every dashboard note, active and expired alike.
+ *
+ * Backs the admin-only Dashboard Notes page - see 03_Nodejs_Frontend.md.
+ * Returns empty array if none found or on error.
+ *
+ * @returns {Promise<Array>} Array of all dashboard notes
+ *
+ * @example
+ * const notes = await fetchAllDashboardNotes();
+ * // Returns: [{ id: 1, content: '...', creation: '...', expiration: '...', adminId: 1 }, ...]
+ */
+function fetchAllDashboardNotes() {
+    return fetchFromJavaAPI('/api/dashboard-notes', 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching dashboard notes:', error);
+            return [];
+        });
+}
+
 
 // Module Exports
 
@@ -713,6 +734,7 @@ function fetchAllTickets() {
  * - Push Subscriptions: fetchPushSubscriptionsByUser, upsertPushSubscription, deletePushSubscriptionByEndpoint
  * - Availability: fetchAllAvailability, fetchAllExceptionDays
  * - Tickets: fetchAllTickets
+ * - Dashboard Notes: fetchAllDashboardNotes
  *
  * Usage Pattern:
  * All functions return Promises that resolve to data or reject with errors.
@@ -744,5 +766,6 @@ module.exports = {
     deletePushSubscriptionByEndpoint,
     fetchAllAvailability,
     fetchAllExceptionDays,
-    fetchAllTickets
+    fetchAllTickets,
+    fetchAllDashboardNotes
 };

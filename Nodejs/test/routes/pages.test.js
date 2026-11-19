@@ -71,9 +71,21 @@ describe('GET /dashboardNotes', () => {
         expect(res.headers.location).toBe('/adminLogin');
     });
 
-    test('renders the dashboard notes manager when authenticated as admin', async () => {
+    test('renders the dashboard notes manager with real data when authenticated as admin', async () => {
         const agent = request.agent(app);
         await loginAsAdmin(agent);
+        javaApi().get('/api/dashboard-notes').reply(200, [
+            { id: 1, content: 'Reminder', creation: '2026-11-19T09:00:00', expiration: '2026-12-01T23:59:59', adminId: 1 }
+        ]);
+
+        const res = await agent.get('/dashboardNotes');
+        expect(res.status).toBe(200);
+    });
+
+    test('falls back to an empty note list when the Java API call fails', async () => {
+        const agent = request.agent(app);
+        await loginAsAdmin(agent);
+        javaApi().get('/api/dashboard-notes').replyWithError('connection refused');
 
         const res = await agent.get('/dashboardNotes');
         expect(res.status).toBe(200);
