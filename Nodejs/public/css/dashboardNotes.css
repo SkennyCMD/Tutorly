@@ -1,0 +1,104 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.mobile-menu {
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+}
+
+.mobile-menu.open {
+    transform: translateX(0);
+}
+
+.markdown-note > :first-child {
+    margin-top: 0;
+}
+
+.markdown-note > :last-child {
+    margin-bottom: 0;
+}
+
+.markdown-note p {
+    margin: .45rem 0;
+}
+
+.markdown-note h1,
+.markdown-note h2,
+.markdown-note h3 {
+    margin: .8rem 0 .4rem;
+    font-weight: 600;
+    color: rgb(var(--color-foreground));
+}
+
+.markdown-note h1 {
+    font-size: 1.25rem;
+}
+
+.markdown-note h2 {
+    font-size: 1.125rem;
+}
+
+.markdown-note h3 {
+    font-size: 1rem;
+}
+
+.markdown-note ul,
+.markdown-note ol {
+    margin: .5rem 0;
+    padding-left: 1.5rem;
+}
+
+.markdown-note ul {
+    list-style: disc;
+}
+
+.markdown-note ol {
+    list-style: decimal;
+}
+
+.markdown-note blockquote {
+    margin: .6rem 0;
+    border-left: 3px solid rgb(var(--color-primary));
+    padding-left: .75rem;
+    color: rgb(var(--color-muted-foreground));
+}
+
+.markdown-note code {
+    border-radius: .25rem;
+    background: rgb(var(--color-secondary));
+    padding: .1rem .3rem;
+    color: rgb(var(--color-primary));
+}
+
+.markdown-note pre {
+    margin: .6rem 0;
+    overflow-x: auto;
+    border-radius: .5rem;
+    background: rgb(var(--color-secondary));
+    padding: .75rem;
+}
+
+.markdown-note pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.markdown-note a {
+    color: rgb(var(--color-primary));
+    text-decoration: underline;
+}
+
+.markdown-note hr {
+    margin: .8rem 0;
+    border-color: rgb(var(--color-border));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+    }
+}

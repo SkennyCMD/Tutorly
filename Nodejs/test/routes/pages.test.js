@@ -57,6 +57,29 @@ describe('GET /admin', () => {
     });
 });
 
+describe('GET /dashboardNotes', () => {
+    test('redirects to /adminLogin when not authenticated', async () => {
+        const res = await request(app).get('/dashboardNotes');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/adminLogin');
+    });
+
+    test('redirects to /adminLogin for a tutor session (not an admin one)', async () => {
+        const agent = await tutorAgent();
+        const res = await agent.get('/dashboardNotes');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/adminLogin');
+    });
+
+    test('renders the dashboard notes manager when authenticated as admin', async () => {
+        const agent = request.agent(app);
+        await loginAsAdmin(agent);
+
+        const res = await agent.get('/dashboardNotes');
+        expect(res.status).toBe(200);
+    });
+});
+
 describe('GET /ticketing', () => {
     test('redirects to /login when neither an admin nor a tutor session exists', async () => {
         const res = await request(app).get('/ticketing');

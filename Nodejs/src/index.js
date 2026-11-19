@@ -330,6 +330,17 @@ app.get('/admin', adminSession, isAdmin, (req, res) => {
 });
 
 /**
+ * Dashboard notes (admin)
+ * GET /dashboardNotes - Display the dashboard notes manager (requires admin authentication)
+ */
+app.get('/dashboardNotes', adminSession, isAdmin, (req, res) => {
+    res.render('dashboardNotes', {
+        adminUsername: req.session.adminUsername,
+        adminId: req.session.adminId
+    });
+});
+
+/**
  * Support tickets (admin)
  * GET /ticketing - Display the support ticket board (requires admin authentication)
  */
