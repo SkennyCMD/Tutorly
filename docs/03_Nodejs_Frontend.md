@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: November 18, 2026  
+**Last Updated**: November 19, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -46,6 +46,7 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 - ✅ Student evaluations (test marks) with per-student progress chart and running average
 - ✅ STAFF-only Student Profile page: per-subject/tutor marks chart with toggleable lines, hours breakdown, prenotation management, and lesson-package (Pack) tracking with auto-assignment
 - ✅ Availability page: tutor weekly schedules managed by STAFF, with GENERIC/STAFF-submitted presence/absence exception requests subject to STAFF approval - see [Availability Page](#availability-page)
+- ✅ Ticketing page: admin support-ticket board (pick up, close with an optional comment) and a read-only, submit-capable board for STAFF/GENERIC tutors - see [Ticketing Page](#ticketing-page)
 
 ---
 
@@ -1234,6 +1235,20 @@ An approved exception overrides the tutor's regular schedule on that date (absen
 
 ---
 
+### API Endpoints - Ticketing
+
+Backs the `/ticketing` page - see [Ticketing Page](#ticketing-page) for the full feature. `GET /ticketing` itself has no single fixed "auth" column: it re-verifies the viewer's role fresh from the Java API on every request (never trusts `req.session.role`), redirecting to `/login` with no session at all, or to `/home` for a tutor session whose role is neither `STAFF` nor `GENERIC`.
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| POST | `/api/tickets` | Tutor, blocked for `guest` (`blockGuestApi`) | Submit a new ticket for yourself (always saved `open`, no admin assigned; `userId` forced server-side from the session, never client-supplied). `400` if `content` is blank |
+| PUT | `/api/tickets/:id/manage` | Admin | Pick up an `open` ticket, moving it to `managing` (`adminId` forced from the session). `400` if the ticket isn't currently `open` |
+| PUT | `/api/tickets/:id/close` | Admin | Close a `managing` ticket, with an optional resolution `comment` (`adminId` forced from the session). `400` if the ticket isn't currently `managing` |
+
+Both `PUT` routes re-enrich the Java response with `requesterUsername`/`resolverUsername` before sending it back, so the client's no-reload, in-place update of the ticket card never loses those fields.
+
+---
+
 ### API Endpoints - Tests (Evaluations)
 
 Backs the `/reports` (Evaluations) page. `tutorId` is always taken from the session on create - there's no tutor-assignment field on this form.
@@ -1557,6 +1572,35 @@ A red-bordered section at the bottom of the page with a "Delete All Availability
 - Opens a dedicated modal explaining the consequence; the submit button stays `disabled` until the admin types the phrase `DELETE ALL` exactly into a text field.
 - The phrase is re-checked server-side on the Node route too (`confirmText !== 'DELETE ALL'` → `400`) - a direct API call without it is rejected just the same as the disabled button prevents it client-side.
 - Logged via `logWarning` (not the usual `logInfo`), both on the attempt and on success, given the blast radius.
+
+---
+
+## Ticketing Page
+
+The `/ticketing` page (`views/ticketing.ejs` + `public/js/ticketing.js` + `public/css/ticketing.css`) is a support-ticket board, backed by the Java `Ticket` entity (see [01_Java_Backend_API.md - Ticket](01_Java_Backend_API.md#ticket)). Unlike every other page in the app, it's rendered for two genuinely different audiences from the same view file, switched on `isAdminViewer` (`!!req.session.adminId`):
+
+- **Admin**: a management board. Sees every `open` ticket (a shared pool every admin sees) plus whichever `managing`/`closed` ones they're personally handling - another admin's never reaches this page at all, filtered server-side before rendering, not just hidden client-side. Can pick a ticket up or close it; cannot submit a new one (an admin has no tutor session to attribute it to).
+- **STAFF/GENERIC tutor**: a read-only board scoped to only their own tickets, every status. Reachable only after the viewer's role is re-verified fresh from the Java API (never trusted from `req.session.role`) - a GUEST, or any session that's neither admin nor a STAFF/GENERIC tutor, is redirected away. Can submit a new ticket via a "New Ticket" button; cannot manage or close one (`window.canManageTickets` gates the button away client-side, and the Node routes are admin-only regardless).
+
+Both viewers reuse the same three-column status board (Open / Managing / Closed) and the same `card()` renderer in `ticketing.js`; what differs is only which actions a card offers (`window.canManageTickets`, set from `isAdminViewer`).
+
+### Status Board
+
+Each card shows the ticket's content, the requester's username and submission date, and a color-coded status pill: green for `open`, orange for `managing`, red for `closed`. A closed card additionally shows when it was closed and who resolved it, plus a "Show admin comment" toggle for the resolution comment (if one was left). The summary strip above the board shows a "total" count that deliberately **excludes** closed tickets (it reflects current workload, not full history) and a separate "need review" count of just the open ones.
+
+### Managing and Closing a Ticket (Admin only)
+
+- **Start managing** (visible on an `open` card): `PUT /api/tickets/:id/manage`, moves it to `managing` with no further input. Re-renders the board in place - no page reload.
+- **Mark as closed** (visible on a `managing` card): opens a modal (`#closeTicketModal`) with a free-text resolution comment field - replaces what was originally a native `window.prompt()`, kept consistent with the rest of the app's modal-based forms. Submits `PUT /api/tickets/:id/close` with `{ comment }`; the comment is optional.
+- The lifecycle is strictly sequential (`open` → `managing` → `closed`) and re-enforced server-side (`TicketService`) regardless of what the UI allows - the buttons above are only an affordance, not the actual boundary.
+
+### Submitting a New Ticket (STAFF/GENERIC only)
+
+A "New Ticket" button (not rendered at all for an admin viewer) opens a modal (`#newTicketModal`) with a single free-text content field. Submits `POST /api/tickets` with `{ content }` - `userId` is always the caller's own session, never client-supplied. Unlike the manage/close actions above, a successful submission reloads the page (`window.location.reload()`) rather than patching local state in place, the same simple pattern used by every other "Add X" form in the app.
+
+### Navigation
+
+A "Tickets" link (last item, after Staff Panel where applicable) was added to every tutor-facing page's navbar (Dashboard, Calendar, Availability, My Lessons, Reports, Staff Panel, Student Profile) for STAFF/GENERIC, and to the admin panel's navbar - both pointing at this same page, rendered according to viewer type.
 
 ---
 

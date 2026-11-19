@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: November 18, 2026  
+**Last Updated**: November 19, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -1290,6 +1290,49 @@ A one-off deviation from a tutor's regular `Availability` for a specific date, s
 Records which STAFF member reviewed it.
 
 Role restriction is enforced in the Node.js frontend layer, not here: submitting a request for yourself is GENERIC/STAFF; approving, refusing, or deleting one - for any tutor - is STAFF only. Approving sends a push notification to the requester with the outcome; submitting a new request notifies every active STAFF member except the submitter.
+
+---
+
+### Ticket
+
+A support ticket raised by a tutor (GENERIC or STAFF) and handled by an admin, with a strictly sequential `open` → `managing` → `closed` lifecycle. See [03_Nodejs_Frontend.md - Ticketing Page](03_Nodejs_Frontend.md#ticketing-page) for the UI and [07_Database_Configuration.md - Ticket](07_Database_Configuration.md#14-ticket) for the table schema.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/tickets` | List every ticket, regardless of status |
+| GET | `/api/tickets/{id}` | Ticket details by ID |
+| GET | `/api/tickets/user/{userId}` | Tickets raised by one user |
+| POST | `/api/tickets` | Submit a new ticket (always saved `open`, no admin assigned) |
+| PUT | `/api/tickets/{id}/manage` | Pick up an `open` ticket, moving it to `managing` |
+| PUT | `/api/tickets/{id}/close` | Close a `managing` ticket, optionally with a resolution comment |
+
+**Example Request Body (POST) - with DTO:**
+```json
+{
+  "content": "I can't see my Tuesday lesson on the calendar.",
+  "userId": 4
+}
+```
+`content` must be non-blank (`400` otherwise). `creation` is set server-side to now; `status` always starts at `open` regardless of what's sent.
+
+**Example Request Body (PUT .../manage) - with DTO:**
+```json
+{
+  "adminId": 1
+}
+```
+Rejected with `400` if the ticket isn't currently `open` - a ticket already being managed, or already closed, can't be picked up again.
+
+**Example Request Body (PUT .../close) - with DTO:**
+```json
+{
+  "adminId": 1,
+  "comment": "Fixed - the lesson was assigned to the wrong tutor."
+}
+```
+`comment` is optional (nullable). Rejected with `400` if the ticket isn't currently `managing` - an `open` ticket must be picked up first, and an already-`closed` one can't be closed again. On success, `closure` is set to now.
+
+Role restriction is enforced in the Node.js frontend layer, not here: submitting a ticket for yourself is GENERIC/STAFF, never an admin (who has no tutor session to attribute it to); picking one up or closing it is admin only, and `adminId`/`userId` are always forced from the caller's own session, never taken from the request body as sent by the client.
 
 ---
 

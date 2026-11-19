@@ -5,7 +5,7 @@ Comprehensive guide for testing the Tutorly application including unit tests, in
 ---
 
 **Document**: 08_Testing_Guide.md  
-**Last Updated**: November 18, 2026  
+**Last Updated**: November 19, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -66,7 +66,7 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
-| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription`, `Availability`, `ExceptionDay` - 202 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
+| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription`, `Availability`, `ExceptionDay`, `Ticket` - 221 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
 | Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (70 total) has at least one Jest/Supertest test (281 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
@@ -300,7 +300,8 @@ Nodejs/
     │   ├── push.test.js
     │   ├── reports.test.js        # Excel downloads + the one JSON report endpoint
     │   ├── dashboard.test.js      # GET /api/dashboard/calendar-events
-    │   └── availability.test.js  # /api/availability, /api/exception-days (Availability page)
+    │   ├── availability.test.js  # /api/availability, /api/exception-days (Availability page)
+    │   └── tickets.test.js       # /api/tickets (Ticketing page)
     ├── reminderScheduler.test.js  # server_utilities/reminderScheduler.js directly - both
     │                               # reminder jobs, not a route, so it sits outside test/routes/
     ├── pushService.test.js        # server_utilities/pushService.js directly - truncation,
@@ -311,7 +312,7 @@ Nodejs/
                                     # auto-creation and Markdown rendering, fs mocked
 ```
 
-Every route in `src/index.js` (70 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **281 tests across 19 files.**
+Every route in `src/index.js` (74 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **305 tests across 20 files.**
 
 ### Login Helper
 

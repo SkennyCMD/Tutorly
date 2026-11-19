@@ -5,7 +5,7 @@ Technical terms and acronyms used in the Tutorly project.
 ---
 
 **Document**: 11_Glossary.md  
-**Last Updated**: November 18, 2026  
+**Last Updated**: November 19, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -299,7 +299,7 @@ System and service manager for Linux. Used to run Tutorly services in production
 ## T
 
 **Ticket**  
-Database table (schema only, no application code yet) holding support tickets raised by users and handled by admins, with an open/managing/closed lifecycle.
+A support ticket raised by a STAFF/GENERIC tutor and handled by an admin, with a strictly sequential open/managing/closed lifecycle. Backs the `/ticketing` page - see [03_Nodejs_Frontend.md - Ticketing Page](03_Nodejs_Frontend.md#ticketing-page) and [01_Java_Backend_API.md - Ticket](01_Java_Backend_API.md#ticket).
 
 **Test**  
 Entity representing an exam or assessment taken by a student.

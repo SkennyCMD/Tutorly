@@ -5,7 +5,7 @@ This document provides comprehensive information about the Tutorly database stru
 ---
 
 **Document**: 07_Database_Configuration.md  
-**Last Updated**: November 18, 2026  
+**Last Updated**: November 19, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -35,7 +35,7 @@ Tutorly uses **PostgreSQL 12+** as its relational database management system. Th
 - **Calendar Notes**: Planning and task management
 - **Availability / Exception Days**: Tutor weekly availability and one-off exceptions to it, with a STAFF-approval workflow for exceptions
 - **Dashboard Notes**: Time-bound notices from admins to tutors (schema only - no application code yet)
-- **Tickets**: Support tickets raised by users and handled by admins (schema only - no application code yet)
+- **Tickets**: Support tickets raised by STAFF/GENERIC tutors and handled by admins, with an open/managing/closed lifecycle
 
 ### Database Specifications
 
@@ -305,8 +305,6 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 
 #### 14. **Ticket**
 
-> **Schema only** - same as `Availability` above, no application code yet.
-
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique ticket ID |
@@ -318,7 +316,7 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | `id_user` | BIGINT | FK → User(id), nullable | User who raised the ticket |
 | `id_admin` | BIGINT | FK → Admin(id), nullable | Admin handling the ticket |
 
-**Purpose**: Future home for a support-ticket system between users and admins. Both FKs are `ON DELETE SET NULL` so deleting the raising user or handling admin preserves the ticket as history rather than losing it.
+**Purpose**: Backs the support-ticket system between STAFF/GENERIC tutors and admins - see [01_Java_Backend_API.md - Ticket](01_Java_Backend_API.md#ticket) for the application layer and [03_Nodejs_Frontend.md - Ticketing Page](03_Nodejs_Frontend.md#ticketing-page) for the UI. Both FKs are `ON DELETE SET NULL` so deleting the raising user or handling admin preserves the ticket as history rather than losing it. `status` moves strictly `open` → `managing` → `closed`, enforced in `TicketService`, not just by the CHECK constraint above.
 
 ---
 
@@ -341,8 +339,8 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | **User → ExceptionDay** | One-to-Many (2 roles) | As the requesting tutor OR as the reviewing staff member |
 | **Admin → DashboardNote** | One-to-Many | An admin authors many dashboard notices (schema only) |
 | **User → DashboardNote** | Many-to-Many | Tutors see notices; tracked via `see_dashboard_note` (schema only) |
-| **User → Ticket** | One-to-Many, optional | A user raises many support tickets (schema only) |
-| **Admin → Ticket** | One-to-Many, optional | An admin handles many support tickets (schema only) |
+| **User → Ticket** | One-to-Many, optional | A user raises many support tickets |
+| **Admin → Ticket** | One-to-Many, optional | An admin handles many support tickets |
 
 ---
 
