@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -29,9 +30,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Slice tests for {@link StudentController}: {@code DELETE /api/students/{id}}
  * (erase/anonymize, not hard-delete - covers the idempotency contract: 404 /
  * 409 / 200, decided before {@link StudentService#eraseStudent(Student)} is
- * ever called) and {@code PATCH /api/students/{id}/name} (rename, which loads
+ * ever called), {@code PATCH /api/students/{id}/name} (rename, which loads
  * and mutates the managed entity directly rather than accepting a full
- * {@code Student} body - see that endpoint's own Javadoc for why).
+ * {@code Student} body - see that endpoint's own Javadoc for why), and
+ * {@code POST /api/students/{id}/merge} (merge a duplicate student in, then
+ * hard-delete it - validation only here, the actual merge logic is unit
+ * tested directly against {@link StudentService#mergeStudents}).
  */
 @WebMvcTest(StudentController.class)
 @TestPropertySource(properties = "api.security.keys=test-api-key")
@@ -199,5 +203,53 @@ class StudentControllerTest {
                 .andExpect(jsonPath("$.userId").value(42));
 
         verify(studentService).saveStudent(student);
+    }
+
+    @Test
+    void mergeStudent_missingMergeId_returns400AndNeverMerges() throws Exception {
+        StudentController.MergeRequest request = new StudentController.MergeRequest();
+
+        mockMvc.perform(post("/api/students/1/merge")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        verify(studentService, never()).mergeStudents(any(), any());
+    }
+
+    @Test
+    void mergeStudent_serviceRejects_returns400WithItsMessage() throws Exception {
+        when(studentService.mergeStudents(1L, 2L))
+                .thenThrow(new IllegalArgumentException("Student not found with ID: 2"));
+
+        StudentController.MergeRequest request = new StudentController.MergeRequest();
+        request.setMergeId(2L);
+
+        mockMvc.perform(post("/api/students/1/merge")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$").value("Student not found with ID: 2"));
+    }
+
+    @Test
+    void mergeStudent_valid_returns200WithTheKeptStudent() throws Exception {
+        Student kept = new Student("Marco", "Rossi", "3A", null, "ACTIVE");
+        kept.setId(1L);
+        when(studentService.mergeStudents(1L, 2L)).thenReturn(kept);
+
+        StudentController.MergeRequest request = new StudentController.MergeRequest();
+        request.setMergeId(2L);
+
+        mockMvc.perform(post("/api/students/1/merge")
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
+
+        verify(studentService).mergeStudents(1L, 2L);
     }
 }

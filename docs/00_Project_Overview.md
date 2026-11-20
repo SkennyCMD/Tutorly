@@ -289,6 +289,8 @@ PostgreSQL relational database for data persistence.
 #### 👨‍🎓 Student Management (Admin)
 - Full access to all students
 - Edit and delete without restrictions
+- Rename a student inline, directly from the list
+- A "Possible Duplicate Students" list flags students with matching name/surname/class/description; merging one moves its lessons, prenotations, tests, and lesson packages onto the student that's kept and permanently deletes the duplicate
 
 #### 🎫 Support Ticket Board
 - Manage the shared pool of open tickets submitted by tutors; pick one up to start managing it
@@ -660,7 +662,7 @@ cd Java/backend-api
 ```bash
 cd Nodejs
 
-# Run the full Jest/Supertest suite (331 tests across 22 files, covering
+# Run the full Jest/Supertest suite (334 tests across 22 files, covering
 # every route in src/index.js - see 08_Testing_Guide.md for details)
 npm test
 

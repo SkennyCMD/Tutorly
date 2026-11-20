@@ -127,6 +127,32 @@ describe('PATCH /api/admin/students/:id/name', () => {
     });
 });
 
+describe('POST /api/admin/students/:id/merge', () => {
+    test('rejects a missing mergeId with 400', async () => {
+        const agent = await adminAgent();
+        const res = await agent.post('/api/admin/students/1/merge').send({});
+        expect(res.status).toBe(400);
+    });
+
+    test('propagates a Java API rejection (e.g. either student not found) as 400', async () => {
+        const agent = await adminAgent();
+        javaApi().post('/api/students/1/merge', { mergeId: 2 }).reply(400, 'Student not found with ID: 2');
+
+        const res = await agent.post('/api/admin/students/1/merge').send({ mergeId: 2 });
+        expect(res.status).toBe(400);
+    });
+
+    test('merges the duplicate into the kept student', async () => {
+        const agent = await adminAgent();
+        const kept = studentFixture({ id: 1 });
+        javaApi().post('/api/students/1/merge', { mergeId: 2 }).reply(200, kept);
+
+        const res = await agent.post('/api/admin/students/1/merge').send({ mergeId: 2 });
+        expect(res.status).toBe(200);
+        expect(res.body.id).toBe(1);
+    });
+});
+
 describe('PATCH /api/admin/students/:id/guest', () => {
     test('blocks assignment on an erased student with 409', async () => {
         const agent = await adminAgent();

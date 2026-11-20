@@ -3649,6 +3649,42 @@ app.patch('/api/admin/students/:id/name', adminSession, isAdmin, async (req, res
 });
 
 /**
+ * Merge a duplicate student into another, then permanently delete the duplicate
+ * POST /api/admin/students/:id/merge
+ * Body: { mergeId }
+ * :id is the student to keep; mergeId is the duplicate to merge away.
+ *
+ * Used by the "Possible Duplicate Students" list on the admin's home/panel
+ * page. Forwards straight to Java's POST /api/students/:id/merge, which
+ * reassigns every lesson/prenotation/test/pack from mergeId to :id (and
+ * carries over mergeId's linked GUEST account if :id doesn't already have
+ * one) before hard-deleting mergeId - a real delete, not the anonymizing
+ * erasure DELETE /api/admin/students/:id/erasure uses. See
+ * StudentService#mergeStudents's Javadoc on the Java side for the full contract.
+ */
+app.post('/api/admin/students/:id/merge', adminSession, isAdmin, async (req, res) => {
+    try {
+        const studentId = req.params.id;
+        const { mergeId } = req.body;
+
+        if (!mergeId) {
+            return res.status(400).json({ error: 'mergeId is required' });
+        }
+
+        const mergedStudent = await fetchFromJavaAPI(`/api/students/${studentId}/merge`, 'POST', { mergeId });
+
+        logSuccess('Students merged', req, { studentId, mergeId });
+        res.json(mergedStudent);
+    } catch (error) {
+        logError('Error merging students', req, { studentId: req.params.id, mergeId: req.body.mergeId, error: error.message });
+        if (error.statusCode === 400) {
+            return res.status(400).json({ error: 'Failed to merge students - check both IDs exist' });
+        }
+        res.status(500).json({ error: 'Failed to merge students' });
+    }
+});
+
+/**
  * Update a guest account's profile (username, email, and optionally password)
  * PATCH /api/admin/guests/:id
  * Body: { username, mail, password? }

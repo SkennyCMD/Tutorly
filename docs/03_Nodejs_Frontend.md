@@ -1160,6 +1160,7 @@ Every route below requires an admin session (`isAdmin`) and proxies to the Java 
 | GET | `/api/admin/students` | List all students |
 | PATCH | `/api/admin/students/:id/class` | Update a student's class (`M`/`S`/`U`) |
 | PATCH | `/api/admin/students/:id/name` | Rename a student; body `{ name, surname }`, edited inline from the student list. Forwards straight to Java's own `PATCH /api/students/:id/name` ([01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students)) rather than a fetch-then-PUT-the-whole-object round trip - see that section's warning on why `.../class` above's fetch-then-PUT approach is a latent bug (it silently clears the student's linked `GUEST` account) that `.../name` was deliberately not implemented the same way |
+| POST | `/api/admin/students/:id/merge` | Merge a duplicate student into `:id`, then permanently delete the duplicate; body `{ mergeId }`. Forwards to Java's `POST /api/students/:id/merge` ([01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students)) - see [Duplicate Students](#duplicate-students) below for the feature |
 | DELETE | `/api/admin/tutors/:id/erasure` | GDPR right-to-erasure for a `GENERIC`/`STAFF` account - see [GDPR Right to Erasure (Admin Panel)](#gdpr-right-to-erasure-admin-panel) |
 | DELETE | `/api/admin/students/:id/erasure` | GDPR right-to-erasure for a student - see [GDPR Right to Erasure (Admin Panel)](#gdpr-right-to-erasure-admin-panel) |
 
@@ -1670,6 +1671,16 @@ See [01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students) for the
 
 ---
 
+## Duplicate Students
+
+A full-width card on the `/admin` page, below the main Tutors/Students/Guests grid, listing groups of non-erased students that share the same name, surname, class, **and** description - almost always the same student entered more than once by mistake, since a coincidental match on all four fields is vanishingly unlikely. Entirely computed client-side in `renderDuplicateStudents()` (`public/js/admin.js`) from the student list already loaded for the main Students card - no separate fetch, and it re-runs every time that list does (initial load, rename, class change, erasure), so it never falls out of sync.
+
+**Each group's card** shows the shared name/class/description once, a chip per student (`#id`, the lowest-id one marked "(kept)"), and a single "Merge into #&lt;id&gt;" button - the lowest id is always the one kept, the same tie-break the duplicate-cleanup SQL this feature replaced already used.
+
+**Merging** (`mergeDuplicateGroup(keepId, mergeIds)`) is irreversible, so it confirms first. It then calls `POST /api/admin/students/:keepId/merge` with `{ mergeId }` once per duplicate in the group (sequentially, not in parallel) - for a group of 3+, that's one call per extra duplicate. Each call is its own request to `POST /api/students/:id/merge` on the Java side ([01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students)), which reassigns that duplicate's lessons, prenotations, tests, and lesson packages to the kept student, carries over its `GUEST` link if the kept student doesn't already have one of its own, and then **hard-deletes** the duplicate row - not the anonymizing erasure [GDPR Right to Erasure](#gdpr-right-to-erasure-admin-panel) below uses, since this is cleaning up a genuine duplicate entry, not a privacy request. If any call in the sequence fails, the loop stops there (rather than attempting the rest of the group) and reloads the student list - a partial merge is still a safe, valid state, just not a complete one.
+
+---
+
 ## GDPR Right to Erasure (Admin Panel)
 
 The admin panel wires the Java-side anonymize-on-erase feature (see [01_Java_Backend_API.md - Erasure](01_Java_Backend_API.md#erasure-gdpr-style-delete-instead-of-hard-delete)) into three admin-facing routes - `DELETE /api/admin/{tutors,guests,students}/:id/erasure` - and into the tutor/guest/student cards in `views/admin.ejs` + `public/js/admin.js`.
@@ -1688,6 +1699,7 @@ The admin panel wires the Java-side anonymize-on-erase feature (see [01_Java_Bac
 | `PATCH /api/admin/tutors/:id/status` | Reactivating (block/unblock) an erased tutor |
 | `PATCH /api/admin/guests/:id` | Repopulating an erased guest's username/mail/password |
 | `PATCH /api/admin/students/:id/class` | Changing an erased student's class |
+| `PATCH /api/admin/students/:id/name` | Renaming an erased student |
 | `PATCH /api/admin/students/:id/guest` | Linking/unlinking either side of an erased student or an erased guest |
 
 **Login rejection:** `authenticateTutor()` (`server_utilities/authService.js`) denies login for an erased account by checking `anonymizedAt` directly rather than the `DISCONTINUED` status string it happens to also set - `status` is a business-state flag that erasure incidentally touches, not the actual erasure signal, so checking it directly avoids coupling this security check to that side effect. See [GDPR Right to Erasure](01_Java_Backend_API.md#erasure-gdpr-style-delete-instead-of-hard-delete) for why `Users`/`Students`/`Admins` are anonymized in place instead of hard-deleted in the first place, and [08_Testing_Guide.md - Node.js Frontend Testing](08_Testing_Guide.md#nodejs-frontend-testing) for the automated regression coverage on all of the above.

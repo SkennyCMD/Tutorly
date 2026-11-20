@@ -1,9 +1,18 @@
 package com.tutorly.app.backend_api.service;
 
+import com.tutorly.app.backend_api.entity.Lesson;
+import com.tutorly.app.backend_api.entity.Pack;
+import com.tutorly.app.backend_api.entity.Prenotation;
 import com.tutorly.app.backend_api.entity.Student;
+import com.tutorly.app.backend_api.entity.Test;
+import com.tutorly.app.backend_api.repository.LessonRepository;
+import com.tutorly.app.backend_api.repository.PackRepository;
+import com.tutorly.app.backend_api.repository.PrenotationRepository;
 import com.tutorly.app.backend_api.repository.StudentRepository;
+import com.tutorly.app.backend_api.repository.TestRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,7 +30,19 @@ public class StudentService {
     
     @Autowired
     private StudentRepository studentRepository;
-    
+
+    @Autowired
+    private LessonRepository lessonRepository;
+
+    @Autowired
+    private PrenotationRepository prenotationRepository;
+
+    @Autowired
+    private TestRepository testRepository;
+
+    @Autowired
+    private PackRepository packRepository;
+
     /**
      * Retrieve all students
      * 
@@ -134,5 +155,64 @@ public class StudentService {
         student.setStatus("BLOCKED");
         student.setAnonymizedAt(LocalDateTime.now());
         return studentRepository.save(student);
+    }
+
+    /**
+     * Merges a duplicate student into another, then hard-deletes the duplicate.
+     *
+     * Every {@link Lesson}, {@link Prenotation}, {@link Test}, and {@link Pack}
+     * belonging to {@code mergeId} is reassigned to {@code keepId} first, so
+     * none of that history is lost. If {@code mergeId} has a linked GUEST
+     * account (({@code Student.user}}) and {@code keepId} doesn't already have
+     * one of its own, that link is carried over too - {@code keepId}'s own
+     * existing guest link, if it has one, is never overwritten. {@code mergeId}
+     * is then deleted outright (not anonymized - unlike {@link #eraseStudent},
+     * this is for cleaning up a genuine duplicate entry, not GDPR erasure).
+     *
+     * The whole operation runs in one transaction: either every reassignment
+     * and the delete all succeed, or none of them do - there's no window where
+     * some records point to {@code keepId} and others still point to a
+     * half-deleted {@code mergeId}.
+     *
+     * @param keepId The student to keep; every record gets reassigned to them
+     * @param mergeId The duplicate student to merge away and delete
+     * @return The kept student, after any guest-link carry-over
+     * @throws IllegalArgumentException if either student doesn't exist, or
+     *                                   {@code keepId} equals {@code mergeId}
+     */
+    @Transactional
+    public Student mergeStudents(Long keepId, Long mergeId) {
+        if (keepId.equals(mergeId)) {
+            throw new IllegalArgumentException("Cannot merge a student into itself");
+        }
+
+        Student keep = studentRepository.findById(keepId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found with ID: " + keepId));
+        Student merge = studentRepository.findById(mergeId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found with ID: " + mergeId));
+
+        List<Lesson> lessons = lessonRepository.findByStudent_Id(mergeId);
+        lessons.forEach(lesson -> lesson.setStudent(keep));
+        lessonRepository.saveAll(lessons);
+
+        List<Prenotation> prenotations = prenotationRepository.findByStudent_Id(mergeId);
+        prenotations.forEach(prenotation -> prenotation.setStudent(keep));
+        prenotationRepository.saveAll(prenotations);
+
+        List<Test> tests = testRepository.findByStudent_Id(mergeId);
+        tests.forEach(test -> test.setStudent(keep));
+        testRepository.saveAll(tests);
+
+        List<Pack> packs = packRepository.findByStudent_Id(mergeId);
+        packs.forEach(pack -> pack.setStudent(keep));
+        packRepository.saveAll(packs);
+
+        if (keep.getUser() == null && merge.getUser() != null) {
+            keep.setUser(merge.getUser());
+        }
+        studentRepository.save(keep);
+
+        studentRepository.delete(merge);
+        return keep;
     }
 }

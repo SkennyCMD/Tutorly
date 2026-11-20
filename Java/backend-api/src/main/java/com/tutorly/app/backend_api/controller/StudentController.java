@@ -249,6 +249,34 @@ public class StudentController {
     }
 
     /**
+     * Merge a duplicate student into another, then hard-delete the duplicate.
+     *
+     * Reassigns every lesson/prenotation/test/pack from {@code mergeId} to
+     * {@code id} (and carries over {@code mergeId}'s linked GUEST account if
+     * {@code id} doesn't already have one), then deletes {@code mergeId}
+     * outright. See {@link StudentService#mergeStudents} for the full
+     * contract - this is a real delete, not the anonymizing erasure above.
+     *
+     * @param id The student to keep
+     * @param request Object containing the duplicate student's ID to merge away
+     * @return The kept student, 400 if mergeId is missing/invalid or either
+     *         student doesn't exist
+     * @apiNote POST /api/students/{id}/merge
+     */
+    @PostMapping("/{id}/merge")
+    public ResponseEntity<?> mergeStudent(@PathVariable Long id, @RequestBody MergeRequest request) {
+        if (request.getMergeId() == null) {
+            return ResponseEntity.badRequest().body("mergeId is required");
+        }
+        try {
+            Student kept = studentService.mergeStudents(id, request.getMergeId());
+            return ResponseEntity.ok(kept);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
      * Inner class for GUEST assignment request payload
      */
     public static class GuestAssignRequest {
@@ -284,6 +312,21 @@ public class StudentController {
 
         public void setSurname(String surname) {
             this.surname = surname;
+        }
+    }
+
+    /**
+     * Inner class for merge request payload
+     */
+    public static class MergeRequest {
+        private Long mergeId;
+
+        public Long getMergeId() {
+            return mergeId;
+        }
+
+        public void setMergeId(Long mergeId) {
+            this.mergeId = mergeId;
         }
     }
 }

@@ -66,8 +66,8 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
-| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription`, `Availability`, `ExceptionDay`, `Ticket`, `DashboardNote` - 259 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (78 total) has at least one Jest/Supertest test (331 tests total across 22 files, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
+| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription`, `Availability`, `ExceptionDay`, `Ticket`, `DashboardNote` - 269 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (79 total) has at least one Jest/Supertest test (334 tests total across 22 files, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -317,7 +317,7 @@ Nodejs/
                                     # auto-creation and Markdown rendering, fs mocked
 ```
 
-Every route in `src/index.js` (78 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `dashboardNoteScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **331 tests across 22 files.**
+Every route in `src/index.js` (79 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `dashboardNoteScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **334 tests across 22 files.**
 
 ### Login Helper
 

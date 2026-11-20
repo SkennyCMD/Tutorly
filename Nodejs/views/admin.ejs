@@ -345,6 +345,22 @@
         </form>
       </div>
     </div>
+
+    <!-- DUPLICATE STUDENTS -->
+    <!-- Groups of non-erased students sharing the same name, surname, class, and
+         description - likely the same student entered more than once by mistake. -->
+    <div class="grid grid-cols-1 gap-6 mt-6">
+      <div class="bg-card border border-border rounded-xl p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-foreground">Possible Duplicate Students</h2>
+          <span id="duplicateStudentsCount" class="text-sm text-muted-foreground"></span>
+        </div>
+
+        <div id="duplicateStudentsList" class="space-y-3">
+          <!-- Duplicate group cards will be dynamically inserted here by admin.js -->
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- MODALS & NOTIFICATIONS -->

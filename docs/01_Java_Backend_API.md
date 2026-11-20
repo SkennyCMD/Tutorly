@@ -948,6 +948,7 @@ X-API-Key: <your-api-key>
 | PUT | `/students/{id}` | Update student - accepts a full `Student` body, see the warning below before using this for a partial edit |
 | PATCH | `/students/{id}/guest` | Assign or unassign a student's `GUEST` account - body `{ "userId": 17 }`, or `{ "userId": null }` to unassign |
 | PATCH | `/students/{id}/name` | Rename a student - body `{ "name": "...", "surname": "..." }`, both required and non-blank |
+| POST | `/students/{id}/merge` | Merge a duplicate student (`mergeId`) into `{id}`, then **hard-delete** the duplicate - body `{ "mergeId": 23 }`. See below, a real delete, not the anonymizing one |
 | DELETE | `/students/{id}` | **Erase** (anonymize) a student - see below, not a hard delete |
 
 **Example Request Body (POST):**
@@ -966,6 +967,13 @@ The `/unassigned`, `/guest/{userId}`, and `PATCH /{id}/guest` endpoints back the
 **⚠️ `PUT /{id}` is a full-object replace, not a partial update - and `Student.user` isn't one of its fields.** `Student.user` (the linked `GUEST` account) is annotated `@JsonBackReference`, so it's never deserialized from an incoming request body, regardless of what's sent. A caller that does "fetch the student, change one field, PUT the whole object back" - the obvious way to implement a partial edit against this endpoint - will silently **clear that student's `GUEST` link on every single call**, since the deserialized `Student` always has `user = null`. This is exactly why `PATCH /{id}/guest` and `PATCH /{id}/name` exist instead: each loads the already-managed entity via `studentService.getStudentById(id)` and mutates only its own field(s) directly, never touching `user` (or any other field the caller didn't ask to change). Any future "edit one field" endpoint on `Student` should follow the same pattern, not `PUT /{id}`.
 
 **`DELETE /{id}` anonymizes, it doesn't delete** (same contract as `Users`/`Admins` below - see [Erasure (GDPR-style "delete")](#erasure-gdpr-style-delete-instead-of-hard-delete) for the shared rationale). Scrubs `name` ("Erased"), `surname` ("Student \<id\>"), and `description` (null), sets `status` to `BLOCKED`, and stamps `anonymizedAt`. `class`, every collection (packs/lessons/tests/prenotations), and the linked `GUEST` (`Student.user`) are left untouched - a GUEST can be linked to more than one student, so severing that link on erasure would be the wrong default. Returns `200` with the anonymized student, `404` if the id doesn't exist, `409` if it was already anonymized (checked via `anonymizedAt != null` - re-erasing is a no-op, not a re-scramble).
+
+**`POST /{id}/merge` is the one genuine hard delete left in this API** - for cleaning up a real duplicate entry (the same student entered twice by mistake), not GDPR erasure, so anonymizing wouldn't fit. Backs the Node.js Admin Panel's "Possible Duplicate Students" list - see [03_Nodejs_Frontend.md - Duplicate Students](03_Nodejs_Frontend.md#duplicate-students). `StudentService#mergeStudents(keepId, mergeId)` runs the whole thing in one transaction:
+1. Every `Lesson`, `Prenotation`, `Test`, and `Pack` belonging to `mergeId` is reassigned to `{id}` (the "keep" student) - nothing is dropped.
+2. If `mergeId` has a linked `GUEST` account and `{id}` doesn't already have one of its own, that link is carried over too. `{id}`'s own existing guest link, if it has one, is **never** overwritten.
+3. `mergeId` is deleted outright via `studentRepository.delete(...)` - an actual `DELETE`, not `anonymizedAt` being stamped.
+
+Returns `200` with the kept student, `400` if either id doesn't exist or `{id}` equals `mergeId`. Each call merges exactly one duplicate; merging a group of 3+ duplicates into one "keep" means calling this once per duplicate (the Node.js route does this in a loop, stopping on the first failure).
 
 ---
 

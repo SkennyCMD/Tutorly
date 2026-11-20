@@ -11,6 +11,8 @@
  * - Block/unblock tutor accounts
  * - Change student class levels (M/S/U)
  * - Rename a student directly from the list
+ * - Flag groups of possibly-duplicate students (same name/surname/class/description)
+ *   and merge them (lessons/prenotations/tests/packs reassigned, duplicates deleted)
  * - Create new tutor accounts with password validation
  * - Track recently created tutors
  * - Mobile-responsive menu
@@ -457,6 +459,115 @@ function renderStudents() {
         const student = students.find(s => s.id === Number(input.dataset.studentId));
         if (student) input.value = student.surname;
     });
+
+    renderDuplicateStudents();
+}
+
+
+// Duplicate Students Detection
+
+
+/**
+ * Render the "Possible Duplicate Students" list: groups of non-erased
+ * students that share the same name, surname, class, and description -
+ * likely the same student entered more than once by mistake.
+ *
+ * Re-run every time renderStudents() runs, so it stays in sync with every
+ * students mutation (load, rename, class change, erasure) without a
+ * separate refresh call at each of those sites.
+ */
+function renderDuplicateStudents() {
+    const container = document.getElementById('duplicateStudentsList');
+    const countEl = document.getElementById('duplicateStudentsCount');
+    if (!container || !countEl) return;
+
+    // Erased students are scrubbed (name "Erased", description null) - matching
+    // on that scrubbed state would be meaningless noise, not a real duplicate.
+    const groups = new Map();
+    students.filter(s => !s.anonymizedAt).forEach(s => {
+        const key = `${s.name}|${s.surname}|${s.studentClass || ''}|${s.description || ''}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(s);
+    });
+
+    const duplicateGroups = [...groups.values()].filter(group => group.length > 1);
+
+    countEl.textContent = `${duplicateGroups.length} group${duplicateGroups.length !== 1 ? 's' : ''}`;
+
+    if (duplicateGroups.length === 0) {
+        container.innerHTML = '<p class="text-sm text-muted-foreground py-4 text-center">No duplicate students found</p>';
+        return;
+    }
+
+    container.innerHTML = duplicateGroups.map(group => {
+        // Lowest id is the one kept - matches the pattern the user's own merge
+        // SQL already used (MIN(id)), and avoids a modal/picker for something
+        // that's otherwise an arbitrary tie-break.
+        const sorted = [...group].sort((a, b) => a.id - b.id);
+        const keep = sorted[0];
+        const mergeIds = sorted.slice(1).map(s => s.id);
+        return `
+        <div class="border border-border rounded-lg p-3">
+            <div class="flex items-center justify-between mb-2">
+                <p class="text-sm font-medium text-foreground">${keep.name} ${keep.surname} <span class="text-muted-foreground font-normal">- Class ${keep.studentClass || '—'}</span></p>
+                <span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">${group.length} students</span>
+            </div>
+            ${keep.description ? `<p class="text-xs text-muted-foreground mb-2 truncate">${keep.description}</p>` : ''}
+            <div class="flex flex-wrap items-center gap-2">
+                ${sorted.map(s => `<span class="text-xs px-2 py-1 rounded-lg bg-secondary text-foreground">#${s.id}${s.id === keep.id ? ' (kept)' : ''}</span>`).join('')}
+                <button onclick='mergeDuplicateGroup(${keep.id}, ${JSON.stringify(mergeIds)})' class="ml-auto px-3 py-1.5 text-xs font-medium rounded-lg border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors">
+                    Merge into #${keep.id}
+                </button>
+            </div>
+        </div>
+    `;
+    }).join('');
+}
+
+/**
+ * Merge every duplicate in `mergeIds` into `keepId`, one at a time: each
+ * duplicate's lessons, prenotations, tests, and lesson packages are
+ * reassigned to `keepId` and the duplicate is then permanently deleted
+ * (not anonymized). Irreversible, so confirms first.
+ *
+ * Stops and reloads the student list on the first failure, rather than
+ * attempting the rest of the group - a partial merge is still a valid,
+ * safe state (each merge call is its own all-or-nothing transaction on the
+ * Java side), just not a complete one.
+ *
+ * @param {number} keepId - The student to keep
+ * @param {number[]} mergeIds - The duplicate student IDs to merge away and delete
+ */
+async function mergeDuplicateGroup(keepId, mergeIds) {
+    const count = mergeIds.length;
+    if (!confirm(`Merge ${count} duplicate${count !== 1 ? 's' : ''} into student #${keepId}? Their lessons, prenotations, tests, and lesson packages will be moved to #${keepId}, and the duplicate${count !== 1 ? 's' : ''} will be permanently deleted. This cannot be undone.`)) {
+        return;
+    }
+
+    for (const mergeId of mergeIds) {
+        try {
+            const response = await fetch(`/api/admin/students/${keepId}/merge`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mergeId })
+            });
+
+            if (!response.ok) {
+                showToast(`Failed to merge student #${mergeId}`, 'error');
+                await loadStudents();
+                return;
+            }
+        } catch (error) {
+            console.error('Error merging duplicate students:', error);
+            showToast(`Error merging student #${mergeId}`, 'error');
+            await loadStudents();
+            return;
+        }
+    }
+
+    showToast('Duplicate students merged successfully', 'success');
+    await loadStudents();
 }
 
 
