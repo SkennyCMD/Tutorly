@@ -81,6 +81,10 @@ const { sendPushToUser } = require('../server_utilities/pushService');
 // see server_utilities/reminderScheduler.js
 require('../server_utilities/reminderScheduler');
 
+// Daily midnight cleanup of expired dashboard notes' see_dashboard_note rows -
+// self-initializes on require, see server_utilities/dashboardNoteScheduler.js
+require('../server_utilities/dashboardNoteScheduler');
+
 // Renders config/privacy-notice.md (gitignored, center-specific) for the /privacy
 // page - see server_utilities/privacyNotice.js
 const { ensurePrivacyNoticeFile, getPrivacyNoticeHtml } = require('../server_utilities/privacyNotice');

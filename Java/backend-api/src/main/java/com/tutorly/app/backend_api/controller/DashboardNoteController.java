@@ -87,6 +87,23 @@ public class DashboardNoteController {
     }
 
     /**
+     * Clear every {@code see_dashboard_note} row for a note - used by the
+     * Node.js frontend's daily midnight cleanup of expired notices.
+     *
+     * @param noteId The note's ID
+     * @return 404 if the note doesn't exist, 204 No Content otherwise
+     * @apiNote DELETE /api/dashboard-notes/{noteId}/recipients
+     */
+    @DeleteMapping("/{noteId}/recipients")
+    public ResponseEntity<Void> clearRecipients(@PathVariable Long noteId) {
+        if (dashboardNoteService.getNoteById(noteId).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        dashboardNoteService.clearRecipients(noteId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Publish a new notice.
      *
      * @param dto The note data to create (content, expiration, adminId)

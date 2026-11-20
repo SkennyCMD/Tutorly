@@ -736,6 +736,24 @@ function fetchDashboardNotesByUser(userId) {
         });
 }
 
+/**
+ * Clear every see_dashboard_note row for a note - used by the daily midnight
+ * cleanup job (see dashboardNoteScheduler.js) once a note has expired, so
+ * nobody keeps "owning" a row for a notice that's gone for good.
+ *
+ * @param {number} noteId - The note's ID
+ * @returns {Promise<void>}
+ *
+ * @example
+ * await clearDashboardNoteRecipients(1);
+ */
+function clearDashboardNoteRecipients(noteId) {
+    return fetchFromJavaAPI(`/api/dashboard-notes/${noteId}/recipients`, 'DELETE')
+        .catch(error => {
+            console.error('Error clearing dashboard note recipients:', error);
+        });
+}
+
 
 // Module Exports
 
@@ -757,7 +775,7 @@ function fetchDashboardNotesByUser(userId) {
  * - Push Subscriptions: fetchPushSubscriptionsByUser, upsertPushSubscription, deletePushSubscriptionByEndpoint
  * - Availability: fetchAllAvailability, fetchAllExceptionDays
  * - Tickets: fetchAllTickets
- * - Dashboard Notes: fetchAllDashboardNotes, fetchDashboardNotesByUser
+ * - Dashboard Notes: fetchAllDashboardNotes, fetchDashboardNotesByUser, clearDashboardNoteRecipients
  *
  * Usage Pattern:
  * All functions return Promises that resolve to data or reject with errors.
@@ -791,5 +809,6 @@ module.exports = {
     fetchAllExceptionDays,
     fetchAllTickets,
     fetchDashboardNotesByUser,
+    clearDashboardNoteRecipients,
     fetchAllDashboardNotes
 };

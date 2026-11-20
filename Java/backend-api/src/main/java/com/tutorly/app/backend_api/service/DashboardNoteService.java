@@ -70,6 +70,23 @@ public class DashboardNoteService {
     }
 
     /**
+     * Clears every {@code see_dashboard_note} row for a note, e.g. once it's
+     * expired and there's no point keeping track of who still has it to
+     * view. Idempotent - a no-op if the note doesn't exist or already has no
+     * recipients.
+     *
+     * @param noteId The note's ID
+     */
+    public void clearRecipients(Long noteId) {
+        dashboardNoteRepository.findById(noteId).ifPresent(note -> {
+            if (!note.getRecipients().isEmpty()) {
+                note.getRecipients().clear();
+                dashboardNoteRepository.save(note);
+            }
+        });
+    }
+
+    /**
      * Publishes a new notice. {@code creation} is always "now", regardless
      * of what's in the request body.
      *

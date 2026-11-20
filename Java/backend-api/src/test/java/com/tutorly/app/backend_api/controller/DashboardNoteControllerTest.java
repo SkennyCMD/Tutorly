@@ -112,6 +112,25 @@ class DashboardNoteControllerTest {
     }
 
     @Test
+    void clearRecipients_noteFound_returns204AndCallsService() throws Exception {
+        DashboardNote note = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().minusDays(1), admin());
+        note.setId(5L);
+        when(dashboardNoteService.getNoteById(5L)).thenReturn(Optional.of(note));
+
+        mockMvc.perform(delete("/api/dashboard-notes/5/recipients").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isNoContent());
+        verify(dashboardNoteService).clearRecipients(5L);
+    }
+
+    @Test
+    void clearRecipients_noteNotFound_returns404() throws Exception {
+        when(dashboardNoteService.getNoteById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete("/api/dashboard-notes/99/recipients").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void createNote_valid_returns201() throws Exception {
         DashboardNote saved = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().plusDays(7), admin());
         saved.setId(5L);

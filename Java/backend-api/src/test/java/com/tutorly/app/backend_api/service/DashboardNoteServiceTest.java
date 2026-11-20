@@ -119,6 +119,43 @@ class DashboardNoteServiceTest {
     }
 
     @Test
+    void clearRecipients_removesEveryRecipientAndSaves() {
+        User staff = new User("staff.one", "hashedPassword123", "ACTIVE", "STAFF");
+        staff.setId(10L);
+        User generic = new User("tutor.one", "hashedPassword123", "ACTIVE", "GENERIC");
+        generic.setId(11L);
+        DashboardNote note = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().minusDays(1), admin);
+        note.setId(5L);
+        note.setRecipients(new HashSet<>(List.of(staff, generic)));
+        when(dashboardNoteRepository.findById(5L)).thenReturn(Optional.of(note));
+
+        dashboardNoteService.clearRecipients(5L);
+
+        assertThat(note.getRecipients()).isEmpty();
+        verify(dashboardNoteRepository).save(note);
+    }
+
+    @Test
+    void clearRecipients_noteNotFound_doesNothing() {
+        when(dashboardNoteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        dashboardNoteService.clearRecipients(99L);
+
+        verify(dashboardNoteRepository, never()).save(any());
+    }
+
+    @Test
+    void clearRecipients_alreadyEmpty_doesNotSave() {
+        DashboardNote note = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().minusDays(1), admin);
+        note.setId(5L);
+        when(dashboardNoteRepository.findById(5L)).thenReturn(Optional.of(note));
+
+        dashboardNoteService.clearRecipients(5L);
+
+        verify(dashboardNoteRepository, never()).save(any());
+    }
+
+    @Test
     void createNote_valid_savesWithNowAsCreation() {
         LocalDateTime expiration = LocalDateTime.now().plusDays(7);
         when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
