@@ -10,6 +10,7 @@
  * - Toggle tutor roles (STAFF/GENERIC)
  * - Block/unblock tutor accounts
  * - Change student class levels (M/S/U)
+ * - Rename a student directly from the list
  * - Create new tutor accounts with password validation
  * - Track recently created tutors
  * - Mobile-responsive menu
@@ -417,7 +418,7 @@ function renderStudents() {
         return;
     }
 
-    // Generate HTML for each student card with class dropdown
+    // Generate HTML for each student card with inline-editable name/surname and class dropdown
     container.innerHTML = filtered.map(s => {
         const isErased = !!s.anonymizedAt;
         return `
@@ -426,7 +427,12 @@ function renderStudents() {
                 <span class="text-sm font-medium text-foreground">${s.name.charAt(0)}${s.surname.charAt(0)}</span>
             </div>
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-foreground truncate">${s.name} ${s.surname}</p>
+                <div class="flex items-center gap-1 -ml-1.5">
+                    <input type="text" data-student-id="${s.id}" data-field="name" onblur="changeStudentName(${s.id})" ${isErased ? 'disabled' : ''}
+                        class="w-20 sm:w-28 min-w-0 px-1.5 py-0.5 bg-transparent border border-transparent rounded text-sm font-medium text-foreground truncate hover:border-border focus:bg-secondary focus:border-border focus:outline-none ${isErased ? 'opacity-50' : ''}">
+                    <input type="text" data-student-id="${s.id}" data-field="surname" onblur="changeStudentName(${s.id})" ${isErased ? 'disabled' : ''}
+                        class="w-20 sm:w-28 min-w-0 px-1.5 py-0.5 bg-transparent border border-transparent rounded text-sm font-medium text-foreground truncate hover:border-border focus:bg-secondary focus:border-border focus:outline-none ${isErased ? 'opacity-50' : ''}">
+                </div>
                 ${isErased ? '<span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">ERASED</span>' : ''}
             </div>
             <select onchange="changeStudentClass(${s.id}, this.value)" class="px-2 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer ${isErased ? 'pointer-events-none opacity-50' : ''}">
@@ -440,6 +446,17 @@ function renderStudents() {
         </div>
     `;
     }).join('');
+
+    // Set input values via the DOM property, not an HTML attribute in the template above -
+    // a name/surname containing a `"` would otherwise break out of the value="..." attribute.
+    container.querySelectorAll('input[data-field="name"]').forEach(input => {
+        const student = students.find(s => s.id === Number(input.dataset.studentId));
+        if (student) input.value = student.name;
+    });
+    container.querySelectorAll('input[data-field="surname"]').forEach(input => {
+        const student = students.find(s => s.id === Number(input.dataset.studentId));
+        if (student) input.value = student.surname;
+    });
 }
 
 
@@ -527,6 +544,67 @@ async function changeStudentClass(id, newClass) {
         console.error('Error updating student class:', error);
         showToast('Error updating student class', 'error');
         renderStudents(); // Revert dropdown to previous value
+    }
+}
+
+
+// Student Name Management
+
+
+/**
+ * Rename a student, reading both the name and surname inputs directly from
+ * the list row - fired on blur from either field, so tabbing/clicking out of
+ * either one commits both at once.
+ *
+ * No-ops (no request sent) if neither field actually changed, so simply
+ * clicking into and back out of a field doesn't spam the API or the toast.
+ * Reverts both inputs to their last known-good value on error.
+ *
+ * @param {number} id - Student ID
+ */
+async function changeStudentName(id) {
+    const student = students.find(s => s.id === id);
+    if (!student) return;
+
+    const nameInput = document.querySelector(`input[data-student-id="${id}"][data-field="name"]`);
+    const surnameInput = document.querySelector(`input[data-student-id="${id}"][data-field="surname"]`);
+    if (!nameInput || !surnameInput) return;
+
+    const name = nameInput.value.trim();
+    const surname = surnameInput.value.trim();
+
+    if (!name || !surname) {
+        showToast('Name and surname cannot be empty', 'error');
+        nameInput.value = student.name;
+        surnameInput.value = student.surname;
+        return;
+    }
+
+    if (name === student.name && surname === student.surname) return;
+
+    try {
+        const response = await fetch(`/api/admin/students/${id}/name`, {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, surname })
+        });
+
+        if (response.ok) {
+            student.name = name;
+            student.surname = surname;
+            showToast(`Student renamed to ${name} ${surname}`, 'success');
+            renderStudents(); // Refreshes the avatar initials too
+        } else {
+            showToast('Failed to update student name', 'error');
+            nameInput.value = student.name;
+            surnameInput.value = student.surname;
+        }
+    } catch (error) {
+        console.error('Error updating student name:', error);
+        showToast('Error updating student name', 'error');
+        nameInput.value = student.name;
+        surnameInput.value = student.surname;
     }
 }
 

@@ -81,6 +81,52 @@ describe('PATCH /api/admin/students/:id/class', () => {
     });
 });
 
+describe('PATCH /api/admin/students/:id/name', () => {
+    test('rejects a blank name with 400', async () => {
+        const agent = await adminAgent();
+        const res = await agent.patch('/api/admin/students/10/name').send({ name: '   ', surname: 'Rossi' });
+        expect(res.status).toBe(400);
+    });
+
+    test('rejects a blank surname with 400', async () => {
+        const agent = await adminAgent();
+        const res = await agent.patch('/api/admin/students/10/name').send({ name: 'Mario', surname: '' });
+        expect(res.status).toBe(400);
+    });
+
+    test('blocks renaming an erased student with 409', async () => {
+        const agent = await adminAgent();
+        javaApi().patch('/api/students/10/name', { name: 'Luigi', surname: 'Verdi' }).reply(409);
+
+        const res = await agent.patch('/api/admin/students/10/name').send({ name: 'Luigi', surname: 'Verdi' });
+        expect(res.status).toBe(409);
+    });
+
+    test('returns 404 when the student does not exist', async () => {
+        const agent = await adminAgent();
+        javaApi().patch('/api/students/999/name', { name: 'Luigi', surname: 'Verdi' }).reply(404);
+
+        const res = await agent.patch('/api/admin/students/999/name').send({ name: 'Luigi', surname: 'Verdi' });
+        expect(res.status).toBe(404);
+    });
+
+    // Forwards straight to Java's dedicated PATCH .../name endpoint, trimming
+    // whitespace first - NOT a fetch-then-PUT-the-whole-object round trip,
+    // which would silently clear the student's linked GUEST account (see
+    // StudentController#updateStudentName's Javadoc on the Java side).
+    test('renames a non-erased student, trimming whitespace', async () => {
+        const agent = await adminAgent();
+        const student = studentFixture();
+        javaApi().patch('/api/students/10/name', { name: 'Luigi', surname: 'Verdi' })
+            .reply(200, { ...student, name: 'Luigi', surname: 'Verdi' });
+
+        const res = await agent.patch('/api/admin/students/10/name').send({ name: '  Luigi  ', surname: '  Verdi  ' });
+        expect(res.status).toBe(200);
+        expect(res.body.name).toBe('Luigi');
+        expect(res.body.surname).toBe('Verdi');
+    });
+});
+
 describe('PATCH /api/admin/students/:id/guest', () => {
     test('blocks assignment on an erased student with 409', async () => {
         const agent = await adminAgent();

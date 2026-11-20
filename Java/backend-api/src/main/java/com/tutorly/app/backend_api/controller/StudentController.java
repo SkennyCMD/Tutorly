@@ -155,6 +155,44 @@ public class StudentController {
     }
 
     /**
+     * Rename a student (first and last name).
+     *
+     * Loads the managed entity and sets just {@code name}/{@code surname} on
+     * it, instead of accepting a full {@code Student} body like {@code PUT
+     * /api/students/{id}} does - a full-body PUT would silently clear the
+     * linked GUEST account, since {@code Student.user} is
+     * {@code @JsonBackReference} and never deserialized from JSON. Same
+     * reasoning as {@link #updateStudentGuest}.
+     *
+     * @param id The student ID to rename
+     * @param request Object containing the new name/surname
+     * @return Updated student, 400 if name/surname is blank, 404 if the
+     *         student doesn't exist, 409 if it's been erased
+     * @apiNote PATCH /api/students/{id}/name
+     */
+    @PatchMapping("/{id}/name")
+    public ResponseEntity<?> updateStudentName(@PathVariable Long id, @RequestBody NameUpdateRequest request) {
+        if (request.getName() == null || request.getName().isBlank()
+                || request.getSurname() == null || request.getSurname().isBlank()) {
+            return ResponseEntity.badRequest().body("Name and surname are required");
+        }
+
+        Optional<Student> studentOpt = studentService.getStudentById(id);
+        if (studentOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Student student = studentOpt.get();
+        if (student.getAnonymizedAt() != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        student.setName(request.getName().trim());
+        student.setSurname(request.getSurname().trim());
+        return ResponseEntity.ok(studentService.saveStudent(student));
+    }
+
+    /**
      * Create a new student
      * 
      * @param student The student data to create
@@ -222,6 +260,30 @@ public class StudentController {
 
         public void setUserId(Long userId) {
             this.userId = userId;
+        }
+    }
+
+    /**
+     * Inner class for rename request payload
+     */
+    public static class NameUpdateRequest {
+        private String name;
+        private String surname;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getSurname() {
+            return surname;
+        }
+
+        public void setSurname(String surname) {
+            this.surname = surname;
         }
     }
 }

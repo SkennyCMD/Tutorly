@@ -3609,6 +3609,46 @@ app.patch('/api/admin/students/:id/class', adminSession, isAdmin, async (req, re
 });
 
 /**
+ * Rename a student
+ * PATCH /api/admin/students/:id/name
+ * Body: { name, surname }
+ * Edited directly from the student list on the admin's home/panel page.
+ *
+ * Forwards straight to Java's own PATCH /api/students/:id/name (not a
+ * fetch-then-PUT-the-whole-object round trip, unlike .../class above) -
+ * that generic PUT silently clears the student's linked GUEST account,
+ * since Student.user is never deserialized from JSON. See
+ * StudentController#updateStudentName's Javadoc on the Java side.
+ */
+app.patch('/api/admin/students/:id/name', adminSession, isAdmin, async (req, res) => {
+    try {
+        const studentId = req.params.id;
+        const { name, surname } = req.body;
+
+        if (!name || !name.trim() || !surname || !surname.trim()) {
+            return res.status(400).json({ error: 'Name and surname are required' });
+        }
+
+        const updatedStudent = await fetchFromJavaAPI(`/api/students/${studentId}/name`, 'PATCH', {
+            name: name.trim(),
+            surname: surname.trim()
+        });
+
+        logSuccess('Student renamed', req, { studentId, name: name.trim(), surname: surname.trim() });
+        res.json(updatedStudent);
+    } catch (error) {
+        logError('Error renaming student', req, { studentId: req.params.id, error: error.message });
+        if (error.statusCode === 404) {
+            return res.status(404).json({ error: 'Student not found' });
+        }
+        if (error.statusCode === 409) {
+            return res.status(409).json({ error: 'This student has been erased and can no longer be modified' });
+        }
+        res.status(500).json({ error: 'Failed to rename student' });
+    }
+});
+
+/**
  * Update a guest account's profile (username, email, and optionally password)
  * PATCH /api/admin/guests/:id
  * Body: { username, mail, password? }
