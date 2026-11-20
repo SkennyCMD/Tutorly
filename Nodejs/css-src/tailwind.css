@@ -1,0 +1,11 @@
+/*
+ * Tailwind CSS source file - compiled to public/css/tailwind.css by
+ * `npm run build:css` (see package.json and tailwind.config.js).
+ *
+ * This file is not served directly; only the compiled output is. Replaces
+ * the previous <script src="https://cdn.tailwindcss.com"> on every page,
+ * which depended on an external CDN being reachable at request time.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

@@ -25,21 +25,16 @@ Features:
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= t('login.pageTitle') %></title>
   <%- include('partials/theme-init') %>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/tailwind.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/login.css">
-  <%- include('partials/theme-config') %>
-  <script>
-    // Login page also uses the Inter font, layered on top of the shared color config.
-    tailwind.config.theme.extend.fontFamily = { sans: ['Inter', 'sans-serif'] };
-  </script>
   <%- include('partials/pwa-setup') %>
 </head>
 
-<body class="font-sans bg-background min-h-screen flex flex-col">
+<body class="font-inter bg-background min-h-screen flex flex-col">
 
   <!-- HEADER: Top Navigation -->
   <!-- Logo and navigation link to become a tutor -->
