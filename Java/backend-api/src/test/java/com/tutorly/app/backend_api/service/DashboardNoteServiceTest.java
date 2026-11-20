@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,6 +77,45 @@ class DashboardNoteServiceTest {
         when(dashboardNoteRepository.findByRecipients_Id(10L)).thenReturn(List.of(note));
 
         assertThat(dashboardNoteService.getNotesByUser(10L)).containsExactly(note);
+    }
+
+    @Test
+    void markAsViewed_removesRecipientAndSaves() {
+        User tutor = new User("tutor.one", "hashedPassword123", "ACTIVE", "GENERIC");
+        tutor.setId(10L);
+        DashboardNote note = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().plusDays(7), admin);
+        note.setId(5L);
+        note.setRecipients(new HashSet<>(List.of(tutor)));
+        when(dashboardNoteRepository.findById(5L)).thenReturn(Optional.of(note));
+
+        dashboardNoteService.markAsViewed(5L, 10L);
+
+        assertThat(note.getRecipients()).isEmpty();
+        verify(dashboardNoteRepository).save(note);
+    }
+
+    @Test
+    void markAsViewed_noteNotFound_doesNothing() {
+        when(dashboardNoteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        dashboardNoteService.markAsViewed(99L, 10L);
+
+        verify(dashboardNoteRepository, never()).save(any());
+    }
+
+    @Test
+    void markAsViewed_userNotARecipient_doesNotSave() {
+        User tutor = new User("tutor.one", "hashedPassword123", "ACTIVE", "GENERIC");
+        tutor.setId(10L);
+        DashboardNote note = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().plusDays(7), admin);
+        note.setId(5L);
+        note.setRecipients(new HashSet<>(List.of(tutor)));
+        when(dashboardNoteRepository.findById(5L)).thenReturn(Optional.of(note));
+
+        dashboardNoteService.markAsViewed(5L, 999L);
+
+        assertThat(note.getRecipients()).containsExactly(tutor);
+        verify(dashboardNoteRepository, never()).save(any());
     }
 
     @Test

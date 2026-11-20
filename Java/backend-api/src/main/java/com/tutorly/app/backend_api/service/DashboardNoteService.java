@@ -52,6 +52,24 @@ public class DashboardNoteService {
     }
 
     /**
+     * Marks a note as viewed by a user: removes their row from
+     * {@code see_dashboard_note}, so it stops showing up in
+     * {@link #getNotesByUser}. Idempotent - a no-op if the note doesn't
+     * exist or that user was never one of its recipients.
+     *
+     * @param noteId The note's ID
+     * @param userId The user who viewed it
+     */
+    public void markAsViewed(Long noteId, Long userId) {
+        dashboardNoteRepository.findById(noteId).ifPresent(note -> {
+            boolean removed = note.getRecipients().removeIf(u -> u.getId().equals(userId));
+            if (removed) {
+                dashboardNoteRepository.save(note);
+            }
+        });
+    }
+
+    /**
      * Publishes a new notice. {@code creation} is always "now", regardless
      * of what's in the request body.
      *

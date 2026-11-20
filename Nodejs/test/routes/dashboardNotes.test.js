@@ -61,3 +61,41 @@ describe('POST /api/dashboard-notes', () => {
         expect(res.status).toBe(400);
     });
 });
+
+describe('POST /api/dashboard-notes/:noteId/viewed', () => {
+    test('redirects to /login when not authenticated', async () => {
+        const res = await request(app).post('/api/dashboard-notes/5/viewed');
+        expect(res.status).toBe(302);
+        expect(res.headers.location).toBe('/login');
+    });
+
+    test('rejects a GUEST session with 403', async () => {
+        const agent = await tutorAgent({ id: 21, role: 'GUEST' });
+        const res = await agent.post('/api/dashboard-notes/5/viewed');
+        expect(res.status).toBe(403);
+    });
+
+    test('rejects a non-numeric note ID with 400', async () => {
+        const agent = await tutorAgent();
+        const res = await agent.post('/api/dashboard-notes/not-a-number/viewed');
+        expect(res.status).toBe(400);
+    });
+
+    test('clears this user\'s own row, userId forced from the session', async () => {
+        const agent = await tutorAgent({ id: 1 });
+        const deleteScope = javaApi().delete('/api/dashboard-notes/5/user/1').reply(204);
+
+        const res = await agent.post('/api/dashboard-notes/5/viewed');
+
+        expect(res.status).toBe(200);
+        expect(deleteScope.isDone()).toBe(true);
+    });
+
+    test('propagates a Java API failure as 500', async () => {
+        const agent = await tutorAgent({ id: 1 });
+        javaApi().delete('/api/dashboard-notes/99/user/1').reply(404);
+
+        const res = await agent.post('/api/dashboard-notes/99/viewed');
+        expect(res.status).toBe(500);
+    });
+});

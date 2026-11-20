@@ -69,6 +69,24 @@ public class DashboardNoteController {
     }
 
     /**
+     * Mark a note as viewed by a user ("Sign as viewed" in the Node.js
+     * frontend): removes their row from {@code see_dashboard_note}.
+     *
+     * @param noteId The note's ID
+     * @param userId The user who viewed it
+     * @return 404 if the note doesn't exist, 204 No Content otherwise
+     * @apiNote DELETE /api/dashboard-notes/{noteId}/user/{userId}
+     */
+    @DeleteMapping("/{noteId}/user/{userId}")
+    public ResponseEntity<Void> markAsViewed(@PathVariable Long noteId, @PathVariable Long userId) {
+        if (dashboardNoteService.getNoteById(noteId).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        dashboardNoteService.markAsViewed(noteId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Publish a new notice.
      *
      * @param dto The note data to create (content, expiration, adminId)

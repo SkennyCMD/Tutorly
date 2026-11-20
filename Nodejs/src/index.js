@@ -418,6 +418,30 @@ app.post('/api/dashboard-notes', adminSession, isAdmin, async (req, res) => {
 });
 
 /**
+ * Mark a dashboard note as viewed ("Sign as viewed" on the home/dashboard page)
+ * POST /api/dashboard-notes/:noteId/viewed
+ * Removes this user's own see_dashboard_note row - see DashboardNoteService.markAsViewed.
+ * userId is always the logged-in user's own session ID, never trusted from the
+ * client, so a user can only ever clear their own row.
+ */
+app.post('/api/dashboard-notes/:noteId/viewed', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
+    try {
+        const noteId = parseInt(req.params.noteId, 10);
+        if (!Number.isInteger(noteId)) {
+            return res.status(400).json({ error: 'Invalid note ID' });
+        }
+
+        const userId = req.session.userId;
+        await fetchFromJavaAPI(`/api/dashboard-notes/${noteId}/user/${userId}`, 'DELETE');
+        logInfo('Dashboard note marked as viewed', req, { noteId, userId });
+        res.json({ success: true });
+    } catch (error) {
+        logError('Error marking dashboard note as viewed', req, { error: error.message });
+        res.status(500).json({ error: 'Failed to mark note as viewed' });
+    }
+});
+
+/**
  * Support tickets (admin)
  * GET /ticketing - Display the support ticket board (requires admin authentication)
  */

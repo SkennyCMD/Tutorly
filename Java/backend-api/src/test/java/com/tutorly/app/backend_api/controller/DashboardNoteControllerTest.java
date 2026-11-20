@@ -18,7 +18,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -88,6 +90,25 @@ class DashboardNoteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
                 .andExpect(jsonPath("$[0].id").value(5));
+    }
+
+    @Test
+    void markAsViewed_noteFound_returns204AndCallsService() throws Exception {
+        DashboardNote note = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().plusDays(7), admin());
+        note.setId(5L);
+        when(dashboardNoteService.getNoteById(5L)).thenReturn(Optional.of(note));
+
+        mockMvc.perform(delete("/api/dashboard-notes/5/user/10").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isNoContent());
+        verify(dashboardNoteService).markAsViewed(5L, 10L);
+    }
+
+    @Test
+    void markAsViewed_noteNotFound_returns404() throws Exception {
+        when(dashboardNoteService.getNoteById(99L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(delete("/api/dashboard-notes/99/user/10").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isNotFound());
     }
 
     @Test
