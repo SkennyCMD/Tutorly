@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Frontend**: every page loaded Tailwind CSS from the Play CDN (`cdn.tailwindcss.com`) at runtime - if that external script was ever unreachable, the whole site lost its styling. Tailwind is now built locally: a new `tailwind.config.js` (porting the same color palette that used to be set at runtime by the now-deleted `views/partials/theme-config.ejs`) compiles `css-src/tailwind.css` into `public/css/tailwind.css`, which every view links directly instead of loading the CDN script. `npm run build:css`/`watch:css` plus a `postinstall` hook keep it up to date automatically on install and in `npm run dev`/`dev:https` (via `concurrently`, alongside `nodemon`). `tailwindcss` is a regular `dependencies` entry (not dev-only) so the build still runs under a production-only install (`npm ci --production`). See [03_Nodejs_Frontend.md - Tailwind CSS (Local Build)](03_Nodejs_Frontend.md#tailwind-css-local-build).
+
 ### Planned
 - E2E testing with Playwright
 - Redis session storage for horizontal scaling

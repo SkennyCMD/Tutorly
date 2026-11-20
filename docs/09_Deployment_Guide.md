@@ -332,7 +332,9 @@ sudo journalctl -u tutorly-backend -f
 ```bash
 cd Nodejs
 
-# Install production dependencies only
+# Install production dependencies only - tailwindcss is a regular
+# dependency (not dev-only) for exactly this reason, so its `postinstall`
+# hook can still build public/css/tailwind.css here
 npm ci --production
 
 # Set production environment variables
