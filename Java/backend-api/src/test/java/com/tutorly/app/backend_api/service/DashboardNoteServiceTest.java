@@ -3,8 +3,10 @@ package com.tutorly.app.backend_api.service;
 import com.tutorly.app.backend_api.dto.DashboardNoteCreateDTO;
 import com.tutorly.app.backend_api.entity.Admin;
 import com.tutorly.app.backend_api.entity.DashboardNote;
+import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.repository.AdminRepository;
 import com.tutorly.app.backend_api.repository.DashboardNoteRepository;
+import com.tutorly.app.backend_api.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +38,9 @@ class DashboardNoteServiceTest {
 
     @Mock
     private AdminRepository adminRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private DashboardNoteService dashboardNoteService;
@@ -69,6 +74,7 @@ class DashboardNoteServiceTest {
     void createNote_valid_savesWithNowAsCreation() {
         LocalDateTime expiration = LocalDateTime.now().plusDays(7);
         when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.findByRoleIn(List.of("STAFF", "GENERIC"))).thenReturn(List.of());
         when(dashboardNoteRepository.save(any(DashboardNote.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         DashboardNoteCreateDTO dto = new DashboardNoteCreateDTO("## This week\n\nReview chapter 3.", expiration, 1L);
@@ -78,6 +84,23 @@ class DashboardNoteServiceTest {
         assertThat(result.getExpiration()).isEqualTo(expiration);
         assertThat(result.getAdmin()).isEqualTo(admin);
         assertThat(result.getCreation()).isNotNull();
+    }
+
+    @Test
+    void createNote_valid_distributesToEveryStaffAndGenericUser() {
+        User staff = new User("staff.one", "hashedPassword123", "ACTIVE", "STAFF");
+        staff.setId(10L);
+        User generic = new User("tutor.one", "hashedPassword123", "ACTIVE", "GENERIC");
+        generic.setId(11L);
+
+        when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
+        when(userRepository.findByRoleIn(List.of("STAFF", "GENERIC"))).thenReturn(List.of(staff, generic));
+        when(dashboardNoteRepository.save(any(DashboardNote.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DashboardNoteCreateDTO dto = new DashboardNoteCreateDTO("Reminder", LocalDateTime.now().plusDays(7), 1L);
+        DashboardNote result = dashboardNoteService.createNote(dto);
+
+        assertThat(result.getRecipients()).containsExactlyInAnyOrder(staff, generic);
     }
 
     @Test

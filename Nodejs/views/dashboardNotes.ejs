@@ -112,13 +112,13 @@
   </aside>
 
   <main class="mx-auto max-w-7xl space-y-7 px-4 py-7 sm:px-6 sm:py-9">
-    <section><p class="text-sm font-medium uppercase tracking-[.16em] text-primary">Admin tools</p><h1 class="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Dashboard notes</h1><p class="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">Create announcements and learning notes with Markdown, and manage when they expire.</p></section>
+    <section><h1 class="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Dashboard notes</h1></section>
     <section class="grid items-start gap-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
       <form id="noteForm" class="rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <div class="mb-5"><h2 class="text-lg font-semibold">Create a dashboard note</h2><p class="mt-1 text-sm text-muted-foreground">Markdown is supported: headings, lists, links, blockquotes, and code.</p></div>
+        <div class="mb-5"><h2 class="text-lg font-semibold">Create a dashboard note</h2><p class="mt-1 text-sm text-muted-foreground">Markdown is supported.</p></div>
         <label for="noteContent" class="mb-2 block text-sm font-medium">Note content <span class="text-destructive">*</span></label>
         <textarea id="noteContent" name="content" required rows="7" maxlength="2000" placeholder="## This week's focus&#10;&#10;Review **linear equations** and remember:&#10;- Show each step&#10;- Check your answer&#10;&#10;Use `x + 2 = 5` as an example." class="w-full resize-y rounded-lg border border-border bg-secondary px-3 py-3 text-sm leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"></textarea>
-        <p class="mt-2 text-xs text-muted-foreground">Markdown is rendered in the preview and note lists.</p>
+        <p class="mt-2 text-xs text-muted-foreground">Markdown is rendered in the preview</p>
         <div class="mt-5"><label for="expiresAt" class="mb-2 block text-sm font-medium">Expiration date <span class="text-destructive">*</span></label><input id="expiresAt" name="expiresAt" type="date" required class="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"><p class="mt-2 text-xs text-muted-foreground">The note remains active through the selected date.</p></div>
         <div class="mt-5 rounded-lg border border-border bg-background p-3"><p class="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Preview</p><div id="notePreview" class="markdown-note min-h-8 break-words text-sm leading-6" aria-live="polite">Your note preview will appear here.</div></div>
         <button type="submit" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 sm:w-auto"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14m-7-7h14"/></svg>Create note</button>

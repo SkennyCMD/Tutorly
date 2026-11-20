@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * JPA Entity representing a time-bound notice an admin publishes to every
@@ -62,6 +64,24 @@ public class DashboardNote {
     @JsonIgnoreProperties({"password", "createdUsers"})
     private Admin admin;
 
+    /**
+     * The users this notice was distributed to at publication time (every
+     * STAFF and GENERIC user - GUEST accounts are excluded, see
+     * {@link com.tutorly.app.backend_api.service.DashboardNoteService#createNote}).
+     *
+     * Many-to-many relationship with User entity through the 'see_dashboard_note'
+     * junction table. Populated once, when the note is created.
+     */
+    @ManyToMany
+    @JoinTable(
+        name = "see_dashboard_note",
+        joinColumns = @JoinColumn(name = "id_dashboard_note"),
+        inverseJoinColumns = @JoinColumn(name = "id_tutor")
+    )
+    @JsonIgnoreProperties({"password", "calendarNotes", "createdCalendarNotes", "createdPrenotations",
+                           "lessons", "prenotations", "tests", "createdByAdmins"})
+    private Set<User> recipients = new HashSet<>();
+
 
     // Constructors
 
@@ -118,6 +138,14 @@ public class DashboardNote {
 
     public void setAdmin(Admin admin) {
         this.admin = admin;
+    }
+
+    public Set<User> getRecipients() {
+        return recipients;
+    }
+
+    public void setRecipients(Set<User> recipients) {
+        this.recipients = recipients;
     }
 
     @JsonProperty("adminId")

@@ -3,12 +3,15 @@ package com.tutorly.app.backend_api.service;
 import com.tutorly.app.backend_api.dto.DashboardNoteCreateDTO;
 import com.tutorly.app.backend_api.entity.Admin;
 import com.tutorly.app.backend_api.entity.DashboardNote;
+import com.tutorly.app.backend_api.entity.User;
 import com.tutorly.app.backend_api.repository.AdminRepository;
 import com.tutorly.app.backend_api.repository.DashboardNoteRepository;
+import com.tutorly.app.backend_api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +29,9 @@ public class DashboardNoteService {
     @Autowired
     private AdminRepository adminRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public List<DashboardNote> getAllNotes() {
         return dashboardNoteRepository.findAll();
     }
@@ -37,6 +43,9 @@ public class DashboardNoteService {
     /**
      * Publishes a new notice. {@code creation} is always "now", regardless
      * of what's in the request body.
+     *
+     * Also distributes the note to every STAFF and GENERIC user (GUEST
+     * accounts are excluded) by populating {@code see_dashboard_note}.
      *
      * @param dto The note data to create
      * @return The created note
@@ -60,6 +69,8 @@ public class DashboardNoteService {
                 .orElseThrow(() -> new IllegalArgumentException("Admin not found with ID: " + dto.getAdminId()));
 
         DashboardNote note = new DashboardNote(dto.getContent(), now, dto.getExpiration(), admin);
+        List<User> recipients = userRepository.findByRoleIn(List.of("STAFF", "GENERIC"));
+        note.setRecipients(new HashSet<>(recipients));
         return dashboardNoteRepository.save(note);
     }
 }

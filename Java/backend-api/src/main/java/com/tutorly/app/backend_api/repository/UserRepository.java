@@ -50,6 +50,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRole(String role);
 
     /**
+     * Find users whose role is any of the given values
+     *
+     * Used to fan a dashboard note out to every STAFF and GENERIC user
+     * while excluding GUEST accounts.
+     *
+     * @param roles The roles to filter by
+     * @return List of users whose role matches one of the given values
+     */
+    List<User> findByRoleIn(List<String> roles);
+
+    /**
      * Check if a user with the given username exists
      *
      * Useful for validation before creating new users to ensure username uniqueness.
