@@ -1159,6 +1159,7 @@ Every route below requires an admin session (`isAdmin`) and proxies to the Java 
 | PATCH | `/api/admin/tutors/:id/status` | Update a tutor's status (e.g. block/unblock) |
 | GET | `/api/admin/students` | List all students |
 | PATCH | `/api/admin/students/:id/class` | Update a student's class (`M`/`S`/`U`) |
+| PATCH | `/api/admin/students/:id/name` | Rename a student; body `{ name, surname }`, edited inline from the student list. Forwards straight to Java's own `PATCH /api/students/:id/name` ([01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students)) rather than a fetch-then-PUT-the-whole-object round trip - see that section's warning on why `.../class` above's fetch-then-PUT approach is a latent bug (it silently clears the student's linked `GUEST` account) that `.../name` was deliberately not implemented the same way |
 | DELETE | `/api/admin/tutors/:id/erasure` | GDPR right-to-erasure for a `GENERIC`/`STAFF` account - see [GDPR Right to Erasure (Admin Panel)](#gdpr-right-to-erasure-admin-panel) |
 | DELETE | `/api/admin/students/:id/erasure` | GDPR right-to-erasure for a student - see [GDPR Right to Erasure (Admin Panel)](#gdpr-right-to-erasure-admin-panel) |
 

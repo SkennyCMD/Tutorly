@@ -945,8 +945,9 @@ X-API-Key: <your-api-key>
 | GET | `/students/unassigned` | Students with no `GUEST` account linked (`id_user IS NULL`) - the pool a `GUEST` can be assigned to |
 | GET | `/students/guest/{userId}` | Students currently linked to a given `GUEST` account |
 | POST | `/students` | Create new student |
-| PUT | `/students/{id}` | Update student |
+| PUT | `/students/{id}` | Update student - accepts a full `Student` body, see the warning below before using this for a partial edit |
 | PATCH | `/students/{id}/guest` | Assign or unassign a student's `GUEST` account - body `{ "userId": 17 }`, or `{ "userId": null }` to unassign |
+| PATCH | `/students/{id}/name` | Rename a student - body `{ "name": "...", "surname": "..." }`, both required and non-blank |
 | DELETE | `/students/{id}` | **Erase** (anonymize) a student - see below, not a hard delete |
 
 **Example Request Body (POST):**
@@ -960,7 +961,9 @@ X-API-Key: <your-api-key>
 }
 ```
 
-The `/unassigned`, `/guest/{userId}`, and `PATCH /{id}/guest` endpoints back the Node.js Admin Panel's Guest Accounts feature (student assignment) and the Node.js frontend's GUEST-role data scoping - see [03_Nodejs_Frontend.md - Admin Panel - Guest Accounts](03_Nodejs_Frontend.md#admin-panel---guest-accounts) and [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control).
+The `/unassigned`, `/guest/{userId}`, and `PATCH /{id}/guest` endpoints back the Node.js Admin Panel's Guest Accounts feature (student assignment) and the Node.js frontend's GUEST-role data scoping - see [03_Nodejs_Frontend.md - Admin Panel - Guest Accounts](03_Nodejs_Frontend.md#admin-panel---guest-accounts) and [03_Nodejs_Frontend.md - GUEST Role Access Control](03_Nodejs_Frontend.md#guest-role-access-control). `PATCH /{id}/name` backs the Admin Panel's inline student rename - see [03_Nodejs_Frontend.md - API Endpoints - Admin](03_Nodejs_Frontend.md#api-endpoints---admin-tutors-students-guest-accounts).
+
+**⚠️ `PUT /{id}` is a full-object replace, not a partial update - and `Student.user` isn't one of its fields.** `Student.user` (the linked `GUEST` account) is annotated `@JsonBackReference`, so it's never deserialized from an incoming request body, regardless of what's sent. A caller that does "fetch the student, change one field, PUT the whole object back" - the obvious way to implement a partial edit against this endpoint - will silently **clear that student's `GUEST` link on every single call**, since the deserialized `Student` always has `user = null`. This is exactly why `PATCH /{id}/guest` and `PATCH /{id}/name` exist instead: each loads the already-managed entity via `studentService.getStudentById(id)` and mutates only its own field(s) directly, never touching `user` (or any other field the caller didn't ask to change). Any future "edit one field" endpoint on `Student` should follow the same pattern, not `PUT /{id}`.
 
 **`DELETE /{id}` anonymizes, it doesn't delete** (same contract as `Users`/`Admins` below - see [Erasure (GDPR-style "delete")](#erasure-gdpr-style-delete-instead-of-hard-delete) for the shared rationale). Scrubs `name` ("Erased"), `surname` ("Student \<id\>"), and `description` (null), sets `status` to `BLOCKED`, and stamps `anonymizedAt`. `class`, every collection (packs/lessons/tests/prenotations), and the linked `GUEST` (`Student.user`) are left untouched - a GUEST can be linked to more than one student, so severing that link on erasure would be the wrong default. Returns `200` with the anonymized student, `404` if the id doesn't exist, `409` if it was already anonymized (checked via `anonymizedAt != null` - re-erasing is a no-op, not a re-scramble).
 
