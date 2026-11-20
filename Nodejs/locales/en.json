@@ -82,6 +82,10 @@
     "lessonCountPlural": "{count} lessons",
     "myStudents": "My Students",
     "noStudentsAssigned": "No students assigned yet",
+    "dashboardNotes": {
+      "title": "Dashboard Notes",
+      "signAsViewed": "Sign as viewed"
+    },
     "success": {
       "studentAdded": "Student added successfully!"
     },

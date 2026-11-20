@@ -195,9 +195,46 @@ describe('GET /home', () => {
         javaApi().get('/api/lessons').reply(200, []);
         javaApi().get('/api/prenotations').reply(200, []);
         javaApi().get('/api/students').reply(200, []);
+        javaApi().get('/api/dashboard-notes/user/1').reply(200, []);
 
         const res = await agent.get('/home');
         expect(res.status).toBe(200);
+    });
+
+    test('embeds only this user\'s own active dashboard notes, soonest-expiring first', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+        javaApi().get('/api/calendar-notes/tutor/1').reply(200, []);
+        javaApi().get('/api/lessons').reply(200, []);
+        javaApi().get('/api/prenotations').reply(200, []);
+        javaApi().get('/api/students').reply(200, []);
+        javaApi().get('/api/dashboard-notes/user/1').reply(200, [
+            { id: 1, content: 'Already expired', creation: '2026-01-01T09:00:00', expiration: '2026-01-02T23:59:59', adminId: 1 },
+            { id: 2, content: 'Still active, later', creation: '2026-11-19T09:00:00', expiration: '2027-02-01T23:59:59', adminId: 1 },
+            { id: 3, content: 'Still active, sooner', creation: '2026-11-19T09:00:00', expiration: '2026-12-01T23:59:59', adminId: 1 }
+        ]);
+
+        const res = await agent.get('/home');
+        expect(res.status).toBe(200);
+        expect(res.text).not.toContain('Already expired');
+        const soonerIndex = res.text.indexOf('Still active, sooner');
+        const laterIndex = res.text.indexOf('Still active, later');
+        expect(soonerIndex).toBeGreaterThan(-1);
+        expect(laterIndex).toBeGreaterThan(soonerIndex);
+    });
+
+    test('never embeds dashboard notes for a GUEST session', async () => {
+        const agent = await tutorAgent({ id: 21, role: 'GUEST' });
+        javaApi().get('/api/users/21').reply(200, tutorFixture({ id: 21, role: 'GUEST' }));
+        javaApi().get('/api/calendar-notes/tutor/21').reply(200, []);
+        javaApi().get('/api/lessons').reply(200, []);
+        javaApi().get('/api/prenotations').reply(200, []);
+        javaApi().get('/api/students').reply(200, []);
+        javaApi().get('/api/students/guest/21').reply(200, []);
+
+        const res = await agent.get('/home');
+        expect(res.status).toBe(200);
+        expect(res.text).not.toContain('dashboardNotesList');
     });
 });
 

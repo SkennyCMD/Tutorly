@@ -55,6 +55,20 @@ public class DashboardNoteController {
     }
 
     /**
+     * Get every notice distributed to a specific user (see_dashboard_note) -
+     * used by the Node.js frontend's own dashboard page to show each user
+     * only the notices meant for them.
+     *
+     * @param userId The recipient's user ID
+     * @return List of notes that user was fanned out to
+     * @apiNote GET /api/dashboard-notes/user/{userId}
+     */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<DashboardNote>> getNotesByUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(dashboardNoteService.getNotesByUser(userId));
+    }
+
+    /**
      * Publish a new notice.
      *
      * @param dto The note data to create (content, expiration, adminId)

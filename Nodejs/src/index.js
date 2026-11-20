@@ -62,7 +62,8 @@ const {
     fetchAllAvailability,
     fetchAllExceptionDays,
     fetchAllTickets,
-    fetchAllDashboardNotes
+    fetchAllDashboardNotes,
+    fetchDashboardNotesByUser
 } = require('../server_utilities/javaApiService');
 
 // Shared range-bounded fetch/enrich logic for the Calendar page - see
@@ -826,13 +827,22 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             endTime: note.endTime
         }));
         
-        // Fetch lessons, prenotations, students, and (GUEST only) the students assigned to this guest
-        const [allLessons, allPrenotations, students, assignedStudents] = await Promise.all([
+        // Fetch lessons, prenotations, students, (GUEST only) the students assigned to
+        // this guest, and this user's own dashboard notes (skipped for GUEST - they're
+        // never fanned out to see_dashboard_note either, see DashboardNoteService.createNote)
+        const [allLessons, allPrenotations, students, assignedStudents, allDashboardNotes] = await Promise.all([
             fetchAllLessons(),
             fetchAllPrenotations(),
             fetchAllStudents(),
-            userRole === 'guest' ? fetchStudentsByGuest(tutorId) : Promise.resolve(null)
+            userRole === 'guest' ? fetchStudentsByGuest(tutorId) : Promise.resolve(null),
+            userRole === 'guest' ? Promise.resolve([]) : fetchDashboardNotesByUser(tutorId)
         ]);
+
+        // Only still-active notices, soonest-expiring first - expired ones belong on
+        // the admin's own Dashboard Notes management page, not here.
+        const dashboardNotes = (allDashboardNotes || [])
+            .filter(note => new Date(note.expiration) >= now)
+            .sort((a, b) => new Date(a.expiration) - new Date(b.expiration));
 
         let lessons, prenotations;
         if (userRole === 'guest') {
@@ -931,7 +941,8 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             lessons: combinedLessons,
             // Erased students shouldn't be offered when creating a new lesson
             students: (students || []).filter(s => !s.anonymizedAt),
-            guestStudents
+            guestStudents,
+            dashboardNotes
         });
     } catch (error) {
         logError('Error fetching home data', req, { error: error.message });
@@ -942,7 +953,8 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             tasks: [],
             lessons: [],
             students: [],
-            guestStudents: []
+            guestStudents: [],
+            dashboardNotes: []
         });
     }
 });

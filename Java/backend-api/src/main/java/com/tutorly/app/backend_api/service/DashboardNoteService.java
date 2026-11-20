@@ -41,6 +41,17 @@ public class DashboardNoteService {
     }
 
     /**
+     * Get every note distributed to a specific user - see
+     * {@link #createNote} for how {@code see_dashboard_note} gets populated.
+     *
+     * @param userId The recipient's user ID
+     * @return List of notes that user was fanned out to
+     */
+    public List<DashboardNote> getNotesByUser(Long userId) {
+        return dashboardNoteRepository.findByRecipients_Id(userId);
+    }
+
+    /**
      * Publishes a new notice. {@code creation} is always "now", regardless
      * of what's in the request body.
      *

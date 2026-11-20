@@ -713,6 +713,29 @@ function fetchAllDashboardNotes() {
         });
 }
 
+/**
+ * Fetch every dashboard note distributed to a specific user (see_dashboard_note).
+ *
+ * Backs the home/dashboard page's notes widget - each user sees only the
+ * notices they were fanned out to, not every notice ever published.
+ * Returns empty array if none found or on error.
+ *
+ * @param {number} userId - The recipient's user ID
+ * @returns {Promise<Array>} Array of dashboard notes distributed to that user
+ *
+ * @example
+ * const notes = await fetchDashboardNotesByUser(5);
+ * // Returns: [{ id: 1, content: '...', creation: '...', expiration: '...', adminId: 1 }, ...]
+ */
+function fetchDashboardNotesByUser(userId) {
+    return fetchFromJavaAPI(`/api/dashboard-notes/user/${userId}`, 'GET')
+        .then(data => data || [])
+        .catch(error => {
+            console.error('Error fetching dashboard notes by user:', error);
+            return [];
+        });
+}
+
 
 // Module Exports
 
@@ -734,7 +757,7 @@ function fetchAllDashboardNotes() {
  * - Push Subscriptions: fetchPushSubscriptionsByUser, upsertPushSubscription, deletePushSubscriptionByEndpoint
  * - Availability: fetchAllAvailability, fetchAllExceptionDays
  * - Tickets: fetchAllTickets
- * - Dashboard Notes: fetchAllDashboardNotes
+ * - Dashboard Notes: fetchAllDashboardNotes, fetchDashboardNotesByUser
  *
  * Usage Pattern:
  * All functions return Promises that resolve to data or reject with errors.
@@ -767,5 +790,6 @@ module.exports = {
     fetchAllAvailability,
     fetchAllExceptionDays,
     fetchAllTickets,
+    fetchDashboardNotesByUser,
     fetchAllDashboardNotes
 };

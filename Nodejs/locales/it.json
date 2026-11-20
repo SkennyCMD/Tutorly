@@ -82,6 +82,10 @@
     "lessonCountPlural": "{count} lezioni",
     "myStudents": "I Miei Studenti",
     "noStudentsAssigned": "Nessuno studente ancora assegnato",
+    "dashboardNotes": {
+      "title": "Note della Dashboard",
+      "signAsViewed": "Segna come visualizzata"
+    },
     "success": {
       "studentAdded": "Studente aggiunto con successo!"
     },

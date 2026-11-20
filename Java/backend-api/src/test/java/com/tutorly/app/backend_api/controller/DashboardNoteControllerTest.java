@@ -79,6 +79,18 @@ class DashboardNoteControllerTest {
     }
 
     @Test
+    void getNotesByUser_returns200WithList() throws Exception {
+        DashboardNote note = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().plusDays(7), admin());
+        note.setId(5L);
+        when(dashboardNoteService.getNotesByUser(10L)).thenReturn(List.of(note));
+
+        mockMvc.perform(get("/api/dashboard-notes/user/10").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(5));
+    }
+
+    @Test
     void createNote_valid_returns201() throws Exception {
         DashboardNote saved = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().plusDays(7), admin());
         saved.setId(5L);

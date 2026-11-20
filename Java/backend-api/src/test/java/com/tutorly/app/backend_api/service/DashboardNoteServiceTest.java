@@ -71,6 +71,14 @@ class DashboardNoteServiceTest {
     }
 
     @Test
+    void getNotesByUser_delegatesToRepository() {
+        DashboardNote note = new DashboardNote("## Reminder", LocalDateTime.now(), LocalDateTime.now().plusDays(7), admin);
+        when(dashboardNoteRepository.findByRecipients_Id(10L)).thenReturn(List.of(note));
+
+        assertThat(dashboardNoteService.getNotesByUser(10L)).containsExactly(note);
+    }
+
+    @Test
     void createNote_valid_savesWithNowAsCreation() {
         LocalDateTime expiration = LocalDateTime.now().plusDays(7);
         when(adminRepository.findById(1L)).thenReturn(Optional.of(admin));
