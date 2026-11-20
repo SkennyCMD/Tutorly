@@ -3,8 +3,9 @@
 // through POST /api/dashboard-notes; every admin manages the same shared
 // board, so there's no per-admin scoping here, unlike the Ticketing page.
 const notes = window.initialNotes || [];
+const translate = window.t || (key => key);
 
-const dateFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' });
+const dateFormat = new Intl.DateTimeFormat(window.lang || 'en', { month: 'short', day: 'numeric', year: 'numeric' });
 
 const $ = id => document.getElementById(id);
 
@@ -38,11 +39,11 @@ function makeNoteCard(note, isExpired) {
 
     const label = document.createElement('span');
     label.className = `rounded-full border px-2.5 py-1 text-xs font-medium ${isExpired ? 'border-zinc-700 bg-zinc-800 text-zinc-300' : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'}`;
-    label.textContent = isExpired ? 'Expired' : 'Active';
+    label.textContent = isExpired ? translate('dashboardNotes.statusExpired') : translate('dashboardNotes.statusActive');
 
     const date = document.createElement('p');
     date.className = 'text-xs text-muted-foreground';
-    date.textContent = `Expires ${formatDate(note.expiration)}`;
+    date.textContent = translate('dashboardNotes.expiresPrefix', { date: formatDate(note.expiration) });
 
     header.append(label, date);
 
@@ -68,15 +69,15 @@ function render() {
 
     $('activeCount').textContent = active.length;
     $('expiredCount').textContent = expired.length;
-    $('activeNotes').replaceChildren(...(active.length ? active.map(note => makeNoteCard(note, false)) : [empty('No active dashboard notes.')]));
-    $('expiredNotes').replaceChildren(...(expired.length ? expired.map(note => makeNoteCard(note, true)) : [empty('No expired notes.')]));
+    $('activeNotes').replaceChildren(...(active.length ? active.map(note => makeNoteCard(note, false)) : [empty(translate('dashboardNotes.noActiveNotes'))]));
+    $('expiredNotes').replaceChildren(...(expired.length ? expired.map(note => makeNoteCard(note, true)) : [empty(translate('dashboardNotes.noExpiredNotes'))]));
 }
 
 $('noteContent').addEventListener('input', () => {
     const value = $('noteContent').value.trim();
     const preview = $('notePreview');
     if (value) renderMarkdown(preview, value);
-    else preview.textContent = 'Your note preview will appear here.';
+    else preview.textContent = translate('dashboardNotes.previewPlaceholder');
 });
 
 $('noteForm').addEventListener('submit', async event => {
@@ -86,7 +87,7 @@ $('noteForm').addEventListener('submit', async event => {
     const expiresAt = $('expiresAt').value;
     if (!content || !expiresAt) return;
     if (expiresAt < today()) {
-        $('formMessage').textContent = 'Choose today or a future date for a new note.';
+        $('formMessage').textContent = translate('dashboardNotes.chooseFutureDate');
         return;
     }
 
@@ -102,11 +103,11 @@ $('noteForm').addEventListener('submit', async event => {
             window.location.reload();
         } else {
             const error = await response.json();
-            $('formMessage').textContent = error.error || 'Failed to publish the note.';
+            $('formMessage').textContent = error.error || translate('dashboardNotes.publishFailed');
         }
     } catch (error) {
         console.error('Error publishing dashboard note:', error);
-        $('formMessage').textContent = 'Failed to publish the note. Please try again.';
+        $('formMessage').textContent = translate('dashboardNotes.publishFailedRetry');
     }
 });
 

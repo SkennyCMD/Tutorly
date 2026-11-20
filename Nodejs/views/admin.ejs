@@ -12,12 +12,12 @@
     - Toast notifications for user feedback
 -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>">
 <head>
   <!-- Character encoding and viewport for responsive design -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tutorly - Admin Panel</title>
+  <title><%= t('admin.pageTitle') %></title>
   <%- include('partials/theme-init') %>
 
   <!-- Tailwind CSS CDN -->
@@ -45,14 +45,14 @@
           </div>
           <span class="text-xl font-bold text-foreground">Tutorly</span>
           <% if (poweredByText) { %><span class="text-xs text-muted-foreground ml-1"><%= poweredByText %></span><% } %>
-          <span class="ml-2 text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">ADMIN</span>
+          <span class="ml-2 text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full"><%= t('common.admin.badge') %></span>
         </a>
 
         <!-- Desktop Navigation (commented links are for future features) -->
         <nav class="hidden md:flex items-center gap-6">
-          <a href="/admin" class="text-foreground font-medium transition-colors">Admin Panel</a>
-          <a href="/ticketing" class="text-muted-foreground hover:text-foreground transition-colors">Tickets</a>
-          <a href="/dashboardNotes" class="text-muted-foreground hover:text-foreground transition-colors">Dashboard notes</a>
+          <a href="/admin" class="text-foreground font-medium transition-colors"><%= t('common.admin.navPanel') %></a>
+          <a href="/ticketing" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.admin.navTickets') %></a>
+          <a href="/dashboardNotes" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.admin.navDashboardNotes') %></a>
           <!-- Future features: Staff Management and Reports -->
           <!-- <a href="staff.html" class="text-muted-foreground hover:text-foreground transition-colors">Staff Management</a>
           <a href="reports.html" class="text-muted-foreground hover:text-foreground transition-colors">Reports</a> -->
@@ -61,7 +61,7 @@
         <!-- Theme toggle and Logout button (desktop only) -->
         <div class="hidden md:flex items-center gap-1">
           <%- include('partials/theme-toggle') %>
-          <a href="/adminLogout" class="text-sm text-muted-foreground hover:text-foreground transition-colors px-2">Logout</a>
+          <a href="/adminLogout" class="text-sm text-muted-foreground hover:text-foreground transition-colors px-2"><%= t('common.logout') %></a>
         </div>
 
         <!-- Mobile menu toggle button -->
@@ -91,7 +91,7 @@
         </div>
         <span class="text-lg font-bold text-foreground">Tutorly</span>
         <% if (poweredByText) { %><span class="text-xs text-muted-foreground ml-1"><%= poweredByText %></span><% } %>
-        <span class="text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full">ADMIN</span>
+        <span class="text-xs font-medium bg-destructive/20 text-destructive px-2 py-0.5 rounded-full"><%= t('common.admin.badge') %></span>
       </div>
       <button id="closeMenu" class="p-2 rounded-lg hover:bg-secondary transition-colors">
         <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,20 +107,20 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
         </svg>
-        Admin Panel
+        <%= t('common.admin.navPanel') %>
       </a>
       <a href="/ticketing" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h3.75M9 15h3.75M9 18h3.75m3-15H9a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 009 21h9a2.25 2.25 0 002.25-2.25V9M15 3v4.5A1.5 1.5 0 0016.5 9H21M15 3l6 6"/>
         </svg>
-        Tickets
+        <%= t('common.admin.navTickets') %>
       </a>
       <a href="/dashboardNotes" class="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.067 1.21-.46 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46"/>
         </svg>
-        Dashboard notes
+        <%= t('common.admin.navDashboardNotes') %>
       </a>
 
       <!-- Future navigation items (commented out) -->
@@ -141,7 +141,7 @@
       <div class="border-t border-border mt-2 pt-2 space-y-1">
         <%- include('partials/theme-toggle-mobile') %>
         <a href="/adminLogout" class="flex items-center gap-3 px-4 py-3 rounded-lg text-destructive hover:bg-secondary transition-colors">
-          Logout
+          <%= t('common.logout') %>
         </a>
       </div>
     </nav>
@@ -153,8 +153,8 @@
 
     <!-- Page header with title and description -->
     <div class="mb-8">
-      <h1 class="text-2xl sm:text-3xl font-bold text-foreground">Admin Panel</h1>
-      <p class="text-muted-foreground mt-1">Manage tutors, students, and accounts</p>
+      <h1 class="text-2xl sm:text-3xl font-bold text-foreground"><%= t('common.admin.navPanel') %></h1>
+      <p class="text-muted-foreground mt-1"><%= t('admin.subtitle') %></p>
     </div>
 
     <!-- Three-column responsive grid -->
@@ -164,13 +164,13 @@
       <!-- Displays all tutors with search, role, and status management -->
       <div class="bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-foreground">Tutors</h2>
+          <h2 class="text-lg font-semibold text-foreground"><%= t('admin.tutorsHeading') %></h2>
           <span id="tutorCount" class="text-sm text-muted-foreground"></span>
         </div>
 
         <!-- Search input for filtering tutors -->
         <div class="mb-4">
-          <input type="text" id="tutorSearch" placeholder="Search tutors..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
+          <input type="text" id="tutorSearch" placeholder="<%= t('admin.tutorSearchPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
         </div>
 
         <!-- Scrollable list of tutors (populated by JavaScript) -->
@@ -183,13 +183,13 @@
       <!-- Displays all students with search and class management -->
       <div class="bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-foreground">Students</h2>
+          <h2 class="text-lg font-semibold text-foreground"><%= t('admin.studentsHeading') %></h2>
           <span id="studentCount" class="text-sm text-muted-foreground"></span>
         </div>
 
         <!-- Search input for filtering students -->
         <div class="mb-4">
-          <input type="text" id="studentSearch" placeholder="Search students..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
+          <input type="text" id="studentSearch" placeholder="<%= t('admin.studentSearchPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
         </div>
 
         <!-- Scrollable list of students (populated by JavaScript) -->
@@ -201,20 +201,20 @@
       <!-- COLUMN 3: CREATE TUTOR FORM -->
       <!-- Form for creating new tutor accounts with validation -->
       <div class="bg-card border border-border rounded-xl p-5">
-        <h2 class="text-lg font-semibold text-foreground mb-4">Create New Tutor</h2>
+        <h2 class="text-lg font-semibold text-foreground mb-4"><%= t('admin.createTutorHeading') %></h2>
 
         <form id="createTutorForm" class="space-y-4">
           <!-- Username input -->
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Username</label>
-            <input type="text" id="newUsername" required placeholder="e.g. john.doe" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.usernameLabel') %></label>
+            <input type="text" id="newUsername" required placeholder="<%= t('admin.usernamePlaceholderTutor') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
 
           <!-- Password input with visibility toggle -->
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Password</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.passwordLabel') %></label>
             <div class="relative">
-              <input type="password" id="newPassword" required placeholder="Min 8 characters" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring pr-10">
+              <input type="password" id="newPassword" required placeholder="<%= t('admin.passwordPlaceholderMin') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring pr-10">
               <button type="button" id="togglePassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                 <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -237,14 +237,14 @@
 
           <!-- Confirm password input with match validation -->
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Confirm Password</label>
-            <input type="password" id="confirmPassword" required placeholder="Re-enter password" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.confirmPasswordLabel') %></label>
+            <input type="password" id="confirmPassword" required placeholder="<%= t('admin.reenterPasswordPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <p id="passwordMatch" class="text-xs mt-1 hidden"></p>
           </div>
 
           <!-- Role selection: GENERIC or STAFF -->
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Role</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.roleLabel') %></label>
             <div class="flex gap-2">
               <label class="flex-1">
                 <input type="radio" name="role" value="GENERIC" class="sr-only peer" checked>
@@ -262,13 +262,13 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
             </svg>
-            Create Tutor
+            <%= t('admin.createTutorButton') %>
           </button>
         </form>
 
         <!-- Recently created tutors list (shown after successful creation) -->
         <div id="recentlyCreated" class="mt-6 border-t border-border pt-4 hidden">
-          <h3 class="text-sm font-medium text-muted-foreground mb-3">Recently Created</h3>
+          <h3 class="text-sm font-medium text-muted-foreground mb-3"><%= t('admin.recentlyCreated') %></h3>
           <div id="recentList" class="space-y-2"></div>
         </div>
       </div>
@@ -281,13 +281,13 @@
       <!-- Displays all GUEST-role accounts (e.g. parents/guardians) -->
       <div class="bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-foreground">Guest Accounts</h2>
+          <h2 class="text-lg font-semibold text-foreground"><%= t('admin.guestAccountsHeading') %></h2>
           <span id="guestCount" class="text-sm text-muted-foreground"></span>
         </div>
 
         <!-- Search input for filtering guest accounts -->
         <div class="mb-4">
-          <input type="text" id="guestSearch" placeholder="Search guest accounts..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
+          <input type="text" id="guestSearch" placeholder="<%= t('admin.guestSearchPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
         </div>
 
         <!-- Scrollable list of guest accounts (populated by JavaScript) -->
@@ -299,26 +299,26 @@
       <!-- CREATE GUEST FORM -->
       <!-- Form for creating new GUEST accounts (username, email, password) -->
       <div class="bg-card border border-border rounded-xl p-5">
-        <h2 class="text-lg font-semibold text-foreground mb-4">Create New Guest</h2>
+        <h2 class="text-lg font-semibold text-foreground mb-4"><%= t('admin.createGuestHeading') %></h2>
 
         <form id="createGuestForm" class="space-y-4">
           <!-- Username input -->
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Username</label>
-            <input type="text" id="newGuestUsername" required placeholder="e.g. jane.doe" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.usernameLabel') %></label>
+            <input type="text" id="newGuestUsername" required placeholder="<%= t('admin.usernamePlaceholderGuest') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
 
           <!-- Email input -->
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Email</label>
-            <input type="email" id="newGuestMail" required placeholder="e.g. jane.doe@email.com" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.emailLabel') %></label>
+            <input type="email" id="newGuestMail" required placeholder="<%= t('admin.emailPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           </div>
 
           <!-- Password input with visibility toggle -->
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Password</label>
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.passwordLabel') %></label>
             <div class="relative">
-              <input type="password" id="newGuestPassword" required placeholder="Min 8 characters" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring pr-10">
+              <input type="password" id="newGuestPassword" required placeholder="<%= t('admin.passwordPlaceholderMin') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring pr-10">
               <button type="button" id="toggleGuestPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                 <svg id="guestEyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -330,8 +330,8 @@
 
           <!-- Confirm password input with match validation -->
           <div>
-            <label class="block text-sm font-medium text-foreground mb-1.5">Confirm Password</label>
-            <input type="password" id="confirmGuestPassword" required placeholder="Re-enter password" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+            <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.confirmPasswordLabel') %></label>
+            <input type="password" id="confirmGuestPassword" required placeholder="<%= t('admin.reenterPasswordPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
             <p id="guestPasswordMatch" class="text-xs mt-1 hidden"></p>
           </div>
 
@@ -340,7 +340,7 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
             </svg>
-            Create Guest
+            <%= t('admin.createGuestButton') %>
           </button>
         </form>
       </div>
@@ -352,7 +352,7 @@
     <div class="grid grid-cols-1 gap-6 mt-6">
       <div class="bg-card border border-border rounded-xl p-5">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-foreground">Possible Duplicate Students</h2>
+          <h2 class="text-lg font-semibold text-foreground"><%= t('admin.duplicateStudentsHeading') %></h2>
           <span id="duplicateStudentsCount" class="text-sm text-muted-foreground"></span>
         </div>
 
@@ -371,7 +371,7 @@
 
     <div class="modal-content relative bg-card border border-border rounded-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-foreground">Edit Guest Account</h2>
+        <h2 class="text-xl font-semibold text-foreground"><%= t('admin.editGuestTitle') %></h2>
         <button onclick="closeGuestModal()" class="p-2 rounded-lg hover:bg-secondary transition-colors">
           <svg class="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -383,19 +383,19 @@
       <form id="editGuestForm" class="space-y-4 pb-6 border-b border-border">
         <input type="hidden" id="editGuestId">
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Username</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.usernameLabel') %></label>
           <input type="text" id="editGuestUsername" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Email</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.emailLabel') %></label>
           <input type="email" id="editGuestMail" required class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
         </div>
 
         <!-- Optional password change - leave blank to keep the current password -->
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">New Password</label>
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.newPasswordLabel') %></label>
           <div class="relative">
-            <input type="password" id="editGuestPassword" placeholder="Leave blank to keep current password" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring pr-10">
+            <input type="password" id="editGuestPassword" placeholder="<%= t('admin.leaveBlankPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring pr-10">
             <button type="button" id="toggleEditGuestPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
               <svg id="editGuestEyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -405,35 +405,35 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-foreground mb-1.5">Confirm New Password</label>
-          <input type="password" id="confirmEditGuestPassword" placeholder="Re-enter new password" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
+          <label class="block text-sm font-medium text-foreground mb-1.5"><%= t('admin.confirmNewPasswordLabel') %></label>
+          <input type="password" id="confirmEditGuestPassword" placeholder="<%= t('admin.reenterNewPasswordPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring">
           <p id="editGuestPasswordMatch" class="text-xs mt-1 hidden"></p>
         </div>
 
         <button type="submit" class="w-full px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors">
-          Save Changes
+          <%= t('admin.saveChangesButton') %>
         </button>
       </form>
 
       <!-- Assigned students: currently linked to this guest, each removable -->
       <div class="pt-6">
-        <h3 class="text-sm font-medium text-foreground mb-3">Assigned Students</h3>
+        <h3 class="text-sm font-medium text-foreground mb-3"><%= t('admin.assignedStudentsHeading') %></h3>
         <div id="assignedStudentsList" class="space-y-2 mb-6">
           <!-- Assigned student rows inserted here by admin.js -->
         </div>
 
         <!-- Assign a student: pool mandatorily filtered to students with no guest (id_user IS NULL) -->
-        <h3 class="text-sm font-medium text-foreground mb-1.5">Assign a Student</h3>
-        <p class="text-xs text-muted-foreground mb-2">Only students not already linked to a guest are shown.</p>
+        <h3 class="text-sm font-medium text-foreground mb-1.5"><%= t('admin.assignStudentHeading') %></h3>
+        <p class="text-xs text-muted-foreground mb-2"><%= t('admin.assignStudentHint') %></p>
         <div class="mb-2">
-          <input type="text" id="assignStudentSearch" placeholder="Search students..." class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
+          <input type="text" id="assignStudentSearch" placeholder="<%= t('admin.studentSearchPlaceholder') %>" class="w-full px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm">
         </div>
         <div class="flex gap-2">
           <select id="unassignedStudentsSelect" class="flex-1 px-3 py-2.5 bg-secondary border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
-            <option value="">Select a student...</option>
+            <option value=""><%= t('admin.selectStudentOption') %></option>
           </select>
           <button id="assignStudentBtn" type="button" class="px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-            Assign
+            <%= t('admin.assignButton') %>
           </button>
         </div>
       </div>
@@ -456,13 +456,13 @@
 
       <!-- Type-to-confirm row, shown only for irreversible actions (e.g. GDPR erasure) -->
       <div id="confirmTypeToConfirmRow" class="hidden mb-4">
-        <label class="text-xs text-muted-foreground block mb-1">Type <strong id="confirmTypeToConfirmWord"></strong> to confirm</label>
+        <label class="text-xs text-muted-foreground block mb-1"><%= t('admin.typeToConfirmPrefix') %> <strong id="confirmTypeToConfirmWord"></strong> <%= t('admin.typeToConfirmSuffix') %></label>
         <input id="confirmTypeToConfirmInput" type="text" class="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" autocomplete="off">
       </div>
 
       <!-- Action buttons (Cancel and Confirm) -->
       <div class="flex gap-3">
-        <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors">Cancel</button>
+        <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 border border-border rounded-lg text-foreground hover:bg-secondary transition-colors"><%= t('common.cancel') %></button>
         <button id="confirmBtn" class="flex-1 px-4 py-2.5 rounded-lg font-medium transition-colors"></button>
       </div>
     </div>
@@ -471,8 +471,15 @@
   <!-- Toast notification container (bottom-right corner) -->
   <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2"></div>
 
+  <script>
+    // Translation dictionary for admin.js's dynamically-rendered content
+    // (tutor/student/guest cards, toasts, confirm modals, etc.)
+    window.translations = <%- JSON.stringify(translations) %>;
+    window.lang = <%- JSON.stringify(lang) %>;
+  </script>
   <!-- JavaScript for admin panel functionality (API calls, form handling, etc.) -->
   <script src="/js/theme.js"></script>
+  <script src="/js/i18n.js"></script>
   <script src="/js/admin.js"></script>
 </body>
 </html>

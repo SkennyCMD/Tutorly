@@ -41,6 +41,9 @@
 // Global State
 
 
+// Reads from window.translations/window.t, injected by admin.ejs (see public/js/i18n.js)
+const translate = window.t || (key => key);
+
 // Array of all tutor objects
 let tutors = [];
 
@@ -91,11 +94,11 @@ async function loadTutors() {
             tutors = await response.json();
             renderTutors();
         } else {
-            showToast('Failed to load tutors', 'error');
+            showToast(translate('admin.loadTutorsFailed'), 'error');
         }
     } catch (error) {
         console.error('Error loading tutors:', error);
-        showToast('Error loading tutors', 'error');
+        showToast(translate('admin.loadTutorsError'), 'error');
     }
 }
 
@@ -112,11 +115,11 @@ async function loadStudents() {
             students = await response.json();
             renderStudents();
         } else {
-            showToast('Failed to load students', 'error');
+            showToast(translate('admin.loadStudentsFailed'), 'error');
         }
     } catch (error) {
         console.error('Error loading students:', error);
-        showToast('Error loading students', 'error');
+        showToast(translate('admin.loadStudentsError'), 'error');
     }
 }
 
@@ -133,11 +136,11 @@ async function loadGuests() {
             guests = await response.json();
             renderGuests();
         } else {
-            showToast('Failed to load guest accounts', 'error');
+            showToast(translate('admin.loadGuestsFailed'), 'error');
         }
     } catch (error) {
         console.error('Error loading guest accounts:', error);
-        showToast('Error loading guest accounts', 'error');
+        showToast(translate('admin.loadGuestsError'), 'error');
     }
 }
 
@@ -209,10 +212,10 @@ function setupEventListeners() {
         match.classList.remove('hidden');
 
         if (e.target.value === pw) {
-            match.textContent = 'Passwords match';
+            match.textContent = translate('admin.passwordsMatch');
             match.className = 'text-xs mt-1 text-primary';
         } else {
-            match.textContent = 'Passwords do not match';
+            match.textContent = translate('admin.passwordsDoNotMatch');
             match.className = 'text-xs mt-1 text-destructive';
         }
     });
@@ -253,7 +256,7 @@ function setupEventListeners() {
 
         // Color and label based on score
         const colors = ['bg-destructive', 'bg-orange-500', 'bg-yellow-500', 'bg-primary'];
-        const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+        const labels = [translate('admin.strengthWeak'), translate('admin.strengthFair'), translate('admin.strengthGood'), translate('admin.strengthStrong')];
 
         // Update strength bars
         for (let i = 1; i <= 4; i++) {
@@ -277,10 +280,10 @@ function setupEventListeners() {
 
         // Check if passwords match
         if (e.target.value === pw) {
-            match.textContent = 'Passwords match';
+            match.textContent = translate('admin.passwordsMatch');
             match.className = 'text-xs mt-1 text-primary';
         } else {
-            match.textContent = 'Passwords do not match';
+            match.textContent = translate('admin.passwordsDoNotMatch');
             match.className = 'text-xs mt-1 text-destructive';
         }
     });
@@ -309,10 +312,10 @@ function setupEventListeners() {
         match.classList.remove('hidden');
 
         if (e.target.value === pw) {
-            match.textContent = 'Passwords match';
+            match.textContent = translate('admin.passwordsMatch');
             match.className = 'text-xs mt-1 text-primary';
         } else {
-            match.textContent = 'Passwords do not match';
+            match.textContent = translate('admin.passwordsDoNotMatch');
             match.className = 'text-xs mt-1 text-destructive';
         }
     });
@@ -347,13 +350,13 @@ function renderTutors() {
     const filtered = tutors.filter(t => t.username.toLowerCase().includes(search));
 
     // Update count display
-    document.getElementById('tutorCount').textContent = `${filtered.length} tutor${filtered.length !== 1 ? 's' : ''}`;
+    document.getElementById('tutorCount').textContent = translate(filtered.length === 1 ? 'admin.tutorCount' : 'admin.tutorCountPlural', { count: filtered.length });
 
     const container = document.getElementById('tutorsList');
 
     // Show empty state if no results
     if (filtered.length === 0) {
-        container.innerHTML = '<p class="text-sm text-muted-foreground py-4 text-center">No tutors found</p>';
+        container.innerHTML = `<p class="text-sm text-muted-foreground py-4 text-center">${translate('admin.noTutorsFound')}</p>`;
         return;
     }
 
@@ -371,21 +374,21 @@ function renderTutors() {
                     <p class="text-sm font-medium text-foreground truncate">${t.username}</p>
                     <div class="flex items-center gap-2 mt-0.5">
                         <span class="text-xs px-1.5 py-0.5 rounded ${t.role === 'STAFF' ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'}">${t.role}</span>
-                        ${isBlocked ? '<span class="text-xs px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">BLOCKED</span>' : ''}
-                        ${isErased ? '<span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">ERASED</span>' : ''}
+                        ${isBlocked ? `<span class="text-xs px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">${translate('admin.blockedBadge')}</span>` : ''}
+                        ${isErased ? `<span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">${translate('admin.erasedBadge')}</span>` : ''}
                     </div>
                 </div>
             </div>
             <div class="flex gap-2">
                 <button onclick="confirmRoleChange(${t.id})" class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg border border-border hover:bg-secondary transition-colors ${isBlocked || isErased ? 'pointer-events-none opacity-50' : ''}">
-                    ${t.role === 'STAFF' ? 'Set GENERIC' : 'Set STAFF'}
+                    ${translate('admin.setRolePrefix')} ${t.role === 'STAFF' ? 'GENERIC' : 'STAFF'}
                 </button>
                 <button onclick="confirmBlockToggle(${t.id})" class="flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${isErased ? 'pointer-events-none opacity-50' : ''} ${isBlocked ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-destructive/20 text-destructive hover:bg-destructive/30'}">
-                    ${isBlocked ? 'Unblock' : 'Block'}
+                    ${isBlocked ? translate('admin.unblockButton') : translate('admin.blockButton')}
                 </button>
             </div>
             <button onclick="confirmTutorErasure(${t.id})" class="w-full mt-2 px-3 py-1.5 text-xs font-medium rounded-lg border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors ${isErased ? 'pointer-events-none opacity-50' : ''}">
-                Erase (GDPR)
+                ${translate('admin.eraseGdprButton')}
             </button>
         </div>
         `;
@@ -410,13 +413,13 @@ function renderStudents() {
     const filtered = students.filter(s => `${s.name} ${s.surname}`.toLowerCase().includes(search));
 
     // Update count display
-    document.getElementById('studentCount').textContent = `${filtered.length} student${filtered.length !== 1 ? 's' : ''}`;
+    document.getElementById('studentCount').textContent = translate(filtered.length === 1 ? 'admin.studentCount' : 'admin.studentCountPlural', { count: filtered.length });
 
     const container = document.getElementById('studentsList');
 
     // Show empty state if no results
     if (filtered.length === 0) {
-        container.innerHTML = '<p class="text-sm text-muted-foreground py-4 text-center">No students found</p>';
+        container.innerHTML = `<p class="text-sm text-muted-foreground py-4 text-center">${translate('admin.noStudentsFound')}</p>`;
         return;
     }
 
@@ -435,7 +438,7 @@ function renderStudents() {
                     <input type="text" data-student-id="${s.id}" data-field="surname" onblur="changeStudentName(${s.id})" ${isErased ? 'disabled' : ''}
                         class="w-20 sm:w-28 min-w-0 px-1.5 py-0.5 bg-transparent border border-transparent rounded text-sm font-medium text-foreground truncate hover:border-border focus:bg-secondary focus:border-border focus:outline-none ${isErased ? 'opacity-50' : ''}">
                 </div>
-                ${isErased ? '<span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">ERASED</span>' : ''}
+                ${isErased ? `<span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">${translate('admin.erasedBadge')}</span>` : ''}
             </div>
             <select onchange="changeStudentClass(${s.id}, this.value)" class="px-2 py-1.5 bg-secondary border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer ${isErased ? 'pointer-events-none opacity-50' : ''}">
                 <option value="M" ${s.studentClass === 'M' ? 'selected' : ''}>M</option>
@@ -443,7 +446,7 @@ function renderStudents() {
                 <option value="U" ${s.studentClass === 'U' ? 'selected' : ''}>U</option>
             </select>
             <button onclick="confirmStudentErasure(${s.id})" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors ${isErased ? 'pointer-events-none opacity-50' : ''}">
-                Erase
+                ${translate('admin.eraseButton')}
             </button>
         </div>
     `;
@@ -492,10 +495,10 @@ function renderDuplicateStudents() {
 
     const duplicateGroups = [...groups.values()].filter(group => group.length > 1);
 
-    countEl.textContent = `${duplicateGroups.length} group${duplicateGroups.length !== 1 ? 's' : ''}`;
+    countEl.textContent = translate(duplicateGroups.length === 1 ? 'admin.groupCount' : 'admin.groupCountPlural', { count: duplicateGroups.length });
 
     if (duplicateGroups.length === 0) {
-        container.innerHTML = '<p class="text-sm text-muted-foreground py-4 text-center">No duplicate students found</p>';
+        container.innerHTML = `<p class="text-sm text-muted-foreground py-4 text-center">${translate('admin.noDuplicatesFound')}</p>`;
         return;
     }
 
@@ -509,14 +512,14 @@ function renderDuplicateStudents() {
         return `
         <div class="border border-border rounded-lg p-3">
             <div class="flex items-center justify-between mb-2">
-                <p class="text-sm font-medium text-foreground">${keep.name} ${keep.surname} <span class="text-muted-foreground font-normal">- Class ${keep.studentClass || '—'}</span></p>
-                <span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">${group.length} students</span>
+                <p class="text-sm font-medium text-foreground">${keep.name} ${keep.surname} <span class="text-muted-foreground font-normal">- ${translate('admin.classPrefix')} ${keep.studentClass || '—'}</span></p>
+                <span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">${group.length} ${translate('admin.studentsCountSuffix')}</span>
             </div>
             ${keep.description ? `<p class="text-xs text-muted-foreground mb-2 truncate">${keep.description}</p>` : ''}
             <div class="flex flex-wrap items-center gap-2">
-                ${sorted.map(s => `<span class="text-xs px-2 py-1 rounded-lg bg-secondary text-foreground">#${s.id}${s.id === keep.id ? ' (kept)' : ''}</span>`).join('')}
+                ${sorted.map(s => `<span class="text-xs px-2 py-1 rounded-lg bg-secondary text-foreground">#${s.id}${s.id === keep.id ? ` (${translate('admin.keptBadge')})` : ''}</span>`).join('')}
                 <button onclick='mergeDuplicateGroup(${keep.id}, ${JSON.stringify(mergeIds)})' class="ml-auto px-3 py-1.5 text-xs font-medium rounded-lg border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors">
-                    Merge into #${keep.id}
+                    ${translate('admin.mergeIntoPrefix')}${keep.id}
                 </button>
             </div>
         </div>
@@ -540,7 +543,8 @@ function renderDuplicateStudents() {
  */
 async function mergeDuplicateGroup(keepId, mergeIds) {
     const count = mergeIds.length;
-    if (!confirm(`Merge ${count} duplicate${count !== 1 ? 's' : ''} into student #${keepId}? Their lessons, prenotations, tests, and lesson packages will be moved to #${keepId}, and the duplicate${count !== 1 ? 's' : ''} will be permanently deleted. This cannot be undone.`)) {
+    const confirmMessage = translate(count === 1 ? 'admin.mergeConfirmSingular' : 'admin.mergeConfirmPlural', { count, keepId });
+    if (!confirm(confirmMessage)) {
         return;
     }
 
@@ -554,19 +558,19 @@ async function mergeDuplicateGroup(keepId, mergeIds) {
             });
 
             if (!response.ok) {
-                showToast(`Failed to merge student #${mergeId}`, 'error');
+                showToast(translate('admin.mergeFailedForId', { id: mergeId }), 'error');
                 await loadStudents();
                 return;
             }
         } catch (error) {
             console.error('Error merging duplicate students:', error);
-            showToast(`Error merging student #${mergeId}`, 'error');
+            showToast(translate('admin.mergeErrorForId', { id: mergeId }), 'error');
             await loadStudents();
             return;
         }
     }
 
-    showToast('Duplicate students merged successfully', 'success');
+    showToast(translate('admin.mergeSuccess'), 'success');
     await loadStudents();
 }
 
@@ -587,12 +591,12 @@ function renderGuests() {
         g.username.toLowerCase().includes(search) || (g.mail || '').toLowerCase().includes(search)
     );
 
-    document.getElementById('guestCount').textContent = `${filtered.length} guest${filtered.length !== 1 ? 's' : ''}`;
+    document.getElementById('guestCount').textContent = translate(filtered.length === 1 ? 'admin.guestCount' : 'admin.guestCountPlural', { count: filtered.length });
 
     const container = document.getElementById('guestsList');
 
     if (filtered.length === 0) {
-        container.innerHTML = '<p class="text-sm text-muted-foreground py-4 text-center">No guest accounts found</p>';
+        container.innerHTML = `<p class="text-sm text-muted-foreground py-4 text-center">${translate('admin.noGuestsFound')}</p>`;
         return;
     }
 
@@ -607,10 +611,10 @@ function renderGuests() {
                 <p class="text-sm font-medium text-foreground truncate">${g.username}</p>
                 <p class="text-xs text-muted-foreground truncate">${g.mail || ''}</p>
             </div>
-            <span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">GUEST</span>
-            ${isErased ? '<span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">ERASED</span>' : `
+            <span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">${translate('admin.guestBadge')}</span>
+            ${isErased ? `<span class="text-xs px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">${translate('admin.erasedBadge')}</span>` : `
             <button onclick="event.stopPropagation(); confirmGuestErasure(${g.id})" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors">
-                Erase
+                ${translate('admin.eraseButton')}
             </button>`}
         </div>
     `;
@@ -645,15 +649,15 @@ async function changeStudentClass(id, newClass) {
             const student = students.find(s => s.id === id);
             if (student) {
                 student.studentClass = newClass;
-                showToast(`${student.name} ${student.surname} changed to class ${newClass}`, 'success');
+                showToast(translate('admin.classChangedSuccess', { name: `${student.name} ${student.surname}`, class: newClass }), 'success');
             }
         } else {
-            showToast('Failed to update student class', 'error');
+            showToast(translate('admin.classChangeFailed'), 'error');
             renderStudents(); // Revert dropdown to previous value
         }
     } catch (error) {
         console.error('Error updating student class:', error);
-        showToast('Error updating student class', 'error');
+        showToast(translate('admin.classChangeError'), 'error');
         renderStudents(); // Revert dropdown to previous value
     }
 }
@@ -685,7 +689,7 @@ async function changeStudentName(id) {
     const surname = surnameInput.value.trim();
 
     if (!name || !surname) {
-        showToast('Name and surname cannot be empty', 'error');
+        showToast(translate('admin.nameRequired'), 'error');
         nameInput.value = student.name;
         surnameInput.value = student.surname;
         return;
@@ -704,16 +708,16 @@ async function changeStudentName(id) {
         if (response.ok) {
             student.name = name;
             student.surname = surname;
-            showToast(`Student renamed to ${name} ${surname}`, 'success');
+            showToast(translate('admin.renameSuccess', { name: `${name} ${surname}` }), 'success');
             renderStudents(); // Refreshes the avatar initials too
         } else {
-            showToast('Failed to update student name', 'error');
+            showToast(translate('admin.renameFailed'), 'error');
             nameInput.value = student.name;
             surnameInput.value = student.surname;
         }
     } catch (error) {
         console.error('Error updating student name:', error);
-        showToast('Error updating student name', 'error');
+        showToast(translate('admin.renameError'), 'error');
         nameInput.value = student.name;
         surnameInput.value = student.surname;
     }
@@ -752,23 +756,23 @@ function confirmRoleChange(id) {
                 // Update local state and re-render
                 tutor.role = newRole;
                 renderTutors();
-                showToast(`${tutor.username} is now ${newRole}`, 'success');
+                showToast(translate('admin.roleChangedSuccess', { username: tutor.username, role: newRole }), 'success');
             } else {
-                showToast('Failed to update tutor role', 'error');
+                showToast(translate('admin.roleChangeFailed'), 'error');
             }
         } catch (error) {
             console.error('Error updating tutor role:', error);
-            showToast('Error updating tutor role', 'error');
+            showToast(translate('admin.roleChangeError'), 'error');
         }
     };
 
     // Show confirmation modal with appropriate styling
     showConfirmModal(
-        'Change Role',
-        `Are you sure you want to change <strong>${tutor.username}</strong> to <strong>${newRole}</strong>?`,
+        translate('admin.changeRoleTitle'),
+        translate('admin.confirmRoleChangeMessage', { username: tutor.username, role: newRole }),
         newRole === 'STAFF' ? 'bg-primary/20' : 'bg-secondary',
         newRole === 'STAFF' ? 'text-primary' : 'text-foreground',
-        'Confirm',
+        translate('admin.confirmButton'),
         'bg-primary text-primary-foreground hover:bg-primary/90'
     );
 }
@@ -805,25 +809,25 @@ function confirmBlockToggle(id) {
                 tutor.status = newStatus;
                 renderTutors();
                 showToast(
-                    `${tutor.username} has been ${willBlock ? 'blocked' : 'unblocked'}`,
+                    translate(willBlock ? 'admin.tutorBlockedSuccess' : 'admin.tutorUnblockedSuccess', { username: tutor.username }),
                     willBlock ? 'error' : 'success'
                 );
             } else {
-                showToast('Failed to update tutor status', 'error');
+                showToast(translate('admin.statusChangeFailed'), 'error');
             }
         } catch (error) {
             console.error('Error updating tutor status:', error);
-            showToast('Error updating tutor status', 'error');
+            showToast(translate('admin.statusChangeError'), 'error');
         }
     };
 
     // Show confirmation modal with destructive or primary styling
     showConfirmModal(
-        willBlock ? 'Block Tutor' : 'Unblock Tutor',
-        `Are you sure you want to ${willBlock ? 'block' : 'unblock'} <strong>${tutor.username}</strong>?${willBlock ? ' They will not be able to log in.' : ''}`,
+        translate(willBlock ? 'admin.blockTutorTitle' : 'admin.unblockTutorTitle'),
+        translate(willBlock ? 'admin.confirmBlockMessage' : 'admin.confirmUnblockMessage', { username: tutor.username }),
         willBlock ? 'bg-destructive/20' : 'bg-primary/20',
         willBlock ? 'text-destructive' : 'text-primary',
-        willBlock ? 'Block' : 'Unblock',
+        willBlock ? translate('admin.blockButton') : translate('admin.unblockButton'),
         willBlock ? 'bg-destructive text-white hover:bg-destructive/90' : 'bg-primary text-primary-foreground hover:bg-primary/90'
     );
 }
@@ -858,22 +862,22 @@ function confirmTutorErasure(id) {
                 const erased = await response.json();
                 Object.assign(tutor, erased);
                 renderTutors();
-                showToast(`${originalUsername}'s data has been erased`, 'success');
+                showToast(translate('admin.eraseSuccess', { name: originalUsername }), 'success');
             } else if (response.status === 409) {
-                showToast('This tutor was already erased', 'error');
+                showToast(translate('admin.tutorAlreadyErased'), 'error');
             } else {
-                showToast('Failed to erase tutor', 'error');
+                showToast(translate('admin.eraseTutorFailed'), 'error');
             }
         } catch (error) {
             console.error('Error erasing tutor:', error);
-            showToast('Error erasing tutor', 'error');
+            showToast(translate('admin.eraseTutorError'), 'error');
         }
     };
 
     showConfirmModal(
-        'Erase Tutor Data (GDPR)',
-        `This permanently anonymizes <strong>${tutor.username}</strong>'s personal data (username, password, email). Their lesson/test/booking history is kept for record-keeping but is no longer linked to an identifiable person. <strong>This cannot be undone.</strong>`,
-        'bg-destructive/20', 'text-destructive', 'Erase', 'bg-destructive text-white hover:bg-destructive/90',
+        translate('admin.eraseTutorTitle'),
+        translate('admin.eraseTutorMessage', { username: tutor.username }),
+        'bg-destructive/20', 'text-destructive', translate('admin.eraseButton'), 'bg-destructive text-white hover:bg-destructive/90',
         tutor.username
     );
 }
@@ -903,22 +907,22 @@ function confirmGuestErasure(id) {
                 const erased = await response.json();
                 Object.assign(guest, erased);
                 renderGuests();
-                showToast(`${originalUsername}'s data has been erased`, 'success');
+                showToast(translate('admin.eraseSuccess', { name: originalUsername }), 'success');
             } else if (response.status === 409) {
-                showToast('This guest account was already erased', 'error');
+                showToast(translate('admin.guestAlreadyErased'), 'error');
             } else {
-                showToast('Failed to erase guest account', 'error');
+                showToast(translate('admin.eraseGuestFailed'), 'error');
             }
         } catch (error) {
             console.error('Error erasing guest account:', error);
-            showToast('Error erasing guest account', 'error');
+            showToast(translate('admin.eraseGuestError'), 'error');
         }
     };
 
     showConfirmModal(
-        'Erase Guest Data (GDPR)',
-        `This permanently anonymizes <strong>${guest.username}</strong>'s personal data (username, password, email). Any student(s) linked to this account are not affected. <strong>This cannot be undone.</strong>`,
-        'bg-destructive/20', 'text-destructive', 'Erase', 'bg-destructive text-white hover:bg-destructive/90',
+        translate('admin.eraseGuestTitle'),
+        translate('admin.eraseGuestMessage', { username: guest.username }),
+        'bg-destructive/20', 'text-destructive', translate('admin.eraseButton'), 'bg-destructive text-white hover:bg-destructive/90',
         guest.username
     );
 }
@@ -949,22 +953,22 @@ function confirmStudentErasure(id) {
                 const erased = await response.json();
                 Object.assign(student, erased);
                 renderStudents();
-                showToast(`${fullName}'s data has been erased`, 'success');
+                showToast(translate('admin.eraseSuccess', { name: fullName }), 'success');
             } else if (response.status === 409) {
-                showToast('This student was already erased', 'error');
+                showToast(translate('admin.studentAlreadyErased'), 'error');
             } else {
-                showToast('Failed to erase student', 'error');
+                showToast(translate('admin.eraseStudentFailed'), 'error');
             }
         } catch (error) {
             console.error('Error erasing student:', error);
-            showToast('Error erasing student', 'error');
+            showToast(translate('admin.eraseStudentError'), 'error');
         }
     };
 
     showConfirmModal(
-        'Erase Student Data (GDPR)',
-        `This permanently anonymizes <strong>${fullName}</strong>'s personal data (name, surname, notes). Their lesson/test/booking/pack history is kept for record-keeping but is no longer linked to an identifiable person. <strong>This cannot be undone.</strong>`,
-        'bg-destructive/20', 'text-destructive', 'Erase', 'bg-destructive text-white hover:bg-destructive/90',
+        translate('admin.eraseStudentTitle'),
+        translate('admin.eraseStudentMessage', { name: fullName }),
+        'bg-destructive/20', 'text-destructive', translate('admin.eraseButton'), 'bg-destructive text-white hover:bg-destructive/90',
         fullName
     );
 }
@@ -1079,13 +1083,13 @@ async function handleCreateTutor(e) {
 
     // Validate password length
     if (password.length < 8) {
-        showToast('Password must be at least 8 characters', 'error');
+        showToast(translate('admin.passwordMinLength'), 'error');
         return;
     }
 
     // Validate password confirmation
     if (password !== confirm) {
-        showToast('Passwords do not match', 'error');
+        showToast(translate('admin.passwordsDoNotMatch'), 'error');
         return;
     }
 
@@ -1114,14 +1118,14 @@ async function handleCreateTutor(e) {
             document.getElementById('passwordStrength').classList.add('hidden');
             document.getElementById('passwordMatch').classList.add('hidden');
 
-            showToast(`Tutor "${username}" created as ${role}`, 'success');
+            showToast(translate('admin.tutorCreatedSuccess', { username, role }), 'success');
         } else {
             const error = await response.json();
-            showToast(error.error || 'Failed to create tutor', 'error');
+            showToast(error.error || translate('admin.createTutorFailed'), 'error');
         }
     } catch (error) {
         console.error('Error creating tutor:', error);
-        showToast('Error creating tutor', 'error');
+        showToast(translate('admin.createTutorError'), 'error');
     }
 }
 
@@ -1151,12 +1155,12 @@ async function handleCreateGuest(e) {
     const confirm = document.getElementById('confirmGuestPassword').value;
 
     if (password.length < 8) {
-        showToast('Password must be at least 8 characters', 'error');
+        showToast(translate('admin.passwordMinLength'), 'error');
         return;
     }
 
     if (password !== confirm) {
-        showToast('Passwords do not match', 'error');
+        showToast(translate('admin.passwordsDoNotMatch'), 'error');
         return;
     }
 
@@ -1179,14 +1183,14 @@ async function handleCreateGuest(e) {
             e.target.reset();
             document.getElementById('guestPasswordMatch').classList.add('hidden');
 
-            showToast(`Guest account "${username}" created`, 'success');
+            showToast(translate('admin.guestCreatedSuccess', { username }), 'success');
         } else {
             const error = await response.json();
-            showToast(error.error || 'Failed to create guest account', 'error');
+            showToast(error.error || translate('admin.createGuestFailed'), 'error');
         }
     } catch (error) {
         console.error('Error creating guest account:', error);
-        showToast('Error creating guest account', 'error');
+        showToast(translate('admin.createGuestError'), 'error');
     }
 }
 
@@ -1254,7 +1258,7 @@ async function refreshGuestModalStudents() {
         renderUnassignedStudentsSelect(unassigned);
     } catch (error) {
         console.error('Error loading guest students:', error);
-        showToast('Error loading students', 'error');
+        showToast(translate('admin.loadStudentsError'), 'error');
     }
 }
 
@@ -1268,7 +1272,7 @@ function renderAssignedStudents(students) {
     const container = document.getElementById('assignedStudentsList');
 
     if (students.length === 0) {
-        container.innerHTML = '<p class="text-sm text-muted-foreground py-2">No students assigned yet</p>';
+        container.innerHTML = `<p class="text-sm text-muted-foreground py-2">${translate('admin.noStudentsAssignedYet')}</p>`;
         return;
     }
 
@@ -1281,7 +1285,7 @@ function renderAssignedStudents(students) {
                 <p class="text-sm text-foreground truncate">${s.name} ${s.surname}</p>
             </div>
             <button onclick="unassignStudent(${s.id})" class="px-2.5 py-1 text-xs font-medium rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-colors">
-                Unassign
+                ${translate('admin.unassignButton')}
             </button>
         </div>
     `).join('');
@@ -1311,7 +1315,7 @@ function renderUnassignedStudentsSelect(students) {
  */
 function populateUnassignedStudentsSelect(students) {
     const select = document.getElementById('unassignedStudentsSelect');
-    select.innerHTML = '<option value="">Select a student...</option>' +
+    select.innerHTML = `<option value="">${translate('admin.selectStudentOption')}</option>` +
         students.map(s => `<option value="${s.id}">${s.name} ${s.surname}</option>`).join('');
 }
 
@@ -1345,14 +1349,14 @@ async function assignSelectedStudent() {
 
         if (response.ok) {
             await refreshGuestModalStudents();
-            showToast('Student assigned', 'success');
+            showToast(translate('admin.studentAssignedSuccess'), 'success');
         } else {
             const error = await response.json();
-            showToast(error.error || 'Failed to assign student', 'error');
+            showToast(error.error || translate('admin.assignStudentFailed'), 'error');
         }
     } catch (error) {
         console.error('Error assigning student:', error);
-        showToast('Error assigning student', 'error');
+        showToast(translate('admin.assignStudentError'), 'error');
     }
 }
 
@@ -1372,14 +1376,14 @@ async function unassignStudent(studentId) {
 
         if (response.ok) {
             await refreshGuestModalStudents();
-            showToast('Student unassigned', 'success');
+            showToast(translate('admin.studentUnassignedSuccess'), 'success');
         } else {
             const error = await response.json();
-            showToast(error.error || 'Failed to unassign student', 'error');
+            showToast(error.error || translate('admin.unassignStudentFailed'), 'error');
         }
     } catch (error) {
         console.error('Error unassigning student:', error);
-        showToast('Error unassigning student', 'error');
+        showToast(translate('admin.unassignStudentError'), 'error');
     }
 }
 
@@ -1400,11 +1404,11 @@ async function handleEditGuestProfile(e) {
     // Password is optional here - only validate it if the admin actually typed one
     if (password) {
         if (password.length < 8) {
-            showToast('Password must be at least 8 characters', 'error');
+            showToast(translate('admin.passwordMinLength'), 'error');
             return;
         }
         if (password !== confirmPassword) {
-            showToast('Passwords do not match', 'error');
+            showToast(translate('admin.passwordsDoNotMatch'), 'error');
             return;
         }
     }
@@ -1432,14 +1436,14 @@ async function handleEditGuestProfile(e) {
             document.getElementById('confirmEditGuestPassword').value = '';
             document.getElementById('editGuestPasswordMatch').classList.add('hidden');
 
-            showToast('Guest account updated', 'success');
+            showToast(translate('admin.guestUpdatedSuccess'), 'success');
         } else {
             const error = await response.json();
-            showToast(error.error || 'Failed to update guest account', 'error');
+            showToast(error.error || translate('admin.updateGuestFailed'), 'error');
         }
     } catch (error) {
         console.error('Error updating guest account:', error);
-        showToast('Error updating guest account', 'error');
+        showToast(translate('admin.updateGuestError'), 'error');
     }
 }
 
@@ -1475,7 +1479,7 @@ function renderRecentlyCreated() {
         </div>
         <div class="flex-1 min-w-0">
         <p class="text-sm text-foreground truncate">${r.username}</p>
-        <p class="text-xs text-muted-foreground">${r.role} &middot; ${r.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+        <p class="text-xs text-muted-foreground">${r.role} &middot; ${r.time.toLocaleTimeString(window.lang || 'en', { hour: '2-digit', minute: '2-digit' })}</p>
         </div>
     </div>
     `).join('');

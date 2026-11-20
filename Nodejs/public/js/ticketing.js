@@ -4,10 +4,11 @@
 // POST /api/tickets (window.canManageTickets gates which of these a given
 // viewer can do - see card() and the New Ticket button below).
 const tickets = window.initialTickets || [];
+const translate = window.t || (key => key);
 const statusStyles = { open: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20', managing: 'bg-amber-500/10 text-amber-300 border-amber-500/20', closed: 'bg-red-500/10 text-red-300 border-red-500/20' };
-const dateFormat = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+const dateFormat = new Intl.DateTimeFormat(window.lang || 'en', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 const safe = (value) => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-function formatDate(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? 'Date unavailable' : dateFormat.format(date); }
+function formatDate(value) { const date = new Date(value); return Number.isNaN(date.getTime()) ? translate('ticketing.dateUnavailable') : dateFormat.format(date); }
 
 // Finds a ticket by id and replaces it in place with the server's response,
 // so re-rendering always reflects the real (persisted) state - not a locally
@@ -30,11 +31,11 @@ async function startManaging(ticket) {
             render();
         } else {
             const error = await response.json();
-            alert(`Failed to update ticket: ${error.error || 'Unknown error'}`);
+            alert(translate('ticketing.updateTicketFailed', { error: error.error || translate('calendar.errors.unknownError') }));
         }
     } catch (error) {
         console.error('Error managing ticket:', error);
-        alert('Failed to update ticket. Please try again.');
+        alert(translate('ticketing.updateTicketRetry'));
     }
 }
 
@@ -75,11 +76,11 @@ document.getElementById('closeTicketForm').addEventListener('submit', async (e) 
             render();
         } else {
             const error = await response.json();
-            alert(`Failed to close ticket: ${error.error || 'Unknown error'}`);
+            alert(translate('ticketing.closeTicketFailed', { error: error.error || translate('calendar.errors.unknownError') }));
         }
     } catch (error) {
         console.error('Error closing ticket:', error);
-        alert('Failed to close ticket. Please try again.');
+        alert(translate('ticketing.closeTicketRetry'));
     }
 });
 
@@ -119,11 +120,11 @@ document.getElementById('newTicketForm').addEventListener('submit', async (e) =>
             window.location.reload();
         } else {
             const error = await response.json();
-            alert(`Failed to submit ticket: ${error.error || 'Unknown error'}`);
+            alert(translate('ticketing.submitTicketFailed', { error: error.error || translate('calendar.errors.unknownError') }));
         }
     } catch (error) {
         console.error('Error submitting ticket:', error);
-        alert('Failed to submit ticket. Please try again.');
+        alert(translate('ticketing.submitTicketRetry'));
     }
 });
 
@@ -132,7 +133,7 @@ function card(ticket, withActions = false) {
     article.className = 'rounded-xl border border-border bg-card p-4 sm:p-5';
     const top = document.createElement('div');
     top.className = 'flex flex-wrap items-start justify-between gap-3';
-    top.innerHTML = `<div><p class="text-xs font-semibold tracking-wide text-muted-foreground">T-${safe(ticket.id)}</p><p class="mt-1 text-sm text-muted-foreground">${safe(ticket.requesterUsername || 'Unknown')} &middot; ${safe(formatDate(ticket.creation))}</p></div><span class="rounded-full border px-2.5 py-1 text-xs font-medium capitalize ${statusStyles[ticket.status]}">${safe(ticket.status)}</span>`;
+    top.innerHTML = `<div><p class="text-xs font-semibold tracking-wide text-muted-foreground">T-${safe(ticket.id)}</p><p class="mt-1 text-sm text-muted-foreground">${safe(ticket.requesterUsername || translate('ticketing.unknownUser'))} &middot; ${safe(formatDate(ticket.creation))}</p></div><span class="rounded-full border px-2.5 py-1 text-xs font-medium capitalize ${statusStyles[ticket.status]}">${safe(ticket.status)}</span>`;
     const body = document.createElement('p');
     body.className = 'mt-4 whitespace-pre-wrap text-sm leading-6 text-foreground';
     body.textContent = ticket.content;
@@ -146,8 +147,8 @@ function card(ticket, withActions = false) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'mt-4 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90';
-        button.textContent = 'Start managing';
-        button.setAttribute('aria-label', `Start managing ticket T-${ticket.id}`);
+        button.textContent = translate('ticketing.startManagingButton');
+        button.setAttribute('aria-label', translate('ticketing.startManagingAriaLabel', { id: ticket.id }));
         button.addEventListener('click', () => startManaging(ticket));
         article.append(button);
     }
@@ -155,29 +156,29 @@ function card(ticket, withActions = false) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'mt-4 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:bg-secondary';
-        button.textContent = 'Mark as closed';
-        button.setAttribute('aria-label', `Close ticket T-${ticket.id}`);
+        button.textContent = translate('ticketing.markAsClosedButton');
+        button.setAttribute('aria-label', translate('ticketing.closeTicketAriaLabel', { id: ticket.id }));
         button.addEventListener('click', () => openCloseTicketModal(ticket));
         article.append(button);
     }
     if (ticket.status === 'closed') {
         const meta = document.createElement('p');
         meta.className = 'mt-3 text-xs text-muted-foreground';
-        meta.innerHTML = `Opened ${safe(formatDate(ticket.creation))} &middot;<br> Closed ${safe(formatDate(ticket.closure))} &middot;<br> Resolved by ${safe(ticket.resolverUsername || 'Unknown')}`;
+        meta.innerHTML = `${translate('ticketing.openedPrefix')} ${safe(formatDate(ticket.creation))} &middot;<br> ${translate('ticketing.closedPrefix')} ${safe(formatDate(ticket.closure))} &middot;<br> ${translate('ticketing.resolvedByPrefix')} ${safe(ticket.resolverUsername || translate('ticketing.unknownUser'))}`;
         article.append(meta);
 
         const toggle = document.createElement('button');
         toggle.type = 'button';
         toggle.className = 'mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80';
         toggle.setAttribute('aria-expanded', 'false');
-        toggle.textContent = 'Show admin comment';
+        toggle.textContent = translate('ticketing.showAdminComment');
         const comment = document.createElement('div');
         comment.className = 'mt-3 hidden rounded-lg border border-border bg-background p-3 text-sm leading-6 text-muted-foreground';
-        comment.textContent = ticket.comment || 'No admin comment was added to this ticket.';
+        comment.textContent = ticket.comment || translate('ticketing.noAdminComment');
         toggle.addEventListener('click', () => {
             const visible = comment.classList.toggle('hidden') === false;
             toggle.setAttribute('aria-expanded', String(visible));
-            toggle.textContent = visible ? 'Hide admin comment' : 'Show admin comment';
+            toggle.textContent = visible ? translate('ticketing.hideAdminComment') : translate('ticketing.showAdminComment');
         });
         article.append(toggle, comment);
     }
@@ -202,16 +203,16 @@ function render() {
     const open = tickets.filter(t => t.status === 'open').sort((a, b) => new Date(b.creation) - new Date(a.creation));
     const managing = tickets.filter(t => t.status === 'managing').sort((a, b) => new Date(b.creation) - new Date(a.creation));
     const closed = tickets.filter(t => t.status === 'closed').sort((a, b) => new Date(b.creation) - new Date(a.creation));
-    fillList('openList', open, 'No open tickets.', true);
-    fillList('managingList', managing, 'No tickets are being managed.');
-    fillList('closedList', closed, 'No closed tickets.');
+    fillList('openList', open, translate('ticketing.noOpenTickets'), true);
+    fillList('managingList', managing, translate('ticketing.noManagingTickets'));
+    fillList('closedList', closed, translate('ticketing.noClosedTickets'));
     document.getElementById('openCount').textContent = open.length;
     document.getElementById('managingCount').textContent = managing.length;
     document.getElementById('closedCount').textContent = closed.length;
     // "Total" deliberately excludes closed tickets - it's meant to reflect
     // the current workload (open + managing), not the full historical count.
     const activeCount = open.length + managing.length;
-    document.getElementById('summary').innerHTML = `<span class="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground">${activeCount} total</span><span class="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-300">${open.length} need review</span>`;
+    document.getElementById('summary').innerHTML = `<span class="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground">${activeCount} ${translate('ticketing.totalSuffix')}</span><span class="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-300">${open.length} ${translate('ticketing.needReviewSuffix')}</span>`;
 }
 
 function setMenu(isOpen) {

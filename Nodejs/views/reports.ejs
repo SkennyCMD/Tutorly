@@ -41,7 +41,7 @@
           <% if (user && user.role==='STAFF' ) { %>
             <a href="/staffPanel" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.staffPanel') %></a>
             <% } %>
-          <a href="/ticketing" class="text-muted-foreground hover:text-foreground transition-colors">Tickets</a>
+          <a href="/ticketing" class="text-muted-foreground hover:text-foreground transition-colors"><%= t('common.tickets') %></a>
         </nav>
 
         <!-- Settings menu (theme/notifications/logout) button (Desktop) -->
@@ -131,7 +131,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M9 12h3.75M9 15h3.75M9 18h3.75m3-15H9a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 009 21h9a2.25 2.25 0 002.25-2.25V9M15 3v4.5A1.5 1.5 0 0016.5 9H21M15 3l6 6" />
         </svg>
-        Tickets
+        <%= t('common.tickets') %>
       </a>
 
           <!-- Settings (theme/notifications/logout) in mobile menu -->
