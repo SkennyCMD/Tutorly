@@ -1,7 +1,8 @@
 /*
  * Centralized theme tokens for Tutorly.
- * Every page includes this file plus partials/theme-config.ejs (which maps
- * these variables into Tailwind's color palette) and public/js/theme.js
+ * Every page includes this file plus the built public/css/tailwind.css
+ * (whose tailwind.config.js, at the project root, maps these variables into
+ * Tailwind's color palette) and public/js/theme.js
  * (which flips the [data-theme] attribute below). Change a color here once
  * and it updates everywhere.
  *
