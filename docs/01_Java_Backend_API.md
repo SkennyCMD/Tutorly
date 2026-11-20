@@ -3,7 +3,7 @@
 ---
 
 **Document**: 01_Java_Backend_API.md  
-**Last Updated**: November 19, 2026  
+**Last Updated**: November 20, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -1333,6 +1333,35 @@ Rejected with `400` if the ticket isn't currently `open` - a ticket already bein
 `comment` is optional (nullable). Rejected with `400` if the ticket isn't currently `managing` - an `open` ticket must be picked up first, and an already-`closed` one can't be closed again. On success, `closure` is set to now.
 
 Role restriction is enforced in the Node.js frontend layer, not here: submitting a ticket for yourself is GENERIC/STAFF, never an admin (who has no tutor session to attribute it to); picking one up or closing it is admin only, and `adminId`/`userId` are always forced from the caller's own session, never taken from the request body as sent by the client.
+
+---
+
+### DashboardNote
+
+A time-bound, Markdown notice an admin publishes to the shared board, fanned out at publication time to every `STAFF`/`GENERIC` user (never `GUEST`) via the `see_dashboard_note` join table. See [03_Nodejs_Frontend.md - Dashboard Notes](03_Nodejs_Frontend.md#dashboard-notes) for the two UIs built on this (admin publishing page and the per-user widget), and [07_Database_Configuration.md - DashboardNote](07_Database_Configuration.md#12-dashboardnote) for the table schema.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/dashboard-notes` | List every notice, active and expired alike |
+| GET | `/api/dashboard-notes/{id}` | Notice details by ID |
+| GET | `/api/dashboard-notes/user/{userId}` | Notices distributed to one user (`see_dashboard_note`) |
+| POST | `/api/dashboard-notes` | Publish a new notice, fanned out to every `STAFF`/`GENERIC` user |
+| DELETE | `/api/dashboard-notes/{noteId}/user/{userId}` | Mark a notice as viewed by one user - removes their `see_dashboard_note` row |
+| DELETE | `/api/dashboard-notes/{noteId}/recipients` | Clear every `see_dashboard_note` row for a notice |
+
+**Example Request Body (POST) - with DTO:**
+```json
+{
+  "content": "## This week\n\nReview chapter 3 before Friday's test.",
+  "expiration": "2026-12-01T23:59:59",
+  "adminId": 1
+}
+```
+`content` must be non-blank and `expiration` must be today or in the future (`400` otherwise); `creation` is always set server-side to now. On success, the note is distributed to every current `STAFF`/`GENERIC` user (`UserRepository.findByRoleIn`) - accounts created afterward are never retroactively added, and `GUEST` accounts are never recipients.
+
+`DELETE .../user/{userId}` and `DELETE .../recipients` are both idempotent: a 404 only if the note itself doesn't exist, otherwise 204 regardless of whether there was actually a row to remove.
+
+Role restriction is enforced in the Node.js frontend layer, not here: publishing is admin only; viewing the board (filtered to just a user's own notices) and marking one as viewed is any authenticated `STAFF`/`GENERIC` session - `GUEST` is blocked, since they're never a recipient. `DELETE .../recipients` isn't reachable from a Node.js route at all - it's called only by the daily midnight cleanup job (see [03_Nodejs_Frontend.md - Dashboard Note Expiration Cleanup](03_Nodejs_Frontend.md#dashboard-note-expiration-cleanup)), which clears a note's recipients once it's expired, whether or not anyone ever viewed it.
 
 ---
 

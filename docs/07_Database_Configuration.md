@@ -5,7 +5,7 @@ This document provides comprehensive information about the Tutorly database stru
 ---
 
 **Document**: 07_Database_Configuration.md  
-**Last Updated**: November 19, 2026  
+**Last Updated**: November 20, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -34,7 +34,7 @@ Tutorly uses **PostgreSQL 12+** as its relational database management system. Th
 - **Tests**: Student assessments and grades
 - **Calendar Notes**: Planning and task management
 - **Availability / Exception Days**: Tutor weekly availability and one-off exceptions to it, with a STAFF-approval workflow for exceptions
-- **Dashboard Notes**: Time-bound notices from admins to tutors (schema only - no application code yet)
+- **Dashboard Notes**: Time-bound notices from admins to STAFF/GENERIC tutors, fanned out via `see_dashboard_note` at publication time and cleared on a daily midnight schedule once expired
 - **Tickets**: Support tickets raised by STAFF/GENERIC tutors and handled by admins, with an open/managing/closed lifecycle
 
 ### Database Specifications
@@ -272,32 +272,28 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 
 #### 12. **DashboardNote**
 
-> **Schema only** - same as `Availability` above, no application code yet.
-
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | BIGINT | PRIMARY KEY, AUTO_INCREMENT | Unique note ID |
-| `content` | TEXT | NOT NULL | Notice text |
+| `content` | TEXT | NOT NULL | Notice text, written in Markdown |
 | `creation` | TIMESTAMP | NOT NULL | When the notice was created |
 | `expiration` | TIMESTAMP | NOT NULL | When the notice stops being shown |
 | `id_admin` | BIGINT | FK → Admin(id), NOT NULL | Admin who authored the notice |
 
-**Purpose**: Future home for time-bound notices an admin publishes to tutors' dashboards. Deleting the authoring admin cascades to their notes.
+**Purpose**: Time-bound notices an admin publishes to STAFF/GENERIC tutors' dashboards - see [01_Java_Backend_API.md - DashboardNote](01_Java_Backend_API.md#dashboardnote) for the application layer and [03_Nodejs_Frontend.md - Dashboard Notes](03_Nodejs_Frontend.md#dashboard-notes) for both UIs. Deleting the authoring admin cascades to their notes.
 
-**Many-to-Many Relationship**: `DashboardNote ↔ User` (via `see_dashboard_note` join table) - tracks which tutors have seen which notice.
+**Many-to-Many Relationship**: `DashboardNote ↔ User` (via `see_dashboard_note` join table) - every current STAFF/GENERIC user at publication time (never GUEST), cleared either by that user "signing as viewed" or, once the note has expired, by the daily midnight cleanup job - whichever comes first.
 
 ---
 
 #### 13. **SeeDashboardNote** (Associative Entity)
 
-> **Schema only** - same as `Availability` above, no application code yet.
-
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| `id_dashboard_note` | BIGINT | FK → DashboardNote(id) | The notice seen |
-| `id_tutor` | BIGINT | FK → User(id) | The tutor who saw it |
+| `id_dashboard_note` | BIGINT | FK → DashboardNote(id) | The notice distributed |
+| `id_tutor` | BIGINT | FK → User(id) | The user it was distributed to |
 
-**Purpose**: Join table recording that a given tutor has seen a given dashboard note. Both FKs `ON DELETE CASCADE`.
+**Purpose**: Join table recording which users a dashboard note was distributed to - not literally "seen", despite the column naming: a row exists from publication until either that user signs it as viewed (`DELETE /api/dashboard-notes/{noteId}/user/{userId}`) or the note expires and the daily cleanup job clears every row for it at once (`DELETE /api/dashboard-notes/{noteId}/recipients`). Both FKs `ON DELETE CASCADE`.
 
 **Composite Primary Key**: (`id_dashboard_note`, `id_tutor`)
 
@@ -337,8 +333,8 @@ Full REST API (`PackController`/`PackService`) - see [01_Java_Backend_API.md - P
 | **User → Student** | One-to-Many, optional | A `GUEST` user can be linked to student(s) via `Student.id_user` - visibility restriction enforced in the Node.js frontend |
 | **User → Availability** | One-to-Many | A tutor has many recurring weekly availability slots |
 | **User → ExceptionDay** | One-to-Many (2 roles) | As the requesting tutor OR as the reviewing staff member |
-| **Admin → DashboardNote** | One-to-Many | An admin authors many dashboard notices (schema only) |
-| **User → DashboardNote** | Many-to-Many | Tutors see notices; tracked via `see_dashboard_note` (schema only) |
+| **Admin → DashboardNote** | One-to-Many | An admin authors many dashboard notices |
+| **User → DashboardNote** | Many-to-Many | A note is distributed to every STAFF/GENERIC user; tracked via `see_dashboard_note` until viewed or expired |
 | **User → Ticket** | One-to-Many, optional | A user raises many support tickets |
 | **Admin → Ticket** | One-to-Many, optional | An admin handles many support tickets |
 
@@ -969,4 +965,4 @@ ORDER BY pg_total_relation_size(tablename::regclass) DESC;
 
 ---
 
-**Last Updated**: November 17, 2026
+**Last Updated**: November 20, 2026

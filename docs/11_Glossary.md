@@ -5,7 +5,7 @@ Technical terms and acronyms used in the Tutorly project.
 ---
 
 **Document**: 11_Glossary.md  
-**Last Updated**: November 19, 2026  
+**Last Updated**: November 20, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -86,7 +86,7 @@ Design pattern where dependencies are "injected" rather than created by the clas
 Object used to transfer data between layers or processes, often with specific fields for API responses.
 
 **Dashboard Note**  
-Database table (schema only, no application code yet) holding time-bound notices an admin publishes to tutors' dashboards, paired with a `see_dashboard_note` join table tracking which tutors have seen each one.
+A time-bound, Markdown notice an admin publishes, fanned out at publication time to every STAFF/GENERIC user (never GUEST) via the `see_dashboard_note` join table. A user's row is cleared either by them "signing it as viewed" or, once the note expires, by a daily midnight cleanup job - whichever comes first. See [01_Java_Backend_API.md - DashboardNote](01_Java_Backend_API.md#dashboardnote).
 
 ---
 
@@ -422,4 +422,4 @@ HTTP header used for API key authentication in Tutorly.
 
 ---
 
-**Last Updated**: November 17, 2026
+**Last Updated**: November 20, 2026

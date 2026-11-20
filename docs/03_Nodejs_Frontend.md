@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: November 19, 2026  
+**Last Updated**: November 20, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -1249,6 +1249,19 @@ Both `PUT` routes re-enrich the Java response with `requesterUsername`/`resolver
 
 ---
 
+### API Endpoints - Dashboard Notes
+
+Backs both UIs built on the Java `DashboardNote` entity (see [01_Java_Backend_API.md - DashboardNote](01_Java_Backend_API.md#dashboardnote)) - see [Dashboard Notes](#dashboard-notes) for the full feature.
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/dashboardNotes` | Admin | Render the note-publishing page with every notice, active and expired alike |
+| POST | `/api/dashboard-notes` | Admin | Publish a new notice. `adminId` forced server-side from the session; the client's date-only `expiresAt` is converted to end-of-day (`T23:59:59`) before forwarding. `400` if `content` or `expiresAt` is missing |
+| GET | `/home` | Tutor | Embeds this user's own active notices (`GET /api/dashboard-notes/user/:userId`), soonest-expiring first - skipped entirely for a `guest` session, which always gets an empty list |
+| POST | `/api/dashboard-notes/:noteId/viewed` | Tutor, blocked for `guest` (`blockGuestApi`) | "Sign as viewed" - clears this user's own `see_dashboard_note` row (`DELETE /api/dashboard-notes/:noteId/user/:userId` on the Java side). `userId` always forced from the session, never client-supplied |
+
+---
+
 ### API Endpoints - Tests (Evaluations)
 
 Backs the `/reports` (Evaluations) page. `tutorId` is always taken from the session on create - there's no tutor-assignment field on this form.
@@ -1603,6 +1616,24 @@ A "New Ticket" button (not rendered at all for an admin viewer) opens a modal (`
 ### Navigation
 
 A "Tickets" link (last item, after Staff Panel where applicable) was added to every tutor-facing page's navbar (Dashboard, Calendar, Availability, My Lessons, Reports, Staff Panel, Student Profile) for STAFF/GENERIC, and to the admin panel's navbar - both pointing at this same page, rendered according to viewer type.
+
+---
+
+## Dashboard Notes
+
+A time-bound, Markdown notice an admin publishes to the shared board, backed by the Java `DashboardNote` entity (see [01_Java_Backend_API.md - DashboardNote](01_Java_Backend_API.md#dashboardnote)). Two separate pages built on it: an admin-only publishing page, and a read-only widget every `STAFF`/`GENERIC` tutor sees on their own Dashboard - plus a scheduled job that cleans up expired notices regardless of whether anyone ever looked at them.
+
+### Publishing a Notice (Admin)
+
+The `/dashboardNotes` page (`views/dashboardNotes.ejs` + `public/js/dashboardNotes.js` + `public/css/dashboardNotes.css`), admin-only, lists every notice split into two columns - Active and Expired - sorted soonest-expiring-first and most-recently-expired-first respectively. Content is written and previewed as Markdown (rendered client-side with `marked` + `DOMPurify`, same pairing as the [privacy notice](#privacy-and-cookie-policy-pages)). Publishing a note (`POST /api/dashboard-notes`, content + an end date) reloads the page; on the Java side, it's immediately fanned out to every current `STAFF`/`GENERIC` user via `see_dashboard_note` (`GUEST` accounts are never recipients, and a user created afterward isn't retroactively added to an already-published note). A "Dashboard notes" link was added to the admin panel's and the Ticketing page's admin-view navbars.
+
+### Viewing Your Notices (Tutor/Staff)
+
+The home/dashboard page (`views/home.ejs` + `public/js/dashboardNotesWidget.js`) shows a strip of cards above the mini calendar, one per notice this user was actually distributed (`GET /api/dashboard-notes/user/:userId`, not every notice ever published), filtered to just the still-active ones and sorted soonest-expiring-first; the whole section is hidden when there's nothing to show. Each card renders its content as Markdown (same `marked` + `DOMPurify` pairing as the admin page) and has a "Sign as viewed" button: clicking it calls `POST /api/dashboard-notes/:noteId/viewed`, which removes this user's own `see_dashboard_note` row, and removes the card from the page on success. A `GUEST` session never sees this section - they're excluded from the fan-out in the first place, same as above.
+
+### Dashboard Note Expiration Cleanup
+
+A note nobody gets around to "sign as viewed" would otherwise keep its `see_dashboard_note` rows forever. `server_utilities/dashboardNoteScheduler.js` runs a `node-cron` job every day at midnight (`TIMEZONE` - same scheduling pattern as [Web Push Notifications](#web-push-notifications)' daily reminder job): it fetches every dashboard note and, for any whose `expiration` is before today's midnight cutoff, calls `DELETE /api/dashboard-notes/:noteId/recipients` to clear its recipients outright - independent of, and in addition to, a user clearing their own row by viewing it. Self-initializes on `require()`, same as `reminderScheduler.js`, with a matching manual Jest mock (`server_utilities/__mocks__/dashboardNoteScheduler.js`) to keep route tests from registering a real timer.
 
 ---
 

@@ -5,7 +5,7 @@ Comprehensive guide for testing the Tutorly application including unit tests, in
 ---
 
 **Document**: 08_Testing_Guide.md  
-**Last Updated**: November 19, 2026  
+**Last Updated**: November 20, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -66,8 +66,8 @@ The Tutorly project implements a comprehensive testing strategy covering multipl
 
 | Component | Target Coverage | Current Status |
 |-----------|----------------|----------------|
-| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription`, `Availability`, `ExceptionDay`, `Ticket` - 221 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
-| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (70 total) has at least one Jest/Supertest test (281 tests total, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
+| Java Backend | 80% | 🟡 In Progress - service/controller tests exist for every entity (`User`, `Student`, `Admin`, `Lesson`, `Prenotation`, `Test`, `CalendarNote`, `Pack`, `PushSubscription`, `Availability`, `ExceptionDay`, `Ticket`, `DashboardNote` - 254 tests total, see `src/test/java/.../{service,controller}/`); no repository-layer tests yet (see below), no coverage tool wired up |
+| Node.js Frontend | 70% | 🟡 In Progress - every route in `src/index.js` (77 total) has at least one Jest/Supertest test (326 tests total across 22 files, see `Nodejs/test/`); no coverage tool run yet, target is a goal not a measurement |
 | Service Modules | 85% | 🟡 In Progress |
 | API Endpoints | 90% | 🟡 In Progress |
 
@@ -256,6 +256,7 @@ npm install --save-dev jest supertest nock
 |--------|---------------------|----------------|
 | `server_utilities/fileSessionStore.js` | Reads/writes the real `data/session-store.json` on every session read/write - would pollute real session state on every test run | `express-session`'s built-in in-memory `MemoryStore` |
 | `server_utilities/reminderScheduler.js` | Self-registers a `node-cron` job as a `require()` side effect | A no-op (`module.exports = {}`) |
+| `server_utilities/dashboardNoteScheduler.js` | Same reason as `reminderScheduler.js` - a daily midnight `node-cron` job registered on `require()` | A no-op (`module.exports = {}`) |
 
 **`src/index.js` needed one change to be testable.** The bottom of the file used to call `app.listen(...)` (or the HTTPS variant) unconditionally at module load - `require()`ing it for a test would have tried to bind a real port every time. It's now guarded:
 
@@ -277,7 +278,8 @@ Nodejs/
 ├── jest.config.js
 ├── server_utilities/__mocks__/
 │   ├── fileSessionStore.js   # swaps in express-session's MemoryStore
-│   └── reminderScheduler.js  # no-op
+│   ├── reminderScheduler.js  # no-op
+│   └── dashboardNoteScheduler.js  # no-op
 └── test/
     ├── helpers/
     │   ├── setup.js           # nock.disableNetConnect() + loopback allowance; silences console noise
@@ -301,9 +303,12 @@ Nodejs/
     │   ├── reports.test.js        # Excel downloads + the one JSON report endpoint
     │   ├── dashboard.test.js      # GET /api/dashboard/calendar-events
     │   ├── availability.test.js  # /api/availability, /api/exception-days (Availability page)
-    │   └── tickets.test.js       # /api/tickets (Ticketing page)
+    │   ├── tickets.test.js       # /api/tickets (Ticketing page)
+    │   └── dashboardNotes.test.js  # /api/dashboard-notes, incl. publish and "sign as viewed"
     ├── reminderScheduler.test.js  # server_utilities/reminderScheduler.js directly - both
     │                               # reminder jobs, not a route, so it sits outside test/routes/
+    ├── dashboardNoteScheduler.test.js  # server_utilities/dashboardNoteScheduler.js directly -
+    │                               # the daily expiration cleanup job, also not a route
     ├── pushService.test.js        # server_utilities/pushService.js directly - truncation,
     │                               # 404/410 pruning, error logging - also not a route
     ├── availabilityDataService.test.js  # server_utilities/availabilityDataService.js directly -
@@ -312,7 +317,7 @@ Nodejs/
                                     # auto-creation and Markdown rendering, fs mocked
 ```
 
-Every route in `src/index.js` (74 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **307 tests across 20 files.**
+Every route in `src/index.js` (77 total) has at least one test, plus direct unit-test files for `reminderScheduler.js`, `dashboardNoteScheduler.js`, `pushService.js`, `privacyNotice.js`, and `availabilityDataService.js` - **326 tests across 22 files.**
 
 ### Login Helper
 
@@ -728,4 +733,4 @@ Nodejs/
 
 ---
 
-**Last Updated**: November 18, 2026
+**Last Updated**: November 20, 2026

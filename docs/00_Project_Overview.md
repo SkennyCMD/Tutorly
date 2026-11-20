@@ -5,7 +5,7 @@
 ---
 
 **Document**: 00_Project_Overview.md  
-**Last Updated**: November 19, 2026  
+**Last Updated**: November 20, 2026  
 **Version**: 1.0.0  
 **Author**: Tutorly Development Team  
 
@@ -254,6 +254,11 @@ PostgreSQL relational database for data persistence.
 - Read-only board of your own tickets (open/managing/closed), with the resolving admin's username and comment once closed
 - Push notification when an admin closes your ticket
 
+#### 📌 Dashboard Notes
+- A strip of Markdown-rendered notice cards above the mini calendar on the Home dashboard, showing only the notices actually distributed to you (STAFF/GENERIC - never GUEST), soonest-expiring first; hidden entirely when you have none
+- "Sign as viewed" dismisses a notice for good, for you specifically - other recipients still see it until they dismiss it too, or it expires
+- A notice nobody dismisses is still cleaned up automatically once it expires, via a daily midnight housekeeping job
+
 #### 📊 Excel Reports
 - **Monthly lesson report**: All lessons of the month
 - **Student report**: Lessons specific to each student
@@ -289,6 +294,10 @@ PostgreSQL relational database for data persistence.
 - Manage the shared pool of open tickets submitted by tutors; pick one up to start managing it
 - Close a ticket with an optional resolution comment via a popup form
 - Own queue only once picked up - another admin's managing/closed tickets never appear on your board
+
+#### 📌 Dashboard Notes (Admin)
+- Publish a Markdown notice with a live preview and an expiration date, from a dedicated admin-only page, split into Active/Expired columns
+- Publishing immediately distributes the notice to every current STAFF/GENERIC tutor - never GUEST, and never retroactively to an account created afterward
 
 #### 🔐 Security
 - Separate login with admin credentials
@@ -651,7 +660,7 @@ cd Java/backend-api
 ```bash
 cd Nodejs
 
-# Run the full Jest/Supertest suite (208 tests across 17 files, covering
+# Run the full Jest/Supertest suite (326 tests across 22 files, covering
 # every route in src/index.js - see 08_Testing_Guide.md for details)
 npm test
 
@@ -805,7 +814,7 @@ We thank the following users for their fundamental contribution
 
 | Version | Date | Highlights |
 |---|---|---|
-| **3.0.0** | 2026-11-18 | New Availability page: tutors' recurring weekly schedules, managed by STAFF (add/edit/delete slots, plus a type-to-confirm "Delete All" danger zone), with a GENERIC tutor scoped to viewing only their own. Any GENERIC/STAFF tutor can submit a one-off presence/absence exception request, validated against their regular schedule; STAFF approve, refuse, or delete one outright, for any tutor - with push notifications both on submission and on the outcome. An approved or pending exception also shows up as a STAFF-only all-day chip on the Calendar page. Full English/Italian translation added for the new page. New Ticketing page: admins get a support-ticket board (pick up an open ticket, close it with an optional comment); a STAFF/GENERIC tutor gets a read-only board of their own tickets plus a form to submit a new one. Also: STAFF can mark a lesson package as paid/settled (now a prerequisite for closing it); the Privacy page can show the center's own Markdown-authored notice; added `dashboard_note`/`see_dashboard_note` tables ahead of their features (schema only, no application code yet). |
+| **3.0.0** | 2026-11-18 | New Availability page: tutors' recurring weekly schedules, managed by STAFF (add/edit/delete slots, plus a type-to-confirm "Delete All" danger zone), with a GENERIC tutor scoped to viewing only their own. Any GENERIC/STAFF tutor can submit a one-off presence/absence exception request, validated against their regular schedule; STAFF approve, refuse, or delete one outright, for any tutor - with push notifications both on submission and on the outcome. An approved or pending exception also shows up as a STAFF-only all-day chip on the Calendar page. Full English/Italian translation added for the new page. New Ticketing page: admins get a support-ticket board (pick up an open ticket, close it with an optional comment); a STAFF/GENERIC tutor gets a read-only board of their own tickets plus a form to submit a new one. New Dashboard Notes feature: admins publish a Markdown, time-bound notice from a dedicated page, fanned out at publication time to every STAFF/GENERIC tutor (never GUEST) via `see_dashboard_note`; each tutor sees only their own notices as a strip above the Home dashboard's mini calendar, dismissible one at a time via "Sign as viewed" - a notice nobody dismisses is still cleared automatically once expired, by a daily midnight housekeeping job. Also: STAFF can mark a lesson package as paid/settled (now a prerequisite for closing it); the Privacy page can show the center's own Markdown-authored notice. |
 | **2.4.1** | 2026-10-24 | STAFF can now delete a lesson package from the Student Profile (its lessons are kept, just unlinked). Editing a lesson now re-splits it against its pack if the new duration overflows the pack's remaining hours, same as on creation. The Java test suite no longer needs a real Postgres connection to run (`mvn test` now boots against in-memory H2). Fixed the 30-minutes-before-a-lesson reminder firing 1-2 hours late (it compared a UTC-built window against locally-stored timestamps), and some users silently never receiving push notifications (an unbounded calendar-note description could exceed Web Push's payload limit, and non-404/410 send failures had no user/endpoint context to diagnose them by). Fixed the Calendar showing a GUEST the prenotation creator's username instead of the assigned tutor's, and the STAFF tutor filter missing notes assigned to a tutor other than their creator. |
 | **2.4.0** | 2026-10-07 | A push notification now goes out 30 minutes before a prenotation starts, to both the assigned tutor and the student - a new, independent per-minute job alongside the existing once-daily reminder. A GENERIC tutor can no longer edit or delete a prenotation STAFF created on their behalf - enforced server-side (`403`) and shown on the Calendar in a distinct darker blue with the creator's username; fixed a related bug where editing a prenotation reassigned its creator to the editor, and a gap where GUEST could call the delete endpoint directly. |
 | **2.3.8** | 2026-10-02 | Fixed a second Excel sheet-naming crash found right after 2.3.7 shipped - a student surname ending in an apostrophe hit a different ExcelJS rule (no leading/trailing quote in a sheet name). Sheet-name sanitization is now a single shared helper covering both rules. |

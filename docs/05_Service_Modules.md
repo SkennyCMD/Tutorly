@@ -409,6 +409,16 @@ Both build their date-range window as a `TIMEZONE` wall-clock string (`Intl.Date
 
 ---
 
+### `dashboardNoteScheduler.js`
+One `node-cron` job, self-initializing at require-time, same pattern as `reminderScheduler.js`. See [03_Nodejs_Frontend.md - Dashboard Note Expiration Cleanup](03_Nodejs_Frontend.md#dashboard-note-expiration-cleanup).
+
+**Role:** daily housekeeping for dashboard notes - clears `see_dashboard_note` for a note once it's expired, independent of (and in addition to) a user clearing their own row by signing it as viewed.
+
+**Exports:**
+- `purgeExpiredDashboardNoteRecipients()`: every day at midnight `TIMEZONE`, fetches every dashboard note and calls `DELETE /api/dashboard-notes/:noteId/recipients` for any whose `expiration` is before today's midnight cutoff in `TIMEZONE`. Exported for manual/on-demand triggering, same convention as `reminderScheduler.js`'s exports.
+
+---
+
 ### `privacyNotice.js`
 Reads and renders `config/privacy-notice.md` - the tutoring center's own full privacy notice, shown on the `/privacy` page. See [03_Nodejs_Frontend.md - Privacy and Cookie Policy Pages](03_Nodejs_Frontend.md#privacy-and-cookie-policy-pages).
 
