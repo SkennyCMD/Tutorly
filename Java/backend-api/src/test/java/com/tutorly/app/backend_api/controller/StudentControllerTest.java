@@ -21,6 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -251,5 +252,28 @@ class StudentControllerTest {
                 .andExpect(jsonPath("$.id").value(1));
 
         verify(studentService).mergeStudents(1L, 2L);
+    }
+
+    @Test
+    void getStudentById_neverSerializesLessonsPrenotationsTestsOrPacks() throws Exception {
+        // Regression test for a leak where GET /api/students (and /{id}) sent every
+        // student's full nested lesson/prenotation/test/pack history - including
+        // actual grades - to any caller. @JsonIgnoreProperties(allowGetters = true)
+        // on Student only blocked these fields on deserialization, not serialization.
+        Student student = new Student("Marco", "Rossi", "3A", null, "ACTIVE");
+        student.setId(7L);
+        com.tutorly.app.backend_api.entity.Test test = new com.tutorly.app.backend_api.entity.Test();
+        test.setMark(9.5);
+        test.setSubject("Math");
+        student.setTests(java.util.Set.of(test));
+        when(studentService.getStudentById(7L)).thenReturn(Optional.of(student));
+
+        mockMvc.perform(get("/api/students/7").header(API_KEY_HEADER, API_KEY_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Marco"))
+                .andExpect(jsonPath("$.lessons").doesNotExist())
+                .andExpect(jsonPath("$.prenotations").doesNotExist())
+                .andExpect(jsonPath("$.tests").doesNotExist())
+                .andExpect(jsonPath("$.packs").doesNotExist());
     }
 }

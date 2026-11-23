@@ -34,7 +34,11 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "pack")
-@JsonIgnoreProperties(value = {"lessons"}, allowGetters = true)
+// allowGetters = true would still serialize "lessons" (it only skips
+// deserialization) - not currently exploitable since Node only ever reads
+// Pack through PackController's hand-built DTO (GET /api/packs/student/{id}),
+// never the raw entity, but kept correct rather than relying on that.
+@JsonIgnoreProperties({"lessons"})
 public class Pack {
 
     /**

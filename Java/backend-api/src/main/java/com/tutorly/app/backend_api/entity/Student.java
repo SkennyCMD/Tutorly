@@ -58,11 +58,17 @@ import java.util.Set;
  * </p>
  * 
  * <p>JSON Serialization:
- * The @JsonIgnoreProperties annotation prevents the collections (lessons, prenotations, tests)
- * from being serialized to JSON by default, avoiding circular references and large payloads.
- * The allowGetters = true setting allows these collections to be included if explicitly requested.
+ * The @JsonIgnoreProperties annotation prevents the collections (lessons, prenotations, tests,
+ * packs) from ever being serialized to JSON, avoiding circular references and large payloads -
+ * every GET endpoint that returns a Student (GET /api/students and friends) previously leaked
+ * every student's full nested lesson/prenotation/test/pack history (marks included) to any
+ * authenticated caller, since allowGetters = true means Jackson only skips these fields on
+ * deserialization, not serialization - the opposite of what this comment used to claim. The
+ * dedicated per-student endpoints (GET /api/lessons/student/{id}, /api/prenotations/student/{id},
+ * /api/tests/student/{id}, /api/packs/student/{id}) are the real, already-used source for this
+ * data - nothing relies on it being present here too.
  * </p>
- * 
+ *
  * @see Lesson
  * @see Prenotation
  * @see Test
@@ -72,7 +78,7 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "student")
-@JsonIgnoreProperties(value = {"lessons", "prenotations", "tests", "packs"}, allowGetters = true)
+@JsonIgnoreProperties({"lessons", "prenotations", "tests", "packs"})
 public class Student {
     
     /**
