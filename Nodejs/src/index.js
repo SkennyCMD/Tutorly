@@ -614,7 +614,13 @@ app.put('/api/tickets/:id/manage', adminSession, isAdmin, async (req, res) => {
                             ticket.userId != null ? fetchTutorData(ticket.userId).then(u => u ? u.username : null).catch(() => null) : null,
                             ticket.adminId != null ? fetchAdminData(ticket.adminId).then(a => a ? a.username : null).catch(() => null) : null
                         ]);
-                        ticket = { ...ticket, requesterUsername, resolverUsername };
+                        // Raw Java Ticket response (nested user/admin relations) - same
+                        // explicit whitelist GET /ticketing already uses, not the raw object.
+                        ticket = {
+                            id: ticket.id, content: ticket.content, creation: ticket.creation,
+                            status: ticket.status, closure: ticket.closure, comment: ticket.comment,
+                            requesterUsername, resolverUsername
+                        };
                     }
                     res.json({ success: true, message: 'Ticket moved to managing', ticket });
                 } else {
@@ -660,29 +666,36 @@ app.put('/api/tickets/:id/close', adminSession, isAdmin, async (req, res) => {
             httpsRes.on('end', async () => {
                 if (httpsRes.statusCode === 200) {
                     logSuccess('Ticket closed', req, { id });
-                    let ticket;
-                    try { ticket = JSON.parse(data); } catch (e) { ticket = null; }
+                    let rawTicket;
+                    try { rawTicket = JSON.parse(data); } catch (e) { rawTicket = null; }
                     // Re-enrich with the same requester/resolver usernames the
                     // initial page load carries, so the client's in-place
-                    // update doesn't lose them.
-                    if (ticket) {
+                    // update doesn't lose them. Raw Java Ticket response (nested
+                    // user/admin relations) - same explicit whitelist GET
+                    // /ticketing already uses, not the raw object.
+                    let ticket = null;
+                    if (rawTicket) {
                         const [requesterUsername, resolverUsername] = await Promise.all([
-                            ticket.userId != null ? fetchTutorData(ticket.userId).then(u => u ? u.username : null).catch(() => null) : null,
-                            ticket.adminId != null ? fetchAdminData(ticket.adminId).then(a => a ? a.username : null).catch(() => null) : null
+                            rawTicket.userId != null ? fetchTutorData(rawTicket.userId).then(u => u ? u.username : null).catch(() => null) : null,
+                            rawTicket.adminId != null ? fetchAdminData(rawTicket.adminId).then(a => a ? a.username : null).catch(() => null) : null
                         ]);
-                        ticket = { ...ticket, requesterUsername, resolverUsername };
+                        ticket = {
+                            id: rawTicket.id, content: rawTicket.content, creation: rawTicket.creation,
+                            status: rawTicket.status, closure: rawTicket.closure, comment: rawTicket.comment,
+                            requesterUsername, resolverUsername
+                        };
                     }
                     res.json({ success: true, message: 'Ticket closed', ticket });
 
                     // Fire-and-forget: let the requester know their ticket was
                     // closed. Never awaited, so a slow/failed send can't delay
                     // or break the response above.
-                    if (ticket && ticket.userId != null) {
-                        sendPushToUser(ticket.userId, {
+                    if (rawTicket && rawTicket.userId != null) {
+                        sendPushToUser(rawTicket.userId, {
                             title: 'Ticket Closed',
                             body: 'A ticket you opened has been closed',
                             url: '/ticketing',
-                            tag: `ticket-${ticket.id}`
+                            tag: `ticket-${rawTicket.id}`
                         });
                     }
                 } else {
@@ -3888,7 +3901,9 @@ app.delete('/api/admin/tutors/:id/erasure', adminSession, isAdmin, async (req, r
         const erased = await fetchFromJavaAPI(`/api/users/${tutorId}`, 'DELETE');
 
         logSuccess('Tutor erased (GDPR right to erasure)', req, { tutorId });
-        res.json(erased);
+        // Raw User response (password hash included) - admin.js only merges
+        // id/username/role/status/anonymizedAt into its local tutor list.
+        res.json({ id: erased.id, username: erased.username, role: erased.role, status: erased.status, anonymizedAt: erased.anonymizedAt });
     } catch (error) {
         logError('Error erasing tutor', req, { tutorId: req.params.id, error: error.message });
         if (error.statusCode === 404) {
@@ -3922,7 +3937,9 @@ app.delete('/api/admin/guests/:id/erasure', adminSession, isAdmin, async (req, r
         const erased = await fetchFromJavaAPI(`/api/users/${guestId}`, 'DELETE');
 
         logSuccess('Guest account erased (GDPR right to erasure)', req, { guestId });
-        res.json(erased);
+        // Raw User response (password hash included) - admin.js only merges
+        // id/username/role/mail/anonymizedAt into its local guest list.
+        res.json({ id: erased.id, username: erased.username, role: erased.role, mail: erased.mail, anonymizedAt: erased.anonymizedAt });
     } catch (error) {
         logError('Error erasing guest account', req, { guestId: req.params.id, error: error.message });
         if (error.statusCode === 404) {

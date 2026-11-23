@@ -101,6 +101,20 @@ describe('PUT /api/tickets/:id/manage', () => {
         expect(res.body.ticket).toMatchObject({ requesterUsername: 'needs.help', resolverUsername: 'me.admin' });
     });
 
+    test('never includes the raw userId/adminId in the response ticket', async () => {
+        const agent = await adminAgent({ id: 1, username: 'me.admin' });
+        javaApi().put('/api/tickets/10/manage')
+            .reply(200, { id: 10, status: 'managing', content: 'Help', creation: '2026-11-10T09:00:00', userId: 4, adminId: 1 });
+        javaApi().get('/api/users/4').reply(200, tutorFixture({ id: 4, username: 'needs.help' }));
+        javaApi().get('/api/admins/1').reply(200, adminFixture({ id: 1, username: 'me.admin' }));
+
+        const res = await agent.put('/api/tickets/10/manage');
+
+        expect(res.status).toBe(200);
+        expect(res.body.ticket.userId).toBeUndefined();
+        expect(res.body.ticket.adminId).toBeUndefined();
+    });
+
     test('propagates a Java API error (e.g. ticket not open)', async () => {
         const agent = await adminAgent();
         javaApi().put('/api/tickets/10/manage').reply(400, 'Only an open ticket can be put into management');
@@ -190,6 +204,22 @@ describe('PUT /api/tickets/:id/close', () => {
             url: '/ticketing',
             tag: 'ticket-10'
         }));
+    });
+
+    test('never includes the raw userId/adminId in the response ticket', async () => {
+        const agent = await adminAgent({ id: 1 });
+        javaApi().put('/api/tickets/10/close').reply(200, {
+            id: 10, status: 'closed', content: 'Help', creation: '2026-11-10T09:00:00', closure: '2026-11-11T09:00:00', comment: 'Resolved.', userId: 4, adminId: 1
+        });
+        javaApi().get('/api/users/4').reply(200, tutorFixture({ id: 4 }));
+        javaApi().get('/api/admins/1').reply(200, adminFixture({ id: 1 }));
+
+        const res = await agent.put('/api/tickets/10/close').send({ comment: 'Resolved.' });
+        expect(res.status).toBe(200);
+        expect(res.body.ticket.userId).toBeUndefined();
+        expect(res.body.ticket.adminId).toBeUndefined();
+
+        await flushMicrotasks();
     });
 
     test('does not notify when the closed ticket has no requester', async () => {

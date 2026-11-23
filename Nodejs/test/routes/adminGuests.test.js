@@ -155,6 +155,7 @@ describe('DELETE /api/admin/guests/:id/erasure', () => {
         const res = await agent.delete('/api/admin/guests/21/erasure');
         expect(res.status).toBe(200);
         expect(res.body.anonymizedAt).toBeTruthy();
+        expect(res.body.password).toBeUndefined();
     });
 
     test('is idempotent - erasing an already-erased guest returns 409', async () => {

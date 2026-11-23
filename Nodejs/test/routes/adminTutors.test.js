@@ -162,6 +162,7 @@ describe('DELETE /api/admin/tutors/:id/erasure', () => {
         const res = await agent.delete('/api/admin/tutors/1/erasure');
         expect(res.status).toBe(200);
         expect(res.body.anonymizedAt).toBeTruthy();
+        expect(res.body.password).toBeUndefined();
     });
 
     test('returns 404 for a nonexistent tutor', async () => {
