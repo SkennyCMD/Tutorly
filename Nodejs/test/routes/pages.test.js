@@ -6,7 +6,7 @@ const request = require('supertest');
 const app = require('../helpers/testApp');
 const { javaApi } = require('../helpers/javaApi');
 const { loginAsTutor, loginAsAdmin, tutorFixture, adminFixture } = require('../helpers/auth');
-const { studentFixture, calendarNoteFixture, lessonFixture } = require('../helpers/fixtures');
+const { studentFixture, calendarNoteFixture, lessonFixture, prenotationFixture, testFixture } = require('../helpers/fixtures');
 
 async function tutorAgent(overrides = {}) {
     const agent = request.agent(app);
@@ -756,5 +756,39 @@ describe('GET /student/:id', () => {
         expect(res.status).toBe(200);
         expect(res.text).toContain('other.tutor');
         expect(res.text).not.toContain('SECRETHASHVALUE');
+    });
+
+    test('a STAFF viewer sees who tested and who booked each session', async () => {
+        const agent = await tutorAgent({ role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/tests/student/10').reply(200, [testFixture({ tutorId: 5 })]);
+        javaApi().get('/api/lessons/student/10').reply(200, []);
+        javaApi().get('/api/prenotations/student/10').reply(200, [prenotationFixture({ tutorId: 5 })]);
+        javaApi().get('/api/users').reply(200, []);
+        javaApi().get('/api/packs/student/10').reply(200, []);
+        javaApi().get('/api/users/5').reply(200, tutorFixture({ id: 5, username: 'session.tutor' }));
+
+        const res = await agent.get('/student/10');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('session.tutor');
+    });
+
+    test('a GUEST viewer does not see who tested or who booked each session', async () => {
+        const agent = await tutorAgent({ id: 21, role: 'GUEST' });
+        javaApi().get('/api/users/21').reply(200, tutorFixture({ id: 21, role: 'GUEST' }));
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/students/guest/21').reply(200, [{ id: 10 }]);
+        javaApi().get('/api/tests/student/10').reply(200, [testFixture({ tutorId: 5 })]);
+        javaApi().get('/api/lessons/student/10').reply(200, []);
+        javaApi().get('/api/prenotations/student/10').reply(200, [prenotationFixture({ tutorId: 5 })]);
+        javaApi().get('/api/users').reply(200, []);
+        javaApi().get('/api/packs/student/10').reply(200, []);
+
+        const res = await agent.get('/student/10');
+        expect(res.status).toBe(200);
+        expect(res.text).not.toContain('session.tutor');
+        expect(res.text).not.toContain('"tutorName":');
+        expect(res.text).not.toContain('"tutorId":');
     });
 });

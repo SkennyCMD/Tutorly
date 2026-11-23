@@ -1905,29 +1905,40 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
             return cachedTutor ? cachedTutor.username : 'Unknown';
         };
 
-        const evaluations = await Promise.all(tests.map(async test => ({
-            id: test.id,
-            mark: test.mark,
-            day: test.day,
-            subject: test.subject || '',
-            description: test.description || '',
-            tutorId: test.tutorId,
-            tutorName: await getTutorName(test.tutorId)
-        })));
+        // Who tested/taught/booked this student is only exposed to STAFF - a
+        // GUEST sees their own student's history (marks, dates, times) but
+        // never the tutor's identity, so tutorId/tutorName are omitted from
+        // the payload entirely rather than just hidden client-side.
+        const evaluations = await Promise.all(tests.map(async test => {
+            const entry = {
+                id: test.id,
+                mark: test.mark,
+                day: test.day,
+                subject: test.subject || '',
+                description: test.description || ''
+            };
+            if (isStaff) {
+                entry.tutorId = test.tutorId;
+                entry.tutorName = await getTutorName(test.tutorId);
+            }
+            return entry;
+        }));
 
-        const prenotations = await Promise.all(prenotationsData.map(async prenotation => ({
-            id: prenotation.id,
-            startTime: prenotation.startTime,
-            endTime: prenotation.endTime,
-            flag: prenotation.flag,
-            tutorId: prenotation.tutorId,
-            tutorName: await getTutorName(prenotation.tutorId)
-        })));
+        const prenotations = await Promise.all(prenotationsData.map(async prenotation => {
+            const entry = {
+                id: prenotation.id,
+                startTime: prenotation.startTime,
+                endTime: prenotation.endTime,
+                flag: prenotation.flag
+            };
+            if (isStaff) {
+                entry.tutorId = prenotation.tutorId;
+                entry.tutorName = await getTutorName(prenotation.tutorId);
+            }
+            return entry;
+        }));
 
-        // Who taught a lesson is only exposed to STAFF - a GUEST sees their own
-        // student's lesson history (date/time only) but never the tutor's
-        // identity, so tutorName is omitted from the payload entirely rather
-        // than just hidden client-side.
+        // Same restriction for lessons.
         const lessons = await Promise.all((lessonsData || []).map(async lesson => {
             const entry = {
                 id: lesson.id,

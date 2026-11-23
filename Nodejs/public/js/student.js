@@ -72,14 +72,17 @@ function toggleChartGroup(encodedKey) {
 const initialLessons = window.initialLessons || [];
 
 // Prenotations (upcoming/pending bookings) loaded from the server, across every
-// tutor - see window.initialPrenotations in student.ejs.
+// tutor - see window.initialPrenotations in student.ejs. tutorName is only
+// present for a STAFF viewer (the server never sends it to GUEST) - left
+// empty rather than falling back to a placeholder, so renderPrenotations can
+// just omit the name line entirely for GUEST.
 const prenotations = (window.initialPrenotations || []).map(p => ({
     id: p.id,
     startTime: p.startTime,
     endTime: p.endTime,
     confirmed: !!p.flag,
     tutorId: p.tutorId,
-    tutorName: p.tutorName || t('student.unknownTutor')
+    tutorName: p.tutorName || ''
 }));
 
 // Completed lessons (full history, across every tutor), reusing the same
