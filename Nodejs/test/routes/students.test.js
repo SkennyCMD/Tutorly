@@ -1,11 +1,11 @@
 const request = require('supertest');
 const app = require('../helpers/testApp');
 const { javaApi } = require('../helpers/javaApi');
-const { loginAsTutor } = require('../helpers/auth');
+const { loginAsTutor, tutorFixture } = require('../helpers/auth');
 
-async function tutorAgent() {
+async function tutorAgent(overrides = {}) {
     const agent = request.agent(app);
-    await loginAsTutor(agent);
+    await loginAsTutor(agent, tutorFixture(overrides));
     return agent;
 }
 
@@ -47,5 +47,11 @@ describe('POST /api/students', () => {
 
         const res = await agent.post('/api/students').send({ name: 'Mario', surname: 'Rossi', studentClass: 'M' });
         expect(res.status).toBe(500);
+    });
+
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        const res = await agent.post('/api/students').send({ name: 'Mario', surname: 'Rossi', studentClass: 'M' });
+        expect(res.status).toBe(403);
     });
 });

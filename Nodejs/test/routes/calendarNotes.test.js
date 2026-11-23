@@ -51,13 +51,35 @@ describe('GET /api/calendar-notes/:id', () => {
         expect(res.status).toBe(404);
     });
 
-    test('returns the note', async () => {
+    test('returns the note to its creator', async () => {
         const agent = await tutorAgent();
         javaApi().get('/api/calendar-notes/500').reply(200, calendarNoteFixture());
 
         const res = await agent.get('/api/calendar-notes/500');
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(500);
+    });
+
+    test('returns the note to an assigned (non-creator) tutor', async () => {
+        const agent = await tutorAgent({ id: 2 });
+        javaApi().get('/api/calendar-notes/500').reply(200, calendarNoteFixture({ creator: { id: 1 }, tutors: [{ id: 1 }, { id: 2 }] }));
+
+        const res = await agent.get('/api/calendar-notes/500');
+        expect(res.status).toBe(200);
+    });
+
+    test('a GENERIC tutor with no involvement in the note is blocked with 403', async () => {
+        const agent = await tutorAgent({ id: 2, role: 'GENERIC' });
+        javaApi().get('/api/calendar-notes/500').reply(200, calendarNoteFixture({ creator: { id: 1 }, tutors: [{ id: 1 }] }));
+
+        const res = await agent.get('/api/calendar-notes/500');
+        expect(res.status).toBe(403);
+    });
+
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        const res = await agent.get('/api/calendar-notes/500');
+        expect(res.status).toBe(403);
     });
 });
 
@@ -104,5 +126,11 @@ describe('DELETE /api/calendar-notes/:id', () => {
         const res = await agent.delete('/api/calendar-notes/500');
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);
+    });
+
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        const res = await agent.delete('/api/calendar-notes/500');
+        expect(res.status).toBe(403);
     });
 });

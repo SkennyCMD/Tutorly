@@ -97,13 +97,11 @@ describe('DELETE /api/lessons/:id', () => {
         expect(res.headers.location).toBe('/login');
     });
 
-    test('deletes the lesson (GUEST accounts are not blocked on this route)', async () => {
+    test('a GUEST account is blocked with 403', async () => {
         const agent = await tutorAgent({ role: 'GUEST' });
-        javaApi().delete('/api/lessons/100').reply(200);
 
         const res = await agent.delete('/api/lessons/100');
-        expect(res.status).toBe(200);
-        expect(res.body.success).toBe(true);
+        expect(res.status).toBe(403);
     });
 
     test('propagates a Java API error', async () => {

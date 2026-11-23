@@ -3,10 +3,11 @@ const app = require('../helpers/testApp');
 const { javaApi } = require('../helpers/javaApi');
 const { loginAsTutor } = require('../helpers/auth');
 const { testFixture } = require('../helpers/fixtures');
+const { tutorFixture } = require('../helpers/auth');
 
-async function tutorAgent() {
+async function tutorAgent(overrides = {}) {
     const agent = request.agent(app);
-    await loginAsTutor(agent);
+    await loginAsTutor(agent, tutorFixture(overrides));
     return agent;
 }
 
@@ -54,6 +55,12 @@ describe('POST /api/tests', () => {
         const res = await agent.post('/api/tests').send({ studentId: 10, date: '2026-09-11' });
         expect(res.status).toBe(500);
     });
+
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        const res = await agent.post('/api/tests').send({ studentId: 10, date: '2026-09-11' });
+        expect(res.status).toBe(403);
+    });
 });
 
 describe('DELETE /api/tests/:id', () => {
@@ -72,5 +79,11 @@ describe('DELETE /api/tests/:id', () => {
 
         const res = await agent.delete('/api/tests/999');
         expect(res.status).toBe(404);
+    });
+
+    test('a GUEST account is blocked with 403', async () => {
+        const agent = await tutorAgent({ role: 'GUEST' });
+        const res = await agent.delete('/api/tests/300');
+        expect(res.status).toBe(403);
     });
 });

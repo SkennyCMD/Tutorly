@@ -962,13 +962,19 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
             });
         }
 
+        // Erased students shouldn't be offered when creating a new lesson. A GUEST
+        // can't create lessons at all (the "Add Lesson" UI is hidden for them) and
+        // may only ever see their own assigned student(s), never the full roster.
+        const studentsForClient = userRole === 'guest'
+            ? (assignedStudents || []).filter(s => !s.anonymizedAt)
+            : (students || []).filter(s => !s.anonymizedAt);
+
         res.render('home', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
             tasks: tasks,
             lessons: combinedLessons,
-            // Erased students shouldn't be offered when creating a new lesson
-            students: (students || []).filter(s => !s.anonymizedAt),
+            students: studentsForClient,
             guestStudents,
             dashboardNotes
         });
@@ -1117,10 +1123,11 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
         const startTime = rangeStart.toISOString().slice(0, 19);
         const endTime = rangeEnd.toISOString().slice(0, 19);
 
-        const [calendarData, students, allUsers] = await Promise.all([
+        const [calendarData, students, allUsers, assignedStudents] = await Promise.all([
             getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, endTime }),
             fetchFromJavaAPI('/api/students'),
-            fetchFromJavaAPI('/api/users')
+            fetchFromJavaAPI('/api/users'),
+            isGuest ? fetchStudentsByGuest(tutorId) : Promise.resolve(null)
         ]);
 
         // GUEST accounts aren't tutors - exclude them from the tutor filter dropdown
@@ -1140,8 +1147,11 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             // STAFF-only all-day chips, see getCalendarDataForRange - always
             // empty for GENERIC/GUEST.
             exceptionDays: calendarData.exceptionDays,
-            // Erased students shouldn't be offered when creating a new prenotation
-            students: (students || []).filter(s => !s.anonymizedAt),
+            // Erased students shouldn't be offered when creating a new prenotation.
+            // A GUEST can't create prenotations at all (the "Add" UI is hidden for
+            // them) and may only ever see their own assigned student(s), never the
+            // full roster.
+            students: (isGuest ? (assignedStudents || []) : (students || [])).filter(s => !s.anonymizedAt),
             tutors: tutors || [],
             initialRangeStart: startTime,
             initialRangeEnd: endTime
@@ -2431,7 +2441,7 @@ app.put('/api/lessons/:id', tutorSession, isAuthenticated, blockGuestApi, async 
  * Delete a lesson
  * DELETE /api/lessons/:id
  */
-app.delete('/api/lessons/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.delete('/api/lessons/:id', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -2478,7 +2488,7 @@ app.delete('/api/lessons/:id', tutorSession, isAuthenticated, async (req, res) =
  * Body: { studentId, mark, date, subject, description }
  * tutorId is always the logged-in tutor - there's no tutor-assignment field on this form.
  */
-app.post('/api/tests', tutorSession, isAuthenticated, async (req, res) => {
+app.post('/api/tests', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { studentId, mark, date, subject, description } = req.body;
         const tutorId = req.session.userId;
@@ -2543,7 +2553,7 @@ app.post('/api/tests', tutorSession, isAuthenticated, async (req, res) => {
  * Delete a test/evaluation
  * DELETE /api/tests/:id
  */
-app.delete('/api/tests/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.delete('/api/tests/:id', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -3175,15 +3185,27 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, blockGuestApi, as
  * Get a single calendar note by ID
  * GET /api/calendar-notes/:id
  */
-app.get('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.get('/api/calendar-notes/:id', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
         const note = await fetchFromJavaAPI(`/api/calendar-notes/${id}`);
-        
+
         if (!note) {
             return res.status(404).json({ error: 'Note not found' });
         }
-        
+
+        // GENERIC tutors may only read a note they created or are assigned to -
+        // without this, any authenticated tutor could read any note (full
+        // description, creator, assignees) just by guessing/incrementing the id.
+        // STAFF can read any note, same as everywhere else in the app.
+        const currentUserId = req.session.userId;
+        const isInvolved = (note.creator && note.creator.id === currentUserId) ||
+            (note.tutors || []).some(t => t.id === currentUserId);
+        if (req.session.role === 'generic' && !isInvolved) {
+            logWarning('Unauthorized attempt to view calendar note', req, { noteId: id });
+            return res.status(403).json({ error: 'You do not have access to this note' });
+        }
+
         res.json(note);
     } catch (error) {
         logError('Error fetching calendar note', req, { id: req.params.id, error: error.message });
@@ -3271,7 +3293,7 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, blockGuestApi,
  * DELETE /api/calendar-notes/:id
  * Only the creator can delete the note (authorization check included)
  */
-app.delete('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req, res) => {
+app.delete('/api/calendar-notes/:id', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { id } = req.params;
         const currentUserId = req.session.userId;
@@ -3326,7 +3348,7 @@ app.delete('/api/calendar-notes/:id', tutorSession, isAuthenticated, async (req,
  * Body: { name, surname, studentClass, description (optional) }
  * studentClass must be M (Middle), S (Secondary), or U (University)
  */
-app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
+app.post('/api/students', tutorSession, isAuthenticated, blockGuestApi, async (req, res) => {
     try {
         const { name, surname, studentClass, description } = req.body;
         

@@ -236,6 +236,25 @@ describe('GET /home', () => {
         expect(res.status).toBe(200);
         expect(res.text).not.toContain('dashboardNotesList');
     });
+
+    test('a GUEST session only ever sees their own assigned student, never the full roster', async () => {
+        const agent = await tutorAgent({ id: 21, role: 'GUEST' });
+        javaApi().get('/api/users/21').reply(200, tutorFixture({ id: 21, role: 'GUEST' }));
+        javaApi().get('/api/calendar-notes/tutor/21').reply(200, []);
+        javaApi().get('/api/lessons').reply(200, []);
+        javaApi().get('/api/prenotations').reply(200, []);
+        javaApi().get('/api/students').reply(200, [
+            studentFixture({ id: 10, name: 'Mario', surname: 'NotMine' }),
+            studentFixture({ id: 11, name: 'Luigi', surname: 'Assigned' })
+        ]);
+        javaApi().get('/api/students/guest/21').reply(200, [studentFixture({ id: 11, name: 'Luigi', surname: 'Assigned' })]);
+        javaApi().get('/api/tests/student/11').reply(200, []);
+
+        const res = await agent.get('/home');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('Assigned');
+        expect(res.text).not.toContain('NotMine');
+    });
 });
 
 describe('GET /calendar', () => {
@@ -268,6 +287,24 @@ describe('GET /calendar', () => {
         // on initial page load either, not just on the on-demand range endpoint.
         expect(exceptionDaysScope.isDone()).toBe(false);
         expect(res.text).toContain('exceptionDays: []');
+    });
+
+    test('a GUEST session only ever sees their own assigned student, never the full roster', async () => {
+        const agent = await tutorAgent({ id: 21, role: 'GUEST' });
+        javaApi().get('/api/users/21').reply(200, tutorFixture({ id: 21, role: 'GUEST' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students').reply(200, [
+            studentFixture({ id: 10, name: 'Mario', surname: 'NotMine' }),
+            studentFixture({ id: 11, name: 'Luigi', surname: 'Assigned' })
+        ]);
+        javaApi().get('/api/users').reply(200, []);
+        javaApi().get('/api/students/guest/21').reply(200, [studentFixture({ id: 11, name: 'Luigi', surname: 'Assigned' })]);
+
+        const res = await agent.get('/calendar');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('Assigned');
+        expect(res.text).not.toContain('NotMine');
     });
 
     test('renders for an authenticated STAFF tutor, with exception days embedded for the client', async () => {
