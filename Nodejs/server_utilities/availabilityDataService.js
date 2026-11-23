@@ -110,7 +110,7 @@ function buildTutorAvailability({ users, availability, exceptionDays, restrictTo
  * @param {Array} params.users - Raw user objects from GET /api/users
  * @param {Array} params.exceptionDays - Raw rows from GET /api/exception-days
  * @param {?number} [params.restrictToTutorId] - If set, only this tutor's requests are included
- * @returns {Array<{id: number, tutorId: number, tutorName: string, day: string, type: string, startTime: ?string, endTime: ?string}>}
+ * @returns {Array<{id: number, tutorName: string, day: string, type: string, startTime: ?string, endTime: ?string}>}
  */
 function getPendingExceptions({ users, exceptionDays, restrictToTutorId }) {
     const usersById = new Map((users || []).map(u => [u.id, u]));
@@ -122,7 +122,6 @@ function getPendingExceptions({ users, exceptionDays, restrictToTutorId }) {
             const tutor = usersById.get(exception.tutorId);
             return {
                 id: exception.id,
-                tutorId: exception.tutorId,
                 tutorName: tutor ? tutor.username : `Tutor #${exception.tutorId}`,
                 day: exception.day,
                 type: exception.type,

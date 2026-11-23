@@ -306,7 +306,6 @@
     // what that means (admin: shared open pool + own managing/closed; STAFF/
     // GENERIC tutor: only their own, any status).
     window.initialTickets = <%- JSON.stringify(tickets) %>;
-    window.adminId = <%- JSON.stringify(adminId) %>;
     // Only an admin can pick up/close a ticket - a STAFF/GENERIC tutor viewer
     // is read-only (enforced server-side on PUT /api/tickets/:id/{manage,close}
     // regardless of this flag; it only decides whether to show the buttons).

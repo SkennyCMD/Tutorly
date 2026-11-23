@@ -91,7 +91,6 @@ const prenotations = (window.initialPrenotations || []).map(p => ({
 // viewer - never sent to GUEST at all (not just hidden client-side), so
 // there's nothing here to gate on window.userRole.
 const lessons = initialLessons.map(l => ({
-    id: l.id,
     startTime: l.startTime,
     endTime: l.endTime,
     tutorName: l.tutorName

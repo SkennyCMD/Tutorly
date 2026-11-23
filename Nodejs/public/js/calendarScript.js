@@ -84,7 +84,9 @@ console.log('Calendar Notes:', window.serverData?.calendarNotes);
  * All segments share the note's id/description, so editing or deleting from
  * any day's segment still operates on the whole note.
  *
- * @param {Object} note - Raw calendar note from window.serverData.calendarNotes
+ * @param {Object} note - Calendar note from window.serverData.calendarNotes,
+ *   already reduced server-side to {id, description, startTime, endTime,
+ *   creatorId, creatorUsername, tutorIds} - see calendarDataService.js.
  * @returns {Array} One event object per day the note spans
  */
 function buildNoteSegments(note) {
@@ -110,9 +112,9 @@ function buildNoteSegments(note) {
       endTime: isLastDay ? endMoment.toTimeString().slice(0, 5) : '23:59',
       isMultiDay: !(isFirstDay && isLastDay),
       assignees: ['myself'], // Default assignees
-      creatorId: note.creator?.id,
-      creatorUsername: note.creator?.username || null,
-      tutorIds: (note.tutors || []).map(t => t.id)
+      creatorId: note.creatorId,
+      creatorUsername: note.creatorUsername,
+      tutorIds: note.tutorIds || []
     });
 
     cursor.setDate(cursor.getDate() + 1);

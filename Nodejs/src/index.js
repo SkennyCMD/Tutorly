@@ -350,12 +350,11 @@ app.get('/dashboardNotes', adminSession, isAdmin, async (req, res) => {
 
     try {
         const rawNotes = await fetchAllDashboardNotes();
+        // dashboardNotes.js (the admin's own read-only Active/Expired board) only
+        // ever reads content/expiration.
         const notes = rawNotes.map(note => ({
-            id: note.id,
             content: note.content,
-            creation: note.creation,
-            expiration: note.expiration,
-            adminId: note.adminId
+            expiration: note.expiration
         }));
         res.render('dashboardNotes', { ...viewerLocals, notes });
     } catch (error) {
@@ -483,10 +482,6 @@ app.get('/ticketing', async (req, res) => {
     const viewerLocals = {
         isAdminViewer,
         adminUsername: req.session.adminUsername || null,
-        // Always a real value (never undefined) - JSON.stringify(undefined)
-        // renders as nothing at all in the view's <script> block, leaving a
-        // syntactically broken `window.adminId = ;` for a tutor viewer.
-        adminId: req.session.adminId ?? null,
         user: isAdminViewer ? null : { username: req.session.username, role: viewerRole }
     };
 
@@ -528,9 +523,7 @@ app.get('/ticketing', async (req, res) => {
             status: ticket.status,
             closure: ticket.closure,
             comment: ticket.comment,
-            userId: ticket.userId,
             requesterUsername: await getUsername(ticket.userId),
-            adminId: ticket.adminId,
             resolverUsername: await getAdminUsername(ticket.adminId)
         })));
 
@@ -848,9 +841,7 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
         }
         
         const tasks = calendarNotes.map(note => ({
-            id: note.id,
             text: note.description || 'No description',
-            completed: false,
             startTime: note.startTime,
             endTime: note.endTime
         }));
@@ -867,10 +858,14 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
         ]);
 
         // Only still-active notices, soonest-expiring first - expired ones belong on
-        // the admin's own Dashboard Notes management page, not here.
+        // the admin's own Dashboard Notes management page, not here. The raw
+        // DashboardNote also carries the full authoring admin and every other
+        // recipient's account (username/mail/role/status) - the widget only ever
+        // shows the note's own content, so only id/content reach the client.
         const dashboardNotes = (allDashboardNotes || [])
             .filter(note => new Date(note.expiration) >= now)
-            .sort((a, b) => new Date(a.expiration) - new Date(b.expiration));
+            .sort((a, b) => new Date(a.expiration) - new Date(b.expiration))
+            .map(note => ({ id: note.id, content: note.content }));
 
         let lessons, prenotations;
         if (userRole === 'guest') {
@@ -925,7 +920,6 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
                 startTime: prenotation.startTime,
                 endTime: prenotation.endTime,
                 type: 'prenotation',
-                confirmed: prenotation.flag,
                 status: prenotation.flag ? 'Confirmed' : 'Pending'
             };
         });
@@ -965,9 +959,11 @@ app.get('/home', tutorSession, isAuthenticated, async (req, res) => {
         // Erased students shouldn't be offered when creating a new lesson. A GUEST
         // can't create lessons at all (the "Add Lesson" UI is hidden for them) and
         // may only ever see their own assigned student(s), never the full roster.
-        const studentsForClient = userRole === 'guest'
-            ? (assignedStudents || []).filter(s => !s.anonymizedAt)
-            : (students || []).filter(s => !s.anonymizedAt);
+        // modalShared.js's student picker only ever reads id/name/surname/
+        // studentClass/description - status/anonymizedAt/userId never reach it.
+        const studentsForClient = (userRole === 'guest' ? (assignedStudents || []) : (students || []))
+            .filter(s => !s.anonymizedAt)
+            .map(s => ({ id: s.id, name: s.name, surname: s.surname, studentClass: s.studentClass, description: s.description || '' }));
 
         res.render('home', {
             userId: req.session.userId,
@@ -1150,8 +1146,11 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
             // Erased students shouldn't be offered when creating a new prenotation.
             // A GUEST can't create prenotations at all (the "Add" UI is hidden for
             // them) and may only ever see their own assigned student(s), never the
-            // full roster.
-            students: (isGuest ? (assignedStudents || []) : (students || [])).filter(s => !s.anonymizedAt),
+            // full roster. modalShared.js's picker only reads id/name/surname/
+            // studentClass/description.
+            students: (isGuest ? (assignedStudents || []) : (students || []))
+                .filter(s => !s.anonymizedAt)
+                .map(s => ({ id: s.id, name: s.name, surname: s.surname, studentClass: s.studentClass, description: s.description || '' })),
             tutors: tutors || [],
             initialRangeStart: startTime,
             initialRangeEnd: endTime
@@ -1251,17 +1250,19 @@ app.get('/lessons', tutorSession, isAuthenticated, blockGuest, async (req, res) 
                 classType: student?.studentClass || 'M',
                 startTime: prenotation.startTime,
                 endTime: prenotation.endTime,
-                createdAt: prenotation.createdAt,
-                flag: prenotation.flag,
                 confirmed: prenotation.flag
             };
         }));
-        
+
         res.render('lessons', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : userRole },
-            // Erased students shouldn't be offered when creating a new lesson
-            students: (students || []).filter(s => !s.anonymizedAt),
+            // Erased students shouldn't be offered when creating a new lesson.
+            // modalShared.js's student picker only reads id/name/surname/
+            // studentClass/description.
+            students: (students || [])
+                .filter(s => !s.anonymizedAt)
+                .map(s => ({ id: s.id, name: s.name, surname: s.surname, studentClass: s.studentClass, description: s.description || '' })),
             lessons: lessonsWithStudents,
             totalLessons: allLessons.length,
             prenotations: prenotationsWithStudents
@@ -1812,8 +1813,11 @@ app.get('/reports', tutorSession, isAuthenticated, blockGuest, async (req, res) 
         res.render('reports', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData ? tutorData.role : req.session.role },
-            // Erased students shouldn't be offered when adding a new evaluation
-            students: (students || []).filter(s => !s.anonymizedAt),
+            // Erased students shouldn't be offered when adding a new evaluation.
+            // reports.js's student picker only ever reads id/name/surname.
+            students: (students || [])
+                .filter(s => !s.anonymizedAt)
+                .map(s => ({ id: s.id, name: s.name, surname: s.surname })),
             evaluations: evaluationsWithStudents,
             subjects: subjectsList
         });
@@ -1951,7 +1955,6 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
         // Same restriction for lessons.
         const lessons = await Promise.all((lessonsData || []).map(async lesson => {
             const entry = {
-                id: lesson.id,
                 startTime: lesson.startTime,
                 endTime: lesson.endTime
             };
@@ -1964,7 +1967,8 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
         res.render('student', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData.role },
-            student,
+            // student.js only ever reads id/name/surname/studentClass.
+            student: { id: student.id, name: student.name, surname: student.surname, studentClass: student.studentClass },
             evaluations,
             lessons,
             prenotations,
@@ -3461,7 +3465,12 @@ app.get('/api/admin/guests', adminSession, isAdmin, async (req, res) => {
 app.get('/api/admin/students', adminSession, isAdmin, async (req, res) => {
     try {
         const students = await fetchFromJavaAPI('/api/students', 'GET');
-        res.json(students);
+        // admin.js's roster/duplicate-detection rendering only ever reads
+        // id/name/surname/studentClass/description/anonymizedAt.
+        res.json((students || []).map(s => ({
+            id: s.id, name: s.name, surname: s.surname, studentClass: s.studentClass,
+            description: s.description || '', anonymizedAt: s.anonymizedAt
+        })));
     } catch (error) {
         logError('Error fetching students', req, { error: error.message });
         res.status(500).json({ error: 'Failed to fetch students' });
@@ -3803,7 +3812,8 @@ app.patch('/api/admin/guests/:id', adminSession, isAdmin, async (req, res) => {
 app.get('/api/admin/students/unassigned', adminSession, isAdmin, async (req, res) => {
     try {
         const students = await fetchFromJavaAPI('/api/students/unassigned', 'GET');
-        res.json(students || []);
+        // The "Assign a Student" dropdown only ever reads id/name/surname.
+        res.json((students || []).map(s => ({ id: s.id, name: s.name, surname: s.surname })));
     } catch (error) {
         logError('Error fetching unassigned students', req, { error: error.message });
         res.status(500).json({ error: 'Failed to fetch unassigned students' });
@@ -3818,7 +3828,8 @@ app.get('/api/admin/guests/:id/students', adminSession, isAdmin, async (req, res
     try {
         const { id } = req.params;
         const students = await fetchFromJavaAPI(`/api/students/guest/${id}`, 'GET');
-        res.json(students || []);
+        // renderAssignedStudents only ever reads id/name/surname.
+        res.json((students || []).map(s => ({ id: s.id, name: s.name, surname: s.surname })));
     } catch (error) {
         logError('Error fetching guest\'s assigned students', req, { id: req.params.id, error: error.message });
         res.status(500).json({ error: 'Failed to fetch assigned students' });

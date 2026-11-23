@@ -223,6 +223,27 @@ describe('GET /home', () => {
         expect(laterIndex).toBeGreaterThan(soonerIndex);
     });
 
+    test('never embeds the authoring admin or other recipients behind a dashboard note', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+        javaApi().get('/api/calendar-notes/tutor/1').reply(200, []);
+        javaApi().get('/api/lessons').reply(200, []);
+        javaApi().get('/api/prenotations').reply(200, []);
+        javaApi().get('/api/students').reply(200, []);
+        javaApi().get('/api/dashboard-notes/user/1').reply(200, [{
+            id: 1, content: 'Office closed Friday', creation: '2026-11-19T09:00:00', expiration: '2027-02-01T23:59:59',
+            admin: { id: 1, username: 'the.admin', mail: 'admin@example.com' },
+            recipients: [{ id: 2, username: 'colleague.tutor', mail: 'colleague@example.com' }]
+        }]);
+
+        const res = await agent.get('/home');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('Office closed Friday');
+        expect(res.text).not.toContain('colleague.tutor');
+        expect(res.text).not.toContain('colleague@example.com');
+        expect(res.text).not.toContain('the.admin');
+    });
+
     test('never embeds dashboard notes for a GUEST session', async () => {
         const agent = await tutorAgent({ id: 21, role: 'GUEST' });
         javaApi().get('/api/users/21').reply(200, tutorFixture({ id: 21, role: 'GUEST' }));
@@ -345,6 +366,29 @@ describe('GET /calendar', () => {
         expect(res.text).toContain('other.tutor');
         expect(res.text).not.toContain('SECRETHASHVALUE');
     });
+
+    test('never embeds the raw tutor/student objects behind a prenotation', async () => {
+        const agent = await tutorAgent({ role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, [
+            { id: 1, studentId: 10, tutorId: 2, creatorId: 2, startTime: '2026-09-01T10:00:00', endTime: '2026-09-01T11:00:00', flag: false }
+        ]);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students').reply(200, []);
+        javaApi().get('/api/users').reply(200, []);
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/users/2').reply(200, tutorFixture({ id: 2, username: 'assigned.tutor', password: '$2b$10$SECRETHASHVALUE' }));
+
+        const res = await agent.get('/calendar');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('assigned.tutor');
+        expect(res.text).not.toContain('SECRETHASHVALUE');
+        expect(res.text).not.toContain('"tutor":{');
+        // Not a bare '"student":{' check - the page also dumps window.translations,
+        // whose "student" i18n namespace is itself a JSON object and would
+        // false-positive match that substring.
+        expect(res.text).not.toContain('"student":{"id"');
+    });
 });
 
 describe('GET /api/calendar/data', () => {
@@ -441,7 +485,7 @@ describe('GET /api/calendar/data', () => {
         const res = await agent.get('/api/calendar/data').query({ start: '2026-09-01T00:00:00', end: '2026-09-07T23:59:59' });
         expect(res.status).toBe(200);
         expect(res.body.calendarNotes).toHaveLength(1);
-        expect(res.body.calendarNotes[0].creator.username).toBe('other.tutor');
+        expect(res.body.calendarNotes[0].creatorUsername).toBe('other.tutor');
     });
 
     test('a GENERIC tutor only sees notes assigned to or created by them', async () => {

@@ -104,11 +104,24 @@ async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, e
     // Java endpoint, so this filter runs in Node instead of issuing two
     // separate by-tutor/by-creator calls and merging (as the old unbounded
     // code did).
-    const calendarNotes = isStaff
+    const visibleNotes = isStaff
         ? (rawNotes || [])
         : (rawNotes || []).filter(note =>
             (note.tutors || []).some(t => t.id === tutorId) || note.creator?.id === tutorId
         );
+
+    // The raw note's creator/tutors are full nested User objects (username, mail,
+    // role, status, anonymizedAt) - calendarScript.js only ever reads their id/
+    // username, so only those are forwarded instead of every assignee's account.
+    const calendarNotes = visibleNotes.map(note => ({
+        id: note.id,
+        description: note.description,
+        startTime: note.startTime,
+        endTime: note.endTime,
+        creatorId: note.creator?.id ?? null,
+        creatorUsername: note.creator?.username || null,
+        tutorIds: (note.tutors || []).map(t => t.id)
+    }));
 
     const getStudent = makeLookupCache(fetchStudentData);
     const getTutor = makeLookupCache(fetchTutorData);
@@ -130,8 +143,6 @@ async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, e
             day: exception.day,
             type: exception.type,
             status: exception.status,
-            startTime: exception.startTime,
-            endTime: exception.endTime,
             tutorId: exception.tutorId,
             tutorUsername: tutor?.username || 'Unknown'
         };
@@ -148,15 +159,11 @@ async function getCalendarDataForRange({ tutorId, isStaff, isGuest, startTime, e
             id: prenotation.id,
             startTime: prenotation.startTime,
             endTime: prenotation.endTime,
-            createdAt: prenotation.createdAt,
-            flag: prenotation.flag,
             studentId: studentId,
-            student: student,
             studentName: student?.name || 'Unknown',
             studentSurname: student?.surname || '',
             studentClass: student?.studentClass || '',
             tutorId: prenotationTutorId,
-            tutor: tutor,
             tutorUsername: tutor?.username || 'Unknown',
             creatorId: prenotation.creatorId,
             creatorUsername: creator?.username || 'Unknown',

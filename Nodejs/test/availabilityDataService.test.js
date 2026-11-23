@@ -139,7 +139,7 @@ describe('getPendingExceptions', () => {
         });
 
         expect(result).toEqual([
-            { id: 10, tutorId: 1, tutorName: 'tutor.one', day: '2026-12-24', type: 'absent', startTime: null, endTime: null }
+            { id: 10, tutorName: 'tutor.one', day: '2026-12-24', type: 'absent', startTime: null, endTime: null }
         ]);
     });
 
