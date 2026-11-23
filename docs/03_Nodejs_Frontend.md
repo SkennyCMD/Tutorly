@@ -3,7 +3,7 @@
 ---
 
 **Document**: 03_Nodejs_Frontend.md  
-**Last Updated**: November 20, 2026  
+**Last Updated**: November 23, 2026  
 **Version**: 1.0.0  
 **Author**: Tutrly Development Team  
 
@@ -715,6 +715,8 @@ A `GUEST` account (e.g. a parent/guardian, created via the [Admin Panel - Guest 
 **UI hardening for GUEST:** on `/home` and `/calendar`, the "Add Lesson"/"Add Prenotation"/"Add Note" buttons aren't rendered, and every lesson/prenotation/note row is rendered without its click handler or pointer cursor (no edit/convert-to-lesson modal reachable) - covering grid clicks, drag-to-select, and all-day note chips, not just the obvious buttons. Nav links to pages a GUEST can't reach (`My Lessons`, `Reports`, `Staff Panel`) are hidden rather than left as dead ends.
 
 **GUEST accounts excluded from tutor-assignment lists:** a `GUEST` isn't a tutor - they don't teach and shouldn't be selectable when a STAFF tutor assigns a lesson/prenotation's tutor or a note's assignees. `/calendar` and `/student/:id` both filter `role !== 'GUEST'` out of the `tutors` list fetched from `GET /api/users` before rendering it (same filter `GET /api/admin/tutors` already applied for the Admin Panel), so a `GUEST` account never appears in the Calendar's tutor filter/assignment UI or the Student Profile page's prenotation tutor-reassignment list.
+
+**Security note - tutor list field-filtering:** `GET /api/users` returns the full `User` entity, including the bcrypt password hash - Node itself needs that field (`authService.js` reads it for login's `bcrypt.compare`), but nothing client-facing should ever see it. Every route that forwards a tutor/user list toward the browser (`/calendar`'s `window.serverData.tutors`, `/staffPanel`'s `window.allTutors`, `/student/:id`'s `window.allTutors`, and the admin-only `GET /api/admin/tutors`/`GET /api/admin/guests`) now whitelists only the fields its own client code actually reads (`id`/`username`, plus `role` where displayed, plus `mail`/`anonymizedAt` on the two admin-only endpoints) instead of passing the raw object through.
 
 ---
 
@@ -1742,7 +1744,9 @@ The `/student/:id` page (`views/student.ejs` + `public/js/student.js` + `public/
 
 **Access control:** requires `isAuthenticated`, then the route handler fetches the viewing user's own data. STAFF is authorized for any `:id`. A GUEST is authorized only if `:id` is one of the students returned by `fetchStudentsByGuest(guestId)`; any other student, or any other role, redirects to `/home`. If `:id` doesn't resolve to a real student at all, the route renders the shared `404.ejs` instead of crashing - this required fixing `fetchStudentData()` in `javaApiService.js`, which previously let a Java 404 reject the promise instead of resolving `null` like every other single-item fetch helper does.
 
-**Data sources:** unlike most of the app (which scopes lessons/tests/prenotations to the logged-in tutor), this page fetches **all** of a student's tests, prenotations, and lessons/hours regardless of which tutor administered them (`fetchTestsByStudent`, `fetchPrenotationsByStudent`, and `GET /api/lessons/student/:id` directly - not the tutor-scoped `fetchLessonsByTutorAndStudent`, which was removed since nothing calls it anymore) - a full history is the meaningful number here, not just the viewing user's own interactions, and it's the only sensible option for a GUEST anyway (a GUEST isn't a tutor, so "lessons I taught" would always be empty). Packs (`fetchPacksByStudent`) are also fetched student-wide, same as tests/prenotations. Each test/prenotation is enriched server-side with the administering tutor's username (`tutorName`), deduplicating repeated tutor lookups with a small in-memory cache built per-request.
+**Data sources:** unlike most of the app (which scopes lessons/tests/prenotations to the logged-in tutor), this page fetches **all** of a student's tests, prenotations, and lessons/hours regardless of which tutor administered them (`fetchTestsByStudent`, `fetchPrenotationsByStudent`, and `GET /api/lessons/student/:id` directly - not the tutor-scoped `fetchLessonsByTutorAndStudent`, which was removed since nothing calls it anymore) - a full history is the meaningful number here, not just the viewing user's own interactions, and it's the only sensible option for a GUEST anyway (a GUEST isn't a tutor, so "lessons I taught" would always be empty). Packs (`fetchPacksByStudent`) are also fetched student-wide, same as tests/prenotations.
+
+**Tutor identity is STAFF-only:** each test/prenotation/lesson is enriched server-side with the administering tutor's id/username (`tutorId`/`tutorName`, deduplicating repeated tutor lookups with a small in-memory cache built per-request) - but only when the viewer is STAFF. For a GUEST, those two fields are omitted from the payload entirely (not just hidden client-side), so who taught/tested/booked their student is never recoverable from the page source. On the client, evaluations/lessons fall back to a translated "Unknown tutor" placeholder when the field is absent (evaluations also still group correctly by subject, since every GUEST entry shares the same `undefined` tutor id); prenotations instead render nothing in that spot, leaving only the date/time and status badge.
 
 **GUEST read-only hardening:** the page's interactive elements (edit-prenotation click, pack action buttons, header "+ New Package" button) were originally gated by `window.userRole === 'STAFF'` purely as defense-in-depth, back when only STAFF could reach this page at all. Now that a GUEST can reach it too, those same checks are the actual enforcement - a GUEST sees the same data read-only, with no buttons or click handlers to modify anything. The GUEST-only "My Students" card grid on `/home` (see [GUEST Role Access Control](#guest-role-access-control) above) is what links a GUEST into this page in the first place.
 
@@ -1766,6 +1770,10 @@ Shown as exact hours and minutes (e.g. `2h 15m`, computed from the real `endTime
 Below the mini lesson-calendar, a scrollable list (`max-h-[32rem]`, same `scrollbar-thin` pattern as the Evaluations page's sidebar) of the student's prenotations across every tutor, soonest-first. A prenotation dated before today is shown with a red border/background and labeled "Expired" instead of "Pending" (a confirmed-but-past prenotation still shows "Confirmed" - only the pending state changes wording).
 
 **STAFF can click a card to edit or delete it** - opens the same kind of modal as the Calendar page's edit-prenotation flow (date, start/end time, tutor reassignment via radio buttons populated from `window.allTutors`), calling the existing `PUT`/`DELETE /api/prenotations/:id` endpoints (no new backend routes). The click handler and edit modal are gated by `window.userRole === 'STAFF'` in `student.js` - for a GUEST viewing their own student's page, this means the cards are shown but aren't clickable at all.
+
+### Lessons
+
+Below the Prenotations card, an identically-styled card lists the student's completed lesson history across every tutor, most recent first - same scrollable `max-h-[32rem]` list pattern. Unlike Prenotations (upcoming/pending bookings), a lesson has already happened, so each row is read-only for everyone (no click handler, no edit/delete modal) and shows only the date and start/end time - plus, **for STAFF only**, the name of the tutor who taught it (see [Tutor identity is STAFF-only](#student-profile-page) above). A GUEST sees the same list with the date/time rows only.
 
 ### Lesson Packages (Packs)
 
