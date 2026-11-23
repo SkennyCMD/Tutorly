@@ -29,6 +29,18 @@ describe('GET /api/admin/tutors', () => {
         expect(res.body.map(t => t.id)).toEqual([1, 2]);
     });
 
+    test('never includes password hashes in the response', async () => {
+        const agent = await adminAgent();
+        javaApi().get('/api/users').reply(200, [
+            tutorFixture({ id: 1, role: 'GENERIC', password: '$2b$10$SECRETHASHVALUE' })
+        ]);
+
+        const res = await agent.get('/api/admin/tutors');
+        expect(res.status).toBe(200);
+        expect(res.body[0].password).toBeUndefined();
+        expect(res.text).not.toContain('SECRETHASHVALUE');
+    });
+
     test('returns 500 when the Java API call fails', async () => {
         const agent = await adminAgent();
         javaApi().get('/api/users').reply(500);

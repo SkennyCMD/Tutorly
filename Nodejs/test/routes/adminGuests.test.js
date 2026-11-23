@@ -29,6 +29,16 @@ describe('GET /api/admin/guests', () => {
         expect(res.body).toHaveLength(1);
         expect(res.body[0].role).toBe('GUEST');
     });
+
+    test('never includes password hashes in the response', async () => {
+        const agent = await adminAgent();
+        javaApi().get('/api/users/role/GUEST').reply(200, [guestFixture({ password: '$2b$10$SECRETHASHVALUE' })]);
+
+        const res = await agent.get('/api/admin/guests');
+        expect(res.status).toBe(200);
+        expect(res.body[0].password).toBeUndefined();
+        expect(res.text).not.toContain('SECRETHASHVALUE');
+    });
 });
 
 describe('POST /api/admin/guests', () => {

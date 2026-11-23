@@ -294,6 +294,20 @@ describe('GET /calendar', () => {
         expect(exceptionDaysScope.isDone()).toBe(true);
         expect(res.text).toContain('"id":10');
     });
+
+    test('never leaks other tutors\' password hashes to the browser', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1 }));
+        javaApi().get(/^\/api\/prenotations\/date-range/).reply(200, []);
+        javaApi().get(/^\/api\/calendar-notes\/date-range/).reply(200, []);
+        javaApi().get('/api/students').reply(200, []);
+        javaApi().get('/api/users').reply(200, [tutorFixture({ id: 2, username: 'other.tutor', password: '$2b$10$SECRETHASHVALUE' })]);
+
+        const res = await agent.get('/calendar');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('other.tutor');
+        expect(res.text).not.toContain('SECRETHASHVALUE');
+    });
 });
 
 describe('GET /api/calendar/data', () => {
@@ -604,6 +618,18 @@ describe('GET /staffPanel', () => {
         const res = await agent.get('/staffPanel');
         expect(res.status).toBe(200);
     });
+
+    test('never leaks tutors\' password hashes to the browser', async () => {
+        const agent = await tutorAgent({ role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get('/api/users').reply(200, [tutorFixture({ id: 1, role: 'STAFF', password: '$2b$10$SECRETHASHVALUE' })]);
+        javaApi().get('/api/students').reply(200, []);
+        javaApi().get('/api/tests').reply(200, []);
+
+        const res = await agent.get('/staffPanel');
+        expect(res.status).toBe(200);
+        expect(res.text).not.toContain('SECRETHASHVALUE');
+    });
 });
 
 describe('GET /reports', () => {
@@ -714,5 +740,21 @@ describe('GET /student/:id', () => {
         expect(res.status).toBe(200);
         expect(res.text).not.toContain('lesson.tutor');
         expect(res.text).not.toContain('"tutorName":');
+    });
+
+    test('never leaks other tutors\' password hashes to the browser', async () => {
+        const agent = await tutorAgent({ role: 'STAFF' });
+        javaApi().get('/api/users/1').reply(200, tutorFixture({ id: 1, role: 'STAFF' }));
+        javaApi().get('/api/students/10').reply(200, studentFixture());
+        javaApi().get('/api/tests/student/10').reply(200, []);
+        javaApi().get('/api/lessons/student/10').reply(200, []);
+        javaApi().get('/api/prenotations/student/10').reply(200, []);
+        javaApi().get('/api/users').reply(200, [tutorFixture({ id: 2, username: 'other.tutor', password: '$2b$10$SECRETHASHVALUE' })]);
+        javaApi().get('/api/packs/student/10').reply(200, []);
+
+        const res = await agent.get('/student/10');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('other.tutor');
+        expect(res.text).not.toContain('SECRETHASHVALUE');
     });
 });

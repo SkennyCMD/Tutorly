@@ -1126,7 +1126,11 @@ app.get('/calendar', tutorSession, isAuthenticated, async (req, res) => {
         // GUEST accounts aren't tutors - exclude them from the tutor filter dropdown
         // and every "assign to" list (lesson/prenotation tutor, note assignees).
         // Erased tutors are excluded too - they shouldn't be assignable anymore.
-        const tutors = (allUsers || []).filter(u => u.role !== 'GUEST' && !u.anonymizedAt);
+        // /api/users returns full accounts (password hash included) - the client
+        // only ever needs id/username, so only those are forwarded to the browser.
+        const tutors = (allUsers || [])
+            .filter(u => u.role !== 'GUEST' && !u.anonymizedAt)
+            .map(u => ({ id: u.id, username: u.username }));
 
         res.render('calendar', {
             userId: req.session.userId,
@@ -1750,8 +1754,12 @@ app.get('/staffPanel', tutorSession, isAuthenticated, blockGuest, async (req, re
         res.render('staffPanel', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData.role },
-            // Erased tutors shouldn't show up in the Staff Panel's tutor list either
-            tutors: (allTutors || []).filter(t => !t.anonymizedAt),
+            // Erased tutors shouldn't show up in the Staff Panel's tutor list either.
+            // /api/users returns full accounts (password hash included) - only
+            // id/username/role are ever used client-side, so only those are sent.
+            tutors: (allTutors || [])
+                .filter(t => !t.anonymizedAt)
+                .map(t => ({ id: t.id, username: t.username, role: t.role })),
             students: studentsWithAvg
         });
     } catch (error) {
@@ -1867,8 +1875,12 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
         ]);
 
         // GUEST accounts aren't tutors - exclude them from the prenotation
-        // reassignment tutor list
-        const allTutors = (allUsers || []).filter(u => u.role !== 'GUEST');
+        // reassignment tutor list. /api/users returns full accounts (password
+        // hash included) - the client only ever needs id/username, so only
+        // those are forwarded to the browser.
+        const allTutors = (allUsers || [])
+            .filter(u => u.role !== 'GUEST')
+            .map(u => ({ id: u.id, username: u.username }));
 
         // A pack is still active if it has no closure date
         const activePacks = (packsData || [])
@@ -3379,7 +3391,11 @@ app.post('/api/students', tutorSession, isAuthenticated, async (req, res) => {
 app.get('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
     try {
         const users = await fetchFromJavaAPI('/api/users', 'GET');
-        const tutors = (users || []).filter(u => u.role !== 'GUEST');
+        // /api/users returns full accounts (password hash included) - the admin
+        // panel only ever displays/needs these fields, so only those go out.
+        const tutors = (users || [])
+            .filter(u => u.role !== 'GUEST')
+            .map(u => ({ id: u.id, username: u.username, role: u.role, status: u.status, anonymizedAt: u.anonymizedAt }));
         res.json(tutors);
     } catch (error) {
         logError('Error fetching tutors', req, { error: error.message });
@@ -3395,7 +3411,9 @@ app.get('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
 app.get('/api/admin/guests', adminSession, isAdmin, async (req, res) => {
     try {
         const guests = await fetchFromJavaAPI('/api/users/role/GUEST', 'GET');
-        res.json(guests || []);
+        // /api/users/role/GUEST returns full accounts (password hash included) -
+        // the admin panel only ever displays/needs these fields, so only those go out.
+        res.json((guests || []).map(g => ({ id: g.id, username: g.username, role: g.role, mail: g.mail, anonymizedAt: g.anonymizedAt })));
     } catch (error) {
         logError('Error fetching guest accounts', req, { error: error.message });
         res.status(500).json({ error: 'Failed to fetch guest accounts' });
