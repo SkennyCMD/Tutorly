@@ -82,6 +82,18 @@ const prenotations = (window.initialPrenotations || []).map(p => ({
     tutorName: p.tutorName || t('student.unknownTutor')
 }));
 
+// Completed lessons (full history, across every tutor), reusing the same
+// window.initialLessons payload used above for the hours/calendar calculations.
+// tutorName is only present when the server rendered this page for a STAFF
+// viewer - never sent to GUEST at all (not just hidden client-side), so
+// there's nothing here to gate on window.userRole.
+const lessons = initialLessons.map(l => ({
+    id: l.id,
+    startTime: l.startTime,
+    endTime: l.endTime,
+    tutorName: l.tutorName
+}));
+
 // Active lesson packages (no closure date) loaded from the server - see
 // window.initialPacks in student.ejs. The server already filters to active-only.
 const packs = (window.initialPacks || []).map(p => ({
@@ -237,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderHours();
     renderCalendar();
     renderPrenotations();
+    renderLessons();
     renderPacks();
     setupEventListeners();
 });
@@ -525,6 +538,42 @@ function renderPrenotations() {
             ${statusBadge}
         </div>
         <div class="flex items-center justify-between text-xs ${dateClass || 'text-muted-foreground'}">
+            <span>${start.dateLabel}</span>
+            <span>${start.timeLabel} - ${end.timeLabel}</span>
+        </div>
+        </div>
+    `;
+    }).join('');
+}
+
+function renderLessons() {
+    const container = document.getElementById('lessonsList');
+    const emptyState = document.getElementById('emptyLessons');
+    const countEl = document.getElementById('lessonsCount');
+
+    const sorted = [...lessons].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+    countEl.textContent = sorted.length;
+
+    if (sorted.length === 0) {
+    container.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    return;
+    }
+    emptyState.classList.add('hidden');
+
+    container.innerHTML = sorted.map(l => {
+    const start = formatDateTime(l.startTime);
+    const end = formatDateTime(l.endTime);
+    // tutorName is only ever present for a STAFF viewer - the server never sends
+    // it to GUEST at all, who sees just the date/time, nothing else.
+    const tutorLine = l.tutorName
+        ? `<div class="flex items-center justify-between mb-1"><span class="font-medium text-foreground text-sm">${l.tutorName}</span></div>`
+        : '';
+
+    return `
+        <div class="p-3 border border-border rounded-lg">
+        ${tutorLine}
+        <div class="flex items-center justify-between text-xs text-muted-foreground">
             <span>${start.dateLabel}</span>
             <span>${start.timeLabel} - ${end.timeLabel}</span>
         </div>

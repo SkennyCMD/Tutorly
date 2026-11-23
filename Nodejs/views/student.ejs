@@ -313,6 +313,18 @@
             <p class="text-muted-foreground text-sm"><%= t('student.noPrenotationsFound') %></p>
           </div>
         </div>
+
+        <!-- Lessons -->
+        <div class="bg-card border border-border rounded-xl p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-foreground"><%= t('student.lessons') %></h2>
+            <span id="lessonsCount" class="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">0</span>
+          </div>
+          <div id="lessonsList" class="space-y-3 max-h-[32rem] overflow-y-auto scrollbar-thin"></div>
+          <div id="emptyLessons" class="hidden py-8 text-center">
+            <p class="text-muted-foreground text-sm"><%= t('student.noLessonsFound') %></p>
+          </div>
+        </div>
       </div>
     </div>
   </main>

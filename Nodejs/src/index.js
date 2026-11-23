@@ -1858,7 +1858,7 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
 
         // Tests, prenotations, and lessons/hours all span every tutor who has ever dealt
         // with this student (full history) - not just the viewing tutor's own sessions
-        const [tests, lessons, prenotationsData, allUsers, packsData] = await Promise.all([
+        const [tests, lessonsData, prenotationsData, allUsers, packsData] = await Promise.all([
             fetchTestsByStudent(studentId),
             fetchFromJavaAPI(`/api/lessons/student/${studentId}`),
             fetchPrenotationsByStudent(studentId),
@@ -1912,12 +1912,28 @@ app.get('/student/:id', tutorSession, isAuthenticated, async (req, res) => {
             tutorName: await getTutorName(prenotation.tutorId)
         })));
 
+        // Who taught a lesson is only exposed to STAFF - a GUEST sees their own
+        // student's lesson history (date/time only) but never the tutor's
+        // identity, so tutorName is omitted from the payload entirely rather
+        // than just hidden client-side.
+        const lessons = await Promise.all((lessonsData || []).map(async lesson => {
+            const entry = {
+                id: lesson.id,
+                startTime: lesson.startTime,
+                endTime: lesson.endTime
+            };
+            if (isStaff) {
+                entry.tutorName = await getTutorName(lesson.tutorId);
+            }
+            return entry;
+        }));
+
         res.render('student', {
             userId: req.session.userId,
             user: { username: req.session.username, role: tutorData.role },
             student,
             evaluations,
-            lessons: lessons || [],
+            lessons,
             prenotations,
             tutors: allTutors || [],
             packs: activePacks
