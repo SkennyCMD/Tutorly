@@ -89,6 +89,16 @@ describe('POST /api/admin/tutors', () => {
         const res = await agent.post('/api/admin/tutors').send({ username: 'dupe', password: 'longenough1', role: 'GENERIC' });
         expect(res.status).toBe(409);
     });
+
+    test('never includes the password hash in the response', async () => {
+        const agent = await adminAgent();
+        javaApi().post('/api/users').reply(201, (uri, body) => ({ ...tutorFixture({ id: 7 }), ...body }));
+
+        const res = await agent.post('/api/admin/tutors').send({ username: 'new.tutor', password: 'longenough1', role: 'GENERIC' });
+
+        expect(res.status).toBe(201);
+        expect(res.body.password).toBeUndefined();
+    });
 });
 
 describe('PATCH /api/admin/tutors/:id/role', () => {
@@ -122,6 +132,7 @@ describe('PATCH /api/admin/tutors/:id/role', () => {
         const res = await agent.patch('/api/admin/tutors/1/role').send({ role: 'STAFF' });
         expect(res.status).toBe(200);
         expect(res.body.role).toBe('STAFF');
+        expect(res.body.password).toBeUndefined();
     });
 });
 
@@ -142,6 +153,7 @@ describe('PATCH /api/admin/tutors/:id/status', () => {
         const res = await agent.patch('/api/admin/tutors/1/status').send({ status: 'BLOCKED' });
         expect(res.status).toBe(200);
         expect(res.body.status).toBe('BLOCKED');
+        expect(res.body.password).toBeUndefined();
     });
 });
 

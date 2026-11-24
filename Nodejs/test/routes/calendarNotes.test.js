@@ -40,6 +40,24 @@ describe('POST /api/calendar-notes', () => {
         expect(forwardedBody.creatorId).toBe(1);
         expect(forwardedBody.tutorIds).toEqual([2, 3]);
     });
+
+    test('never includes the raw nested creator/tutors User objects in the response', async () => {
+        const agent = await tutorAgent();
+        javaApi().post('/api/calendar-notes').reply(201, {
+            id: 500, description: 'Follow up', startTime: '2026-09-11T09:00:00', endTime: '2026-09-11T09:30:00',
+            creator: { id: 1, username: 'mario.rossi', mail: 'mario@example.com', role: 'STAFF', password: 'hash' },
+            tutors: [{ id: 2, username: 'laura.neri', mail: 'laura@example.com', role: 'GENERIC', password: 'hash' }]
+        });
+
+        const res = await agent.post('/api/calendar-notes').send({
+            description: 'Follow up', startTime: '2026-09-11T09:00:00', endTime: '2026-09-11T09:30:00', tutorIds: [2]
+        });
+
+        expect(res.status).toBe(200);
+        expect(res.body.creator).toBeUndefined();
+        expect(res.body.tutors).toBeUndefined();
+        expect(res.body).toMatchObject({ id: 500, creatorId: 1, creatorUsername: 'mario.rossi', tutorIds: [2] });
+    });
 });
 
 describe('GET /api/calendar-notes/:id', () => {
@@ -58,6 +76,20 @@ describe('GET /api/calendar-notes/:id', () => {
         const res = await agent.get('/api/calendar-notes/500');
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(500);
+    });
+
+    test('never includes the raw nested creator/tutors User objects in the response', async () => {
+        const agent = await tutorAgent();
+        javaApi().get('/api/calendar-notes/500').reply(200, calendarNoteFixture({
+            creator: { id: 1, username: 'mario.rossi', mail: 'mario@example.com', role: 'STAFF', password: 'hash' },
+            tutors: [{ id: 2, username: 'laura.neri', mail: 'laura@example.com', role: 'GENERIC', password: 'hash' }]
+        }));
+
+        const res = await agent.get('/api/calendar-notes/500');
+        expect(res.status).toBe(200);
+        expect(res.body.creator).toBeUndefined();
+        expect(res.body.tutors).toBeUndefined();
+        expect(res.body).toMatchObject({ id: 500, creatorId: 1, creatorUsername: 'mario.rossi', tutorIds: [2] });
     });
 
     test('returns the note to an assigned (non-creator) tutor', async () => {
@@ -106,6 +138,21 @@ describe('PUT /api/calendar-notes/:id', () => {
         const res = await agent.put('/api/calendar-notes/500').send({ description: 'Updated', startTime: '2026-09-11T09:00:00', endTime: '2026-09-11T09:30:00' });
         expect(res.status).toBe(200);
         expect(res.body.description).toBe('Updated');
+    });
+
+    test('never includes the raw nested creator/tutors User objects in the response', async () => {
+        const agent = await tutorAgent({ id: 1 });
+        javaApi().get('/api/calendar-notes/500').reply(200, calendarNoteFixture({ creator: { id: 1 } }));
+        javaApi().put('/api/calendar-notes/500').reply(200, calendarNoteFixture({
+            creator: { id: 1, username: 'mario.rossi', mail: 'mario@example.com', role: 'STAFF', password: 'hash' },
+            tutors: [{ id: 2, username: 'laura.neri', mail: 'laura@example.com', role: 'GENERIC', password: 'hash' }]
+        }));
+
+        const res = await agent.put('/api/calendar-notes/500').send({ description: 'Updated', startTime: '2026-09-11T09:00:00', endTime: '2026-09-11T09:30:00' });
+        expect(res.status).toBe(200);
+        expect(res.body.creator).toBeUndefined();
+        expect(res.body.tutors).toBeUndefined();
+        expect(res.body).toMatchObject({ creatorId: 1, creatorUsername: 'mario.rossi', tutorIds: [2] });
     });
 });
 

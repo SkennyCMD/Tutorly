@@ -2775,11 +2775,11 @@ window.openEditNoteModal = async function (noteId) {
     }
     const fullNote = await response.json();
     console.log('[NOTE] Full note from server:', fullNote);
-    console.log('[NOTE] Tutors array:', fullNote.tutors);
+    console.log('[NOTE] Tutor IDs:', fullNote.tutorIds);
 
     // Check if current user is the creator
     const currentUserId = window.serverData.currentUserId;
-    const creatorId = fullNote.creator?.id;
+    const creatorId = fullNote.creatorId;
     console.log('[NOTE] Current user ID:', currentUserId, 'Creator ID:', creatorId);
 
     if (creatorId && creatorId !== currentUserId) {
@@ -2823,7 +2823,7 @@ window.openEditNoteModal = async function (noteId) {
       container.innerHTML = '';
 
       // Get assigned tutor IDs from full note details
-      const assignedTutorIds = fullNote.tutors ? fullNote.tutors.map(t => t.id) : [];
+      const assignedTutorIds = fullNote.tutorIds || [];
       console.log('[NOTE] Assigned tutor IDs:', assignedTutorIds);
 
       window.serverData.tutors.forEach(tutor => {

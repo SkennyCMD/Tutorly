@@ -3119,6 +3119,25 @@ app.delete('/api/prenotations/:id', tutorSession, isAuthenticated, blockGuestApi
 // !!! CALENDAR NOTES API ROUTES !!!
 
 /**
+ * The raw Java CalendarNote's creator/tutors are full nested User objects
+ * (username, mail, role, status, anonymizedAt) - calendarScript.js only
+ * ever reads their id/username, so only those are forwarded instead of
+ * every assignee's account. Same flattening as calendarDataService.js's
+ * getCalendarDataForRange, applied here for the single-note CRUD routes.
+ */
+function flattenCalendarNote(note) {
+    return {
+        id: note.id,
+        description: note.description,
+        startTime: note.startTime,
+        endTime: note.endTime,
+        creatorId: note.creator?.id ?? null,
+        creatorUsername: note.creator?.username || null,
+        tutorIds: (note.tutors || []).map(t => t.id)
+    };
+}
+
+/**
  * Create a new calendar note (task/reminder)
  * POST /api/calendar-notes
  * Body: { description, startTime, endTime, tutorIds[] }
@@ -3160,7 +3179,7 @@ app.post('/api/calendar-notes', tutorSession, isAuthenticated, blockGuestApi, as
                     logSuccess('Calendar note created successfully', req);
                     try {
                         const note = JSON.parse(data);
-                        res.json(note);
+                        res.json(flattenCalendarNote(note));
 
                         // Fire-and-forget: notify each assigned tutor except the creator.
                         // Never awaited, so a slow/failed send can't delay or break the response above.
@@ -3223,7 +3242,7 @@ app.get('/api/calendar-notes/:id', tutorSession, isAuthenticated, blockGuestApi,
             return res.status(403).json({ error: 'You do not have access to this note' });
         }
 
-        res.json(note);
+        res.json(flattenCalendarNote(note));
     } catch (error) {
         logError('Error fetching calendar note', req, { id: req.params.id, error: error.message });
         res.status(500).json({ error: 'Failed to fetch calendar note' });
@@ -3280,7 +3299,7 @@ app.put('/api/calendar-notes/:id', tutorSession, isAuthenticated, blockGuestApi,
                     logSuccess('Calendar note updated successfully', req, { id });
                     try {
                         const note = JSON.parse(data);
-                        res.json(note);
+                        res.json(flattenCalendarNote(note));
                     } catch (e) {
                         res.json({ success: true, message: 'Calendar note updated' });
                     }
@@ -3515,7 +3534,9 @@ app.patch('/api/admin/tutors/:id/role', adminSession, isAdmin, async (req, res) 
         const updatedTutor = await fetchFromJavaAPI(`/api/users/${tutorId}/role`, 'PATCH', { role });
 
         logSuccess('Tutor role updated', req, { tutorId, role });
-        res.json(updatedTutor);
+        // Raw User response (password hash included) - admin.js only reads
+        // id/username/role/status/anonymizedAt.
+        res.json({ id: updatedTutor.id, username: updatedTutor.username, role: updatedTutor.role, status: updatedTutor.status, anonymizedAt: updatedTutor.anonymizedAt });
     } catch (error) {
         logError('Error updating tutor role', req, { tutorId: req.params.id, error: error.message });
         if (error.statusCode === 404) {
@@ -3550,7 +3571,9 @@ app.patch('/api/admin/tutors/:id/status', adminSession, isAdmin, async (req, res
         const updatedTutor = await fetchFromJavaAPI(`/api/users/${tutorId}/status`, 'PATCH', { status });
 
         logSuccess('Tutor status updated', req, { tutorId, status });
-        res.json(updatedTutor);
+        // Raw User response (password hash included) - admin.js only reads
+        // id/username/role/status/anonymizedAt.
+        res.json({ id: updatedTutor.id, username: updatedTutor.username, role: updatedTutor.role, status: updatedTutor.status, anonymizedAt: updatedTutor.anonymizedAt });
     } catch (error) {
         logError('Error updating tutor status', req, { tutorId: req.params.id, error: error.message });
         if (error.statusCode === 404) {
@@ -3597,9 +3620,11 @@ app.post('/api/admin/tutors', adminSession, isAdmin, async (req, res) => {
         };
 
         const newTutor = await fetchFromJavaAPI('/api/users', 'POST', tutorData);
-        
+
         logSuccess('Tutor created successfully', req, { username });
-        res.status(201).json(newTutor);
+        // Raw User response (password hash included) - admin.js only reads
+        // id/username/role/status/anonymizedAt.
+        res.status(201).json({ id: newTutor.id, username: newTutor.username, role: newTutor.role, status: newTutor.status, anonymizedAt: newTutor.anonymizedAt });
     } catch (error) {
         logError('Error creating tutor', req, { error: error.message, stack: error.stack });
         if (error.statusCode === 409) {
@@ -3649,7 +3674,9 @@ app.post('/api/admin/guests', adminSession, isAdmin, async (req, res) => {
         const newGuest = await fetchFromJavaAPI('/api/users', 'POST', guestData);
 
         logSuccess('Guest account created successfully', req, { username });
-        res.status(201).json(newGuest);
+        // Raw User response (password hash included) - admin.js only reads
+        // id/username/role/mail/anonymizedAt.
+        res.status(201).json({ id: newGuest.id, username: newGuest.username, role: newGuest.role, mail: newGuest.mail, anonymizedAt: newGuest.anonymizedAt });
     } catch (error) {
         logError('Error creating guest account', req, { error: error.message, stack: error.stack });
         if (error.statusCode === 409) {
@@ -3807,7 +3834,9 @@ app.patch('/api/admin/guests/:id', adminSession, isAdmin, async (req, res) => {
         const updatedGuest = await fetchFromJavaAPI(`/api/users/${id}/profile`, 'PATCH', profileData);
 
         logSuccess('Guest account profile updated', req, { id, username, mail, passwordChanged: !!password });
-        res.json(updatedGuest);
+        // Raw User response (password hash included) - admin.js only reads
+        // id/username/role/mail/anonymizedAt.
+        res.json({ id: updatedGuest.id, username: updatedGuest.username, role: updatedGuest.role, mail: updatedGuest.mail, anonymizedAt: updatedGuest.anonymizedAt });
     } catch (error) {
         logError('Error updating guest account', req, { id: req.params.id, error: error.message });
         if (error.statusCode === 409) {

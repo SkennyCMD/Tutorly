@@ -79,6 +79,16 @@ describe('POST /api/admin/guests', () => {
         const res = await agent.post('/api/admin/guests').send({ username: 'dupe', mail: 'g@example.com', password: 'longenough1' });
         expect(res.status).toBe(409);
     });
+
+    test('never includes the password hash in the response', async () => {
+        const agent = await adminAgent();
+        javaApi().post('/api/users').reply(201, (uri, body) => ({ ...guestFixture(), ...body }));
+
+        const res = await agent.post('/api/admin/guests').send({ username: 'g', mail: 'g@example.com', password: 'longenough1' });
+
+        expect(res.status).toBe(201);
+        expect(res.body.password).toBeUndefined();
+    });
 });
 
 describe('PATCH /api/admin/guests/:id', () => {
@@ -105,6 +115,7 @@ describe('PATCH /api/admin/guests/:id', () => {
         const res = await agent.patch('/api/admin/guests/21').send({ username: 'newname', mail: 'new@example.com' });
         expect(res.status).toBe(200);
         expect(res.body.username).toBe('newname');
+        expect(res.body.password).toBeUndefined();
     });
 
     test('hashes a new password when provided', async () => {
