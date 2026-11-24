@@ -452,8 +452,12 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 ```java
 @Entity
 @Table(name = "student")
-@JsonIgnoreProperties(value = {"lessons", "prenotations", "tests"}, 
-                      allowGetters = true)
+// No allowGetters here - that flag only skips a field on *deserialization*,
+// not serialization, so it would still serialize the full nested history
+// (lessons/prenotations/tests, grades included) to any caller. Found and
+// fixed as a real leak - see CHANGELOG.md's `fix(security)` entry on the
+// Student/Pack entities.
+@JsonIgnoreProperties({"lessons", "prenotations", "tests"})
 public class Student {
     
     @Id
@@ -751,9 +755,11 @@ private Set<Lesson> lessons;
 
 #### JSON Handling
 ```java
-// Prevents infinite loops in serialization
-@JsonIgnoreProperties(value = {"lessons", "prenotations"}, 
-                      allowGetters = true)
+// Prevents infinite loops in serialization. Don't add allowGetters = true -
+// it only skips deserialization, not serialization, so the excluded fields
+// would still be sent to the browser (a real leak this app shipped and fixed
+// on Student/Pack - see CHANGELOG.md).
+@JsonIgnoreProperties({"lessons", "prenotations"})
 ```
 
 ---
@@ -1486,9 +1492,15 @@ JsonMappingException: Infinite recursion (StackOverflowError)
 **Solution:**
 - Use `@JsonIgnoreProperties` on collections:
   ```java
-  @JsonIgnoreProperties(value = {"lessons"}, allowGetters = true)
+  @JsonIgnoreProperties({"lessons"})
   public class Student { ... }
   ```
+  **Do not add `allowGetters = true`** - despite how it reads, it only skips
+  the field on *deserialization*; the field is still serialized to every
+  caller, defeating the exclusion entirely. This exact mistake shipped on
+  `Student` and `Pack` and leaked every student's full lesson/prenotation/
+  test/pack history (grades included) to any authenticated caller - see
+  CHANGELOG.md's `fix(security)` entry on the Student/Pack entities.
 - Or use DTOs to expose only necessary data
 
 ---

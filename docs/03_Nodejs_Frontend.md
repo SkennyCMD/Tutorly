@@ -66,6 +66,8 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 
 ### Key Routes
 
+Tutor and admin sessions are two entirely separate session types (`tutorSession`/`isAuthenticated` vs. `adminSession`/`isAdmin`) - no route below is reachable from both. "Tutor" means any logged-in tutor-session role (`GENERIC`/`STAFF`/`GUEST`) unless narrowed.
+
 | Route | Method | Description | Authentication |
 |-------|--------|-------------|----------------|
 | `/` | GET | Home page (redirects to /login or /home) | - |
@@ -73,25 +75,25 @@ The **Tutorly Frontend Server** is a Node.js/Express.js web application that ser
 | `/login` | POST | Process tutor login | Public |
 | `/adminLogin` | GET | Admin login page | Public |
 | `/adminLogin` | POST | Process admin login | Public |
-| `/home` | GET | Dashboard | Tutor/Admin |
-| `/lessons` | GET | Lessons management | Tutor/Admin |
-| `/calendar` | GET | Calendar view | Tutor/Admin |
-| `/availability` | GET | Tutor weekly availability + exception requests | Tutor/Admin (not GUEST) |
-| `/reports` | GET | Evaluations (student marks/tests, with per-student stats chart) | Tutor/Admin |
-| `/student/:id` | GET | Student profile (marks chart, hours, prenotations, lesson packages) | STAFF only |
+| `/home` | GET | Dashboard | Tutor (incl. GUEST) |
+| `/lessons` | GET | Lessons management | Tutor, not GUEST (`blockGuest`) |
+| `/calendar` | GET | Calendar view | Tutor (incl. GUEST) |
+| `/availability` | GET | Tutor weekly availability + exception requests | Tutor, not GUEST (`blockGuest`) |
+| `/reports` | GET | Evaluations (student marks/tests, with per-student stats chart) | Tutor, not GUEST (`blockGuest`) |
+| `/student/:id` | GET | Student profile (marks chart, hours, prenotations, lesson packages) | STAFF (any student), or GUEST (only their own assigned student) - see [GUEST Role Access Control](#guest-role-access-control) |
 | `/admin` | GET | Admin panel | Admin only |
-| `/staffPanel` | GET | Staff management | Staff/Admin |
-| `/logout` | GET | Logout | Tutor/Admin |
+| `/staffPanel` | GET | Staff management | STAFF only (GENERIC is redirected to `/home`, GUEST blocked by `blockGuest`) |
+| `/logout` | GET | Logout | Tutor |
 
 ### API Routes (Internal)
 
+There is no generic `/api/students`/`/api/users` list route on the Node side - Node fetches those directly from the Java API server-side when rendering a page, rather than exposing its own passthrough route the browser could call. The rows below are real, representative examples; see the per-feature "API Endpoints - ..." sections further down for the full, accurate list.
+
 | Route | Method | Description | Access |
 |-------|--------|-------------|--------|
-| `/api/students` | GET | Fetch all students | Authenticated |
-| `/api/users` | GET | Fetch all users (tutors/STAFF/GUEST) | Authenticated |
-| `/api/lessons/new` | POST | Create new lesson | Authenticated |
-| `/api/lessons/delete/:id` | DELETE | Delete lesson | Staff/Admin |
-| `/api/export/lessons` | GET | Export lessons to Excel | Authenticated |
+| `/api/lessons` | POST | Create new lesson | Tutor, not GUEST (`blockGuestApi`) |
+| `/api/lessons/:id` | DELETE | Delete lesson | Tutor, not GUEST (`blockGuestApi`) |
+| `/api/reports/lessons-by-month?month=YYYY-MM` | GET | Export lessons to Excel | STAFF only (`isStaff`) |
 
 ### Configuration Files
 
@@ -708,7 +710,8 @@ A `GUEST` account (e.g. a parent/guardian, created via the [Admin Panel - Guest 
 
 **Two middleware functions in `server_utilities/authMiddleware.js` do the enforcement:**
 - **`blockGuest`** - for page (`GET`) routes. Redirects to `/home` if `req.session.role === 'guest'`, otherwise calls `next()`. Applied to `/lessons`, `/reports`, `/staffPanel` - the only pages a GUEST can reach are `/home`, `/calendar`, and their own assigned student's `/student/:id` (see below).
-- **`blockGuestApi`** - for write (`POST`/`PUT`) API routes a GUEST might otherwise reach via a raw `fetch()` even with the UI hidden. Returns `403 { error: '...' }` JSON instead of redirecting. Applied to every creation/modification endpoint: `POST /api/lessons`, `PUT /api/lessons/:id`, `POST /api/prenotations`, `PUT /api/prenotations/:id`, `POST /api/calendar-notes`, `PUT /api/calendar-notes/:id`, `POST /api/packs`, `PUT /api/packs/:id/close`. This is the actual enforcement boundary - hiding the corresponding buttons client-side (see below) is only a courtesy on top of it.
+- **`blockGuestApi`** - for write (`POST`/`PUT`/`DELETE`) API routes a GUEST might otherwise reach via a raw `fetch()` even with the UI hidden. Returns `403 { error: '...' }` JSON instead of redirecting. Applied to every creation/modification/deletion endpoint: `POST /api/lessons`, `PUT`/`DELETE /api/lessons/:id`, `POST /api/tests`, `DELETE /api/tests/:id`, `POST /api/students`, `POST /api/prenotations`, `PUT /api/prenotations/:id`, `POST /api/calendar-notes`, `GET`/`PUT`/`DELETE /api/calendar-notes/:id`, `POST /api/packs`, `PUT /api/packs/:id/close`. This is the actual enforcement boundary - hiding the corresponding buttons client-side (see below) is only a courtesy on top of it. A later audit found `DELETE /api/lessons/:id`, `POST`/`DELETE /api/tests`, `GET`/`DELETE /api/calendar-notes/:id`, and `POST /api/students` missing this middleware entirely (a GUEST session could call them directly); all five are now covered.
+- **Ownership check on `GET /api/calendar-notes/:id`** - a GENERIC tutor may only read a note they created or are assigned to (STAFF can read any note, same as everywhere else). Without this, any authenticated tutor could read any note's full description/creator/assignees just by guessing or incrementing the id (an IDOR, found in the same audit as above) - a GENERIC not involved with the note gets `403`.
 
 **Data scoping for GUEST on `/home` and `/calendar`:** a GUEST has no lessons/prenotations of their own (they don't teach), so both routes special-case `userRole === 'guest'` and filter by the student(s) assigned to that guest (via `fetchStudentsByGuest(guestId)`, backed by `GET /api/students/guest/{userId}`) instead of by `tutorId`. `/home` additionally renders a GUEST-only "My Students" card grid: one card per assigned student (name, class, average mark - same style and color-by-mark logic as the Staff Panel's student cards), linking to `/student/:id`. The route computes each student's average from `fetchTestsByStudent`, mirroring how `/staffPanel` computes `avgMark` for its own cards. See [01_Java_Backend_API.md - Students](01_Java_Backend_API.md#students).
 
@@ -716,7 +719,12 @@ A `GUEST` account (e.g. a parent/guardian, created via the [Admin Panel - Guest 
 
 **GUEST accounts excluded from tutor-assignment lists:** a `GUEST` isn't a tutor - they don't teach and shouldn't be selectable when a STAFF tutor assigns a lesson/prenotation's tutor or a note's assignees. `/calendar` and `/student/:id` both filter `role !== 'GUEST'` out of the `tutors` list fetched from `GET /api/users` before rendering it (same filter `GET /api/admin/tutors` already applied for the Admin Panel), so a `GUEST` account never appears in the Calendar's tutor filter/assignment UI or the Student Profile page's prenotation tutor-reassignment list.
 
-**Security note - tutor list field-filtering:** `GET /api/users` returns the full `User` entity, including the bcrypt password hash - Node itself needs that field (`authService.js` reads it for login's `bcrypt.compare`), but nothing client-facing should ever see it. Every route that forwards a tutor/user list toward the browser (`/calendar`'s `window.serverData.tutors`, `/staffPanel`'s `window.allTutors`, `/student/:id`'s `window.allTutors`, and the admin-only `GET /api/admin/tutors`/`GET /api/admin/guests`) now whitelists only the fields its own client code actually reads (`id`/`username`, plus `role` where displayed, plus `mail`/`anonymizedAt` on the two admin-only endpoints) instead of passing the raw object through.
+**Security note - password hash never reaches the browser:** `GET/POST/PATCH/DELETE /api/users*` all return the full `User` entity, including the bcrypt password hash - Node itself needs that field (`authService.js` reads it for login's `bcrypt.compare`), but nothing client-facing should ever see it, and the field can't be stripped in Java without breaking that login flow. Every route that forwards a `User`-derived response toward the browser now whitelists only the fields its own client code actually reads instead of passing the raw object through: the tutor/user *lists* (`/calendar`'s `window.serverData.tutors`, `/staffPanel`'s `window.allTutors`, `/student/:id`'s `window.allTutors`, `GET /api/admin/tutors`/`GET /api/admin/guests` - `id`/`username`, plus `role`/`mail`/`anonymizedAt` where displayed); every admin tutor/guest *mutation* (`POST`/`PATCH /api/admin/tutors*`, `POST`/`PATCH /api/admin/guests*`, and the GDPR erasure endpoints below - `id`/`username`/`role`/`status`/`anonymizedAt` for tutors, `id`/`username`/`role`/`mail`/`anonymizedAt` for guests).
+
+**Security note - nested entity leaks:** two Java entities and one DTO-less route leaked more than intended through their *nested* objects, independently of the password-hash issue above:
+- `Student`'s `@JsonIgnoreProperties(value = {"lessons", "prenotations", "tests", "packs"}, allowGetters = true)` looked like it excluded those collections from JSON, but `allowGetters = true` only skips them on *deserialization* - every `GET /api/students*` call was serializing each student's full nested lesson/prenotation/test/pack history, marks included, to any authenticated caller. `Pack` had the same bug on `lessons`, not currently reachable from Node but fixed for the same reason. Both are now plain `@JsonIgnoreProperties({...})` with no `allowGetters`; the dedicated per-student endpoints (`GET /api/lessons/student/{id}` and friends) remain the real, already-used source for this data.
+- `POST`/`PUT`/`GET /api/calendar-notes*` returned the raw `CalendarNote` entity, whose `creator`/`tutors` fields are full nested `User` objects - Jackson excludes `password` there but not `username`/`mail`/`role`/`status`/`anonymizedAt`, so any GENERIC/STAFF tutor who created, edited, or read a note got the full account info (including email) of its creator and every assigned tutor. All three routes now return a flattened `{id, description, startTime, endTime, creatorId, creatorUsername, tutorIds}` shape (a `flattenCalendarNote()` helper in `index.js`, mirroring what `calendarDataService.js` already built for the Calendar page's own payload) instead of the raw entity.
+- The Calendar page's own per-prenotation payload independently embedded the full raw `student`/`tutor` objects (the latter including the password hash) alongside the already-extracted `studentName`/`tutorUsername` fields that were the only ones ever read; and the Home dashboard's notes widget forwarded the raw `DashboardNote` entity, including the full authoring admin and every other recipient's account, for a note the widget only ever renders by `content`. Both found and fixed during an unrelated payload-size audit (see the Changelog's `perf` entry) - the fix is the same field-whitelisting pattern as everywhere else on this page.
 
 ---
 
@@ -1077,14 +1085,13 @@ Neither route uses the `isStaff` middleware (which returns a JSON 401/403 - appr
 
 ### API Endpoints - Lessons
 
+These three are the only lesson routes Node exposes - there's no `GET /api/lessons[/:id]` or `/tutor/:tutorId` route on this path (confirmed against `src/index.js`); the `/lessons` page gets its own list from `server_utilities/javaApiService.js`'s `fetchLessonsByTutor`/`fetchLessonsByStudent` calling the Java API directly at page-render time, not through a Node-side JSON route a client fetches.
+
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/api/lessons` | Tutor | Get all lessons or filter by date range |
-| GET | `/api/lessons/:id` | Tutor | Get lesson by ID |
 | POST | `/api/lessons` | Tutor, blocked for `guest` (`blockGuestApi`) | Create new lesson |
 | PUT | `/api/lessons/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Update lesson |
-| DELETE | `/api/lessons/:id` | Tutor | Delete lesson |
-| GET | `/api/lessons/tutor/:tutorId` | Tutor | Get lessons for specific tutor |
+| DELETE | `/api/lessons/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Delete lesson |
 
 **Example - Create Lesson:**
 ```javascript
@@ -1104,7 +1111,7 @@ Body: {
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| POST | `/api/students` | Tutor | Create new student (the "quick add student" modal on Dashboard/Calendar/Lessons) |
+| POST | `/api/students` | Tutor, blocked for `guest` (`blockGuestApi`) | Create new student (the "quick add student" modal on Dashboard/Calendar/Lessons) |
 
 This is the only Node-side `/api/students` route that actually exists - there's no generic get-by-id/update/delete/search route on this path (confirmed against `src/index.js`; a get/update/delete/search table was previously (and incorrectly) documented here). Everything else students-related is either:
 - server-rendered page data (`/staffPanel`, `/student/:id`), not a JSON API a client calls directly, or
@@ -1139,14 +1146,13 @@ Body: {
 
 ### API Endpoints - Prenotations (Bookings)
 
+These three are the only prenotation routes Node exposes - there's no `GET /api/prenotations[/:id]` or `PATCH .../confirm` route on this path (confirmed against `src/index.js`); a prenotation's `confirmed` state (`flag` on the Java side) is read, never written through a dedicated endpoint - it's set once, at creation.
+
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/api/prenotations` | Tutor | Get all prenotations |
-| GET | `/api/prenotations/:id` | Tutor | Get prenotation by ID |
 | POST | `/api/prenotations` | Tutor, blocked for `guest` (`blockGuestApi`) | Create new prenotation |
 | PUT | `/api/prenotations/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Update prenotation |
-| DELETE | `/api/prenotations/:id` | Tutor | Delete prenotation |
-| PATCH | `/api/prenotations/:id/confirm` | Tutor | Confirm prenotation |
+| DELETE | `/api/prenotations/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Delete prenotation |
 
 `PUT`/`DELETE /api/prenotations/:id` are also what the Student Profile page's edit-prenotation modal calls (see [Student Profile Page](#student-profile-page)) - same endpoints as the Calendar page, no dedicated routes were added.
 
@@ -1205,14 +1211,14 @@ Body: {
 
 ### API Endpoints - Calendar Notes
 
+These four are the only calendar-note routes Node exposes - there is no plural `GET /api/calendar-notes` or `/range` route on the Node side (the Calendar page's own note list comes from `GET /api/calendar/data`/`getCalendarDataForRange` above, not from here). All four are `tutorSession`/`isAuthenticated` + `blockGuestApi` (a GUEST gets `403` on every one of them, including the `GET`).
+
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/api/calendar-notes` | Tutor | Get all calendar notes |
-| GET | `/api/calendar-notes/:id` | Tutor | Get note by ID |
-| POST | `/api/calendar-notes` | Staff, blocked for `guest` (`blockGuestApi`) | Create new note |
-| PUT | `/api/calendar-notes/:id` | Staff, blocked for `guest` (`blockGuestApi`) | Update note |
-| DELETE | `/api/calendar-notes/:id` | Staff | Delete note |
-| GET | `/api/calendar-notes/range` | Tutor | Get notes by date range |
+| POST | `/api/calendar-notes` | Tutor, blocked for `guest` (`blockGuestApi`) | Create new note; `tutorIds` any STAFF/GENERIC tutor, `creatorId` forced from the session |
+| GET | `/api/calendar-notes/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Get note by ID, flattened to `{id, description, startTime, endTime, creatorId, creatorUsername, tutorIds}` (never the raw nested `creator`/`tutors` User objects - see [Security note - nested entity leaks](#guest-role-access-control)). A GENERIC tutor gets `403` unless they're the creator or an assignee; STAFF can read any note |
+| PUT | `/api/calendar-notes/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Update note - creator only, `403` otherwise |
+| DELETE | `/api/calendar-notes/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Delete note - creator only, `403` otherwise |
 
 ---
 
@@ -1277,18 +1283,21 @@ Backs the `/reports` (Evaluations) page. `tutorId` is always taken from the sess
 
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| POST | `/api/tests` | Tutor | Create new test/evaluation |
-| DELETE | `/api/tests/:id` | Tutor | Delete test/evaluation |
+| POST | `/api/tests` | Tutor, blocked for `guest` (`blockGuestApi`) | Create new test/evaluation |
+| DELETE | `/api/tests/:id` | Tutor, blocked for `guest` (`blockGuestApi`) | Delete test/evaluation |
 
 ---
 
 ### Excel Report Endpoints
 
+STAFF only (`isStaff`), not just `blockGuestApi` - a GENERIC tutor also gets `403` on every one of these, not only GUEST. All return an `.xlsx` file download, not JSON.
+
 | Method | Route | Auth | Description |
 |--------|-------|------|-------------|
-| GET | `/export/lessons/:month/:year` | Tutor | Download monthly lessons Excel report |
-| GET | `/export/students-lessons/:month/:year` | Tutor | Download student-specific lessons report |
-| GET | `/export/tutor-monthly/:tutorId/:year` | Tutor | Download tutor's yearly report |
+| GET | `/api/reports/lessons-by-month?month=YYYY-MM` | STAFF | Lessons for the month, grouped by tutor |
+| GET | `/api/reports/lessons-by-student?month=YYYY-MM` | STAFF | Lessons for the month, grouped by student |
+| GET | `/api/reports/tutors-monthly-stats?year=YYYY` | STAFF | Per-tutor monthly statistics across all 12 months of the year |
+| GET | `/api/reports/tutor-monthly-hours?month=YYYY-MM` | STAFF | JSON (not Excel) - tutors' hours for the month, used by the on-page Staff Panel table rather than downloaded |
 
 **Example:**
 ```
