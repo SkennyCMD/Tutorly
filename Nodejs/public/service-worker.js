@@ -53,6 +53,17 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
+    // Let the browser handle cross-origin requests natively (e.g. a Cloudflare
+    // Analytics beacon, or any other third-party script) - this SW only ever
+    // caches this app's own same-origin assets/API/pages, and intercepting a
+    // cross-origin fetch that then fails (CORS, network) falls through to the
+    // "no cache, not a navigation" branch below, which used to return `null` -
+    // not a valid Response, so the browser logged a second, unrelated error on
+    // top of the original fetch failure.
+    if (url.origin !== self.location.origin) {
+        return;
+    }
+
     // Exclude Admin routes from SW
     if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/adminLogin')) {
         return;
@@ -104,7 +115,11 @@ self.addEventListener('fetch', (event) => {
                             );
                         });
                     }
-                    return null;
+                    // Still nothing to serve (a same-origin API call failed offline with
+                    // no cached copy) - `respondWith` requires an actual Response, never
+                    // `null`/`undefined`, or the browser logs a second, unrelated error
+                    // on top of the original fetch failure above.
+                    return new Response(null, { status: 503, statusText: 'Offline' });
                 });
             })
     );
