@@ -297,6 +297,20 @@ ALTER TABLE lesson ADD CONSTRAINT lesson_id_pack_fkey FOREIGN KEY (id_pack) REFE
 
 ---
 
+### Manual SQL: `checked` column added to `pack`
+
+**⚠️ Not a checked-in script, and NOT picked up automatically by `ddl-auto=update` on an existing database.** Unlike the two `Automatic` entries above, `Pack.checked` is declared `@Column(nullable = false)` with no SQL-level `DEFAULT` - only a Java field-initializer default (`private String checked = "open"`), which only applies to new objects created in the running app, never to a column Hibernate adds via schema update. Postgres refuses to add a `NOT NULL` column with no default to a table that already has rows (every existing row would have no value for it), so on any database that already had `pack` rows before this version, Hibernate's automatic `ALTER TABLE` silently fails at startup - logged as a non-fatal `WARN`, so the backend still starts and looks healthy - and the column is simply never added. Every query that touches `Pack` through a lazy-loaded association (including, surprisingly, `GET /api/users`/`GET /api/users/role/{role}`, which serialize each user's `lessons` and, through them, any linked `pack`) then fails at request time with `column p1_0.checked does not exist` (Postgres SQLState `42703`) - which also breaks the Node frontend's login flow, since it reads the tutor's record from that same `GET /api/users` response.
+
+**What to run** (idempotent - safe to run even if the column already exists, via the `IF NOT EXISTS` guard):
+```sql
+ALTER TABLE pack ADD COLUMN IF NOT EXISTS checked TEXT NOT NULL DEFAULT 'open' CHECK (checked IN ('open','closed'));
+```
+Including the `DEFAULT` in the same statement backfills every existing row with `'open'` (satisfying both the `NOT NULL` and the check constraint) without needing a separate backfill step. No application restart is required afterward - Hibernate doesn't cache column existence between queries.
+
+**If you're setting up a fresh database:** not needed - `Database/init.sql` already defines `pack.checked` correctly (`TEXT NOT NULL DEFAULT 'open' CHECK (checked IN ('open','closed'))`). This only applies to a database that already had the `pack` table (with rows in it) from before this column was introduced.
+
+---
+
 ## Creating New Migrations
 
 When creating a new migration script:
